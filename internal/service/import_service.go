@@ -207,6 +207,12 @@ func (s *ImportService) ImportFromPotatoVN(zipPath string, skipNoPath bool) (Imp
 // 同时返回解析后的游玩记录
 func (s *ImportService) convertToGame(galgame potatovn.Galgame, tempDir string) (models.Game, []models.PlaySession) {
 	gameID := uuid.New().String()
+	var tagsString string
+	if galgame.Tags.Value != nil {
+		tagsString = strings.Join(galgame.Tags.Value, ",")
+	} else {
+		tagsString = ""
+	}
 	game := models.Game{
 		ID:         gameID,
 		Name:       galgame.GetDisplayName(),
@@ -217,6 +223,8 @@ func (s *ImportService) convertToGame(galgame potatovn.Galgame, tempDir string) 
 		SourceType: s.mapRssTypeToSourceType(galgame.RssType),
 		SourceID:   galgame.GetSourceID(),
 		CreatedAt:  galgame.AddTime.ToTime(),
+		UpdatedAt:  galgame.AddTime.ToTime(),
+		Tags:       tagsString,
 		CachedAt:   time.Now(),
 	}
 
@@ -240,6 +248,9 @@ func (s *ImportService) convertToGame(galgame potatovn.Galgame, tempDir string) 
 	// 如果 CreatedAt 是零值，使用当前时间
 	if game.CreatedAt.IsZero() {
 		game.CreatedAt = time.Now()
+	}
+	if game.UpdatedAt.IsZero() {
+		game.UpdatedAt = time.Now()
 	}
 
 	// 解析 PlayedTime 生成游玩记录
@@ -578,6 +589,8 @@ func (s *ImportService) convertPlayniteToGame(pg playnite.PlayniteGame) models.G
 		SourceType: s.stringToSourceType(pg.SourceType),
 		SourceID:   pg.SourceID,
 		CreatedAt:  pg.CreatedAt,
+		UpdatedAt:  time.Now(),
+		Tags:       "",
 		CachedAt:   time.Now(),
 	}
 
@@ -601,6 +614,9 @@ func (s *ImportService) convertPlayniteToGame(pg playnite.PlayniteGame) models.G
 	// 如果 CreatedAt 是零值，使用当前时间
 	if game.CreatedAt.IsZero() {
 		game.CreatedAt = time.Now()
+	}
+	if game.UpdatedAt.IsZero() {
+		game.UpdatedAt = time.Now()
 	}
 
 	return game
@@ -860,6 +876,8 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		game.ID = uuid.New().String()
 		game.Path = candidate.SelectedExe
 		game.CreatedAt = time.Now()
+		game.UpdatedAt = time.Now()
+		game.Tags = ""
 		game.CachedAt = time.Now()
 
 		// 保存游戏（图片会在后台异步下载）

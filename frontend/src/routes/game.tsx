@@ -330,6 +330,20 @@ function GameDetailPage() {
           </div>
 
           <div className="mt-4">
+            <div className="font-semibold mb-2 text-brand-900 dark:text-white">类型标签</div>
+            <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed line-clamp-10">
+              {game.meta_tags}
+            </p>
+          </div>
+
+          <div className="mt-4">
+            <div className="font-semibold mb-2 text-brand-900 dark:text-white">标签</div>
+            <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed line-clamp-10">
+              {game.tags}
+            </p>
+          </div>
+
+          <div className="mt-4">
             <div className="font-semibold mb-2 text-brand-900 dark:text-white">简介</div>
             <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed line-clamp-10">
               {game.summary || "暂无简介"}

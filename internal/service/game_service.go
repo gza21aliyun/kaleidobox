@@ -63,6 +63,10 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.CreatedAt = time.Now()
 	}
 
+	if game.UpdatedAt.IsZero() {
+		game.UpdatedAt = time.Now()
+	}
+
 	if game.CachedAt.IsZero() {
 		game.CachedAt = time.Now()
 	}
@@ -83,9 +87,9 @@ func (s *GameService) AddGame(game models.Game) error {
 
 	query := `INSERT INTO games (
 		id, name, cover_url, company, summary, path, 
-		source_type, cached_at, source_id, created_at,
-		use_locale_emulator, use_magpie
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		source_type, cached_at, source_id, created_at, updated_at,
+		tags, meta_tags, use_locale_emulator, use_magpie
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := s.db.ExecContext(s.ctx, query,
 		game.ID,
@@ -98,6 +102,9 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.CachedAt,
 		game.SourceID,
 		game.CreatedAt,
+		game.UpdatedAt,
+		game.Tags,
+		game.MetaTags,
 		game.UseLocaleEmulator,
 		game.UseMagpie,
 	)
@@ -194,6 +201,9 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 		cached_at, 
 		COALESCE(source_id, '') as source_id, 
 		created_at,
+		updated_at,
+		COALESCE(tags, '') as tags,
+		COALESCE(meta_tags, '') as meta_tags,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie
 	FROM games 
@@ -225,6 +235,9 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 			&game.CachedAt,
 			&game.SourceID,
 			&game.CreatedAt,
+			&game.UpdatedAt,
+			&game.Tags,
+			&game.MetaTags,
 			&game.UseLocaleEmulator,
 			&game.UseMagpie,
 		)
@@ -259,6 +272,9 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		cached_at, 
 		COALESCE(source_id, '') as source_id, 
 		created_at,
+		updated_at,
+		COALESCE(tags, '') as tags, 
+		COALESCE(meta_tags, '') as meta_tags, 
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie
 	FROM games 
@@ -281,6 +297,9 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		&game.CachedAt,
 		&game.SourceID,
 		&game.CreatedAt,
+		&game.UpdatedAt,
+		&game.Tags,
+		&game.MetaTags,
 		&game.UseLocaleEmulator,
 		&game.UseMagpie,
 	)

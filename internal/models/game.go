@@ -18,6 +18,9 @@ type Game struct {
 	CachedAt          time.Time        `json:"cached_at"`
 	SourceID          string           `json:"source_id"`
 	CreatedAt         time.Time        `json:"created_at"`
+	UpdatedAt         time.Time        `json:"updated_at"`
+	Tags              string           `json:"tags"`
+	MetaTags          string           `json:"meta_tags"`
 	UseLocaleEmulator bool             `json:"use_locale_emulator"` // 是否使用 Locale Emulator 转区启动
 	UseMagpie         bool             `json:"use_magpie"`          // 是否使用 Magpie 超分辨率缩放
 }

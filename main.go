@@ -306,6 +306,9 @@ func initSchema(db *sql.DB) error {
 			cached_at TIMESTAMP,
 			source_id TEXT,
 			created_at TIMESTAMP,
+			updated_at TIMESTAMP,
+			tags TEXT,
+			meta_tages TEXT,
 			use_locale_emulator BOOLEAN DEFAULT FALSE,
 			use_magpie BOOLEAN DEFAULT FALSE
 		)`,

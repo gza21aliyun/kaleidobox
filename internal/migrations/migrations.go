@@ -42,8 +42,8 @@ func migration131(tx *sql.Tx) error {
 // 所有迁移按版本号顺序排列
 var migrations = []Migration{
 	{
-		Version:     131,
-		Description: "Add use_locale_emulator and use_magpie columns to games table",
+		Version:     132,
+		Description: "Add updatedat",
 		Up:          migration131,
 	},
 	// {

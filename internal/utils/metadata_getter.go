@@ -149,6 +149,8 @@ func (b BangumiInfoGetter) FetchMetadata(id string, token string) (models.Game, 
 	if coverURL == "" {
 		coverURL = bangumiResp.Images.Common
 	}
+	// log.Warnf("bangumi data", bangumiResp)
+	// fmt.Println("bangumi data", bangumiResp)
 
 	game := models.Game{
 		Name:       name,
@@ -245,6 +247,22 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 		coverURL = bangumiResp.Images.Common
 	}
 
+	// 解析发布日期
+	// var releaseDate time.Time
+	// if bangumiResp.Date != "" {
+	//     parsedDate, err := time.Parse("2006-01-02", bangumiResp.Date)
+	//     if err != nil {
+	//         log.Warnf("Error parsing date '%s': %v", bangumiResp.Date, err)
+	//     } else {
+	//         releaseDate = parsedDate
+	//     }
+	// }
+
+	var tagNames []string
+	for _, tag := range bangumiResp.Tags {
+		tagNames = append(tagNames, tag.Name)
+	}
+
 	game := models.Game{
 		Name:       gameName,
 		CoverURL:   coverURL,
@@ -252,7 +270,10 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 		Summary:    bangumiResp.Summary,
 		SourceType: enums.Bangumi,
 		SourceID:   strconv.Itoa(bangumiResp.ID),
-		CachedAt:   time.Now(),
+		// CreatedAt: 	bangumiResp.Date,
+		CachedAt: time.Now(),
+		Tags:     strings.Join(tagNames, ","),
+		MetaTags: strings.Join(bangumiResp.MetaTags, ","),
 	}
 
 	return game, nil

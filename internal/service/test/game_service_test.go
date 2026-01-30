@@ -24,6 +24,9 @@ func createTestGame() models.Game {
 		SourceType: enums.Local,
 		SourceID:   "local-001",
 		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		Tags:       "测试标签",
+		MetaTags:   "类型标签",
 		CachedAt:   time.Now(),
 	}
 }

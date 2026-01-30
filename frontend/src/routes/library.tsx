@@ -62,6 +62,9 @@ function LibraryPage() {
       const result = await GetGames();
       setGames(result || []);
     }
+    catch (error) {
+      console.error("Failed to load games:", error);
+    }
     finally {
       setIsLoading(false);
     }
@@ -211,7 +214,7 @@ function LibraryPage() {
               <div className="flex flex-col items-center justify-center py-20 text-brand-500 dark:text-brand-400">
                 <div className="i-mdi-gamepad-variant-outline text-6xl mb-4" />
                 <p className="text-xl">暂无游戏</p>
-                <p className="text-sm mt-2">添加一些游戏开始吧</p>
+                <p className="text-sm mt-2">添加一些GAL游戏开始吧</p>
                 <div className="flex flex-col gap-3 mt-4">
                   <button
                     onClick={() => setImportSource("potatovn")}

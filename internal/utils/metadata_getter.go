@@ -444,6 +444,20 @@ func NewYmgalInfoGetter() *YmgalInfoGetter {
 	}
 }
 
+func NewDmmInfoGetter() *DmmInfoGetter {
+	return &DmmInfoGetter{
+		client:  &http.Client{},
+		timeout: 10 * time.Second,
+	}
+}
+
+func NewEroscapeInfoGetter() *EroscapeInfoGetter {
+	return &EroscapeInfoGetter{
+		client:  &http.Client{},
+		timeout: 10 * time.Second,
+	}
+}
+
 var _ Getter = (*YmgalInfoGetter)(nil)
 
 const (

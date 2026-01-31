@@ -53,6 +53,7 @@ export function FilterBar({
   storageKey,
 }: FilterBarProps) {
   const [initialized, setInitialized] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   // 初始化时从 localStorage 恢复排序设置
   useEffect(() => {
@@ -93,6 +94,12 @@ export function FilterBar({
 
   // 计算可用标签（tagsLoaded 中除去 tagsFilter 的标签）
   const availableTags = tagsLoaded?.filter(tag => !tagsFilter!.includes(tag));
+  // const [availableTags, setAvailableTags] = useState<string[]>([]);
+  // setAvailableTags(tagsLoaded?.filter((tag) => !tagsFilter!.includes(tag)) || []);
+
+  // const handleTagsFilterChange = (selectedTags: string[], tag: string) => { 
+  //   onTagsFilterChange?.(selectedTags)
+  // };
   return (
     <div> 
       <div className="flex flex-wrap items-center justify-between gap-4 my-4">
@@ -152,107 +159,120 @@ export function FilterBar({
           {actionButton}
         </div>
       </div>
-      <div className="mt-4">
 
-            <div className="flex items-center gap-2">
-              <div className="font-semibold text-brand-900 dark:text-white">标签</div>
-              <div className="relative">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="p-1 rounded-full hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
-                  aria-label="添加标签"
-                >
-                  <div className="i-mdi-plus text-base" />
-                </button>
-                
-                {/* {isDropdownOpen && availableTags && onTagsFilterChange && tagsFilter && (
-                  <div className="absolute z-10 mt-2 w-48 bg-white dark:bg-brand-900 rounded-lg shadow-lg border border-brand-200 dark:border-brand-700 py-2">
-                    {availableTags.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => {
-                          onTagsFilterChange([...tagsFilter, tag]);
-                          setIsDropdownOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                    {availableTags.length === 0 && (
-                      <div className="px-4 py-2 text-sm text-brand-500 dark:text-brand-400">
-                        没有可用标签
-                      </div>
-                    )}
-                  </div>
-                )} */}
+      {!expanded ? (
+        
+        <div id="expanded-filter-bar">
+          <div className="mt-4">
 
-                {isDropdownOpen && availableTags && onTagsFilterChange && tagsFilter && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="bg-white dark:bg-brand-900 rounded-lg shadow-xl w-96 max-w-90vw max-h-90vh overflow-y-auto">
-                      <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
-                        <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签</h3>
-                        <button 
-                          onClick={() => setIsDropdownOpen(false)}
-                          className="text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-200"
-                        >
-                          <div className="i-mdi-close text-xl" />
-                        </button>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex flex-wrap gap-2">
-                          {availableTags.map((tag) => (
-                            <button
-                              key={tag}
-                              onClick={() => {
-                                onTagsFilterChange([...tagsFilter, tag]);
-                                setIsDropdownOpen(false);
-                              }}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer"
-                            >
-                              {tag}
-                            </button>
-                          ))}
-                          {availableTags.length === 0 && (
-                            <p className="text-brand-600 dark:text-brand-400 text-sm">没有可用标签</p>
-                          )}
+              <div className="flex items-center gap-2">
+                <div className="font-semibold text-brand-900 dark:text-white">标签</div>
+                <div className="relative">
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="p-1 rounded-full hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
+                    aria-label="添加标签"
+                  >
+                    <div className="i-mdi-plus text-base" />
+                  </button>
+                  
+
+                  {isDropdownOpen && availableTags && onTagsFilterChange && tagsFilter && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                      <div className="bg-white dark:bg-brand-900 rounded-lg shadow-xl w-[1200px] max-w-[95vw] max-h-[90vh] overflow-y-auto">
+                        <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
+                          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签</h3>
+                          <button 
+                            onClick={() => setIsDropdownOpen(false)}
+                            className="text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-200"
+                          >
+                            <div className="i-mdi-close text-xl" />
+                          </button>
+                        </div>
+                        <div className="p-4">
+                          <div className="flex flex-wrap gap-2">
+                            {availableTags.map((tag) => (
+                              <button
+                                key={tag}
+                                onClick={() => {
+                                  onTagsFilterChange([...tagsFilter, tag]);
+                                  // setIsDropdownOpen(false);
+                                }}
+                                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer"
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                            {availableTags.length === 0 && (
+                              <p className="text-brand-600 dark:text-brand-400 text-sm">没有可用标签</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-              </div>
-            </div>
-            
-            
-            {tagsFilter && tagsFilter.length > 0 && onTagsFilterChange ? (
-              <div className="flex flex-wrap gap-2">
-                {tagsFilter.map((tag, index) => (
-                <button
-                    key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer relative group"
-                    onClick={() => {
-                    // 在这里添加点击标签时的处理逻辑
-                    // 从 tagsFilter 中移除当前标签
-                      const newTagsFilter = tagsFilter.filter(t => t !== tag);
-                      onTagsFilterChange(newTagsFilter);
-                    }}
-                >
-                    <span className="relative z-10">{tag.trim()}</span>
-                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-15">
-                      <div className="absolute inset-0 bg-white bg-opacity-50 dark:bg-black dark:bg-opacity-40 rounded-full z-1"></div>
-                      <div className="relative z-20 i-mdi-close text-xs" />
-                    </span>
-                </button>
-                ))}
                 </div>
-            ) : (
-            // <p className="text-brand-600 dark:text-brand-400 text-sm">-</p>
-            <div></div>
-            )}
-            
-      </div>
+              </div>
+              
+              <div className="mt-3 mb-3"></div>
+              
+              {tagsFilter && tagsFilter.length > 0 && onTagsFilterChange ? (
+                <div className="flex flex-wrap gap-2">
+                  {tagsFilter.map((tag, index) => (
+                  <button
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer relative group"
+                      onClick={() => {
+                      // 在这里添加点击标签时的处理逻辑
+                      // 从 tagsFilter 中移除当前标签
+                        const newTagsFilter = tagsFilter.filter(t => t !== tag);
+                        onTagsFilterChange(newTagsFilter);
+                      }}
+                  >
+                      <span className="relative z-10">{tag.trim()}</span>
+                      <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-15">
+                        <div className="absolute inset-0 bg-white bg-opacity-50 dark:bg-black dark:bg-opacity-40 rounded-full z-1"></div>
+                        <div className="relative z-20 i-mdi-close text-xs" />
+                      </span>
+                  </button>
+                  ))}
+                  </div>
+              ) : (
+              // <p className="text-brand-600 dark:text-brand-400 text-sm">-</p>
+              <div></div>
+              )}
+              
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-center">
+              <button 
+                onClick={() => setExpanded(!expanded)}
+                className="focus:outline-none"
+              >
+                <div className={`i-mdi-chevron-down text-lg text-brand-500 dark:text-brand-400 transition-transform duration-200 ${!expanded ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+        </div>
+        
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-center">
+            <button 
+              onClick={() => setExpanded(!expanded)}
+              className="focus:outline-none"
+            >
+              <div className={`i-mdi-chevron-down text-lg text-brand-500 dark:text-brand-400 transition-transform duration-200 ${!expanded ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        </div>
+      )}
+      
+
+      
     </div>
     
   );

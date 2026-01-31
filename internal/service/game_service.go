@@ -443,7 +443,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	var mu sync.Mutex
 
 	// 这里暂不处理任何错误，直接尝试从多个来源并发获取数据，空就是网络问题或未找到，不管它
-	wg.Add(3)
+	wg.Add(5)
 
 	go func() {
 		defer wg.Done()
@@ -474,6 +474,28 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 		if ymgal != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Ymgal, Game: ymgal})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		dmmGetter := utils.NewDmmInfoGetter()
+		dmm, _ := dmmGetter.FetchMetadataByName(name)
+		if dmm != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dmm, Game: dmm})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		eroscapeGetter := utils.NewEroscapeInfoGetter()
+		eroscape, _ := eroscapeGetter.FetchMetadataByName(name)
+		if eroscape != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Eroscape, Game: eroscape})
 			mu.Unlock()
 		}
 	}()

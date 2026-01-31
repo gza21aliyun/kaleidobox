@@ -20,6 +20,7 @@ export const Route = createRoute({
 
 function LibraryPage() {
   const [games, setGames] = useState<models.Game[]>([]);
+  const [tagsLoaded, setTagsLoaded] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
@@ -30,6 +31,7 @@ function LibraryPage() {
   const [sortBy, setSortBy] = useState<"name" | "created_at">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [tagsFilter, setTags] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // 延迟显示骨架屏
@@ -57,10 +59,26 @@ function LibraryPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // 获取URL参数中的标签
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tagsParam = urlParams.get('tags');
+    if (tagsParam) {
+      setTags([decodeURIComponent(tagsParam)]);
+    }
+  }, []);
+
   const loadGames = async () => {
     try {
       const result = await GetGames();
       setGames(result || []);
+      const tags: string[] = [];
+      result?.forEach((game) => {
+        const gameTags = game.tags?.split(",") || [];
+        tags.push(...gameTags);
+      });
+      const uniqueTags : string[] = [...new Set(tags.map(tag => tag.trim()))];
+      setTagsLoaded(uniqueTags);
     }
     catch (error) {
       console.error("Failed to load games:", error);
@@ -79,6 +97,13 @@ function LibraryPage() {
       // 状态过滤
       if (statusFilter && game.status !== statusFilter) {
         return false;
+      }
+      //标签过滤
+      if (tagsFilter && tagsFilter.length > 0) {
+        const tags = game.tags.split(",");
+        if (!tags.some((tag) => tagsFilter.includes(tag))) {
+          return false;
+        }
       }
       return true;
     })
@@ -123,6 +148,9 @@ function LibraryPage() {
         onSortOrderChange={setSortOrder}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        onTagsFilterChange={setTags}
+        tagsLoaded={tagsLoaded}
+        tagsFilter={tagsFilter}
         statusOptions={statusOptions}
         storageKey="library"
         actionButton={(

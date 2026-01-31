@@ -14,6 +14,7 @@ import { GameDetailSkeleton } from "../components/skeleton/GameDetailSkeleton";
 import { useAppStore } from "../store";
 import { formatLocalDate } from "../utils/time";
 import { Route as rootRoute } from "./__root";
+import { GameInfoPanel } from "../components/panel/GameInfoPanel";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -208,6 +209,14 @@ function GameDetailPage() {
     }
   };
 
+  const handleTagTaps = async (tag: string) => {
+    try {
+      
+    } finally { 
+
+    }
+  };
+
   const openCategoryModal = async () => {
     try {
       const [categories, gameCategories] = await Promise.all([
@@ -329,19 +338,7 @@ function GameDetailPage() {
             {/* Placeholders for missing data */}
           </div>
 
-          <div className="mt-4">
-            <div className="font-semibold mb-2 text-brand-900 dark:text-white">类型标签</div>
-            <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed line-clamp-10">
-              {game.meta_tags}
-            </p>
-          </div>
-
-          <div className="mt-4">
-            <div className="font-semibold mb-2 text-brand-900 dark:text-white">标签</div>
-            <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed line-clamp-10">
-              {game.tags}
-            </p>
-          </div>
+          
 
           <div className="mt-4">
             <div className="font-semibold mb-2 text-brand-900 dark:text-white">简介</div>
@@ -356,7 +353,7 @@ function GameDetailPage() {
       <div className="border-b border-brand-200 dark:border-brand-700">
         <div className="flex justify-between items-center">
           <nav className="-mb-px flex space-x-8">
-            {["stats", "edit", "backup"].map(tab => (
+            {["stats", "edit", "backup", "info"].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -370,6 +367,7 @@ function GameDetailPage() {
                 {tab === "stats" && "游戏统计"}
                 {tab === "edit" && "编辑"}
                 {tab === "backup" && "备份"}
+                {tab === "info" && "游戏信息"}
               </button>
             ))}
           </nav>
@@ -403,6 +401,14 @@ function GameDetailPage() {
 
       {activeTab === "backup" && (
         <GameBackupPanel gameId={gameId} savePath={game?.save_path} />
+      )}
+
+      {activeTab === "info" && game && (
+        <GameInfoPanel
+          game={game}
+          config={config || undefined}
+          onTagTaps={handleTagTaps}
+        />
       )}
 
       <ConfirmModal

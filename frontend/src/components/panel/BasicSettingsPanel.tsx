@@ -39,6 +39,40 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
         />
       </div>
 
+      <div className="flex items-center justify-between p-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+          DMM开关
+        </label>
+        <BetterSwitch
+          id="dmm_is_enabled"
+          checked={formData.dmm_is_enabled || false}
+          onCheckedChange={checked => onChange({ ...formData, dmm_is_enabled: checked } as appconf.AppConfig)}
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+          批评空间开关
+        </label>
+        <BetterSwitch
+          id="eroscape_is_enabled"
+          checked={formData.eroscape_is_enabled || false}
+          onCheckedChange={checked => onChange({ ...formData, eroscape_is_enabled: checked } as appconf.AppConfig)}
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+          批评空间使用镜像
+        </label>
+        <BetterSwitch
+          id="eroscape_use_mirror"
+          checked={formData.eroscape_use_mirror || false}
+          onCheckedChange={checked => onChange({ ...formData, eroscape_use_mirror: checked } as appconf.AppConfig)}
+        />
+      </div>
+
+
       <div className="space-y-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">主题</label>
         <BetterSelect

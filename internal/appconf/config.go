@@ -69,6 +69,9 @@ type AppConfig struct {
 	// Locale Emulator 和 Magpie 配置
 	LocaleEmulatorPath string `json:"locale_emulator_path,omitempty"` // Locale Emulator 可执行文件路径
 	MagpiePath         string `json:"magpie_path,omitempty"`          // Magpie 可执行文件路径
+	DmmIsEnabled       bool   `json:"dmm_is_enabled"`
+	EroscapeIsEnabled  bool   `json:"eroscape_is_enabled"`
+	EroscapeUseMirror  bool   `json:"eroscape_use_mirror"`
 }
 
 // getConfigPath 获取配置文件路径
@@ -128,6 +131,9 @@ func LoadConfig() (*AppConfig, error) {
 		BackgroundIsLight:       true,  // 默认是浅色调
 		LocaleEmulatorPath:      "",
 		MagpiePath:              "",
+		DmmIsEnabled:            false,
+		EroscapeIsEnabled:       false,
+		EroscapeUseMirror:       false,
 	}
 
 	// 获取配置文件路径

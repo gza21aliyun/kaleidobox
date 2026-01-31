@@ -17,7 +17,10 @@ type DmmInfoGetter struct {
 	timeout time.Duration
 }
 
-func (b DmmInfoGetter) FetchMetadataByName(name string) (models.Game, error) {
+func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (models.Game, error) {
+	if !dmmIsEnabled {
+		return models.Game{}, fmt.Errorf("DMM is not enabled")
+	}
 	var url string = "https://dlsoft.dmm.co.jp/search/?service=pcgame&searchstr="
 	url += name
 	var game = models.Game{}

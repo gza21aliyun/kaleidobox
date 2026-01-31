@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"log"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"net/http"
@@ -18,13 +17,23 @@ type EroscapeInfoGetter struct {
 	timeout time.Duration
 }
 
-func (b EroscapeInfoGetter) FetchMetadataByName(name string) (models.Game, error) {
+func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, useMirror bool) (models.Game, error) {
+	if !isEnabled { // 禁用的话，就返回一个空游戏
+		return models.Game{}, nil
+	}
+
 	var mirror string = "https://koko.kyara.top/"
-	// var base string = "https://koko.kyara.top/"
+	var original string = "https://erogamescape.dyndns.org/"
+	var baseUrl string
+	if useMirror {
+		baseUrl = mirror
+	} else {
+		baseUrl = original
+	}
 	var searchPart = "kensaku.php?category=game&word_category=name&mode=normal&word="
 	var gamePart = "game.php?game="
-	var url string = mirror + searchPart
-	var gameUrl = mirror + gamePart
+	var url string = baseUrl + searchPart
+	var gameUrl = baseUrl + gamePart
 	var mirrorDomain = "*kyara.top"
 	url += name
 	var game = models.Game{}
@@ -74,10 +83,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string) (models.Game, error
 		link := gameUrl + gameId
 
 		if title != "" {
-			log.Print("OnHTML 网页列表 ：", e.Text)
-			log.Print("OnHTML 网页列表2 ：", e.ChildAttr("td a.tooltip", "innerHtml"))
-			log.Print("网页3", idParts)
-			log.Print("网页4", title)
+
 			potentialGames = append(potentialGames, struct {
 				Title  string
 				Link   string
@@ -110,46 +116,13 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string) (models.Game, error
 
 	// 处理游戏详情页面
 	c.OnHTML("div#main", func(e *colly.HTMLElement) {
-		// 使用 GoQuery 进一步解析 HTML
-		// log.Print("OnHTML 网页详情 ：", e.Text)
-		// doc, err := goquery.NewDocumentFromReader(strings.NewReader(e.Text))
-		// if err != nil {
-		// 	fmt.Printf("Error creating goquery document: %v\n", err)
-		// 	return
-		// }
-
-		// 提取游戏名称
-		// gameName := e.ChildText("h1.page-title") // 尝试使用 Colly 提取
-		// if gameName == "" {
-		// 	// 使用 GoQuery 提取标题
-		// 	doc.Find("h1.page-title").Each(func(i int, s *goquery.Selection) {
-		// 		gameName = strings.TrimSpace(s.Text())
-		// 	})
-		// }
-		// game.Name = gameName
 
 		// 提取封面图片
 		coverURL := e.ChildAttr("div#main_image a img", "src")
-		// if coverURL == "" {
-		// 	doc.Find("div.product-main-image img").Each(func(i int, s *goquery.Selection) {
-		// 		coverURL, _ = s.Attr("src")
-		// 	})
-		// }
 		game.CoverURL = coverURL
 
 		// 提取公司信息
 		company := e.ChildText("tr#brand a")
-		// if company == "" {
-		// 	doc.Find("tr").Each(func(i int, s *goquery.Selection) {
-		// 		if strings.Contains(s.Text(), "メーカー") {
-		// 			s.Find("td").Each(func(j int, td *goquery.Selection) {
-		// 				if j == 1 { // 假设厂商在第二列
-		// 					company = strings.TrimSpace(td.Text())
-		// 				}
-		// 			})
-		// 		}
-		// 	})
-		// }
 		game.Company = company
 
 		genre := ""
@@ -166,12 +139,6 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string) (models.Game, error
 
 		// 提取简介
 		summary := e.ChildText("div.area-detail-read")
-		// summary := e.ChildAttr("div.area-detail-read", "innerHTML")
-		// if summary == "" {
-		// 	doc.Find("div.product-introduction").Each(func(i int, s *goquery.Selection) {
-		// 		summary = strings.TrimSpace(s.Text())
-		// 	})
-		// }
 		game.Summary = summary
 
 		// 提取标签
@@ -183,13 +150,6 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string) (models.Game, error
 			}
 
 		})
-		// e.DOM.C
-		// log.Print("OnHTML 网页标签1 ：", e.ChildText("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container"))
-		// log.Print("OnHTML 网页标签2 ：", doc.Find("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container").Text())
-
-		// doc.Find("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container li.contentsDetailBottom__tableDataItem").Each(func(i int, s *goquery.Selection) {
-		// 	tags = append(tags, strings.TrimSpace(s.Text()))
-		// })
 		game.Tags = strings.Join(tags, ",")
 	})
 
@@ -214,7 +174,6 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string) (models.Game, error
 
 	// 设置其他必要字段
 	game.SourceType = enums.Eroscape // 假设你有这个枚举
-	// game.SourceID = name
 	game.CachedAt = time.Now()
 
 	return game, nil

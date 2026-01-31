@@ -481,7 +481,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	go func() {
 		defer wg.Done()
 		dmmGetter := utils.NewDmmInfoGetter()
-		dmm, _ := dmmGetter.FetchMetadataByName(name)
+		dmm, _ := dmmGetter.FetchMetadataByName(name, s.config.DmmIsEnabled)
 		if dmm != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dmm, Game: dmm})
@@ -492,7 +492,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	go func() {
 		defer wg.Done()
 		eroscapeGetter := utils.NewEroscapeInfoGetter()
-		eroscape, _ := eroscapeGetter.FetchMetadataByName(name)
+		eroscape, _ := eroscapeGetter.FetchMetadataByName(name, s.config.EroscapeIsEnabled, s.config.EroscapeUseMirror)
 		if eroscape != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Eroscape, Game: eroscape})

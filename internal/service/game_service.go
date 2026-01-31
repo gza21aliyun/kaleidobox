@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
@@ -212,6 +213,7 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 	rows, err := s.db.QueryContext(s.ctx, query)
 	if err != nil {
 		runtime.LogErrorf(s.ctx, "GetGames: failed to query games: %v", err)
+		log.Println("GetGames: failed to query games:", err)
 		return nil, fmt.Errorf("failed to query games: %w", err)
 	}
 	defer rows.Close()

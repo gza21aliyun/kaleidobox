@@ -17,26 +17,7 @@ type EroscapeInfoGetter struct {
 	timeout time.Duration
 }
 
-func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, useMirror bool) (models.Game, error) {
-	if !isEnabled { // 禁用的话，就返回一个空游戏
-		return models.Game{}, nil
-	}
-
-	var mirror string = "https://koko.kyara.top/"
-	var original string = "https://erogamescape.dyndns.org/"
-	var baseUrl string
-	if useMirror {
-		baseUrl = mirror
-	} else {
-		baseUrl = original
-	}
-	var searchPart = "kensaku.php?category=game&word_category=name&mode=normal&word="
-	var gamePart = "game.php?game="
-	var url string = baseUrl + searchPart
-	var gameUrl = baseUrl + gamePart
-	var mirrorDomain = "*kyara.top"
-	url += name
-	var game = models.Game{}
+func CreateCollector(domain string) *colly.Collector {
 	c := colly.NewCollector(
 		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"),
 		colly.Async(),
@@ -47,7 +28,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 
 	// 设置限速
 	c.Limit(&colly.LimitRule{
-		DomainGlob:  mirrorDomain,
+		DomainGlob:  domain,
 		Parallelism: 1,               // 限制并发数
 		Delay:       2 * time.Second, // 延迟请求
 	})
@@ -67,10 +48,41 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 		r.Headers.Set("Connection", "keep-alive")
 		r.Headers.Set("Upgrade-Insecure-Requests", "1")
 	})
+	return c
+}
+
+func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, useMirror bool) (models.Game, error) {
+	if !isEnabled { // 禁用的话，就返回一个空游戏
+		return models.Game{}, nil
+	}
+
+	var mirror string = "https://koko.kyara.top/"
+	var original string = "https://erogamescape.dyndns.org/"
+	var baseUrl string
+	if useMirror {
+		baseUrl = mirror
+	} else {
+		baseUrl = original
+	}
+	var searchPart = "kensaku.php?category=game&word_category=name&mode=normal&word="
+	// var gamePart = "game.php?game="
+	var url string = baseUrl + searchPart
+	// var gameUrl = baseUrl + gamePart
+	var mirrorDomain = "*kyara.top"
+	var baseDomain = "*dyndns.org"
+	var domain string
+	if useMirror {
+		domain = mirrorDomain
+	} else {
+		domain = baseDomain
+	}
+	url += name
+	var game = models.Game{}
+	c := CreateCollector(domain)
 
 	var potentialGames []struct {
-		Title  string
-		Link   string
+		Title string
+		// Link   string
 		GameId string
 	}
 
@@ -78,19 +90,25 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 	c.OnHTML("tbody tr", func(e *colly.HTMLElement) {
 
 		title := e.ChildText("td a.tooltip")
-		idParts := strings.Split(strings.Split(e.ChildAttr("td a.tooltip", "href"), "#")[0], "=")
+		href := e.ChildAttr("td a.tooltip", "href")
+		idParts := strings.Split(strings.Split(href, "#")[0], "=")
 		gameId := idParts[len(idParts)-1]
-		link := gameUrl + gameId
+
+		// link := gameUrl + gameId
 
 		if title != "" {
+			fmt.Println("title:", title)
+			fmt.Println("href", href)
+			fmt.Println("idParts:", idParts)
+			fmt.Println("gameId:", gameId)
 
 			potentialGames = append(potentialGames, struct {
-				Title  string
-				Link   string
+				Title string
+				// Link   string
 				GameId string
 			}{
-				Title:  title,
-				Link:   e.Request.AbsoluteURL(link),
+				Title: title,
+				// Link:   e.Request.AbsoluteURL(link),
 				GameId: gameId,
 			})
 		}
@@ -104,17 +122,54 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 			if strings.Contains(gameFound.Title, "セット") {
 				continue
 			}
-			if gameFound.Link == "" {
-				continue
-			}
+			// if gameFound.Link == "" {
+			// 	continue
+			// }
 			game.Name = gameFound.Title
 			game.SourceID = gameFound.GameId
-			c.Visit(gameFound.Link)
+			// c.Visit(gameFound.Link)
 			return
 		}
 	})
 
-	// 处理游戏详情页面
+	// 错误处理
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+	})
+
+	// 访问构建的 URL
+	err := c.Visit(url)
+	if err != nil {
+		return models.Game{}, err
+	}
+
+	// 等待收集完成
+	c.Wait()
+	game, _ = b.FetchMetadataById(game, useMirror)
+
+	return game, nil
+}
+
+func (b EroscapeInfoGetter) FetchMetadataById(game models.Game, useMirror bool) (models.Game, error) {
+	var mirror string = "https://koko.kyara.top/"
+	var original string = "https://erogamescape.dyndns.org/"
+	var baseUrl string
+	if useMirror {
+		baseUrl = mirror
+	} else {
+		baseUrl = original
+	}
+	var gamePart = "game.php?game="
+	var gameUrl = baseUrl + gamePart + game.SourceID
+	var mirrorDomain = "*kyara.top"
+	var baseDomain = "*dyndns.org"
+	var domain string
+	if useMirror {
+		domain = mirrorDomain
+	} else {
+		domain = baseDomain
+	}
+	c := CreateCollector(domain)
 	c.OnHTML("div#main", func(e *colly.HTMLElement) {
 
 		// 提取封面图片
@@ -159,7 +214,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 	})
 
 	// 访问构建的 URL
-	err := c.Visit(url)
+	err := c.Visit(gameUrl)
 	if err != nil {
 		return models.Game{}, err
 	}
@@ -169,7 +224,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 
 	// 检查是否成功获取了数据
 	if game.Name == "" {
-		return models.Game{}, fmt.Errorf("game not found: %s", name)
+		return models.Game{}, fmt.Errorf("game not found: %s", game.Name)
 	}
 
 	// 设置其他必要字段

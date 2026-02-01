@@ -161,6 +161,15 @@ export namespace models {
 	    updated_at: time.Time;
 	    tags: string;
 	    meta_tags: string;
+	    images: string;
+	    bangumi_id: string;
+	    dmm_id: string;
+	    eroscape_id: string;
+	    ymgal_id: string;
+	    charactors: string;
+	    staffs: string;
+	    release_at: time.Time;
+	    related_games: string;
 	    use_locale_emulator: boolean;
 	    use_magpie: boolean;
 	
@@ -185,6 +194,15 @@ export namespace models {
 	        this.updated_at = this.convertValues(source["updated_at"], time.Time);
 	        this.tags = source["tags"];
 	        this.meta_tags = source["meta_tags"];
+	        this.images = source["images"];
+	        this.bangumi_id = source["bangumi_id"];
+	        this.dmm_id = source["dmm_id"];
+	        this.eroscape_id = source["eroscape_id"];
+	        this.ymgal_id = source["ymgal_id"];
+	        this.charactors = source["charactors"];
+	        this.staffs = source["staffs"];
+	        this.release_at = this.convertValues(source["release_at"], time.Time);
+	        this.related_games = source["related_games"];
 	        this.use_locale_emulator = source["use_locale_emulator"];
 	        this.use_magpie = source["use_magpie"];
 	    }

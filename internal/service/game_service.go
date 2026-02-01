@@ -89,8 +89,9 @@ func (s *GameService) AddGame(game models.Game) error {
 	query := `INSERT INTO games (
 		id, name, cover_url, company, summary, path, 
 		source_type, cached_at, source_id, created_at, updated_at,
-		tags, meta_tags, use_locale_emulator, use_magpie
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		tags, meta_tags, images, bangumi_id, dmm_id, eroscape_id, ymgal_id, charactors, staffs, release_at, related_games, 
+		use_locale_emulator, use_magpie
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := s.db.ExecContext(s.ctx, query,
 		game.ID,
@@ -106,9 +107,20 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.UpdatedAt,
 		game.Tags,
 		game.MetaTags,
+		game.Images,
+		game.BangumiId,
+		game.DmmId,
+		game.EroscapeId,
+		game.YmgalId,
+		game.Charactors,
+		game.Staffs,
+		game.ReleaseAt,
+		game.RelatedGames,
+
 		game.UseLocaleEmulator,
 		game.UseMagpie,
 	)
+
 	if err != nil {
 		runtime.LogErrorf(s.ctx, "AddGame: failed to insert game %s: %v", game.Name, err)
 		return err
@@ -205,6 +217,15 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 		updated_at,
 		COALESCE(tags, '') as tags,
 		COALESCE(meta_tags, '') as meta_tags,
+		COALESCE(images, '') as images,
+		COALESCE(bangumi_id, '') as bangumi_id,
+		COALESCE(dmm_id, '') as dmm_id,
+		COALESCE(eroscape_id, '') as eroscape_id,
+		COALESCE(ymgal_id, '') as ymgal_id,
+		COALESCE(charactors, '') as charactors,
+		COALESCE(staffs, '') as staffs,
+		COALESCE(release_at, '') as release_at,
+		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie
 	FROM games 
@@ -240,6 +261,15 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 			&game.UpdatedAt,
 			&game.Tags,
 			&game.MetaTags,
+			&game.Images,
+			&game.BangumiId,
+			&game.DmmId,
+			&game.EroscapeId,
+			&game.YmgalId,
+			&game.Charactors,
+			&game.Staffs,
+			&game.ReleaseAt,
+			&game.RelatedGames,
 			&game.UseLocaleEmulator,
 			&game.UseMagpie,
 		)
@@ -277,6 +307,15 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		updated_at,
 		COALESCE(tags, '') as tags, 
 		COALESCE(meta_tags, '') as meta_tags, 
+		COALESCE(images, '') as images,
+		COALESCE(bangumi_id, '') as bangumi_id,
+		COALESCE(dmm_id, '') as dmm_id,
+		COALESCE(eroscape_id, '') as eroscape_id,
+		COALESCE(ymgal_id, '') as ymgal_id,
+		COALESCE(charactors, '') as charactors,
+		COALESCE(staffs, '') as staffs,
+		COALESCE(release_at, '') as release_at,
+		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie
 	FROM games 
@@ -302,6 +341,15 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		&game.UpdatedAt,
 		&game.Tags,
 		&game.MetaTags,
+		&game.Images,
+		&game.BangumiId,
+		&game.DmmId,
+		&game.EroscapeId,
+		&game.YmgalId,
+		&game.Charactors,
+		&game.Staffs,
+		&game.ReleaseAt,
+		&game.RelatedGames,
 		&game.UseLocaleEmulator,
 		&game.UseMagpie,
 	)
@@ -332,6 +380,16 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		source_type = ?,
 		cached_at = ?,
 		source_id = ?,
+		tags = ?,
+		images = ?,
+		bangumi_id = ?,
+		dmm_id = ?,
+		eroscape_id = ?,
+		ymgal_id = ?,
+		charactors = ?,
+		staffs = ?,
+		release_at = ?,
+		related_games = ?,
 		use_locale_emulator = ?,
 		use_magpie = ?
 	WHERE id = ?`
@@ -347,6 +405,16 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		string(game.SourceType),
 		game.CachedAt,
 		game.SourceID,
+		game.Tags,
+		game.Images,
+		game.BangumiId,
+		game.DmmId,
+		game.EroscapeId,
+		game.YmgalId,
+		game.Charactors,
+		game.Staffs,
+		game.ReleaseAt,
+		game.RelatedGames,
 		game.UseLocaleEmulator,
 		game.UseMagpie,
 		game.ID,

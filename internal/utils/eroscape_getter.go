@@ -127,6 +127,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 			// }
 			game.Name = gameFound.Title
 			game.SourceID = gameFound.GameId
+			game.EroscapeId = gameFound.GameId
 			// c.Visit(gameFound.Link)
 			return
 		}
@@ -160,7 +161,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(game models.Game, useMirror bool) 
 		baseUrl = original
 	}
 	var gamePart = "game.php?game="
-	var gameUrl = baseUrl + gamePart + game.SourceID
+	var gameUrl = baseUrl + gamePart + game.EroscapeId
 	var mirrorDomain = "*kyara.top"
 	var baseDomain = "*dyndns.org"
 	var domain string

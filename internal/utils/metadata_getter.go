@@ -248,20 +248,21 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 	}
 
 	// 解析发布日期
-	// var releaseDate time.Time
-	// if bangumiResp.Date != "" {
-	//     parsedDate, err := time.Parse("2006-01-02", bangumiResp.Date)
-	//     if err != nil {
-	//         log.Warnf("Error parsing date '%s': %v", bangumiResp.Date, err)
-	//     } else {
-	//         releaseDate = parsedDate
-	//     }
-	// }
+	var releaseDate time.Time
+	if bangumiResp.Date != "" {
+		parsedDate, err := time.Parse("2006-01-02", bangumiResp.Date)
+		if err != nil {
+			log.Warnf("Error parsing date '%s': %v", bangumiResp.Date, err)
+		} else {
+			releaseDate = parsedDate
+		}
+	}
 
 	var tagNames []string
 	for _, tag := range bangumiResp.Tags {
 		tagNames = append(tagNames, tag.Name)
 	}
+	var bangumiId string = strconv.Itoa(bangumiResp.ID)
 
 	game := models.Game{
 		Name:       gameName,
@@ -269,11 +270,13 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 		Company:    company,
 		Summary:    bangumiResp.Summary,
 		SourceType: enums.Bangumi,
-		SourceID:   strconv.Itoa(bangumiResp.ID),
+		SourceID:   bangumiId,
+		BangumiId:  bangumiId,
 		// CreatedAt: 	bangumiResp.Date,
-		CachedAt: time.Now(),
-		Tags:     strings.Join(tagNames, ","),
-		MetaTags: strings.Join(bangumiResp.MetaTags, ","),
+		CachedAt:  time.Now(),
+		Tags:      strings.Join(tagNames, ","),
+		ReleaseAt: releaseDate,
+		MetaTags:  strings.Join(bangumiResp.MetaTags, ","),
 	}
 
 	return game, nil

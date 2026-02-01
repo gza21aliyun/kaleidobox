@@ -24,36 +24,7 @@ func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (mode
 	var url string = "https://dlsoft.dmm.co.jp/search/?service=pcgame&searchstr="
 	url += name
 	var game = models.Game{}
-	c := colly.NewCollector(
-		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"),
-		colly.Async(),
-	)
-
-	// 设置请求超时
-	c.SetRequestTimeout(30 * time.Second)
-
-	// 设置限速
-	c.Limit(&colly.LimitRule{
-		DomainGlob:  "*dmm.co.jp",
-		Parallelism: 1,               // 限制并发数
-		Delay:       2 * time.Second, // 延迟请求
-	})
-
-	// 首先，设置请求前的处理
-	c.OnRequest(func(r *colly.Request) {
-
-		fmt.Println("Visiting", r.URL.String()) // 打印正在访问的 URL
-		cookie3 := &http.Cookie{Name: "age_check_done", Value: "1"}
-
-		r.Headers.Set("Cookie", cookie3.Name+"="+cookie3.Value)
-
-		// 设置额外的请求头
-		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-		r.Headers.Set("Accept-Language", "ja-JP,ja;q=0.8,en-US;q=0.5,en;q=0.3")
-		r.Headers.Set("Accept-Encoding", "gzip, deflate, br")
-		r.Headers.Set("Connection", "keep-alive")
-		r.Headers.Set("Upgrade-Insecure-Requests", "1")
-	})
+	c := CreateCollector("*dmm.co.jp")
 
 	var potentialGames []struct {
 		Title    string
@@ -98,54 +69,46 @@ func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (mode
 			game.Name = gameFound.Title
 			linkParts := strings.Split(gameFound.Link, "/")
 			game.SourceID = linkParts[len(linkParts)-2]
+			game.DmmId = game.SourceID
 			game.CoverURL = gameFound.CoverUrl
-			c.Visit(gameFound.Link)
+			// c.Visit(gameFound.Link) // 不在这里访问详情页
 			return
 		}
 	})
 
+	// 错误处理
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+	})
+
+	// 访问构建的 URL
+	err := c.Visit(url)
+	if err != nil {
+		return models.Game{}, err
+	}
+
+	// 等待收集完成
+	c.Wait()
+
+	game, _ = b.FetchMetadataById(game)
+
+	return game, nil
+}
+
+func (b DmmInfoGetter) FetchMetadataById(game models.Game) (models.Game, error) {
+	if game.DmmId == "" {
+		return game, fmt.Errorf("DMM ID is required to fetch metadata by ID")
+	}
+
+	url := fmt.Sprintf("https://dlsoft.dmm.co.jp/detail/%s/", game.DmmId)
+	c := CreateCollector("*dmm.co.jp")
+
 	// 处理游戏详情页面
 	c.OnHTML("div.pageLayout__contentWrapper", func(e *colly.HTMLElement) {
-		// 使用 GoQuery 进一步解析 HTML
-		// log.Print("OnHTML 网页详情 ：", e.Text)
-		// doc, err := goquery.NewDocumentFromReader(strings.NewReader(e.Text))
-		// if err != nil {
-		// 	fmt.Printf("Error creating goquery document: %v\n", err)
-		// 	return
-		// }
-
-		// 提取游戏名称
-		// gameName := e.ChildText("h1.page-title") // 尝试使用 Colly 提取
-		// if gameName == "" {
-		// 	// 使用 GoQuery 提取标题
-		// 	doc.Find("h1.page-title").Each(func(i int, s *goquery.Selection) {
-		// 		gameName = strings.TrimSpace(s.Text())
-		// 	})
-		// }
-		// game.Name = gameName
-
-		// 提取封面图片
-		// coverURL := e.ChildAttr("div.product-main-image img", "src")
-		// if coverURL == "" {
-		// 	doc.Find("div.product-main-image img").Each(func(i int, s *goquery.Selection) {
-		// 		coverURL, _ = s.Attr("src")
-		// 	})
-		// }
-		// game.CoverURL = coverURL
 
 		// 提取公司信息
 		company := e.ChildText("div.productLayout__secondaryColumn div.contentsDetailTop__tableRow:contains('ブランド') div.contentsDetailTop__tableDataRight a")
-		// if company == "" {
-		// 	doc.Find("tr").Each(func(i int, s *goquery.Selection) {
-		// 		if strings.Contains(s.Text(), "メーカー") {
-		// 			s.Find("td").Each(func(j int, td *goquery.Selection) {
-		// 				if j == 1 { // 假设厂商在第二列
-		// 					company = strings.TrimSpace(td.Text())
-		// 				}
-		// 			})
-		// 		}
-		// 	})
-		// }
+
 		game.Company = company
 
 		genre := e.ChildText("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow:contains('ゲームジャンル') div.contentsDetailBottom__tableDataRight p")
@@ -153,12 +116,6 @@ func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (mode
 
 		// 提取简介
 		summary := e.ChildText("div.area-detail-read")
-		// summary := e.ChildAttr("div.area-detail-read", "innerHTML")
-		// if summary == "" {
-		// 	doc.Find("div.product-introduction").Each(func(i int, s *goquery.Selection) {
-		// 		summary = strings.TrimSpace(s.Text())
-		// 	})
-		// }
 		game.Summary = summary
 
 		// 提取标签
@@ -170,14 +127,13 @@ func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (mode
 			}
 
 		})
-		// e.DOM.C
-		// log.Print("OnHTML 网页标签1 ：", e.ChildText("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container"))
-		// log.Print("OnHTML 网页标签2 ：", doc.Find("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container").Text())
-
-		// doc.Find("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container li.contentsDetailBottom__tableDataItem").Each(func(i int, s *goquery.Selection) {
-		// 	tags = append(tags, strings.TrimSpace(s.Text()))
-		// })
 		game.Tags = strings.Join(tags, ",")
+		var images []string
+		e.DOM.Find("div.productLayout__primaryColumn div.slider-area li img").Each(func(i int, s *goquery.Selection) {
+			image, _ := s.Attr("src")
+			images = append(images, image)
+		})
+		game.Images = strings.Join(images, ",")
 	})
 
 	// 错误处理
@@ -196,7 +152,7 @@ func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (mode
 
 	// 检查是否成功获取了数据
 	if game.Name == "" {
-		return models.Game{}, fmt.Errorf("game not found: %s", name)
+		return models.Game{}, fmt.Errorf("game not found: %s", game.SourceID)
 	}
 
 	// 设置其他必要字段

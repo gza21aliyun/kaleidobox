@@ -223,7 +223,7 @@ func (s *ImportService) convertToGame(galgame potatovn.Galgame, tempDir string) 
 		SourceType: s.mapRssTypeToSourceType(galgame.RssType),
 		SourceID:   galgame.GetSourceID(),
 		CreatedAt:  galgame.AddTime.ToTime(),
-		UpdatedAt:  galgame.AddTime.ToTime(),
+		ReleaseAt:  galgame.ReleaseDate.Value.ToTime(),
 		Tags:       tagsString,
 		CachedAt:   time.Now(),
 	}
@@ -590,6 +590,7 @@ func (s *ImportService) convertPlayniteToGame(pg playnite.PlayniteGame) models.G
 		SourceID:   pg.SourceID,
 		CreatedAt:  pg.CreatedAt,
 		UpdatedAt:  time.Now(),
+		ReleaseAt:  pg.CreatedAt,
 		Tags:       "",
 		CachedAt:   time.Now(),
 	}

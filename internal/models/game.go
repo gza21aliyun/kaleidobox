@@ -21,8 +21,18 @@ type Game struct {
 	UpdatedAt         time.Time        `json:"updated_at"`
 	Tags              string           `json:"tags"`
 	MetaTags          string           `json:"meta_tags"`
+	Images            string           `json:"images"`
+	BangumiId         string           `json:"bangumi_id"`
+	DmmId             string           `json:"dmm_id"`
+	EroscapeId        string           `json:"eroscape_id"`
+	YmgalId           string           `json:"ymgal_id"`
+	Charactors        string           `json:"charactors"`
+	Staffs            string           `json:"staffs"`
+	ReleaseAt         time.Time        `json:"release_at"`
+	RelatedGames      string           `json:"related_games"`
 	UseLocaleEmulator bool             `json:"use_locale_emulator"` // 是否使用 Locale Emulator 转区启动
 	UseMagpie         bool             `json:"use_magpie"`          // 是否使用 Magpie 超分辨率缩放
+
 }
 
 // GameBackup 游戏存档备份记录（基于文件系统，不使用数据库）
@@ -32,4 +42,13 @@ type GameBackup struct {
 	GameID    string    `json:"game_id"`
 	Size      int64     `json:"size"`       // 备份文件大小（字节）
 	CreatedAt time.Time `json:"created_at"` // 创建时间（来自文件修改时间）
+}
+
+type Tag struct {
+	Name        string `json:"name"`
+	Category    string `json:"category"`
+	Group       string `json:"group"`
+	IsHidden    bool   `json:"is_h"`
+	IsSpoiler   bool   `json:"is_spoiler"`
+	BlockModify bool   `json:"block_modify"`
 }

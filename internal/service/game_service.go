@@ -591,6 +591,14 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 	case enums.Ymgal:
 		ymgalGetter := utils.NewYmgalInfoGetter()
 		game, e = ymgalGetter.FetchMetadata(req.ID, "")
+	case enums.Eroscape:
+		escGetter := utils.NewEroscapeInfoGetter()
+		game.EroscapeId = req.ID
+		game, e = escGetter.FetchMetadataById(game, s.config.EroscapeUseMirror)
+	case enums.Dmm:
+		dmmGetter := utils.NewDmmInfoGetter()
+		game.DmmId = req.ID
+		game, e = dmmGetter.FetchMetadataById(game)
 	}
 	return game, e
 }
@@ -603,6 +611,47 @@ func fetchFromLocal(id string) (models.Game, error) {
 
 // UpdateGameFromRemote 从远程数据源更新游戏信息
 func (s *GameService) UpdateGameFromRemote(gameID string) error {
+	// 获取现有游戏信息
+	existingGame, err := s.GetGameByID(gameID)
+	if err != nil {
+		return fmt.Errorf("failed to get game: %w", err)
+	}
+
+	if existingGame.SourceType == "" || existingGame.SourceID == "" {
+		return fmt.Errorf("游戏缺少数据源信息，无法从远程更新")
+	}
+
+	// 从远程获取最新数据
+	req := vo.MetadataRequest{
+		Source: existingGame.SourceType,
+		ID:     existingGame.SourceID,
+	}
+
+	remoteGame, err := s.FetchMetadata(req)
+	if err != nil {
+		return fmt.Errorf("failed to fetch metadata from remote: %w", err)
+	}
+
+	// 保留本地重要字段，更新远程可获取的字段
+	existingGame.Name = remoteGame.Name
+	existingGame.Company = remoteGame.Company
+	existingGame.Summary = remoteGame.Summary
+	existingGame.CachedAt = time.Now()
+
+	existingGame.CoverURL = remoteGame.CoverURL
+	if remoteGame.CoverURL != "" {
+		go s.asyncDownloadCoverImage(existingGame.ID, existingGame.Name, remoteGame.CoverURL)
+	}
+
+	if err := s.UpdateGame(existingGame); err != nil {
+		return fmt.Errorf("failed to update game: %w", err)
+	}
+
+	runtime.LogInfof(s.ctx, "UpdateGameFromRemote: successfully updated game %s from %s", existingGame.Name, existingGame.SourceType)
+	return nil
+}
+
+func (s *GameService) UpdateGamesBackground(games []models.Game, source enums.SourceType) error {
 	// 获取现有游戏信息
 	existingGame, err := s.GetGameByID(gameID)
 	if err != nil {

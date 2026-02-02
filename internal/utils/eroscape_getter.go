@@ -5,6 +5,7 @@ import (
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -98,9 +99,9 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 
 		if title != "" {
 			fmt.Println("title:", title)
-			fmt.Println("href", href)
-			fmt.Println("idParts:", idParts)
-			fmt.Println("gameId:", gameId)
+			// fmt.Println("href", href)
+			// fmt.Println("idParts:", idParts)
+			// fmt.Println("gameId:", gameId)
 
 			potentialGames = append(potentialGames, struct {
 				Title string
@@ -117,6 +118,9 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
+		sort.Slice(potentialGames, func(i, j int) bool {
+			return len(potentialGames[i].Title) < len(potentialGames[j].Title)
+		})
 		for _, gameFound := range potentialGames {
 			// 应用过滤条件
 			if strings.Contains(gameFound.Title, "セット") {

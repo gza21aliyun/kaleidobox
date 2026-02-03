@@ -5,6 +5,8 @@ import {vo} from '../models';
 import {context} from '../models';
 import {sql} from '../models';
 import {appconf} from '../models';
+import {service} from '../models';
+import {enums} from '../models';
 
 export function AddGame(arg1:models.Game):Promise<void>;
 
@@ -28,6 +30,10 @@ export function SelectGameExecutable():Promise<string>;
 
 export function SelectSaveDirectory():Promise<string>;
 
+export function SetTaskService(arg1:service.TaskService):Promise<void>;
+
 export function UpdateGame(arg1:models.Game):Promise<void>;
 
 export function UpdateGameFromRemote(arg1:string):Promise<void>;
+
+export function UpdateGamesBackground(arg1:Array<models.Game>,arg2:enums.SourceType,arg3:string):Promise<void>;

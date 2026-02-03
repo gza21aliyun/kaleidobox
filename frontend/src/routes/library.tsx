@@ -1,8 +1,9 @@
-import type { models } from "../../wailsjs/go/models";
+import { models } from "../../wailsjs/go/models";
 import type { ImportSource } from "../components/modal/GameImportModal";
 import { createRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { GetGames } from "../../wailsjs/go/service/GameService";
+import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { FilterBar } from "../components/bar/FilterBar";
 import { GameCard } from "../components/card/GameCard";
 import { AddGameModal } from "../components/modal/AddGameModal";
@@ -11,6 +12,8 @@ import { GameImportModal } from "../components/modal/GameImportModal";
 import { LibrarySkeleton } from "../components/skeleton/LibrarySkeleton";
 import { sortOptions, statusOptions } from "../consts/options";
 import { Route as rootRoute } from "./__root";
+import { TaskPanel } from "../components/panel/TaskPanel";
+import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -25,6 +28,7 @@ function LibraryPage() {
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
+  const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,6 +37,14 @@ function LibraryPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [tagsFilter, setTags] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  
+
+  
+  
+
+  
+  
 
   // 延迟显示骨架屏
   useEffect(() => {
@@ -135,6 +147,8 @@ function LibraryPage() {
     <div className={`space-y-6 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold text-brand-900 dark:text-white">游戏库</h1>
+
+        <TaskPanel />
       </div>
 
       <FilterBar
@@ -229,6 +243,22 @@ function LibraryPage() {
                       </div>
                     </div>
                   </button>
+                  <div className="border-t border-brand-200 dark:border-brand-600 my-1" />
+                  <button
+                    onClick={() => {
+                      setIsBatchUpdateOpen(true);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="flex w-full items-center px-4 py-3 text-sm text-brand-700 hover:bg-brand-100 dark:text-brand-200 dark:hover:bg-brand-600"
+                  >
+                    <div className="i-mdi-folder-multiple mr-3 text-xl text-blue-500" />
+                    <div className="text-left">
+                      <div className="font-medium">更新游戏库</div>
+                      <div className="text-xs text-brand-400 dark:text-brand-400">
+                        选择数据源更新游戏库
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}
@@ -294,6 +324,12 @@ function LibraryPage() {
         isOpen={isBatchImportOpen}
         onClose={() => setIsBatchImportOpen(false)}
         onImportComplete={loadGames}
+      />
+      <BatchUpdateModal
+        isOpen={isBatchUpdateOpen}
+        onClose={() => setIsBatchUpdateOpen(false)}
+        onUpdateComplete={loadGames}
+        games={games}
       />
     </div>
   );

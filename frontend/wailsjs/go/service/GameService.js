@@ -46,10 +46,18 @@ export function SelectSaveDirectory() {
   return window['go']['service']['GameService']['SelectSaveDirectory']();
 }
 
+export function SetTaskService(arg1) {
+  return window['go']['service']['GameService']['SetTaskService'](arg1);
+}
+
 export function UpdateGame(arg1) {
   return window['go']['service']['GameService']['UpdateGame'](arg1);
 }
 
 export function UpdateGameFromRemote(arg1) {
   return window['go']['service']['GameService']['UpdateGameFromRemote'](arg1);
+}
+
+export function UpdateGamesBackground(arg1, arg2, arg3) {
+  return window['go']['service']['GameService']['UpdateGamesBackground'](arg1, arg2, arg3);
 }

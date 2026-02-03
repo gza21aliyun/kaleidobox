@@ -15,14 +15,17 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
+
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type GameService struct {
-	ctx    context.Context
-	db     *sql.DB
-	config *appconf.AppConfig
+	ctx         context.Context
+	db          *sql.DB
+	config      *appconf.AppConfig
+	taskService *TaskService // 添加任务服务引用
 }
 
 func NewGameService() *GameService {
@@ -651,43 +654,196 @@ func (s *GameService) UpdateGameFromRemote(gameID string) error {
 	return nil
 }
 
-func (s *GameService) UpdateGamesBackground(games []models.Game, source enums.SourceType) error {
-	// 获取现有游戏信息
-	existingGame, err := s.GetGameByID(gameID)
-	if err != nil {
-		return fmt.Errorf("failed to get game: %w", err)
+func (s *GameService) UpdateGamesBackground(games []models.Game, source enums.SourceType, id string) error {
+
+	s.taskService.RegisterTaskFunction(id, s.createGameUpdateTaskFunction())
+	taskData := map[string]interface{}{
+		"games":  games,
+		"source": source,
 	}
-
-	if existingGame.SourceType == "" || existingGame.SourceID == "" {
-		return fmt.Errorf("游戏缺少数据源信息，无法从远程更新")
-	}
-
-	// 从远程获取最新数据
-	req := vo.MetadataRequest{
-		Source: existingGame.SourceType,
-		ID:     existingGame.SourceID,
-	}
-
-	remoteGame, err := s.FetchMetadata(req)
-	if err != nil {
-		return fmt.Errorf("failed to fetch metadata from remote: %w", err)
-	}
-
-	// 保留本地重要字段，更新远程可获取的字段
-	existingGame.Name = remoteGame.Name
-	existingGame.Company = remoteGame.Company
-	existingGame.Summary = remoteGame.Summary
-	existingGame.CachedAt = time.Now()
-
-	existingGame.CoverURL = remoteGame.CoverURL
-	if remoteGame.CoverURL != "" {
-		go s.asyncDownloadCoverImage(existingGame.ID, existingGame.Name, remoteGame.CoverURL)
-	}
-
-	if err := s.UpdateGame(existingGame); err != nil {
-		return fmt.Errorf("failed to update game: %w", err)
-	}
-
-	runtime.LogInfof(s.ctx, "UpdateGameFromRemote: successfully updated game %s from %s", existingGame.Name, existingGame.SourceType)
-	return nil
+	return s.taskService.StartTask("game_updates", id, 1000, enums.Games, len(games), taskData)
+	// return nil
 }
+
+// 设置任务服务引用
+func (s *GameService) SetTaskService(taskService *TaskService) {
+	s.taskService = taskService
+	// 注册游戏更新任务函数
+}
+
+func mergeStrings(tagStr1, tagStr2 string) string {
+	// 分割字符串为数组
+	tags1 := strings.Split(tagStr1, ",")
+	tags2 := strings.Split(tagStr2, ",")
+
+	// 使用map去重
+	tagSet := make(map[string]struct{})
+
+	for _, tags := range [][]string{tags1, tags2} {
+		for _, tag := range tags {
+			trimmedTag := strings.TrimSpace(tag)
+			if trimmedTag != "" {
+				tagSet[trimmedTag] = struct{}{}
+			}
+		}
+	}
+
+	// 转换为结果数组
+	uniqueTags := make([]string, 0, len(tagSet))
+	for tag := range tagSet {
+		uniqueTags = append(uniqueTags, tag)
+	}
+
+	// 重新组合为字符串
+	return strings.Join(uniqueTags, ",")
+}
+
+// 创建游戏更新任务函数
+func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
+	return func(ctx context.Context, data json.RawMessage, updateProgress func(completed int, total int,
+		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus)) error {
+		// 定义结构来解组任务数据
+		var taskData struct {
+			Games  []models.Game    `json:"games"`
+			Source enums.SourceType `json:"source"`
+		}
+
+		if err := json.Unmarshal(data, &taskData); err != nil {
+			return fmt.Errorf("解析任务数据失败: %v", err)
+		}
+
+		// 实现UpdateGamesBackground的核心逻辑
+		for index, ngame := range taskData.Games {
+			// 检查是否被取消（通过上下文检查）
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+
+			updateProgress(index, len(taskData.Games), fmt.Sprintf("更新游戏: %s", ngame.Name),
+				"", ngame.ID, enums.Initial)
+
+			var id = ""
+
+			if taskData.Source == ngame.SourceType {
+				id = ngame.SourceID
+				log.Printf("TaskFunc 01 id found 11 for game %s, id: %s", ngame.Name, id)
+			} else if taskData.Source == enums.Eroscape && strings.TrimSpace(ngame.EroscapeId) != "" {
+				id = ngame.EroscapeId
+				log.Printf("TaskFunc 02 id found 12 for game %s, id: %s", ngame.Name, id)
+			} else if taskData.Source == enums.Ymgal && strings.TrimSpace(ngame.YmgalId) != "" {
+				id = ngame.YmgalId
+				log.Printf("TaskFunc 03 id found 13 for game %s, id: %s", ngame.Name, id)
+			} else if taskData.Source == enums.Dmm && strings.TrimSpace(ngame.DmmId) != "" {
+				id = ngame.DmmId
+				log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
+			}
+
+			var updatedGame models.Game
+			var err error
+
+			log.Printf("TaskFunc 11 fetch metadata 01 for game %s, id: %s, source: %v", ngame.Name, id, taskData.Source)
+			if strings.TrimSpace(id) != "" {
+				log.Printf("TaskFunc 12 fetch metadata 02 for game %s", ngame.Name)
+				// 通过ID获取元数据
+				req := vo.MetadataRequest{
+					Source: taskData.Source,
+					ID:     id,
+				}
+				updatedGame, err = s.FetchMetadata(req)
+				if err != nil {
+
+					log.Printf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err)
+					updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
+						ngame.ID, enums.Error)
+					continue
+				}
+			} else {
+				log.Printf("TaskFunc 13 fetch metadata 03 for game %s", ngame.Name)
+				// 通过名称获取元数据
+				if taskData.Source == enums.Bangumi {
+					log.Printf("TaskFunc 21 fetch for game %s", ngame.Name)
+					bgmGetter := utils.NewBangumiInfoGetter()
+					updatedGame, _ = bgmGetter.FetchMetadataByName(ngame.Name, s.config.BangumiAccessToken)
+				} else if taskData.Source == enums.VNDB {
+					log.Printf("TaskFunc 22 fetch for game %s", ngame.Name)
+					vndbGetter := utils.NewVNDBInfoGetter()
+					updatedGame, _ = vndbGetter.FetchMetadataByName(ngame.Name, s.config.VNDBAccessToken)
+				} else if taskData.Source == enums.Ymgal {
+					log.Printf("TaskFunc 23 fetch for game %s", ngame.Name)
+					ymgalGetter := utils.NewYmgalInfoGetter()
+					updatedGame, _ = ymgalGetter.FetchMetadataByName(ngame.Name, "")
+				} else if taskData.Source == enums.Eroscape {
+					log.Printf("TaskFunc 24 fetch for game %s", ngame.Name)
+					escGetter := utils.NewEroscapeInfoGetter()
+					esc, _ := escGetter.FetchMetadataByName(ngame.Name, true, s.config.EroscapeUseMirror)
+					updatedGame = esc
+				} else if taskData.Source == enums.Dmm {
+					log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
+					dmmGetter := utils.NewDmmInfoGetter()
+					dmm, _ := dmmGetter.FetchMetadataByName(ngame.Name, true)
+					updatedGame = dmm
+				} else {
+					log.Printf("TaskFunc 26 fetch for game %s", ngame.Name)
+					return errors.New("未知的来源 ")
+				}
+			}
+			log.Printf("TaskFunc 31 fetch for game %s, id:%s", ngame.Name, updatedGame.SourceID)
+
+			updatedGame.ID = ngame.ID
+			updatedGame.Path = ngame.Path
+			if updatedGame.BangumiId == "" {
+				updatedGame.BangumiId = ngame.BangumiId
+			}
+			if updatedGame.DmmId == "" {
+				updatedGame.DmmId = ngame.DmmId
+			}
+			if updatedGame.EroscapeId == "" {
+				updatedGame.EroscapeId = ngame.EroscapeId
+			}
+
+			updatedGame.CreatedAt = ngame.CreatedAt
+			updatedGame.SourceType = ngame.SourceType
+			updatedGame.SourceID = ngame.SourceID
+			updatedGame.CachedAt = time.Now()
+			updatedGame.Tags = mergeStrings(updatedGame.Tags, ngame.Tags)
+			updatedGame.Charactors = mergeStrings(updatedGame.Charactors, ngame.Charactors)
+			updatedGame.Staffs = mergeStrings(updatedGame.Staffs, ngame.Staffs)
+			updatedGame.Images = mergeStrings(updatedGame.Images, ngame.Images)
+
+			updatedGame.SavePath = ngame.SavePath
+			updatedGame.ReleaseAt = ngame.ReleaseAt
+			updatedGame.Status = ngame.Status
+			updatedGame.Summary = ngame.Summary
+			updatedGame.UseMagpie = ngame.UseMagpie
+			updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
+
+			// 更新游戏
+			if err := s.UpdateGame(updatedGame); err != nil {
+				log.Printf("Failed to update game %s: %v", updatedGame.Name, err)
+				continue
+			}
+			updateProgress(index, len(taskData.Games), "", fmt.Sprintf("complete for game %s by ID: %v", ngame.Name, err),
+				ngame.ID, enums.Completed)
+
+		}
+
+		// 标记完成
+		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏更新完成", "", "", enums.Completed)
+		return nil
+	}
+}
+
+// 新增方法：启动游戏批量更新任务
+// func (s *GameService) StartGameUpdateTask(name string, games []models.Game, sourceText string) error {
+// 	var source enums.SourceType = enums.SourceType(sourceText)
+// 	id := uuid.New().String()
+// 	s.taskService.RegisterTaskFunction(id, s.createGameUpdateTaskFunction())
+// 	taskData := map[string]interface{}{
+// 		"games":  games,
+// 		"source": source,
+// 	}
+
+// 	return s.taskService.StartTask(name, id, 1000, enums.Games, len(games), taskData)
+// }

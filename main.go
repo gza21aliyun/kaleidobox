@@ -70,6 +70,7 @@ func main() {
 	versionService := service.NewVersionService()
 	templateService := service.NewTemplateService()
 	updateService := service.NewUpdateService()
+	taskService := service.NewTaskService() // 添加任务服务
 
 	// 创建本地文件处理器
 	localFileHandler, err := utils.NewLocalFileHandler()
@@ -197,7 +198,9 @@ func main() {
 			importService.Init(ctx, db, config, gameService)
 			versionService.Init(ctx)
 			templateService.Init(ctx, db, config)
+			taskService.Init(ctx, db, config) // 初始化任务服务
 			updateService.Init(ctx, configService)
+			gameService.SetTaskService(taskService)
 			// 设置 StartService 的 BackupService 依赖
 			startService.SetBackupService(backupService)
 			// 设置 ImportService 的 StartService 依赖（用于导入游玩记录）
@@ -265,12 +268,16 @@ func main() {
 			versionService,
 			templateService,
 			updateService,
+			taskService,
 		},
 		EnumBind: []interface{}{
 			enums.AllSourceTypes,
 			enums.AllPeriodTypes,
 			enums.Prompts,
 			enums.AllGameStatuses,
+			enums.AllTaskStatus,
+			enums.AllTaskTypes,
+			enums.AllStaffRoles,
 		},
 	})
 

@@ -1,48 +1,37 @@
-import type { models, service } from "../../../wailsjs/go/models";
-import { useRef, useState } from "react";
+import { models, service } from "../../../wailsjs/go/models";
+import { useRef, useState, useEffect } from "react"; // 添加useEffect
 import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
+import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from "../../../wailsjs/runtime";
 
-import { FetchMetadata, FetchMetadataByName } from "../../../wailsjs/go/service/GameService";
+import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground } from "../../../wailsjs/go/service/GameService";
 import {
-  BatchImportGames,
-  ScanLibraryDirectory,
-  SelectLibraryDirectory,
-} from "../../../wailsjs/go/service/ImportService";
+  CancelTask
+} from "../../../wailsjs/go/service/TaskService";
 import { BetterSelect } from "../ui/BetterSelect";
 
 interface BatchUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdateComplete: () => void;
+  games: models.Game[];
 }
 
-// type Step = "select" | "scan" | "preview" | "match" | "importing" | "result";
 
-// export class GameFetchedData {
-//     GameId: string;
-//     DataFound: vo.GameMetadataFromWebVO[]
-
-//     constructor(gameId: string, dataFound: vo.GameMetadataFromWebVO[]) {
-//         this.GameId = gameId;
-//         this.DataFound = dataFound;
-//     }
-// }
-
-
-export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpdateModalProps) {
+export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: BatchUpdateModalProps) {
 //   const [step, setStep] = useState<Step>("select");
-  const [libraryPath, setLibraryPath] = useState("");
-  const [candidates, setCandidates] = useState<models.Game[]>([]);
-  const [importResult, setImportResult] = useState<service.ImportResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0, gameName: "" });
+//   const [libraryPath, setLibraryPath] = useState("");
+  const [candidates, setCandidates] = useState<models.Game[]>(games);
+//   const [importResult, setImportResult] = useState<service.ImportResult | null>(null);
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0, gameName: "" });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [updatedIds, setUpdatedIds] = useState<string[]>([]);
   const [matchedIds, setMatchedIds] = useState<string[]>([]);
   const [failedIds, setFailedIds] = useState<string[]>([]);
   const [source, setSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
+//   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 //   const [manualData, setManualData] = useState<GameFetchedData[]>([]);
   const [manualData, setManualData] = useState<vo.GameMetadataFromWebVO[]>([]);
 
@@ -56,9 +45,60 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpd
   const [isSearching, setIsSearching] = useState(false);
   const [manualId, setManualId] = useState("");
   const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
+  const [taskId, setTaskId] = useState("");
+  const [itemIdMatching, setItemIdMatching] = useState("")
+
+  // Move this useEffect to the top level, right after all useState declarations
+    useEffect(() => {
+    const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
+        console.log("Received task update:", data);
+        // setCurrentTask(task);
+
+        // 将接收到的数据转换为Task对象
+        // 注意：使用正确的语法从data对象获取值
+        const task : models.TaskNotice = new models.TaskNotice(data);
+        if (task.id === taskId) {
+            if (task.item_status === enums.TaskStatus.INITIAL && task.item_id !== "") {
+                setItemIdMatching(task.item_id)
+            }
+            if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id !== "") {
+                setUpdatedIds([...updatedIds, task.item_id])
+            }
+            if (task.item_status === enums.TaskStatus.ERROR && task.item_id !== "") {
+                setFailedIds([...failedIds, task.item_id])
+            }
+            if (task.item_id == "") {
+                setItemIdMatching("")
+            }
+        }
+        
+        
+        
+    });
+
+    return () => {
+        if (unlistenTaskUpdate) {
+        unlistenTaskUpdate(); // 取消事件监听
+        }
+    };
+    }, [updatedIds, failedIds]);
+
+  // 当isOpen变为true时，重置候选游戏列表
+  useEffect(() => {
+    if (isOpen) {
+      setCandidates(games);
+      // 重置相关状态
+      setSelectedIds(games.map(game => game.id)); // 默认选中所有游戏
+      setUpdatedIds([]);
+      setMatchedIds([]);
+      setFailedIds([]);
+    }
+  }, [isOpen, games]); // 当isOpen或games变化时执行
 
   if (!isOpen)
     return null;
+
+    
 
 
   const isMatched = (c: models.Game, source: enums.SourceType) => {
@@ -80,138 +120,63 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpd
         }
         return false;
     }
-  const handleUpdate = async () => {
-    // setStep("match");
-    abortMatchRef.current = false;
 
-    // 只匹配选中且状态为 pending 的项目（跳过已手动匹配的）
-    const toMatchCandidates = candidates.filter(c => selectedIds.includes(c.id));
-    setMatchProgress({ current: 0, total: toMatchCandidates.length, gameName: "" });
-
-    const updatedCandidates = [...candidates];
-    let matchedCount = 0;
-
-    for (let i = 0; i < candidates.length; i++) {
-      // 检查是否需要中断
-      if (abortMatchRef.current) {
-        break;
-      }
-
-      // 跳过未选中或已经匹配过的（包括手动匹配）
-      if (!candidates[i].isSelected || candidates[i].matchStatus === "matched" || candidates[i].matchStatus === "manual") {
-        continue;
-      }
-
-      matchedCount++;
-      setMatchProgress(prev => ({
-        ...prev,
-        current: matchedCount,
-        gameName: candidates[i].name,
-      }));
-
-      try {
-        // 使用现有的 FetchMetadataByName 获取所有源的结果
-        const results = await FetchMetadataByName(candidates[i].name);
-
-        if (results && results.length > 0) {
-          // 按优先级选择：Bangumi > VNDB > Ymgal
-          const priorityOrder = [enums.SourceType.BANGUMI, enums.SourceType.VNDB, enums.SourceType.YMGAL];
-          let bestMatch: vo.GameMetadataFromWebVO | null = null;
-
-          for (const source of priorityOrder) {
-            const match = results.find(r => r.Source === source && r.Game);
-            if (match) {
-              bestMatch = match;
-              break;
-            }
-          }
-
-          if (bestMatch && bestMatch.Game) {
-            updatedCandidates[i] = {
-              ...updatedCandidates[i],
-              matchedGame: bestMatch.Game,
-              matchSource: bestMatch.Source,
-              matchStatus: "matched",
-              allMatches: results,
-            };
-          }
-          else {
-            updatedCandidates[i] = {
-              ...updatedCandidates[i],
-              matchStatus: "not_found",
-              allMatches: results,
-            };
-          }
-        }
-        else {
-          updatedCandidates[i] = {
-            ...updatedCandidates[i],
-            matchStatus: "not_found",
-          };
-        }
-      }
-      catch (error) {
-        console.error(`Failed to match ${candidates[i].searchName}:`, error);
-        updatedCandidates[i] = {
-          ...updatedCandidates[i],
-          matchStatus: "error",
-        };
-      }
-
-      setCandidates([...updatedCandidates]);
-
-      // 请求间隔，避免触发限流（如果已中断则不等待）
-      if (!abortMatchRef.current) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
+  const cancelUpdate = () => { 
+    if (taskId !== "") {
+        CancelTask(taskId)
     }
-
+    
+  };
+  const handleUpdate = async () => {
+    const uuid = crypto.randomUUID();
+    UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), source, uuid)
+    setTaskId(uuid);
   };
 
   const handleImport = async () => {
-    setStep("importing");
-    setIsLoading(true);
+    // setStep("importing");
+    // setIsLoading(true);
 
-    try {
-      // 转换为后端需要的格式
-      const importCandidates: vo.BatchImportCandidate[] = candidates
-        .filter(c => c.isSelected)
-        .map((c) => {
-          const candidate = new vo.BatchImportCandidate({
-            folder_path: c.folderPath,
-            folder_name: c.folderName,
-            executables: c.executables,
-            selected_exe: c.selectedExe,
-            search_name: c.searchName,
-            is_selected: c.isSelected,
-            match_status: c.matchStatus,
-          });
-          if (c.matchedGame) {
-            candidate.matched_game = c.matchedGame;
-          }
-          if (c.matchSource) {
-            candidate.match_source = c.matchSource;
-          }
-          return candidate;
-        });
+    // try {
+    //   // 转换为后端需要的格式
+    //   const importCandidates: vo.BatchImportCandidate[] = candidates
+    //     .filter(c => c.isSelected)
+    //     .map((c) => {
+    //       const candidate = new vo.BatchImportCandidate({
+    //         folder_path: c.folderPath,
+    //         folder_name: c.folderName,
+    //         executables: c.executables,
+    //         selected_exe: c.selectedExe,
+    //         search_name: c.searchName,
+    //         is_selected: c.isSelected,
+    //         match_status: c.matchStatus,
+    //       });
+    //       if (c.matchedGame) {
+    //         candidate.matched_game = c.matchedGame;
+    //       }
+    //       if (c.matchSource) {
+    //         candidate.match_source = c.matchSource;
+    //       }
+    //       return candidate;
+    //     });
 
-      const result = await BatchImportGames(importCandidates);
-      setImportResult(result);
-      setStep("result");
+    //   const result = await BatchImportGames(importCandidates);
+    //   setImportResult(result);
+    //   setStep("result");
 
-      if (result.success > 0) {
-        toast.success(`成功导入 ${result.success} 个游戏`);
-        onUpdateComplete();
-      }
-    }
-    catch (error) {
-      console.error("Failed to import:", error);
-      toast.error("导入失败");
-      setStep("preview");
-    }
-    finally {
-      setIsLoading(false);
-    }
+    //   if (result.success > 0) {
+    //     toast.success(`成功导入 ${result.success} 个游戏`);
+    //     onUpdateComplete();
+    //   }
+    // }
+    // catch (error) {
+    //   console.error("Failed to import:", error);
+    //   toast.error("导入失败");
+    //   setStep("preview");
+    // }
+    // finally {
+    //   setIsLoading(false);
+    // }
   };
 
   const toggleCandidate = (id: string) => {
@@ -283,6 +248,8 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpd
     if (!manualId || manualSelectIndex === null)
       return;
     setIsSearching(true);
+    
+    
     try {
       const request = new vo.MetadataRequest({
         source: manualSource,
@@ -310,10 +277,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpd
     abortMatchRef.current = true;
 
     // setStep("select");
-    setLibraryPath("");
+    // setLibraryPath("");
     setCandidates([]);
-    setImportResult(null);
-    setMatchProgress({ current: 0, total: 0, gameName: "" });
+    // setImportResult(null);
+    // setMatchProgress({ current: 0, total: 0, gameName: "" });
     setShowManualSelect(false);
     setManualSelectIndex(null);
     onClose();
@@ -331,11 +298,43 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpd
       <div className="w-full max-w-4xl max-h-[90vh] rounded-xl bg-white shadow-2xl dark:bg-brand-800 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-brand-200 dark:border-brand-700">
-          <div className="flex items-center gap-3">
-            <div className="i-mdi-folder-multiple text-3xl text-success-500" />
-            <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
-              批量更新游戏库
-            </h2>
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
+                            <div className="i-mdi-folder-multiple text-3xl text-blue-500" />
+                            <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
+                            批量更新游戏库
+                            </h2>
+                        </div>
+                        <div>
+            </div>
+          
+            <div className="min-w-[150px] rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3"> {/* 调整内边距 */}
+              <div className="flex items-center gap-2"> {/* 水平布局放置标签和选择器 */}
+                <span className="text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap">数据源:</span> {/* 标签移到左侧 */}
+                <BetterSelect
+                  value={source}
+                  onChange={(value) => {
+                    if (source !== value as enums.SourceType) {
+                        setSource(value as enums.SourceType)
+                        setUpdatedIds([])
+                        setItemIdMatching("")
+                        setFailedIds([])
+                        setTaskId("")
+                    }
+                    
+                  }}
+                  options={[
+                    { value: enums.SourceType.BANGUMI, label: "Bangumi" },
+                    { value: enums.SourceType.VNDB, label: "VNDB" },
+                    { value: enums.SourceType.YMGAL, label: "月幕Gal" },
+                    { value: enums.SourceType.DMM, label: "DMM" },
+                    { value: enums.SourceType.EROSCAPE, label: "EroScape" },
+                  ]}
+                  className="min-w-[200px] flex-1" // 设置最小宽度并允许伸缩
+                />
+              </div>
+            </div>
+                
           </div>
           <button
             onClick={resetAndClose}
@@ -476,6 +475,18 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpd
                                     已匹配
                                   </span>
                                 )}
+                                {itemIdMatching == candidate.id && (
+                                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                        <div className="i-mdi-sync mr-1 animate-spin" />
+                                        更新中
+                                    </span>
+                                )}
+                                {failedIds.includes(candidate.id) && (
+                                    <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-1 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                        <div className="i-mdi-alert-circle mr-1" />
+                                        已出错
+                                    </span>
+                                    )}
                                 {updatedIds.includes(candidate.id) && (
                                   <span className="inline-flex items-center rounded-full bg-success-100 px-2 py-1 text-xs text-success-700 dark:bg-success-900/30 dark:text-success-400">
                                     <div className="i-mdi-check-circle mr-1" />
@@ -529,7 +540,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpd
                   </button> */}
                   <button
                     onClick={cancelUpdate}
-                    disabled={selectedCount === 0}
+                    disabled={selectedCount === 0 && taskId !== ""}
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-success-600 hover:bg-success-700"
                   >
                     取消更新
@@ -630,23 +641,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete }: BatchUpd
                     </div>
                   </div>
 
-                  {/* 跳过元数据 */}
-                  <button
-                    onClick={() => {
-                      const updated = [...candidates];
-                      updated[manualSelectIndex] = {
-                        ...updated[manualSelectIndex],
-                        matchedGame: null,
-                        matchSource: null,
-                        matchStatus: "not_found",
-                      };
-                      setCandidates(updated);
-                      setShowManualSelect(false);
-                    }}
-                    className="w-full text-center text-sm text-brand-400 hover:text-brand-600 py-2"
-                  >
-                    不匹配元数据，仅导入路径
-                  </button>
+                  
                 </>
               )}
             </div>

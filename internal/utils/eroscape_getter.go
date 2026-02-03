@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"net/http"
@@ -53,9 +55,11 @@ func CreateCollector(domain string) *colly.Collector {
 }
 
 func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, useMirror bool) (models.Game, error) {
+	log.Println("Fetching 01 metadata by name:", name)
 	if !isEnabled { // 禁用的话，就返回一个空游戏
 		return models.Game{}, nil
 	}
+	log.Println("Fetching 02 metadata by name:", name)
 
 	var mirror string = "https://koko.kyara.top/"
 	var original string = "https://erogamescape.dyndns.org/"
@@ -131,6 +135,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 			// }
 			game.Name = gameFound.Title
 			game.SourceID = gameFound.GameId
+			game.SourceType = enums.Eroscape
 			game.EroscapeId = gameFound.GameId
 			// c.Visit(gameFound.Link)
 			return
@@ -150,6 +155,11 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool, use
 
 	// 等待收集完成
 	c.Wait()
+	if game.SourceID == "" {
+		fmt.Printf("id is empty for game %s", game.Name)
+		err = errors.New("id is empty")
+		return game, err
+	}
 	game, _ = b.FetchMetadataById(game, useMirror)
 
 	return game, nil

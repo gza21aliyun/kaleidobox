@@ -115,6 +115,21 @@ export namespace appconf {
 
 export namespace enums {
 	
+	export enum TaskType {
+	    GAMES = "游戏",
+	    CHARACTORS = "角色",
+	    STAFFS = "工作人员",
+	    IMAGES = "图片",
+	    RELATIONS = "关系",
+	}
+	export enum StaffRole {
+	    STAFF = "工作人员",
+	    CV = "声优",
+	    SCENEARIO = "剧本",
+	    DIRECTOR = "监督",
+	    COMPOSER = "音乐",
+	    CHARA_DESIGN = "人设",
+	}
 	export enum SourceType {
 	    LOCAL = "local",
 	    BANGUMI = "bangumi",
@@ -139,6 +154,14 @@ export namespace enums {
 	    PLAYING = "playing",
 	    COMPLETED = "completed",
 	    ON_HOLD = "on_hold",
+	}
+	export enum TaskStatus {
+	    INITIAL = "初始",
+	    STARTED = "已开始",
+	    PAUSED = "暂停",
+	    COMPLETED = "完成",
+	    ERROR = "错误",
+	    CANCELED = "取消",
 	}
 
 }
@@ -301,6 +324,74 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class Task {
+	    id: string;
+	    name: string;
+	    status: enums.TaskStatus;
+	    type: enums.TaskType;
+	    completed: number;
+	    total: number;
+	    working_on: string;
+	    description: string;
+	    warning: string;
+	    deley: number;
+	    data: any;
+	    item_id: string;
+	    item_status: enums.TaskStatus;
+	
+	    static createFrom(source: any = {}) {
+	        return new Task(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.status = source["status"];
+	        this.type = source["type"];
+	        this.completed = source["completed"];
+	        this.total = source["total"];
+	        this.working_on = source["working_on"];
+	        this.description = source["description"];
+	        this.warning = source["warning"];
+	        this.deley = source["deley"];
+	        this.data = source["data"];
+	        this.item_id = source["item_id"];
+	        this.item_status = source["item_status"];
+	    }
+	}
+	export class TaskNotice {
+	    id: string;
+	    name: string;
+	    status: enums.TaskStatus;
+	    type: enums.TaskType;
+	    completed: number;
+	    total: number;
+	    working_on: string;
+	    description: string;
+	    warning: string;
+	    item_id: string;
+	    item_status: enums.TaskStatus;
+	
+	    static createFrom(source: any = {}) {
+	        return new TaskNotice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.status = source["status"];
+	        this.type = source["type"];
+	        this.completed = source["completed"];
+	        this.total = source["total"];
+	        this.working_on = source["working_on"];
+	        this.description = source["description"];
+	        this.warning = source["warning"];
+	        this.item_id = source["item_id"];
+	        this.item_status = source["item_status"];
+	    }
+	}
 	export class User {
 	    id: string;
 	    created_at: time.Time;
@@ -443,6 +534,18 @@ export namespace service {
 	
 	    static createFrom(source: any = {}) {
 	        return new StartService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class TaskService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new TaskService(source);
 	    }
 	
 	    constructor(source: any = {}) {

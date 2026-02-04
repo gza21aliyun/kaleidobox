@@ -338,6 +338,7 @@ export namespace models {
 	    data: any;
 	    item_id: string;
 	    item_status: enums.TaskStatus;
+	    item_data: any;
 	
 	    static createFrom(source: any = {}) {
 	        return new Task(source);
@@ -358,6 +359,7 @@ export namespace models {
 	        this.data = source["data"];
 	        this.item_id = source["item_id"];
 	        this.item_status = source["item_status"];
+	        this.item_data = source["item_data"];
 	    }
 	}
 	export class TaskNotice {
@@ -372,6 +374,7 @@ export namespace models {
 	    warning: string;
 	    item_id: string;
 	    item_status: enums.TaskStatus;
+	    item_data: any;
 	
 	    static createFrom(source: any = {}) {
 	        return new TaskNotice(source);
@@ -390,6 +393,7 @@ export namespace models {
 	        this.warning = source["warning"];
 	        this.item_id = source["item_id"];
 	        this.item_status = source["item_status"];
+	        this.item_data = source["item_data"];
 	    }
 	}
 	export class User {

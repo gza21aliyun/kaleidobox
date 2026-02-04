@@ -16,6 +16,8 @@ export function FetchMetadata(arg1:vo.MetadataRequest):Promise<models.Game>;
 
 export function FetchMetadataByName(arg1:string):Promise<Array<vo.GameMetadataFromWebVO>>;
 
+export function FillGame(arg1:models.Game,arg2:models.Game):Promise<void>;
+
 export function GetGameByID(arg1:string):Promise<models.Game>;
 
 export function GetGames():Promise<Array<models.Game>>;

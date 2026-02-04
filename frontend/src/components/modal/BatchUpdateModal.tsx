@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
 import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from "../../../wailsjs/runtime";
 
-import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground } from "../../../wailsjs/go/service/GameService";
+import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FillGame } from "../../../wailsjs/go/service/GameService";
 import {
   CancelTask
 } from "../../../wailsjs/go/service/TaskService";
@@ -45,7 +45,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   const [isSearching, setIsSearching] = useState(false);
   const [manualId, setManualId] = useState("");
   const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
-  const [taskId, setTaskId] = useState("");
+  const taskId = useRef("");
   const [itemIdMatching, setItemIdMatching] = useState("")
 
   // Move this useEffect to the top level, right after all useState declarations
@@ -57,12 +57,29 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
         // 将接收到的数据转换为Task对象
         // 注意：使用正确的语法从data对象获取值
         const task : models.TaskNotice = new models.TaskNotice(data);
-        if (task.id === taskId) {
+        
+        // console.log("task:", realTask);
+        if (task.status === enums.TaskStatus.STARTED && task.item_id === "") {
+            taskId.current = task.id;
+            // console.log("set taskId:", task.id);
+        }
+        // console.log("received taskid:" + task.id + " current taskid:" + taskId + ", item_id:" + task.item_id +  " item_status:" + task.item_status)
+        if (task.id === taskId.current) {
             if (task.item_status === enums.TaskStatus.INITIAL && task.item_id !== "") {
                 setItemIdMatching(task.item_id)
             }
             if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id !== "") {
+                const newGame : models.Game = task.item_data as models.Game;
+                console.log("newGame:", newGame)
+                const games = [...candidates]
+                const oldGame = games.find(game => game.id === task.item_id)
+                if (oldGame) {
+                    const index = games.indexOf(oldGame)
+                    games[index] = newGame
+                }
+                setCandidates(games)
                 setUpdatedIds([...updatedIds, task.item_id])
+
             }
             if (task.item_status === enums.TaskStatus.ERROR && task.item_id !== "") {
                 setFailedIds([...failedIds, task.item_id])
@@ -122,15 +139,19 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
     }
 
   const cancelUpdate = () => { 
-    if (taskId !== "") {
-        CancelTask(taskId)
+    if (taskId.current !== "") {
+        CancelTask(taskId.current)
     }
     
   };
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     const uuid = crypto.randomUUID();
+    // setTaskId(uuid);
+    // console.log("create uuid  :" + uuid + " current taskId:" + taskId)
     UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), source, uuid)
-    setTaskId(uuid);
+    // console.log("create uuid :" + uuid)
+    
+    
   };
 
   const handleImport = async () => {
@@ -319,7 +340,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                         setUpdatedIds([])
                         setItemIdMatching("")
                         setFailedIds([])
-                        setTaskId("")
+                        taskId.current = ""
                     }
                     
                   }}
@@ -469,36 +490,35 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                                 })()}
                               </td>
                               <td className="px-3 py-2 text-center">
-                                {isMatched(candidate, source) && !updatedIds.includes(candidate.id) && (
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-900/30 dark:text-gray-400">
-                                    <div className="i-mdi-clock-outline mr-1" />
-                                    已匹配
-                                  </span>
-                                )}
-                                {itemIdMatching == candidate.id && (
-                                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                        <div className="i-mdi-sync mr-1 animate-spin" />
-                                        更新中
-                                    </span>
-                                )}
-                                {failedIds.includes(candidate.id) && (
-                                    <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-1 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                        <div className="i-mdi-alert-circle mr-1" />
-                                        已出错
-                                    </span>
-                                    )}
-                                {updatedIds.includes(candidate.id) && (
-                                  <span className="inline-flex items-center rounded-full bg-success-100 px-2 py-1 text-xs text-success-700 dark:bg-success-900/30 dark:text-success-400">
-                                    <div className="i-mdi-check-circle mr-1" />
-                                    已更新
-                                  </span>
-                                )}
-                                {!isMatched(candidate, source)  && (
-                                  <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                                    <div className="i-mdi-alert-circle mr-1" />
-                                    未找到
-                                  </span>
-                                )}
+                                {
+                                    itemIdMatching == candidate.id ? (
+                                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                            <div className="i-mdi-sync mr-1 animate-spin" />
+                                            更新中
+                                        </span>
+                                    ) : failedIds.includes(candidate.id) ? (
+                                        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-1 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                            <div className="i-mdi-alert-circle mr-1" />
+                                            已出错
+                                        </span>
+                                    ) : updatedIds.includes(candidate.id) ? (
+                                        <span className="inline-flex items-center rounded-full bg-success-100 px-2 py-1 text-xs text-success-700 dark:bg-success-900/30 dark:text-success-400">
+                                            <div className="i-mdi-check-circle mr-1" />
+                                            已更新
+                                        </span>
+                                    ) : !isMatched(candidate, source) ? ( 
+                                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                                            <div className="i-mdi-alert-circle mr-1" />
+                                            未找到
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-900/30 dark:text-gray-400">
+                                            <div className="i-mdi-clock-outline mr-1" />
+                                            已匹配
+                                        </span>
+                                    )
+                                }
+
                               </td>
                               <td className="px-3 py-2 text-center">
                                 <button
@@ -540,7 +560,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                   </button> */}
                   <button
                     onClick={cancelUpdate}
-                    disabled={selectedCount === 0 && taskId !== ""}
+                    disabled={selectedCount === 0 && taskId.current !== ""}
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-success-600 hover:bg-success-700"
                   >
                     取消更新

@@ -66,12 +66,13 @@ export function GameInfoPanel({
                     )}
                     </div>
                 </div>
+                {/* <div>{"cover:" + game.cover_url + "\n images:" + game.images}</div> */}
 
                 { game.images.length > 0 && (
                     <div className="flex flex-col gap-2">
                         <h3 className="text-sm font-medium text-brand-600 dark:text-brand-400">图片</h3>
                         <div className="grid grid-cols-3 gap-2">
-                            {game.images.split(",").filter(img => img != game.cover_url).map((image, index) => (
+                            {game.images.split(",").filter(img => img != game.cover_url && !img.endsWith("pl.jpg")).map((image, index) => (
                                 <img
                                     key={index}
                                     src={image}

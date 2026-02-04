@@ -19,7 +19,7 @@ import (
 // TaskFunction 是任务执行函数的类型定义，接受上下文、任务数据和进度更新函数
 type TaskFunction func(ctx context.Context, data json.RawMessage,
 	updateProgress func(completed int, total int, workingOn string,
-		warning string, itemId string, itemEvent enums.TaskStatus)) error
+		warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error
 
 type TaskService struct {
 	ctx    context.Context
@@ -117,7 +117,7 @@ func (s *TaskService) runTask(task *models.Task, ctx context.Context) {
 
 	// 创建一个更新进度的函数
 	updateProgress := func(completed int, total int, workingOn string,
-		warning string, itemId string, itemEvent enums.TaskStatus) {
+		warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{}) {
 		s.taskMutex.Lock()
 		defer s.taskMutex.Unlock()
 
@@ -133,6 +133,7 @@ func (s *TaskService) runTask(task *models.Task, ctx context.Context) {
 			s.activeTask.WorkingOn = workingOn
 			s.activeTask.ItemId = itemId
 			s.activeTask.ItemStatus = itemEvent
+			s.activeTask.ItemData = itemData
 			s.notifyFrontend(s.activeTask)
 		}
 	}
@@ -233,7 +234,7 @@ func (s *TaskService) runTask(task *models.Task, ctx context.Context) {
 
 			// 发送当前进度更新
 			if s.activeTask != nil {
-				s.notifyFrontend(s.activeTask)
+				// s.notifyFrontend(s.activeTask)
 			}
 			s.taskMutex.Unlock()
 
@@ -358,6 +359,7 @@ func (s *TaskService) GetTaskNotice(task models.Task) models.TaskNotice {
 		Type:        task.Type,
 		ItemId:      task.ItemId,
 		ItemStatus:  task.ItemStatus,
+		ItemData:    task.ItemData,
 	}
 	return taskNotice
 }

@@ -18,6 +18,10 @@ export function FetchMetadataByName(arg1) {
   return window['go']['service']['GameService']['FetchMetadataByName'](arg1);
 }
 
+export function FillGame(arg1, arg2) {
+  return window['go']['service']['GameService']['FillGame'](arg1, arg2);
+}
+
 export function GetGameByID(arg1) {
   return window['go']['service']['GameService']['GetGameByID'](arg1);
 }

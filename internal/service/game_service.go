@@ -655,13 +655,13 @@ func (s *GameService) UpdateGameFromRemote(gameID string) error {
 }
 
 func (s *GameService) UpdateGamesBackground(games []models.Game, source enums.SourceType, id string) error {
-
-	s.taskService.RegisterTaskFunction(id, s.createGameUpdateTaskFunction())
+	var uuid = uuid.New().String()
+	s.taskService.RegisterTaskFunction(uuid, s.createGameUpdateTaskFunction())
 	taskData := map[string]interface{}{
 		"games":  games,
 		"source": source,
 	}
-	return s.taskService.StartTask("game_updates", id, 1000, enums.Games, len(games), taskData)
+	return s.taskService.StartTask("game_updates", uuid, 1000, enums.Games, len(games), taskData)
 	// return nil
 }
 
@@ -701,7 +701,7 @@ func mergeStrings(tagStr1, tagStr2 string) string {
 // 创建游戏更新任务函数
 func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 	return func(ctx context.Context, data json.RawMessage, updateProgress func(completed int, total int,
-		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus)) error {
+		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error {
 		// 定义结构来解组任务数据
 		var taskData struct {
 			Games  []models.Game    `json:"games"`
@@ -711,6 +711,8 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 		if err := json.Unmarshal(data, &taskData); err != nil {
 			return fmt.Errorf("解析任务数据失败: %v", err)
 		}
+		updateProgress(0, len(taskData.Games), fmt.Sprintf("开始更新游戏: "),
+			"", "", enums.Started, nil)
 
 		// 实现UpdateGamesBackground的核心逻辑
 		for index, ngame := range taskData.Games {
@@ -722,7 +724,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			}
 
 			updateProgress(index, len(taskData.Games), fmt.Sprintf("更新游戏: %s", ngame.Name),
-				"", ngame.ID, enums.Initial)
+				"", ngame.ID, enums.Initial, nil)
 
 			var id = ""
 
@@ -756,7 +758,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 
 					log.Printf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err)
 					updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
-						ngame.ID, enums.Error)
+						ngame.ID, enums.Error, nil)
 					continue
 				}
 			} else {
@@ -791,33 +793,34 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			}
 			log.Printf("TaskFunc 31 fetch for game %s, id:%s", ngame.Name, updatedGame.SourceID)
 
-			updatedGame.ID = ngame.ID
-			updatedGame.Path = ngame.Path
-			if updatedGame.BangumiId == "" {
-				updatedGame.BangumiId = ngame.BangumiId
-			}
-			if updatedGame.DmmId == "" {
-				updatedGame.DmmId = ngame.DmmId
-			}
-			if updatedGame.EroscapeId == "" {
-				updatedGame.EroscapeId = ngame.EroscapeId
-			}
+			// updatedGame.ID = ngame.ID
+			// updatedGame.Path = ngame.Path
+			// if updatedGame.BangumiId == "" {
+			// 	updatedGame.BangumiId = ngame.BangumiId
+			// }
+			// if updatedGame.DmmId == "" {
+			// 	updatedGame.DmmId = ngame.DmmId
+			// }
+			// if updatedGame.EroscapeId == "" {
+			// 	updatedGame.EroscapeId = ngame.EroscapeId
+			// }
 
-			updatedGame.CreatedAt = ngame.CreatedAt
-			updatedGame.SourceType = ngame.SourceType
-			updatedGame.SourceID = ngame.SourceID
-			updatedGame.CachedAt = time.Now()
-			updatedGame.Tags = mergeStrings(updatedGame.Tags, ngame.Tags)
-			updatedGame.Charactors = mergeStrings(updatedGame.Charactors, ngame.Charactors)
-			updatedGame.Staffs = mergeStrings(updatedGame.Staffs, ngame.Staffs)
-			updatedGame.Images = mergeStrings(updatedGame.Images, ngame.Images)
+			// updatedGame.CreatedAt = ngame.CreatedAt
+			// updatedGame.SourceType = ngame.SourceType
+			// updatedGame.SourceID = ngame.SourceID
+			// updatedGame.CachedAt = time.Now()
+			// updatedGame.Tags = mergeStrings(updatedGame.Tags, ngame.Tags)
+			// updatedGame.Charactors = mergeStrings(updatedGame.Charactors, ngame.Charactors)
+			// updatedGame.Staffs = mergeStrings(updatedGame.Staffs, ngame.Staffs)
+			// updatedGame.Images = mergeStrings(updatedGame.Images, ngame.Images)
 
-			updatedGame.SavePath = ngame.SavePath
-			updatedGame.ReleaseAt = ngame.ReleaseAt
-			updatedGame.Status = ngame.Status
-			updatedGame.Summary = ngame.Summary
-			updatedGame.UseMagpie = ngame.UseMagpie
-			updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
+			// updatedGame.SavePath = ngame.SavePath
+			// updatedGame.ReleaseAt = ngame.ReleaseAt
+			// updatedGame.Status = ngame.Status
+			// updatedGame.Summary = ngame.Summary
+			// updatedGame.UseMagpie = ngame.UseMagpie
+			// updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
+			s.FillGame(&ngame, &updatedGame)
 
 			// 更新游戏
 			if err := s.UpdateGame(updatedGame); err != nil {
@@ -825,14 +828,50 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				continue
 			}
 			updateProgress(index, len(taskData.Games), "", fmt.Sprintf("complete for game %s by ID: %v", ngame.Name, err),
-				ngame.ID, enums.Completed)
+				ngame.ID, enums.Completed, updatedGame)
 
 		}
 
 		// 标记完成
-		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏更新完成", "", "", enums.Completed)
+		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏更新完成", "", "", enums.Completed, nil)
 		return nil
 	}
+}
+
+func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game) {
+	updatedGame.ID = ngame.ID
+	updatedGame.Path = ngame.Path
+	if updatedGame.BangumiId == "" {
+		updatedGame.BangumiId = ngame.BangumiId
+	}
+	if updatedGame.DmmId == "" {
+		updatedGame.DmmId = ngame.DmmId
+	}
+	if updatedGame.EroscapeId == "" {
+		updatedGame.EroscapeId = ngame.EroscapeId
+	}
+	if updatedGame.YmgalId == "" {
+		updatedGame.YmgalId = ngame.YmgalId
+	}
+	if updatedGame.Name == "" {
+		updatedGame.Name = ngame.Name
+	}
+
+	updatedGame.CreatedAt = ngame.CreatedAt
+	updatedGame.SourceType = ngame.SourceType
+	updatedGame.SourceID = ngame.SourceID
+	updatedGame.CachedAt = time.Now()
+	updatedGame.Tags = mergeStrings(updatedGame.Tags, ngame.Tags)
+	updatedGame.Charactors = mergeStrings(updatedGame.Charactors, ngame.Charactors)
+	updatedGame.Staffs = mergeStrings(updatedGame.Staffs, ngame.Staffs)
+	updatedGame.Images = mergeStrings(updatedGame.Images, ngame.Images)
+
+	updatedGame.SavePath = ngame.SavePath
+	updatedGame.ReleaseAt = ngame.ReleaseAt
+	updatedGame.Status = ngame.Status
+	updatedGame.Summary = ngame.Summary
+	updatedGame.UseMagpie = ngame.UseMagpie
+	updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
 }
 
 // 新增方法：启动游戏批量更新任务

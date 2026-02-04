@@ -19,6 +19,7 @@ type Task struct {
 	Data        interface{}      `json:"data"`
 	ItemId      string           `json:"item_id"`
 	ItemStatus  enums.TaskStatus `json:"item_status"`
+	ItemData    interface{}      `json:"item_data"`
 }
 
 // 发给前端用
@@ -34,4 +35,5 @@ type TaskNotice struct {
 	Warning     string           `json:"warning"`
 	ItemId      string           `json:"item_id"`
 	ItemStatus  enums.TaskStatus `json:"item_status"`
+	ItemData    interface{}      `json:"item_data"`
 }

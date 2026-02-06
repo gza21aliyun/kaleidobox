@@ -2,10 +2,12 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"lunabox/internal/service"
+	"lunabox/internal/vo"
 	"testing"
 	"time"
 
@@ -26,8 +28,40 @@ func createTestGame() models.Game {
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 		ReleaseAt:  time.Now(),
-		Tags:       "测试标签",
-		MetaTags:   "类型标签",
+		CachedAt:   time.Now(),
+	}
+}
+
+func createBangumiGame() models.Game {
+	return models.Game{
+		ID:         "test-bangumi-001",
+		Name:       "测试游戏",
+		CoverURL:   "https://example.com/cover.jpg",
+		Company:    "测试公司",
+		Summary:    "这是一个测试游戏",
+		Path:       "C:\\Games\\TestGame\\game.exe",
+		SourceType: enums.Bangumi,
+		SourceID:   "466861",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		ReleaseAt:  time.Now(),
+		CachedAt:   time.Now(),
+	}
+}
+
+func createEroscapeGame() models.Game {
+	return models.Game{
+		ID:         "test-eroscape-001",
+		Name:       "测试游戏",
+		CoverURL:   "https://example.com/cover.jpg",
+		Company:    "测试公司",
+		Summary:    "这是一个测试游戏",
+		Path:       "C:\\Games\\TestGame\\game.exe",
+		SourceType: enums.Eroscape,
+		SourceID:   "38234",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		ReleaseAt:  time.Now(),
 		CachedAt:   time.Now(),
 	}
 }
@@ -37,7 +71,7 @@ func TestGameService_AddGame(t *testing.T) {
 	defer cleanup()
 
 	gameService := service.NewGameService()
-	gameService.Init(context.Background(), db, &appconf.AppConfig{})
+	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &appconf.AppConfig{})
 
 	t.Run("成功添加游戏", func(t *testing.T) {
 		game := createTestGame()
@@ -361,4 +395,114 @@ func TestGameService_CompleteWorkflow(t *testing.T) {
 			t.Error("游戏应该已被删除")
 		}
 	})
+}
+
+func TestGameService_Two(t *testing.T) {
+
+}
+
+func TestGameService_UpdateGamesBackground(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	config := appconf.AppConfig{}
+	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
+	config.EroscapeUseMirror = true
+
+	gameService := service.NewGameService()
+	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	taskService := service.NewTaskService()
+	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	charactorService := service.NewCharactorService()
+	charactorService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	staffService := service.NewStaffService()
+	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService := service.NewWorkService()
+	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService.SetStaffCharactorService(staffService, charactorService)
+	gameService.SetServices(taskService, charactorService, staffService, workService)
+
+	t.Run("add game success", func(t *testing.T) {
+		game := createEroscapeGame()
+		game.ID = "add-test-001"
+		t.Logf("add game 01: %s", game.Name)
+		err := gameService.AddGame(game)
+		if err != nil {
+			t.Fatalf("添加游戏失败: %v", err)
+		}
+
+		t.Logf("add game 02: %s", game.Name)
+
+		// 验证游戏已添加
+		savedGame, err := gameService.GetGameByID(game.ID)
+		if err != nil {
+			t.Fatalf("获取游戏失败: %v", err)
+		}
+
+		if savedGame.Name != game.Name {
+			t.Errorf("游戏名称不匹配: 期望 %s, 得到 %s", game.Name, savedGame.Name)
+		}
+		if savedGame.Company != game.Company {
+			t.Errorf("公司名称不匹配: 期望 %s, 得到 %s", game.Company, savedGame.Company)
+		}
+		req := vo.MetadataRequest{
+			Source:                savedGame.SourceType,
+			ID:                    savedGame.SourceID,
+			ShouldFetchStaffs:     true,
+			ShouldFetchCharactors: true,
+			DbGameId:              game.ID,
+		}
+		var games []models.Game = []models.Game{}
+		games = append(games, savedGame)
+		gameService.ExecueteGamesUpdate(games, req)
+		// time.Sleep(2 * time.Second)
+		works, err := workService.GetWorksByGameId(game.ID)
+		allWorks, err := workService.ListWorks()
+
+		// if len(allWorks) > 0 {
+		// 	firstWork := allWorks[6]
+
+		// 	// 创建可序列化的结构体
+		// 	serializableWork := struct {
+		// 		Id                string `json:"id"`
+		// 		GameId            string `json:"game_id"`
+		// 		StaffId           string `json:"staff_id"`
+		// 		Role              string `json:"role"`
+		// 		CharactorId       string `json:"charactor_id"`
+		// 		CharactorName     string `json:"charactor_name"`
+		// 		StaffName         string `json:"staff_name"`
+		// 		WorkSummary       string `json:"work_summary"`
+		// 		SourceType        string `json:"source_type"`
+		// 		SourceStaffId     string `json:"source_staff_id"`
+		// 		SourceCharactorId string `json:"source_charactor_id"`
+		// 		SourceGameId      string `json:"source_game_id"`
+		// 		Images            string `json:"images"`
+		// 	}{
+		// 		Id:                firstWork.Id,
+		// 		GameId:            firstWork.GameId,
+		// 		StaffId:           firstWork.StaffId,
+		// 		Role:              string(firstWork.Role),
+		// 		CharactorId:       firstWork.CharactorId,
+		// 		CharactorName:     firstWork.CharactorName,
+		// 		StaffName:         firstWork.StaffName,
+		// 		WorkSummary:       firstWork.WorkSummary,
+		// 		SourceType:        string(firstWork.SourceType),
+		// 		SourceStaffId:     firstWork.SourceStaffId,
+		// 		SourceCharactorId: firstWork.SourceCharactorId,
+		// 		SourceGameId:      firstWork.SourceGameId,
+		// 		Images:            firstWork.Images,
+		// 	}
+
+		// 	jsonData, err := json.MarshalIndent(serializableWork, "", "  ")
+		// 	if err != nil {
+		// 		t.Logf("序列化失败: %v", err)
+		// 	} else {
+		// 		t.Logf("第一个作品的JSON数据:\n%s", string(jsonData))
+		// 	}
+		// } else {
+		// 	t.Log("没有找到任何作品数据")
+		// }
+
+		fmt.Printf("works:%d, count: %d\n", len(works), len(allWorks))
+	})
+
 }

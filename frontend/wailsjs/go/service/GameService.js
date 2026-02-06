@@ -10,6 +10,10 @@ export function DeleteGame(arg1) {
   return window['go']['service']['GameService']['DeleteGame'](arg1);
 }
 
+export function ExecueteGamesUpdate(arg1, arg2) {
+  return window['go']['service']['GameService']['ExecueteGamesUpdate'](arg1, arg2);
+}
+
 export function FetchMetadata(arg1) {
   return window['go']['service']['GameService']['FetchMetadata'](arg1);
 }
@@ -50,8 +54,8 @@ export function SelectSaveDirectory() {
   return window['go']['service']['GameService']['SelectSaveDirectory']();
 }
 
-export function SetTaskService(arg1) {
-  return window['go']['service']['GameService']['SetTaskService'](arg1);
+export function SetServices(arg1, arg2, arg3, arg4) {
+  return window['go']['service']['GameService']['SetServices'](arg1, arg2, arg3, arg4);
 }
 
 export function UpdateGame(arg1) {

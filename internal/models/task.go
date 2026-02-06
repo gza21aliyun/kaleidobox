@@ -16,6 +16,7 @@ type Task struct {
 	Description string           `json:"description"`
 	Warning     string           `json:"warning"`
 	Deley       int              `json:"deley"`
+	JsonData    string           `json:"json_data"`
 	Data        interface{}      `json:"data"`
 	ItemId      string           `json:"item_id"`
 	ItemStatus  enums.TaskStatus `json:"item_status"`

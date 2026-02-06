@@ -10,6 +10,7 @@ import {
   CancelTask
 } from "../../../wailsjs/go/service/TaskService";
 import { BetterSelect } from "../ui/BetterSelect";
+import { BetterSwitch } from "../ui/BetterSwitch";
 
 interface BatchUpdateModalProps {
   isOpen: boolean;
@@ -46,6 +47,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   const [manualId, setManualId] = useState("");
   const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
   const taskId = useRef("");
+  const [isOverwrite, setIsOverWrite]  = useState(false);
+  const [shouldLoadStaffs, setShouldLoadStaffs] = useState(false);
+  const [shouldLoadCharacters, setShouldLoadCharacters] = useState(false);
+  const [shouldLoadImages, setShouldLoadImages] = useState(false);
   const [itemIdMatching, setItemIdMatching] = useState("")
 
   // Move this useEffect to the top level, right after all useState declarations
@@ -148,7 +153,15 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
     const uuid = crypto.randomUUID();
     // setTaskId(uuid);
     // console.log("create uuid  :" + uuid + " current taskId:" + taskId)
-    UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), source, uuid)
+    const req = new vo.MetadataRequest({
+      id: uuid,
+      source: source,
+      isOverwrite: isOverwrite,
+      should_fetch_staffs: shouldLoadStaffs,
+      should_fetch_charactors: shouldLoadCharacters,
+      should_fetch_images: shouldLoadImages,
+    });
+    UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), req, uuid)
     // console.log("create uuid :" + uuid)
     
     
@@ -353,6 +366,62 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                   ]}
                   className="min-w-[200px] flex-1" // 设置最小宽度并允许伸缩
                 />
+                {/* 更新选项开关 */}
+                <div className="glass-card bg-brand-50 dark:bg-brand-800/30 rounded-lg p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        覆盖数据
+                      </label>
+                      <BetterSwitch
+                        id="overwrite_switch"
+                        checked={isOverwrite}
+                        onCheckedChange={(checked) => {
+                          setIsOverWrite(checked);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        制作人员
+                      </label>
+                      <BetterSwitch
+                        id="load_staffs_switch"
+                        checked={shouldLoadStaffs}
+                        onCheckedChange={(checked) => {
+                          setShouldLoadStaffs(checked);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        角色信息
+                      </label>
+                      <BetterSwitch
+                        id="load_characters_switch"
+                        checked={shouldLoadCharacters}
+                        onCheckedChange={(checked) => {
+                          setShouldLoadCharacters(checked);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        图片资源
+                      </label>
+                      <BetterSwitch
+                        id="load_images_switch"
+                        checked={shouldLoadImages}
+                        onCheckedChange={(checked) => {
+                          setShouldLoadImages(checked);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
                 

@@ -10,8 +10,13 @@ type AISummaryRequest struct {
 }
 
 type MetadataRequest struct {
-	Source enums.SourceType `json:"source"` // "bangumi" or "vndb"
-	ID     string           `json:"id"`
+	Source                enums.SourceType `json:"source"` // "bangumi" or "vndb"
+	ID                    string           `json:"id"`
+	ShouldFetchStaffs     bool             `json:"should_fetch_staffs"`
+	ShouldFetchCharactors bool             `json:"should_fetch_charactors"`
+	IsOverwrite           bool             `json:"is_overwrite"`
+	ShouldFetchImages     bool             `json:"should_fetch_images"`
+	DbGameId              string           `json:"db_game_id"`
 }
 
 // BatchImportCandidate 批量导入候选项
@@ -62,4 +67,12 @@ type GameStatsRequest struct {
 type RenderTemplateRequest struct {
 	TemplateID string          `json:"template_id"` // 模板ID
 	Data       StatsExportData `json:"data"`        // 导出数据
+}
+
+func (r *MetadataRequest) GetGame() models.Game {
+	return models.Game{
+		SourceID:   r.ID,
+		SourceType: r.Source,
+		ID:         r.DbGameId,
+	}
 }

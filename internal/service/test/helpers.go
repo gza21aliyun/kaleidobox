@@ -44,10 +44,25 @@ func initTestSchema(t *testing.T, db *sql.DB) {
 			summary TEXT,
 			path TEXT,
 			save_path TEXT,
+			status TEXT DEFAULT 'not_started',
 			source_type TEXT,
 			cached_at TIMESTAMP,
 			source_id TEXT,
-			created_at TIMESTAMP
+			created_at TIMESTAMP,
+			updated_at TIMESTAMP,
+			tags TEXT,
+			meta_tags TEXT,
+			images TEXT,
+			bangumi_id TEXT,
+			dmm_id TEXT,
+			ymgal_id TEXT,
+			eroscape_id TEXT,
+			charactors TEXT,
+			staffs TEXT,
+			release_at TIMESTAMP,
+			related_games TEXT,
+			use_locale_emulator BOOLEAN DEFAULT FALSE,
+			use_magpie BOOLEAN DEFAULT FALSE
 		)`,
 		`CREATE TABLE IF NOT EXISTS game_categories (
 			game_id TEXT,
@@ -60,6 +75,75 @@ func initTestSchema(t *testing.T, db *sql.DB) {
 			start_time TIMESTAMP,
 			end_time TIMESTAMP,
 			duration INTEGER
+		)`,
+		`CREATE TABLE IF NOT EXISTS tasks (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			status TEXT,
+			type TEXT,
+			completed INTEGER,
+			total INTEGER,
+			working_on TEXT,
+			description TEXT,
+			warning TEXT,
+			deley INTEGER,
+			json_data TEXT,
+			item_id TEXT,
+		)`,
+
+		// 新增 Charactor 表
+		`CREATE TABLE IF NOT EXISTS charactors (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			other_names TEXT,
+			image_path TEXT,
+			images TEXT,
+			source_charactor_id TEXT,
+            source_type TEXT,
+			game_ids TEXT,
+			summary TEXT,
+			gender INTEGER
+		)`,
+		// 新增 Staff 表
+		`CREATE TABLE IF NOT EXISTS staffs (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			other_names TEXT,
+			roles TEXT,
+			source_staff_id TEXT,
+            source_type TEXT,
+			game_ids TEXT,
+			summary TEXT,
+			gender INTEGER
+		)`,
+		// 新增 Work 表
+		`CREATE TABLE IF NOT EXISTS works (
+			id TEXT PRIMARY KEY,
+			game_id TEXT,
+			staff_id TEXT,
+			role TEXT,
+			charactor_id TEXT,
+			charactor_name TEXT,
+			staff_name TEXT,
+			work_summary TEXT,
+            source_type TEXT,
+			source_staff_id TEXT,
+			source_charactor_id TEXT,
+			source_game_id TEXT,
+			images TEXT
+		)`,
+		// 新增 Tag 表
+		`CREATE TABLE IF NOT EXISTS tags (
+			name TEXT PRIMARY KEY,
+			category TEXT,
+			group_name TEXT,
+			is_h BOOLEAN DEFAULT FALSE,
+			is_spoiler BOOLEAN DEFAULT FALSE,
+			block_modify BOOLEAN DEFAULT FALSE
+		)`,
+		`CREATE TABLE IF NOT EXISTS image_backup (
+			url TEXT PRIMARY KEY,
+			local_path TEXT
 		)`,
 	}
 

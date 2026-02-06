@@ -35,6 +35,12 @@ type Game struct {
 
 }
 
+type GameEntity struct {
+	Game     Game                       `json:"game"`
+	WorksMap map[enums.StaffRole][]Work `json:"worksMap"`
+	Tags     map[string][]Tag           `json:"tags"`
+}
+
 // GameBackup 游戏存档备份记录（基于文件系统，不使用数据库）
 type GameBackup struct {
 	Path      string    `json:"path"` // 备份文件路径（作为唯一标识）
@@ -44,11 +50,7 @@ type GameBackup struct {
 	CreatedAt time.Time `json:"created_at"` // 创建时间（来自文件修改时间）
 }
 
-type Tag struct {
-	Name        string `json:"name"`
-	Category    string `json:"category"`
-	Group       string `json:"group"`
-	IsHidden    bool   `json:"is_h"`
-	IsSpoiler   bool   `json:"is_spoiler"`
-	BlockModify bool   `json:"block_modify"`
+type ImageBackup struct {
+	Url       string `json:"url"`
+	LocalPath string `json:"local_path"`
 }

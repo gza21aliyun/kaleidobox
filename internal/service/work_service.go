@@ -1,0 +1,329 @@
+package service
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"log"
+	"lunabox/internal/appconf"
+	"lunabox/internal/enums"
+	"lunabox/internal/models"
+	"strconv"
+
+	"github.com/google/uuid"
+)
+
+type WorkService struct {
+	ctx              context.Context
+	db               *sql.DB
+	config           *appconf.AppConfig
+	staffService     *StaffService
+	charactorService *CharactorService
+}
+
+func (s *WorkService) SetStaffCharactorService(staffService *StaffService, charactorService *CharactorService) {
+	s.staffService = staffService
+	s.charactorService = charactorService
+}
+
+func NewWorkService() *WorkService {
+	return &WorkService{}
+}
+
+func (s *WorkService) Init(ctx context.Context, db *sql.DB, config *appconf.AppConfig) {
+	s.ctx = ctx
+	s.db = db
+	s.config = config
+}
+
+// CreateWork 创建新的 Work 记录
+func (s *WorkService) CreateWork(work models.Work) error {
+	query := `
+		INSERT INTO works (id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+	_, err := s.db.ExecContext(s.ctx, query,
+		work.Id,
+		work.GameId,
+		work.StaffId,
+		work.Role,
+		work.CharactorId,
+		work.CharactorName,
+		work.StaffName,
+		work.WorkSummary,
+		string(work.SourceType),
+		work.SourceStaffId,
+		work.SourceCharactorId,
+		work.SourceGameId,
+		work.Images,
+	)
+	if err != nil {
+		fmt.Printf("创建工作失败 gameId:%s, staffName: %s, charactorName: %s, err:%v\n",
+			work.GameId, work.StaffName, work.CharactorName, err)
+	} else {
+		fmt.Printf("创建工作成功 gameId:%s, staffName: %s, charactorName: %s\n",
+			work.GameId, work.StaffName, work.CharactorName)
+	}
+	return err
+}
+
+func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
+	staff := models.Staff{}
+	charactor := models.Charactor{}
+	var err error = nil
+	if work.StaffName != "" {
+		fmt.Printf("07 CreateOrUpdateWorkStaffCharactor %s %s %s %s\n", work.StaffName, work.CharactorName, string(work.Role), work.GameId)
+		staff, err = s.staffService.CreateOrUpdateStaff(work.StaffName, work.GameId, work.SourceGameId, work.SourceType, work.SourceStaffId)
+		if err != nil {
+			fmt.Println("05 CreateOrUpdateWorkStaffCharactor %s, %v ", work.StaffName, err)
+			return err
+		}
+		work.StaffId = staff.Id
+	}
+	// fmt.Println("11 CreateOrUpdateWorkStaffCharactor")
+	if work.CharactorName != "" {
+		charactor, err = s.charactorService.CreateOrUpdateCharactor(work.CharactorName, work.GameId, work.SourceGameId,
+			work.SourceType, work.SourceCharactorId, work.Images, work.WorkSummary)
+		if err != nil {
+			fmt.Println("06 CreateOrUpdateWorkStaffCharactor %s, %v", charactor.Name, err)
+			return err
+		}
+		work.CharactorId = charactor.Id
+	}
+	// fmt.Println("12 CreateOrUpdateWorkStaffCharactor")
+	newWork := models.Work{}
+	if work.StaffId != "" {
+		newWork, err = s.GetWorkByStaff(work.GameId, work.StaffId)
+		if err != nil && err != sql.ErrNoRows {
+			fmt.Println("获取员工工作出错 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)
+			return err
+		}
+	}
+	// fmt.Println("13 CreateOrUpdateWorkStaffCharactor")
+	if err == sql.ErrNoRows && work.CharactorId != "" {
+		newWork, err = s.GetWorkByCharactor(work.GameId, work.CharactorId)
+		if err != nil && err != sql.ErrNoRows {
+			fmt.Println("获取角色工作出错 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)
+			return err
+		}
+	}
+	// fmt.Println("14 CreateOrUpdateWorkStaffCharactor")
+	if err != nil || newWork.Id == "" {
+		// fmt.Println("15 CreateOrUpdateWorkStaffCharactor", err)
+		if err == sql.ErrNoRows || newWork.Id == "" {
+			work.Id = uuid.New().String()
+			return s.CreateWork(work)
+		} else {
+			return err
+		}
+	} else {
+		fmt.Println("16 CreateOrUpdateWorkStaffCharactor", err)
+		work.Id = newWork.Id
+		return s.UpdateWork(work)
+	}
+
+}
+
+func (s *WorkService) CreateOrUpdateListWorkStaffCharactor(works []models.Work) {
+	fmt.Println("03 CreateOrUpdateListWorkStaffCharactor " + strconv.Itoa(len(works)))
+	for _, work := range works {
+		if work.Role == enums.Charactor && work.StaffName != "" {
+			work.Role = enums.CV
+		}
+		err := s.CreateOrUpdateWorkStaffCharactor(work)
+		if err != nil {
+			log.Printf("04 CreateOrUpdateListWorkStaffCharactor %v", err)
+		}
+	}
+}
+
+func (s *WorkService) GetWorkByStaff(gameId, staffId string) (models.Work, error) {
+	query := `
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images
+		FROM works
+		WHERE game_id = ? AND staff_id = ?
+	`
+	return s.GetWorkByQueryIds(query, gameId, staffId)
+}
+
+func (s *WorkService) GetWorkByCharactor(gameId, charactorId string) (models.Work, error) {
+	query := `
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images
+		FROM works
+		WHERE game_id = ? AND charactor_id = ?
+	`
+	return s.GetWorkByQueryIds(query, gameId, charactorId)
+}
+
+func (s *WorkService) GetWorkByQueryIds(query string, id1 string, id2 string) (models.Work, error) {
+	var row *sql.Row
+	if id1 == "" && id2 == "" {
+		row = s.db.QueryRowContext(s.ctx, query)
+	} else if id2 == "" {
+		row = s.db.QueryRowContext(s.ctx, query, id1)
+	} else {
+		row = s.db.QueryRowContext(s.ctx, query, id1, id2)
+	}
+
+	var work models.Work = models.Work{}
+	var sourceType string
+	err := row.Scan(
+		&work.Id,
+		&work.GameId,
+		&work.StaffId,
+		&work.Role,
+		&work.CharactorId,
+		&work.CharactorName,
+		&work.StaffName,
+		&work.WorkSummary,
+		&sourceType,
+		&work.SourceStaffId,
+		&work.SourceCharactorId,
+		&work.SourceGameId,
+		&work.Images,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return work, err // 未找到记录
+		}
+		return work, err
+	}
+	work.SourceType = enums.SourceType(sourceType)
+	return work, nil
+}
+
+func (s *WorkService) GetWorksByGameId(gameId string) ([]models.Work, error) {
+	query := `
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images 
+		FROM works
+		WHERE game_id = ?
+
+	`
+	rows, err := s.db.QueryContext(s.ctx, query, gameId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var works []models.Work
+	for rows.Next() {
+		var work models.Work
+		var sourceType string
+		err := rows.Scan(
+			&work.Id,
+			&work.GameId,
+			&work.StaffId,
+			&work.Role,
+			&work.CharactorId,
+			&work.CharactorName,
+			&work.StaffName,
+			&work.WorkSummary,
+			&sourceType,
+			&work.SourceStaffId,
+			&work.SourceCharactorId,
+			&work.SourceGameId,
+			&work.Images,
+		)
+		if err != nil {
+			return nil, err
+		}
+		work.SourceType = enums.SourceType(sourceType)
+		works = append(works, work)
+	}
+	return works, nil
+}
+
+func (s *WorkService) GetWorksMapByGameId(gameId string) (map[enums.StaffRole][]models.Work, error) {
+
+	works, err := s.GetWorksByGameId(gameId)
+	if err != nil {
+		return nil, err
+	}
+	var workMap map[enums.StaffRole][]models.Work = make(map[enums.StaffRole][]models.Work)
+	for _, work := range works {
+		workMap[work.Role] = append(workMap[work.Role], work)
+	}
+	return workMap, nil
+}
+
+// UpdateWork 更新 Work 记录
+func (s *WorkService) UpdateWork(work models.Work) error {
+	query := `
+		UPDATE works
+		SET id = ?, role = ?, charactor_name = ?, staff_name = ?, work_summary = ?, source_type = ?, source_staff_id = ?, source_charactor_id = ?, source_game_id = ?, images = ? 
+		WHERE game_id = ? AND staff_id = ? AND charactor_id = ?
+	`
+	_, err := s.db.ExecContext(s.ctx, query,
+		work.Id,
+		work.Role,
+		work.CharactorName,
+		work.StaffName,
+		work.WorkSummary,
+		string(work.SourceType),
+		work.SourceStaffId,
+		work.SourceCharactorId,
+		work.GameId,
+		work.StaffId,
+		work.CharactorId,
+		work.SourceGameId,
+		work.Images,
+	)
+	if err != nil {
+		fmt.Println("更新工作失败 gameId:%s, staffName: %s, charactorName: %s, err: %v",
+			work.GameId, work.StaffName, work.CharactorName, err)
+	}
+	return err
+}
+
+// ListWorks 查询所有 Work 记录
+func (s *WorkService) ListWorks() ([]*models.Work, error) {
+	query := `
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images
+		FROM works
+	`
+	rows, err := s.db.QueryContext(s.ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var works []*models.Work
+	for rows.Next() {
+		var work models.Work
+		var sourceType string
+		err := rows.Scan(
+			&work.Id,
+			&work.GameId,
+			&work.StaffId,
+			&work.Role,
+			&work.CharactorId,
+			&work.CharactorName,
+			&work.StaffName,
+			&work.WorkSummary,
+			&sourceType,
+			&work.SourceStaffId,
+			&work.SourceCharactorId,
+			&work.SourceGameId,
+			&work.Images,
+		)
+		if err != nil {
+			return nil, err
+		}
+		work.SourceType = enums.SourceType(sourceType)
+		works = append(works, &work)
+	}
+	return works, nil
+}
+
+// CountWorks 返回 Work 表中的记录总数
+func (s *WorkService) CountWorks() (int, error) {
+	query := `SELECT COUNT(*) FROM works`
+	row := s.db.QueryRowContext(s.ctx, query)
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

@@ -115,21 +115,6 @@ export namespace appconf {
 
 export namespace enums {
 	
-	export enum TaskType {
-	    GAMES = "游戏",
-	    CHARACTORS = "角色",
-	    STAFFS = "工作人员",
-	    IMAGES = "图片",
-	    RELATIONS = "关系",
-	}
-	export enum StaffRole {
-	    STAFF = "工作人员",
-	    CV = "声优",
-	    SCENEARIO = "剧本",
-	    DIRECTOR = "监督",
-	    COMPOSER = "音乐",
-	    CHARA_DESIGN = "人设",
-	}
 	export enum SourceType {
 	    LOCAL = "local",
 	    BANGUMI = "bangumi",
@@ -163,11 +148,59 @@ export namespace enums {
 	    ERROR = "错误",
 	    CANCELED = "取消",
 	}
+	export enum TaskType {
+	    GAMES = "游戏",
+	    CHARACTORS = "角色",
+	    STAFFS = "工作人员",
+	    IMAGES = "图片",
+	    RELATIONS = "关系",
+	}
+	export enum StaffRole {
+	    STAFF = "工作人员",
+	    CV = "声优",
+	    SCENEARIO = "剧本",
+	    DIRECTOR = "监督",
+	    COMPOSER = "音乐",
+	    CHARA_DESIGN = "人设",
+	    CHARACTOR = "角色",
+	    SINGER = "歌手",
+	    ART = "画师",
+	}
 
 }
 
 export namespace models {
 	
+	export class Charactor {
+	    id: string;
+	    name: string;
+	    other_names: string;
+	    image_path: string;
+	    images: string;
+	    source_charactor_id: string;
+	    source_type: enums.SourceType;
+	    game_ids: string;
+	    summary: string;
+	    gender: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Charactor(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.other_names = source["other_names"];
+	        this.image_path = source["image_path"];
+	        this.images = source["images"];
+	        this.source_charactor_id = source["source_charactor_id"];
+	        this.source_type = source["source_type"];
+	        this.game_ids = source["game_ids"];
+	        this.summary = source["summary"];
+	        this.gender = source["gender"];
+	    }
+	}
 	export class Game {
 	    id: string;
 	    name: string;
@@ -286,6 +319,20 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class ImageBackup {
+	    url: string;
+	    local_path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImageBackup(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.url = source["url"];
+	        this.local_path = source["local_path"];
+	    }
+	}
 	export class PlaySession {
 	    id: string;
 	    game_id: string;
@@ -324,6 +371,56 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class Staff {
+	    id: string;
+	    name: string;
+	    other_names: string;
+	    roles: string;
+	    source_staff_id: string;
+	    source_type: enums.SourceType;
+	    game_ids: string;
+	    summary: string;
+	    gender: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Staff(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.other_names = source["other_names"];
+	        this.roles = source["roles"];
+	        this.source_staff_id = source["source_staff_id"];
+	        this.source_type = source["source_type"];
+	        this.game_ids = source["game_ids"];
+	        this.summary = source["summary"];
+	        this.gender = source["gender"];
+	    }
+	}
+	export class Tag {
+	    name: string;
+	    category: string;
+	    group: string;
+	    is_h: boolean;
+	    is_spoiler: boolean;
+	    block_modify: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Tag(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.category = source["category"];
+	        this.group = source["group"];
+	        this.is_h = source["is_h"];
+	        this.is_spoiler = source["is_spoiler"];
+	        this.block_modify = source["block_modify"];
+	    }
+	}
 	export class Task {
 	    id: string;
 	    name: string;
@@ -335,6 +432,7 @@ export namespace models {
 	    description: string;
 	    warning: string;
 	    deley: number;
+	    json_data: string;
 	    data: any;
 	    item_id: string;
 	    item_status: enums.TaskStatus;
@@ -356,6 +454,7 @@ export namespace models {
 	        this.description = source["description"];
 	        this.warning = source["warning"];
 	        this.deley = source["deley"];
+	        this.json_data = source["json_data"];
 	        this.data = source["data"];
 	        this.item_id = source["item_id"];
 	        this.item_status = source["item_status"];
@@ -430,6 +529,42 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class Work {
+	    id: string;
+	    game_id: string;
+	    staff_id: string;
+	    role: enums.StaffRole;
+	    charactor_id: string;
+	    charactor_name: string;
+	    staff_name: string;
+	    work_summary: string;
+	    source_type: enums.SourceType;
+	    source_staff_id: string;
+	    source_charactor_id: string;
+	    source_game_id: string;
+	    images: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Work(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.game_id = source["game_id"];
+	        this.staff_id = source["staff_id"];
+	        this.role = source["role"];
+	        this.charactor_id = source["charactor_id"];
+	        this.charactor_name = source["charactor_name"];
+	        this.staff_name = source["staff_name"];
+	        this.work_summary = source["work_summary"];
+	        this.source_type = source["source_type"];
+	        this.source_staff_id = source["source_staff_id"];
+	        this.source_charactor_id = source["source_charactor_id"];
+	        this.source_game_id = source["source_game_id"];
+	        this.images = source["images"];
+	    }
+	}
 
 }
 
@@ -440,6 +575,18 @@ export namespace service {
 	
 	    static createFrom(source: any = {}) {
 	        return new BackupService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class CharactorService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new CharactorService(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -533,6 +680,18 @@ export namespace service {
 		    return a;
 		}
 	}
+	export class StaffService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new StaffService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
 	export class StartService {
 	
 	
@@ -577,6 +736,18 @@ export namespace service {
 	        this.release_date = source["release_date"];
 	        this.changelog = source["changelog"];
 	        this.downloads = source["downloads"];
+	    }
+	}
+	export class WorkService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new WorkService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
 	    }
 	}
 
@@ -1100,6 +1271,11 @@ export namespace vo {
 	export class MetadataRequest {
 	    source: enums.SourceType;
 	    id: string;
+	    should_fetch_staffs: boolean;
+	    should_fetch_charactors: boolean;
+	    is_overwrite: boolean;
+	    should_fetch_images: boolean;
+	    db_game_id: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new MetadataRequest(source);
@@ -1109,6 +1285,11 @@ export namespace vo {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.source = source["source"];
 	        this.id = source["id"];
+	        this.should_fetch_staffs = source["should_fetch_staffs"];
+	        this.should_fetch_charactors = source["should_fetch_charactors"];
+	        this.is_overwrite = source["is_overwrite"];
+	        this.should_fetch_images = source["should_fetch_images"];
+	        this.db_game_id = source["db_game_id"];
 	    }
 	}
 	export class PeriodStats {

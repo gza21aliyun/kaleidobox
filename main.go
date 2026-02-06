@@ -71,6 +71,11 @@ func main() {
 	templateService := service.NewTemplateService()
 	updateService := service.NewUpdateService()
 	taskService := service.NewTaskService() // 添加任务服务
+	staffService := service.NewStaffService()
+	charactorService := service.NewCharactorService()
+	workService := service.NewWorkService()
+	tagService := service.NewTagService()
+	imageService := service.NewImageService()
 
 	// 创建本地文件处理器
 	localFileHandler, err := utils.NewLocalFileHandler()
@@ -121,8 +126,8 @@ func main() {
 			},
 		},
 		BackgroundColour: &options.RGBA{R: 18, G: 20, B: 22, A: 255},
-		StartHidden:      true,
-		Frameless:        true, // 启用无边框模式
+		StartHidden:      false,
+		Frameless:        false, // 启用无边框模式
 		// 样式完全交由wails前端控制
 		Windows: &windows.Options{
 			WebviewIsTransparent: true,
@@ -198,9 +203,15 @@ func main() {
 			importService.Init(ctx, db, config, gameService)
 			versionService.Init(ctx)
 			templateService.Init(ctx, db, config)
-			taskService.Init(ctx, db, config) // 初始化任务服务
 			updateService.Init(ctx, configService)
-			gameService.SetTaskService(taskService)
+			taskService.Init(ctx, db, config) // 初始化任务服务
+			staffService.Init(ctx, db, config)
+			charactorService.Init(ctx, db, config)
+			tagService.Init(ctx, db, config)
+			imageService.Init(ctx, db, config)
+			workService.Init(ctx, db, config)
+			workService.SetStaffCharactorService(staffService, charactorService)
+			gameService.SetServices(taskService, charactorService, staffService, workService)
 			// 设置 StartService 的 BackupService 依赖
 			startService.SetBackupService(backupService)
 			// 设置 ImportService 的 StartService 依赖（用于导入游玩记录）
@@ -269,6 +280,11 @@ func main() {
 			templateService,
 			updateService,
 			taskService,
+			charactorService,
+			staffService,
+			tagService,
+			imageService,
+			workService,
 		},
 		EnumBind: []interface{}{
 			enums.AllSourceTypes,
@@ -339,6 +355,78 @@ func initSchema(db *sql.DB) error {
 			start_time TIMESTAMP,
 			end_time TIMESTAMP,
 			duration INTEGER
+		)`,
+		// 新增 Task 表
+		`CREATE TABLE IF NOT EXISTS tasks (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			status TEXT,
+			type TEXT,
+			completed INTEGER,
+			total INTEGER,
+			working_on TEXT,
+			description TEXT,
+			warning TEXT,
+			deley INTEGER,
+			json_data TEXT,
+			item_id TEXT,
+		)`,
+
+		// 新增 Charactor 表
+		`CREATE TABLE IF NOT EXISTS charactors (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			other_names TEXT,
+			image_path TEXT,
+			images TEXT,
+			source_charactor_id TEXT,
+            source_type TEXT,
+			game_ids TEXT,
+			summary TEXT,
+			gender INTEGER
+		)`,
+		// 新增 Staff 表
+		`CREATE TABLE IF NOT EXISTS staffs (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			other_names TEXT,
+			roles TEXT,
+			source_staff_id TEXT,
+            source_type TEXT,
+			game_ids TEXT,
+			summary TEXT,
+			gender INTEGER
+		)`,
+		// 新增 Work 表
+		`CREATE TABLE IF NOT EXISTS works (
+			id TEXT PRIMARY KEY,
+			game_id TEXT,
+			staff_id TEXT,
+			role TEXT,
+			charactor_id TEXT,
+			charactor_name TEXT,
+			staff_name TEXT,
+			work_summary TEXT,
+            source_type TEXT,
+			source_staff_id TEXT,
+			source_charactor_id TEXT,
+			source_game_id TEXT,
+			images TEXT
+		}
+	}
+		)`,
+		// 新增 Tag 表
+		`CREATE TABLE IF NOT EXISTS tags (
+			name TEXT PRIMARY KEY,
+			category TEXT,
+			group_name TEXT,
+			is_h BOOLEAN DEFAULT FALSE,
+			is_spoiler BOOLEAN DEFAULT FALSE,
+			block_modify BOOLEAN DEFAULT FALSE
+		)`,
+		`CREATE TABLE IF NOT EXISTS image_backup (
+			url TEXT PRIMARY KEY,
+			local_path TEXT
 		)`,
 	}
 

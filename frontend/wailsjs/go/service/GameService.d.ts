@@ -6,11 +6,12 @@ import {context} from '../models';
 import {sql} from '../models';
 import {appconf} from '../models';
 import {service} from '../models';
-import {enums} from '../models';
 
 export function AddGame(arg1:models.Game):Promise<void>;
 
 export function DeleteGame(arg1:string):Promise<void>;
+
+export function ExecueteGamesUpdate(arg1:Array<models.Game>,arg2:vo.MetadataRequest):Promise<void>;
 
 export function FetchMetadata(arg1:vo.MetadataRequest):Promise<models.Game>;
 
@@ -32,10 +33,10 @@ export function SelectGameExecutable():Promise<string>;
 
 export function SelectSaveDirectory():Promise<string>;
 
-export function SetTaskService(arg1:service.TaskService):Promise<void>;
+export function SetServices(arg1:service.TaskService,arg2:service.CharactorService,arg3:service.StaffService,arg4:service.WorkService):Promise<void>;
 
 export function UpdateGame(arg1:models.Game):Promise<void>;
 
 export function UpdateGameFromRemote(arg1:string):Promise<void>;
 
-export function UpdateGamesBackground(arg1:Array<models.Game>,arg2:enums.SourceType,arg3:string):Promise<void>;
+export function UpdateGamesBackground(arg1:Array<models.Game>,arg2:vo.MetadataRequest,arg3:string):Promise<void>;

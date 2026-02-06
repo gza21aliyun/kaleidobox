@@ -17,7 +17,7 @@ import (
 )
 
 // TaskFunction 是任务执行函数的类型定义，接受上下文、任务数据和进度更新函数
-type TaskFunction func(ctx context.Context, data json.RawMessage,
+type TaskFunction func(ctx context.Context, data string,
 	updateProgress func(completed int, total int, workingOn string,
 		warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error
 
@@ -139,8 +139,16 @@ func (s *TaskService) runTask(task *models.Task, ctx context.Context) {
 	}
 
 	// 将任务数据转换为json.RawMessage
-	var jsonData json.RawMessage
+	var jsonData string
 	if task.Data != nil {
+		// var jsontext = "{\"aa\":\"aatext\",\"source\": \"Eroscape\"}"
+		// var jsonStruct struct {
+		// 	Aa string `json:"aa"`
+		// 	Source string `json:"source"`
+		// }
+		// // 使用 json.Unmarshal 将 JSON 字符串解析到结构体中
+		// err := json.Unmarshal([]byte(jsontext), &jsonStruct)
+
 		jsonBytes, err := json.Marshal(task.Data)
 		if err != nil {
 			task.Status = enums.Error
@@ -148,7 +156,7 @@ func (s *TaskService) runTask(task *models.Task, ctx context.Context) {
 			s.notifyFrontend(task)
 			return
 		}
-		jsonData = json.RawMessage(jsonBytes)
+		jsonData = string(jsonBytes)
 	}
 
 	// 创建一个goroutine来执行任务函数，这样我们可以监控进度

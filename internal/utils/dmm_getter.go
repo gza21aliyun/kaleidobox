@@ -232,7 +232,6 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 			images = append(images, image)
 		})
 		game.Images = strings.Join(images, ",")
-		// var workList []models.Work = []models.Work{}
 		var worksMap map[enums.StaffRole][]models.Work = make(map[enums.StaffRole][]models.Work)
 		e.DOM.Find("div.contentsDetailBottom__table div.contentsDetailBottom__tableRow:contains('原画') a").Each(func(i int, s *goquery.Selection) {
 			staffName := strings.TrimSpace(s.Text())
@@ -255,6 +254,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 					StaffName:     staffName,
 					SourceStaffId: sId,
 					SourceType:    enums.Dmm,
+					GameName:      game.Name,
 				}
 				worksMap[work.Role] = append(worksMap[work.Role], work)
 			}
@@ -280,6 +280,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 					StaffName:     staffName,
 					SourceStaffId: sId,
 					SourceType:    enums.Dmm,
+					GameName:      game.Name,
 				}
 				worksMap[work.Role] = append(worksMap[work.Role], work)
 			}
@@ -305,6 +306,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 					StaffName:     staffName,
 					SourceStaffId: sId,
 					SourceType:    enums.Dmm,
+					GameName:      game.Name,
 				}
 				worksMap[work.Role] = append(worksMap[work.Role], work)
 			}
@@ -327,6 +329,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 					WorkSummary:   summary,
 					Images:        image,
 					SourceType:    enums.Dmm,
+					GameName:      game.Name,
 				}
 				worksMap[work.Role] = append(worksMap[work.Role], work)
 			}

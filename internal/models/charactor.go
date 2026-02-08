@@ -15,6 +15,11 @@ type Charactor struct {
 	Gender            int              `json:"gender"`
 }
 
+type WorkGame struct {
+	Work Work `json:"work"`
+	Game Game `json:"game"`
+}
+
 type Staff struct {
 	Id            string           `json:"id"`
 	Name          string           `json:"name"`
@@ -25,6 +30,7 @@ type Staff struct {
 	GameIds       string           `json:"game_ids"`
 	Summary       string           `json:"summary"`
 	Gender        int              `json:"gender"`
+	Image         string           `json:"image"`
 }
 
 type Work struct {
@@ -41,4 +47,6 @@ type Work struct {
 	SourceCharactorId string           `json:"source_charactor_id"`
 	SourceGameId      string           `json:"source_game_id"`
 	Images            string           `json:"images"`
+	GameName          string           `json:"game_name"`
+	StaffImage        string           `json:"game_cover"`
 }

@@ -32,8 +32,8 @@ func (s *StaffService) Init(ctx context.Context, db *sql.DB, config *appconf.App
 func (s *StaffService) CreateStaff(staff models.Staff) error {
 	query := `
 		INSERT INTO staffs (id, name, other_names, roles, source_staff_id, source_type,
-		game_ids, summary, gender)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		game_ids, summary, gender, image)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		staff.Id,
@@ -45,12 +45,13 @@ func (s *StaffService) CreateStaff(staff models.Staff) error {
 		staff.GameIds,
 		staff.Summary,
 		staff.Gender,
+		staff.Image,
 	)
 	return err
 }
 
 func (s *StaffService) CreateOrUpdateStaff(staffName string, gameId string, sourceId string,
-	sourceType enums.SourceType, sourceStaffId string) (models.Staff, error) {
+	sourceType enums.SourceType, sourceStaffId string, role enums.StaffRole, image string) (models.Staff, error) {
 	staff, err := s.GetStaffBySource(sourceType, sourceStaffId)
 	if err != nil || staff.Id == "" {
 		// fmt.Println("24  staff " + staff.Name)
@@ -60,7 +61,9 @@ func (s *StaffService) CreateOrUpdateStaff(staffName string, gameId string, sour
 				id := uuid.New().String()
 				staff = models.Staff{Name: staffName, GameIds: gameId, Id: id}
 				staff.SourceType = sourceType
+				staff.Roles = string(role)
 				staff.SourceStaffId = sourceStaffId
+				staff.Image = image
 				// fmt.Println("21 create staff " + staff.Name)
 				err = s.CreateStaff(staff)
 				return staff, err
@@ -73,6 +76,7 @@ func (s *StaffService) CreateOrUpdateStaff(staffName string, gameId string, sour
 
 		// fmt.Println("22 update staff " + staff.Name)
 		staff.GameIds = utils.MergeStrings(staff.GameIds, gameId)
+		staff.Roles = utils.MergeStrings(staff.Roles, string(role))
 		err = s.UpdateStaff(staff)
 		return staff, err
 	}
@@ -82,7 +86,7 @@ func (s *StaffService) CreateOrUpdateStaff(staffName string, gameId string, sour
 
 func (s *StaffService) GetStaffByGameIdAndName(id string, name string) (models.Staff, error) {
 	query := `
-		SELECT id, name, other_names, roles, source_staff_id, source_type, game_ids, summary, gender
+		SELECT id, name, other_names, roles, source_staff_id, source_type, game_ids, summary, gender, image
 		FROM staffs
 		WHERE list_contains(string_split(game_ids, ','), ?) AND name = ?
 	}
@@ -92,7 +96,7 @@ func (s *StaffService) GetStaffByGameIdAndName(id string, name string) (models.S
 
 func (s *StaffService) GetStaffsByGameId(id string) ([]models.Staff, error) {
 	query := `
-		SELECT id, name, other_names, roles, source_staff_id, source_type, game_ids, summary, gender
+		SELECT id, name, other_names, roles, source_staff_id, source_type, game_ids, summary, gender, image
 		FROM staffs
 		WHERE list_contains(string_split(game_ids, ','), ?)
 	`
@@ -116,6 +120,7 @@ func (s *StaffService) GetStaffsByGameId(id string) ([]models.Staff, error) {
 			&staff.GameIds,
 			&staff.Summary,
 			&staff.Gender,
+			&staff.Image,
 		)
 		if err != nil {
 			return nil, err
@@ -129,7 +134,7 @@ func (s *StaffService) GetStaffsByGameId(id string) ([]models.Staff, error) {
 func (s *StaffService) GetStaffBySource(sourceType enums.SourceType, sourceStaffId string) (models.Staff, error) {
 	query := `
 		SELECT id, name, other_names, roles, source_staff_id, source_type,
-		game_ids, summary, gender
+		game_ids, summary, gender, image
 		FROM staffs
 		WHERE source_staff_id = ? AND source_type = `
 	if sourceType == enums.Bangumi {
@@ -152,7 +157,7 @@ func (s *StaffService) GetStaffBySource(sourceType enums.SourceType, sourceStaff
 func (s *StaffService) GetStaffById(id string) (models.Staff, error) {
 	query := `
 		SELECT id, name, other_names, roles, source_staff_id, source_type, 
-		game_ids, summary, gender
+		game_ids, summary, gender, image
 		FROM staffs
 		WHERE id = ?
 	`
@@ -162,7 +167,7 @@ func (s *StaffService) GetStaffById(id string) (models.Staff, error) {
 func (s *StaffService) GetFirstStaff() (models.Staff, error) {
 	query := `
 		SELECT id, name, other_names, roles, source_staff_id, source_type, 
-		game_ids, summary, gender
+		game_ids, summary, gender, image
 		FROM staffs
 	`
 	return s.GetStaffByQueryId("", "", query)
@@ -190,6 +195,7 @@ func (s *StaffService) GetStaffByQueryId(id1 string, id2 string, query string) (
 		&staff.GameIds,
 		&staff.Summary,
 		&staff.Gender,
+		&staff.Image,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -206,7 +212,7 @@ func (s *StaffService) UpdateStaff(staff models.Staff) error {
 	query := `
 		UPDATE staffs
 		SET name = ?, other_names = ?, roles = ?, source_staff_id = ?, source_type = ?, game_ids = ?, summary = ?, gender = ?
-		WHERE id = ?
+		WHERE id = ?, image = ?
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		staff.Name,
@@ -218,6 +224,7 @@ func (s *StaffService) UpdateStaff(staff models.Staff) error {
 		staff.Summary,
 		staff.Gender,
 		staff.Id,
+		staff.Image,
 	)
 	return err
 }
@@ -232,7 +239,7 @@ func (s *StaffService) DeleteStaff(id string) error {
 // ListStaffs 查询所有 Staff 记录
 func (s *StaffService) ListStaffs() ([]models.Staff, error) {
 	query := `
-		SELECT id, name, other_names, roles, source_staff_id, source_type, game_ids, summary, gender
+		SELECT id, name, other_names, roles, source_staff_id, source_type, game_ids, summary, gender, image
 		FROM staffs
 	`
 	rows, err := s.db.QueryContext(s.ctx, query)
@@ -255,6 +262,7 @@ func (s *StaffService) ListStaffs() ([]models.Staff, error) {
 			&staff.GameIds,
 			&staff.Summary,
 			&staff.Gender,
+			&staff.Image,
 		)
 		if err != nil {
 			return nil, err

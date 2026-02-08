@@ -1,7 +1,8 @@
 import { appconf, enums, models } from "../../../wailsjs/go/models";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "@tanstack/react-router";
-import { GetWorksMapByGameId, CountWorks } from "../../../wailsjs/go/service/WorkService";
+import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
+import { ListStaffs } from "../../../wailsjs/go/service/StaffService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useEffect, useState } from "react";
@@ -19,10 +20,29 @@ export function GameInfoPanel({
 
         useEffect(() => { 
             console.log("01 GetWorksMapByGameId", game.id)
-            GetWorksMapByGameId(game.id).then((res) => { 
-                console.log("02 GetWorksMapByGameId", game.id)
-                setWorksMap(new Map(Object.entries(res) as [enums.StaffRole, models.Work[]][]))
+            // GetWorksMapByGameId(game.id).then((res) => { 
+            //     var newWorksMap = new Map(Object.entries(res) as [enums.StaffRole, models.Work[]][])
+                
+            //     console.log("02 GetWorksMapByGameId", game.id)
+            //     console.log("newWorksMap:", res)
+            //     setWorksMap(newWorksMap)
             
+            // })
+            GetWorksByGameId(game.id).then((res) => { 
+                console.log("01 GetWorksByGameId", game.id)
+                console.log("res:", res)
+                var array: models.Work[] = res;
+                var m = new Map<enums.StaffRole, models.Work[]>();
+                for (let i = 0; i < array.length; i++) {
+                    const existingItems = m.get(array[i].role) || [];
+                    m.set(array[i].role, [...existingItems, array[i]]);
+                }
+                setWorksMap(m)
+                // setWorks(res)
+            
+            })
+            ListStaffs().then((res) => { 
+                console.log("staffs:", res)
             })
             // CountWorks().then((res) => { 
             //     console.log("03 CountWorks", res)
@@ -37,13 +57,24 @@ export function GameInfoPanel({
             // 或者如果你使用React Router的navigate功能
                 navigate({ to: '/library', search: { tags: tag } });
             };
+
+        const handleStaffClick = (work: models.Work) => {
+            // 跳转到Library页面并传递标签参数
+            // window.location.href = `/library?tags=${encodeURIComponent(tag)}`;
+            // 或者如果你使用React Router的navigate功能
+                console.log(`跳转到员工: `, work);
+                if (work.staff_id != "") {
+                    navigate({ to: `/staff/${work.staff_id}` });
+                }
+                // navigate({ to: `/staff/${staffId}` });
+            };
         
         return ( 
             <div> 
                 {/* 在这里插入worksMap展示内容 */}
                 <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <h3 className="text-lg font-semibold mb-3 text-brand-900 dark:text-white">工作人员信息</h3>
-                    {worksMap && Object.keys(worksMap).length > 0 ? (
+                    {worksMap && worksMap.size > 0 ? (
                         <div className="space-y-4">
                             {Array.from(worksMap.entries()).map(([role, works]) => (
                                 <div key={role} className="border-l-4 border-brand-500 pl-4">
@@ -51,9 +82,11 @@ export function GameInfoPanel({
                                         {role.replace(/([A-Z])/g, ' $1').trim()} {/* 将驼峰命名转换为可读格式 */}
                                     </h4>
                                     {works && works.length > 0 ? (
-                                        <ul className="mt-2 space-y-1">
+                                        <ul className="mt-2 flex flex-wrap gap-2">
                                             {works.map((work: models.Work, index: number) => (
-                                                <li key={index} className="text-sm text-brand-600 dark:text-brand-400">
+                                                <li key={index} 
+                                                onClick={() => handleStaffClick(work)}
+                                                className="text-sm text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/50 px-2 py-1 rounded">
                                                     {work.role === enums.StaffRole.CV 
                                                         ? `${work.charactor_name || '未知角色'} (${work.staff_name || '未知声优'})`
                                                         : work.staff_name || work.charactor_name || `工作人员 ${index + 1}`

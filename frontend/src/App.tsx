@@ -12,9 +12,11 @@ import { Route as indexRoute } from "./routes/index";
 import { Route as libraryRoute } from "./routes/library";
 import { Route as settingsRoute } from "./routes/settings";
 import { Route as statsRoute } from "./routes/stats";
+import { Route as staffRoute } from "./routes/staff";
 import { useAppStore } from "./store";
 
-const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, categoriesRoute, categoryRoute, settingsRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, categoriesRoute, 
+  categoryRoute, settingsRoute, staffRoute]);
 
 const router = createRouter({ routeTree });
 
@@ -105,13 +107,13 @@ function App() {
           },
         }}
       />
-      {showUpdateDialog && updateInfo && (
+      {/* {showUpdateDialog && updateInfo && (
         <UpdateDialog
           updateInfo={updateInfo}
           onClose={() => setShowUpdateDialog(false)}
           onSkip={handleSkipVersion}
         />
-      )}
+      )} */}
     </>
   );
 }

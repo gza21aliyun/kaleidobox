@@ -114,7 +114,10 @@ func initTestSchema(t *testing.T, db *sql.DB) {
             source_type TEXT,
 			game_ids TEXT,
 			summary TEXT,
-			gender INTEGER
+			gender INTEGER,
+			image TEXT
+		}
+	}
 		)`,
 		// 新增 Work 表
 		`CREATE TABLE IF NOT EXISTS works (
@@ -130,7 +133,9 @@ func initTestSchema(t *testing.T, db *sql.DB) {
 			source_staff_id TEXT,
 			source_charactor_id TEXT,
 			source_game_id TEXT,
-			images TEXT
+			images TEXT,
+			game_name TEXT,
+			game_cover TEXT
 		)`,
 		// 新增 Tag 表
 		`CREATE TABLE IF NOT EXISTS tags (

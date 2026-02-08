@@ -300,6 +300,100 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 	return games, nil
 }
 
+func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
+	var games []models.Game = []models.Game{}
+	if idsStr == "" {
+		return games, nil
+	}
+	query := `SELECT 
+		id, name, 
+		COALESCE(cover_url, '') as cover_url, 
+		COALESCE(company, '') as company, 
+		COALESCE(summary, '') as summary, 
+		COALESCE(path, '') as path, 
+		COALESCE(save_path, '') as save_path,
+		COALESCE(status, 'not_started') as status,
+		COALESCE(source_type, '') as source_type, 
+		cached_at, 
+		COALESCE(source_id, '') as source_id, 
+		created_at,
+		updated_at,
+		COALESCE(tags, '') as tags,
+		COALESCE(meta_tags, '') as meta_tags,
+		COALESCE(images, '') as images,
+		COALESCE(bangumi_id, '') as bangumi_id,
+		COALESCE(dmm_id, '') as dmm_id,
+		COALESCE(eroscape_id, '') as eroscape_id,
+		COALESCE(ymgal_id, '') as ymgal_id,
+		COALESCE(charactors, '') as charactors,
+		COALESCE(staffs, '') as staffs,
+		COALESCE(release_at, '') as release_at,
+		COALESCE(related_games, '') as related_games,
+		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
+		COALESCE(use_magpie, FALSE) as use_magpie
+	FROM games 
+	WHERE LIST_CONTAINS(STRING_SPLIT(?, ','), id)
+	ORDER BY created_at DESC`
+
+	rows, err := s.db.QueryContext(s.ctx, query, idsStr)
+	if err != nil {
+		runtime.LogErrorf(s.ctx, "GetGames: failed to query games: %v", err)
+		log.Println("GetGames: failed to query games:", err)
+		return nil, fmt.Errorf("failed to query games: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var game models.Game
+		var sourceType string
+		var status string
+
+		err := rows.Scan(
+			&game.ID,
+			&game.Name,
+			&game.CoverURL,
+			&game.Company,
+			&game.Summary,
+			&game.Path,
+			&game.SavePath,
+			&status,
+			&sourceType,
+			&game.CachedAt,
+			&game.SourceID,
+			&game.CreatedAt,
+			&game.UpdatedAt,
+			&game.Tags,
+			&game.MetaTags,
+			&game.Images,
+			&game.BangumiId,
+			&game.DmmId,
+			&game.EroscapeId,
+			&game.YmgalId,
+			&game.Charactors,
+			&game.Staffs,
+			&game.ReleaseAt,
+			&game.RelatedGames,
+			&game.UseLocaleEmulator,
+			&game.UseMagpie,
+		)
+		if err != nil {
+			runtime.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
+			return nil, fmt.Errorf("failed to scan game: %w", err)
+		}
+
+		game.SourceType = enums.SourceType(sourceType)
+		game.Status = enums.GameStatus(status)
+		games = append(games, game)
+	}
+
+	if err = rows.Err(); err != nil {
+		runtime.LogErrorf(s.ctx, "GetGames: error iterating games: %v", err)
+		return nil, fmt.Errorf("error iterating games: %w", err)
+	}
+
+	return games, nil
+}
+
 func (s *GameService) GetGameByID(id string) (models.Game, error) {
 	query := `SELECT 
 		id, name, 
@@ -596,7 +690,7 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 
 	switch req.Source {
 	case enums.Bangumi:
-		fmt.Println("Fetching metadata from Bangumi ")
+		fmt.Println("Fetching metadata from Bangumi Id:" + req.DbGameId)
 		bgmGetter := utils.NewBangumiInfoGetter()
 		gameEntity, e = bgmGetter.FetchMetadataReq(req, s.config.BangumiAccessToken)
 		gameEntity, e = bgmGetter.FetchWorks(req, gameEntity, s.config.BangumiAccessToken)
@@ -761,6 +855,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			}
 
 			taskData.Req.ID = id
+			taskData.Req.DbGameId = ngame.ID
 
 			var updatedGame models.Game
 			var err error
@@ -866,4 +961,19 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game) {
 	updatedGame.Summary = ngame.Summary
 	updatedGame.UseMagpie = ngame.UseMagpie
 	updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
+}
+
+func (s *GameService) GetWorkGamesByStaffId(staffId string) ([]models.WorkGame, error) {
+	works, err := s.workService.GetWorksByStaffId(staffId)
+	var worksGames []models.WorkGame = []models.WorkGame{}
+	if err != nil {
+		return worksGames, err
+	}
+
+	for _, work := range works {
+		game := models.Game{}
+		game, err = s.GetGameByID(work.GameId)
+		worksGames = append(worksGames, models.WorkGame{Work: work, Game: game})
+	}
+	return worksGames, err
 }

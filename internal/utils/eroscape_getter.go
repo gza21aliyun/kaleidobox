@@ -209,6 +209,7 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			work.GameId = gameEntity.Game.ID
 			work.SourceType = enums.Eroscape
 			work.SourceGameId = request.ID
+			work.GameName = gameEntity.Game.Name
 			work.Role = enums.CV
 			work.Images = s.Find("img").AttrOr("src", "")
 			work.CharactorName = s.Find("div.character_name").Text()

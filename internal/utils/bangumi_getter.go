@@ -42,6 +42,16 @@ type bangumiImages struct {
 	Grid   string `json:"grid"`
 }
 
+func (b *bangumiImages) GetImage() string {
+	if b.Large != "" {
+		return b.Large
+	}
+	if b.Common != "" {
+		return b.Common
+	}
+	return b.Medium
+}
+
 type bangumiInfoboxItem struct {
 	Key   string      `json:"key"`
 	Value interface{} `json:"value"`
@@ -176,10 +186,11 @@ func (b BangumiInfoGetter) FetchWorks(request vo.MetadataRequest, gameEntity mod
 				StaffName:     staff.Name,
 				GameId:        gameEntity.Game.ID,
 				SourceStaffId: strconv.Itoa(staff.ID),
-				Images:        staff.Images.Common,
 				Role:          b.GetStaffRoleFromRelation(staff.Relation),
 				SourceType:    enums.Bangumi,
 				SourceGameId:  request.ID,
+				GameName:      gameEntity.Game.Name,
+				StaffImage:    staff.Images.GetImage(),
 			}
 			worksMap[work.Role] = append(worksMap[work.Role], work)
 		}
@@ -217,7 +228,7 @@ func (b BangumiInfoGetter) FetchWorks(request vo.MetadataRequest, gameEntity mod
 			work := models.Work{
 				CharactorName:     charactor.Name,
 				GameId:            gameEntity.Game.ID,
-				Images:            charactor.Images.Common,
+				Images:            charactor.Images.GetImage(),
 				Role:              enums.Charactor,
 				SourceCharactorId: strconv.Itoa(charactor.ID),
 				SourceType:        enums.Bangumi,
@@ -225,6 +236,7 @@ func (b BangumiInfoGetter) FetchWorks(request vo.MetadataRequest, gameEntity mod
 				WorkSummary:       charactor.Summary,
 				StaffName:         staffName,
 				SourceGameId:      request.ID,
+				GameName:          gameEntity.Game.Name,
 			}
 			worksMap[enums.Charactor] = append(worksMap[enums.Charactor], work)
 		}
@@ -286,8 +298,7 @@ func (b BangumiInfoGetter) FetchMetadataReq(request vo.MetadataRequest, token st
 }
 
 func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumiResp bangumiResponse) (models.GameEntity, error) {
-	// 从 infobox 中提取开发商信息
-	company := b.extractCompanyFromInfobox(bangumiResp.Infobox)
+
 	game := gameEntity.Game
 
 	// 使用中文名，如果没有则使用原名
@@ -305,14 +316,10 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	var tagsMap map[string][]models.Tag = make(map[string][]models.Tag)
 
 	game.Name = name
-	game.CoverURL = coverURL
-	game.Company = company
-	companyTag := models.Tag{
-		Name:        company,
-		Category:    models.TagCategoryBrand,
-		BlockModify: true,
+	if game.CoverURL == "" {
+		game.CoverURL = coverURL
 	}
-	tagsMap[models.TagCategoryBrand] = append(tagsMap[models.TagCategoryBrand], companyTag)
+
 	var err error = nil
 	for _, metaTagText := range bangumiResp.MetaTags {
 		tag := models.Tag{
@@ -329,26 +336,41 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	game.SourceID = game.BangumiId
 	game.SourceType = enums.Bangumi
 	gameEntity.Tags = tagsMap
-	for _, box := range bangumiResp.Infobox {
-		tag := models.Tag{Name: box.Value.(string)}
-		if box.Key == "平台" {
-			tag.Category = models.TagCategoryPlatform
-			tag.BlockModify = true
-			tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
-		} else if box.Key == "发行" {
-			tag.Category = models.TagCategoryPublisher
-			tag.BlockModify = true
-			tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
-		} else if box.Key == "游戏类型" {
-			tag.Category = models.TagCategoryGameClass
-			tag.BlockModify = true
-			tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
-		}
-	}
+
+	// 从 infobox 中提取开发商信息
+	err = b.extractCompanyFromInfobox(bangumiResp.Infobox, tagsMap, &game)
+	// game.Company = company
+	// companyTag := models.Tag{
+	// 	Name:        company,
+	// 	Category:    models.TagCategoryBrand,
+	// 	BlockModify: true,
+	// }
+	// tagsMap[models.TagCategoryBrand] = append(tagsMap[models.TagCategoryBrand], companyTag)
+	// for _, box := range bangumiResp.Infobox {
+	// 	tag := models.Tag{Name: box.Value.(string)}
+	// 	if box.Key == "平台" {
+	// 		tag.Category = models.TagCategoryPlatform
+	// 		tag.BlockModify = true
+	// 		tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+	// 	} else if box.Key == "发行" {
+	// 		tag.Category = models.TagCategoryPublisher
+	// 		tag.BlockModify = true
+	// 		tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+	// 	} else if box.Key == "游戏类型" {
+	// 		tag.Category = models.TagCategoryGameClass
+	// 		tag.BlockModify = true
+	// 		tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+	// 	}
+	// }
+	gameEntity.Tags = tagsMap
+	gameEntity.Game = game
+
+	fmt.Println("01 02 " + game.Company)
 	return gameEntity, err
 }
 
 func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (models.Game, error) {
+	fmt.Println("FetchMetadataByName" + name)
 	if token == "" {
 		return models.Game{}, errors.New("bangumi API requires Bearer token")
 	}
@@ -415,6 +437,7 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 		return models.Game{}, errors.New("the provided ID does not correspond to a game")
 	}
 	gameEntity := models.GameEntity{}
+	fmt.Println("游戏名01：" + bangumiResp.Name + " " + bangumiResp.NameCN)
 	gameEntity, err = b.GetDataFromResp(gameEntity, bangumiResp)
 	game := gameEntity.Game
 
@@ -422,30 +445,67 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 }
 
 // extractCompanyFromInfobox 从 infobox 中提取开发商信息
-func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxItem) string {
+func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxItem, tagsMap map[string][]models.Tag, game *models.Game) error {
 	for _, item := range infobox {
 		// 查找开发商相关的字段
 		if strings.Contains(item.Key, "开发商") || strings.Contains(item.Key, "开发") {
-			switch v := item.Value.(type) {
-			case string:
-				return v
-			case []interface{}:
+
+		}
+		tag := models.Tag{}
+		switch v := item.Value.(type) {
+		case string:
+			tag.Name = v
+
+			if strings.Contains(item.Key, "平台") {
+				tag.Category = models.TagCategoryPlatform
+				tag.BlockModify = true
+				tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+			} else if strings.Contains(item.Key, "发行") {
+				tag.Category = models.TagCategoryPublisher
+				tag.BlockModify = true
+				tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+			} else if strings.Contains(item.Key, "游戏类型") {
+				tag.Category = models.TagCategoryGameClass
+				tag.BlockModify = true
+				tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+			} else if strings.Contains(item.Key, "开发") {
+				tag.Category = models.TagCategoryBrand
+				tag.BlockModify = true
+				tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+				game.Company = v
+				fmt.Println("developer 01:", v)
+			}
+			break
+		case []interface{}:
+
+			if strings.Contains(item.Key, "开发商") || strings.Contains(item.Key, "开发") {
 				// 如果是数组，尝试提取第一个值
 				if len(v) > 0 {
 					if str, ok := v[0].(string); ok {
-						return str
+						tag.Name = str
+						tag.Category = models.TagCategoryBrand
+						tag.BlockModify = true
+						tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+						game.Company = str
+						fmt.Println("developer 02:", str)
 					}
 					// 处理可能的对象格式 {"v": "value"}
 					if obj, ok := v[0].(map[string]interface{}); ok {
 						if val, exists := obj["v"]; exists {
 							if str, ok := val.(string); ok {
-								return str
+								tag.Name = str
+								tag.Category = models.TagCategoryBrand
+								tag.BlockModify = true
+								tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
+								game.Company = str
+								fmt.Println("developer 03:", str)
 							}
 						}
 					}
 				}
 			}
+
 		}
 	}
-	return ""
+	return nil
 }

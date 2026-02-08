@@ -233,6 +233,17 @@ func (s *WorkService) GetWorksByStaffId(staffId string) ([]models.Work, error) {
 	return works, err
 }
 
+func (s *WorkService) GetWorkGamesByCharactorId(charactorId string) ([]models.Work, error) {
+	query := `
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover 
+		FROM works
+		WHERE charactor_id = ?
+
+	`
+	works, err := s.GetWorksByQueryId(query, charactorId)
+	return works, err
+}
+
 func (s *WorkService) GetWorksByQueryId(query, id1 string) ([]models.Work, error) {
 	rows, err := s.db.QueryContext(s.ctx, query, id1)
 	if err != nil {

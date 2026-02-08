@@ -50,6 +50,13 @@ function StaffPage() {
                 // navigate({ to: `/staff/${staffId}` });
             };
 
+  const handleCharactorClick = (charactorId: string) => {
+      if (charactorId != "") {
+          navigate({ to: `/charactor/${charactorId}` });
+      }
+      // navigate({ to: `/staff/${staffId}` });
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -160,7 +167,7 @@ function StaffPage() {
           {/* { staff && staff.gender } */}
 
           {/* 基本信息卡片 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 
             {staff?.image && (
                                 
@@ -168,7 +175,7 @@ function StaffPage() {
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">   
                     <img 
                                     src={staff.image} 
-                                    className="w-16 h-24 object-cover rounded"
+                                    className="w-16 h-32 object-cover rounded"
                                 />
                 </div>
             )}
@@ -304,7 +311,16 @@ function StaffPage() {
                             )}
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (
                                 <td className="py-3 px-3 text-brand-700 dark:text-brand-300">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // 阻止事件冒泡
+                                      handleCharactorClick(work.work.charactor_id);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                                  >
                                     {work.work.charactor_name || '-'}
+                                  </button>
+                                    
                                 </td>
                             )}
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (

@@ -87,6 +87,7 @@ func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId 
 					SourceType:        sourceType,
 					SourceCharactorId: sourceCharactorId,
 					Images:            images,
+					ImagePath:         images,
 					Summary:           summary,
 				}
 				err = s.CreateCharactor(charactor)
@@ -98,6 +99,9 @@ func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId 
 	}
 	if charactor.Id != "" {
 		charactor.GameIds = utils.MergeStrings(charactor.GameIds, gameId)
+		if images != "" {
+			charactor.ImagePath = images
+		}
 		charactor.Images = utils.MergeStrings(charactor.Images, images)
 		if charactor.Summary == "" {
 			charactor.Summary = summary

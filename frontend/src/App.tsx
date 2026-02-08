@@ -13,10 +13,11 @@ import { Route as libraryRoute } from "./routes/library";
 import { Route as settingsRoute } from "./routes/settings";
 import { Route as statsRoute } from "./routes/stats";
 import { Route as staffRoute } from "./routes/staff";
+import { Route as charactorRoute } from "./routes/charactor";
 import { useAppStore } from "./store";
 
 const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, categoriesRoute, 
-  categoryRoute, settingsRoute, staffRoute]);
+  categoryRoute, settingsRoute, staffRoute, charactorRoute]);
 
 const router = createRouter({ routeTree });
 

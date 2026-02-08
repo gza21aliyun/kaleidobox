@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"fmt"
 	"lunabox/internal/utils"
 	"net/http"
 	"path/filepath"
@@ -395,7 +396,8 @@ func initSchema(db *sql.DB) error {
             source_type TEXT,
 			game_ids TEXT,
 			summary TEXT,
-			gender INTEGER
+			gender INTEGER,
+			image TEXT
 		)`,
 		// 新增 Work 表
 		`CREATE TABLE IF NOT EXISTS works (
@@ -411,9 +413,9 @@ func initSchema(db *sql.DB) error {
 			source_staff_id TEXT,
 			source_charactor_id TEXT,
 			source_game_id TEXT,
-			images TEXT
-		}
-	}
+			images TEXT,
+			game_name TEXT,
+			game_cover TEXT
 		)`,
 		// 新增 Tag 表
 		`CREATE TABLE IF NOT EXISTS tags (
@@ -433,6 +435,7 @@ func initSchema(db *sql.DB) error {
 	for _, query := range queries {
 		_, err := db.Exec(query)
 		if err != nil {
+			fmt.Println("创建表失败:", err)
 			return err
 		}
 	}

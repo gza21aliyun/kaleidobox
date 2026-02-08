@@ -977,3 +977,18 @@ func (s *GameService) GetWorkGamesByStaffId(staffId string) ([]models.WorkGame, 
 	}
 	return worksGames, err
 }
+
+func (s *GameService) GetWorkGamesByCharactorId(staffId string) ([]models.WorkGame, error) {
+	works, err := s.workService.GetWorkGamesByCharactorId(staffId)
+	var worksGames []models.WorkGame = []models.WorkGame{}
+	if err != nil {
+		return worksGames, err
+	}
+
+	for _, work := range works {
+		game := models.Game{}
+		game, err = s.GetGameByID(work.GameId)
+		worksGames = append(worksGames, models.WorkGame{Work: work, Game: game})
+	}
+	return worksGames, err
+}

@@ -2,11 +2,13 @@ package test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"lunabox/internal/service"
+	"lunabox/internal/utils"
 	"lunabox/internal/vo"
 	"testing"
 	"time"
@@ -401,7 +403,7 @@ func TestGameService_Two(t *testing.T) {
 
 }
 
-func TestGameService_UpdateGamesBackground(t *testing.T) {
+func TestGameService_UGB(t *testing.T) {
 	db, cleanup := setupTestDB(t)
 	defer cleanup()
 	config := appconf.AppConfig{}
@@ -422,7 +424,8 @@ func TestGameService_UpdateGamesBackground(t *testing.T) {
 	gameService.SetServices(taskService, charactorService, staffService, workService)
 
 	t.Run("add game success", func(t *testing.T) {
-		game := createEroscapeGame()
+		// game := createEroscapeGame()
+		game := createBangumiGame()
 		game.ID = "add-test-001"
 		t.Logf("add game 01: %s", game.Name)
 		err := gameService.AddGame(game)
@@ -456,53 +459,111 @@ func TestGameService_UpdateGamesBackground(t *testing.T) {
 		gameService.ExecueteGamesUpdate(games, req)
 		// time.Sleep(2 * time.Second)
 		works, err := workService.GetWorksByGameId(game.ID)
-		allWorks, err := workService.ListWorks()
+		// allWorks, err := workService.ListWorks()
 
-		// if len(allWorks) > 0 {
-		// 	firstWork := allWorks[6]
+		if len(works) > 0 {
+			firstWork := works[1]
 
-		// 	// 创建可序列化的结构体
-		// 	serializableWork := struct {
-		// 		Id                string `json:"id"`
-		// 		GameId            string `json:"game_id"`
-		// 		StaffId           string `json:"staff_id"`
-		// 		Role              string `json:"role"`
-		// 		CharactorId       string `json:"charactor_id"`
-		// 		CharactorName     string `json:"charactor_name"`
-		// 		StaffName         string `json:"staff_name"`
-		// 		WorkSummary       string `json:"work_summary"`
-		// 		SourceType        string `json:"source_type"`
-		// 		SourceStaffId     string `json:"source_staff_id"`
-		// 		SourceCharactorId string `json:"source_charactor_id"`
-		// 		SourceGameId      string `json:"source_game_id"`
-		// 		Images            string `json:"images"`
-		// 	}{
-		// 		Id:                firstWork.Id,
-		// 		GameId:            firstWork.GameId,
-		// 		StaffId:           firstWork.StaffId,
-		// 		Role:              string(firstWork.Role),
-		// 		CharactorId:       firstWork.CharactorId,
-		// 		CharactorName:     firstWork.CharactorName,
-		// 		StaffName:         firstWork.StaffName,
-		// 		WorkSummary:       firstWork.WorkSummary,
-		// 		SourceType:        string(firstWork.SourceType),
-		// 		SourceStaffId:     firstWork.SourceStaffId,
-		// 		SourceCharactorId: firstWork.SourceCharactorId,
-		// 		SourceGameId:      firstWork.SourceGameId,
-		// 		Images:            firstWork.Images,
-		// 	}
+			// 创建可序列化的结构体
+			serializableWork := struct {
+				Id                string `json:"id"`
+				GameId            string `json:"game_id"`
+				StaffId           string `json:"staff_id"`
+				Role              string `json:"role"`
+				CharactorId       string `json:"charactor_id"`
+				CharactorName     string `json:"charactor_name"`
+				StaffName         string `json:"staff_name"`
+				WorkSummary       string `json:"work_summary"`
+				SourceType        string `json:"source_type"`
+				SourceStaffId     string `json:"source_staff_id"`
+				SourceCharactorId string `json:"source_charactor_id"`
+				SourceGameId      string `json:"source_game_id"`
+				Images            string `json:"images"`
+			}{
+				Id:                firstWork.Id,
+				GameId:            firstWork.GameId,
+				StaffId:           firstWork.StaffId,
+				Role:              string(firstWork.Role),
+				CharactorId:       firstWork.CharactorId,
+				CharactorName:     firstWork.CharactorName,
+				StaffName:         firstWork.StaffName,
+				WorkSummary:       firstWork.WorkSummary,
+				SourceType:        string(firstWork.SourceType),
+				SourceStaffId:     firstWork.SourceStaffId,
+				SourceCharactorId: firstWork.SourceCharactorId,
+				SourceGameId:      firstWork.SourceGameId,
+				Images:            firstWork.Images,
+			}
 
-		// 	jsonData, err := json.MarshalIndent(serializableWork, "", "  ")
-		// 	if err != nil {
-		// 		t.Logf("序列化失败: %v", err)
-		// 	} else {
-		// 		t.Logf("第一个作品的JSON数据:\n%s", string(jsonData))
-		// 	}
-		// } else {
-		// 	t.Log("没有找到任何作品数据")
-		// }
+			jsonData, err := json.MarshalIndent(serializableWork, "", "  ")
+			if err != nil {
+				t.Logf("序列化失败: %v", err)
+			} else {
+				t.Logf("第一个作品的JSON数据:\n%s", string(jsonData))
+			}
+		} else {
+			t.Log("没有找到任何作品数据")
+		}
 
-		fmt.Printf("works:%d, count: %d\n", len(works), len(allWorks))
+		fmt.Printf("works:%d, count: %d\n", len(works), len(works))
 	})
 
+}
+
+func TestGameService_Search(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	config := appconf.AppConfig{}
+	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
+	config.EroscapeUseMirror = true
+
+	gameService := service.NewGameService()
+	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	taskService := service.NewTaskService()
+	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	charactorService := service.NewCharactorService()
+	charactorService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	staffService := service.NewStaffService()
+	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService := service.NewWorkService()
+	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService.SetStaffCharactorService(staffService, charactorService)
+	gameService.SetServices(taskService, charactorService, staffService, workService)
+
+	t.Run("add game success", func(t *testing.T) {
+		gameName := "オトメ世界の歩き方"
+		bgmGetter := utils.NewBangumiInfoGetter()
+		bgm, err := bgmGetter.FetchMetadataByName(gameName, config.BangumiAccessToken)
+
+		// dmmGetter := utils.NewDmmInfoGetter()
+		// dmm, _ := dmmGetter.FetchMetadataByName(name, s.config.DmmIsEnabled)
+		fmt.Printf("%s 游戏Id：%s ,err: %v\n", gameName, bgm.Company, err)
+	})
+}
+
+func TestGameService_ImportLnk(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	config := appconf.AppConfig{}
+	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
+	config.EroscapeUseMirror = true
+
+	gameService := service.NewGameService()
+	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	taskService := service.NewTaskService()
+	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	charactorService := service.NewCharactorService()
+	charactorService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	staffService := service.NewStaffService()
+	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService := service.NewWorkService()
+	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService.SetStaffCharactorService(staffService, charactorService)
+	gameService.SetServices(taskService, charactorService, staffService, workService)
+	importServie := service.NewImportService()
+	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
+
+	t.Run("import success", func(t *testing.T) {
+		importServie.BatchImportGamesFolderLnk(`J:\新しいフォルダー\KURO\`)
+	})
 }

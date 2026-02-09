@@ -24,15 +24,16 @@ type DmmInfoGetter struct {
 type IdFunction func(request vo.MetadataRequest) (models.Game, error)
 
 func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (models.Game, error) {
-	game, err := b.FetchByName2(name, dmmIsEnabled,
+	game, err := b.FetchByNameImpl(name, dmmIsEnabled,
 		func(request vo.MetadataRequest) (models.Game, error) {
+			fmt.Println("FetchMetadataByName 34")
 			gameEntity, err := b.FetchMetadataById(request)
 			return gameEntity.Game, err
 		})
 	return game, err
 }
 
-func (b DmmInfoGetter) FetchByName2(name string, dmmIsEnabled bool, fn IdFunction) (models.Game, error) {
+func (b DmmInfoGetter) FetchByNameImpl(name string, dmmIsEnabled bool, fn IdFunction) (models.Game, error) {
 	if !dmmIsEnabled {
 		return models.Game{}, fmt.Errorf("DMM is not enabled")
 	}
@@ -82,8 +83,11 @@ func (b DmmInfoGetter) FetchByName2(name string, dmmIsEnabled bool, fn IdFunctio
 				continue
 			}
 			game.Name = gameFound.Title
+			fmt.Println("dmm详情：" + gameFound.Link)
 			linkParts := strings.Split(gameFound.Link, "/")
-			game.SourceID = linkParts[len(linkParts)-2]
+			id := linkParts[len(linkParts)-2]
+			fmt.Println("05 id: " + id)
+			game.SourceID = id
 			game.DmmId = game.SourceID
 			game.CoverURL = gameFound.CoverUrl
 			// c.Visit(gameFound.Link) // 不在这里访问详情页
@@ -109,98 +113,23 @@ func (b DmmInfoGetter) FetchByName2(name string, dmmIsEnabled bool, fn IdFunctio
 	return game, err
 }
 
-// func (b DmmInfoGetter) FetchMetadataByName4(name string, dmmIsEnabled bool) (models.Game, error) {
-// 	if !dmmIsEnabled {
-// 		return models.Game{}, fmt.Errorf("DMM is not enabled")
-// 	}
-// 	var url string = "https://dlsoft.dmm.co.jp/search/?service=pcgame&searchstr="
-// 	url += name
-// 	var game = models.Game{}
-// 	c := CreateCollector("*dmm.co.jp")
-
-// 	var potentialGames []struct {
-// 		Title    string
-// 		Link     string
-// 		Review   string
-// 		CoverUrl string
-// 	}
-
-// 	// 处理搜索结果页面中的游戏条目
-// 	c.OnHTML("li.component-legacy-productTile__item", func(e *colly.HTMLElement) {
-// 		title := e.ChildText(".component-legacy-productTile__title")
-// 		link := e.ChildAttr("a.component-legacy-productTile__detailLink", "href")
-// 		price := e.ChildText(".component-legacy-productTile__review")
-// 		// log.Print("OnHTML 网页列表 ：", e.Text)
-
-// 		potentialGames = append(potentialGames, struct {
-// 			Title    string
-// 			Link     string
-// 			Review   string
-// 			CoverUrl string
-// 		}{
-// 			Title:    title,
-// 			Link:     e.Request.AbsoluteURL(link),
-// 			Review:   price,
-// 			CoverUrl: e.ChildAttr("span.component-legacy-productTile__thumbnail img", "src"),
-// 		})
-// 	})
-
-// 	// 在访问完搜索页面后进行过滤和处理
-// 	c.OnScraped(func(r *colly.Response) {
-// 		for _, gameFound := range potentialGames {
-// 			// 应用过滤条件
-// 			if gameFound.Review == "" {
-// 				continue
-// 			}
-// 			if strings.Contains(gameFound.Title, "セット") {
-// 				continue
-// 			}
-// 			if gameFound.Link == "" {
-// 				continue
-// 			}
-// 			game.Name = gameFound.Title
-// 			linkParts := strings.Split(gameFound.Link, "/")
-// 			game.SourceID = linkParts[len(linkParts)-2]
-// 			game.DmmId = game.SourceID
-// 			game.CoverURL = gameFound.CoverUrl
-// 			// c.Visit(gameFound.Link) // 不在这里访问详情页
-// 			return
-// 		}
-// 	})
-
-// 	// 错误处理
-// 	c.OnError(func(r *colly.Response, err error) {
-// 		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
-// 	})
-
-// 	// 访问构建的 URL
-// 	err := c.Visit(url)
-// 	if err != nil {
-// 		return models.Game{}, err
-// 	}
-
-// 	// 等待收集完成
-// 	c.Wait()
-
-// 	game, _ = b.FetchMetadataById(GetReqEntity(&game))
-
-// 	return game, nil
-// }
-
 func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.GameEntity, error) {
+	fmt.Println("开始获取DMM游戏信息 36 " + request.Source)
 	var game models.Game = request.GetGame()
 	var gameEntity models.GameEntity = models.GameEntity{}
 	gameEntity.Game = game
-	if request.Source != enums.Dmm {
+	if request.ID == "" {
 		return gameEntity, fmt.Errorf("DMM ID is required to fetch metadata by ID")
 	}
+	fmt.Println("开始获取DMM游戏信息 37 " + request.ID)
 
-	dmmUrl := fmt.Sprintf("https://dlsoft.dmm.co.jp/detail/%s/", game.DmmId)
+	dmmUrl := fmt.Sprintf("https://dlsoft.dmm.co.jp/detail/%s/", request.ID)
 	c := CreateCollector("*dmm.co.jp")
 
 	// 处理游戏详情页面
 	c.OnHTML("div.pageLayout__contentWrapper", func(e *colly.HTMLElement) {
-		name := e.ChildText("h1.productTitle__item productTitle__item--headline")
+		name := e.ChildText("h1.productTitle__item--headline")
+		fmt.Println("开始获取DMM游戏信息 41 " + name)
 		game.Name = name
 
 		// 提取公司信息
@@ -229,6 +158,11 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		var images []string
 		e.DOM.Find("div.productLayout__primaryColumn div.slider-area li img").Each(func(i int, s *goquery.Selection) {
 			image, _ := s.Attr("src")
+			if image == "" {
+				return
+			} else if strings.Contains(image, "pl.jpg") {
+				game.CoverURL = image
+			}
 			images = append(images, image)
 		})
 		game.Images = strings.Join(images, ",")
@@ -348,14 +282,17 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 	// 访问构建的 URL
 	err := c.Visit(dmmUrl)
 	if err != nil {
+		fmt.Println("开始获取DMM游戏信息 40 " + game.CoverURL)
 		return gameEntity, err
 	}
 
 	// 等待收集完成
 	c.Wait()
+	fmt.Println("开始获取DMM游戏信息 39 " + game.CoverURL)
 
 	// 检查是否成功获取了数据
 	if game.Name == "" {
+		fmt.Println("开始获取DMM游戏信息 40 " + game.CoverURL)
 		return gameEntity, fmt.Errorf("game not found: %s", game.SourceID)
 	}
 
@@ -363,6 +300,8 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 	game.SourceType = enums.Dmm // 假设你有这个枚举
 	// game.SourceID = name
 	game.CachedAt = time.Now()
+	gameEntity.Game = game
+	fmt.Println("开始获取DMM游戏信息 38 " + game.CoverURL)
 
 	return gameEntity, nil
 }

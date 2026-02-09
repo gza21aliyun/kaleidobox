@@ -151,8 +151,6 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   };
   const handleUpdate = () => {
     const uuid = crypto.randomUUID();
-    // setTaskId(uuid);
-    // console.log("create uuid  :" + uuid + " current taskId:" + taskId)
     const req = new vo.MetadataRequest({
       id: uuid,
       source: source,
@@ -162,56 +160,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
       should_fetch_images: shouldLoadImages,
     });
     UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), req, uuid)
-    // console.log("create uuid :" + uuid)
     
     
   };
 
-  const handleImport = async () => {
-    // setStep("importing");
-    // setIsLoading(true);
-
-    // try {
-    //   // 转换为后端需要的格式
-    //   const importCandidates: vo.BatchImportCandidate[] = candidates
-    //     .filter(c => c.isSelected)
-    //     .map((c) => {
-    //       const candidate = new vo.BatchImportCandidate({
-    //         folder_path: c.folderPath,
-    //         folder_name: c.folderName,
-    //         executables: c.executables,
-    //         selected_exe: c.selectedExe,
-    //         search_name: c.searchName,
-    //         is_selected: c.isSelected,
-    //         match_status: c.matchStatus,
-    //       });
-    //       if (c.matchedGame) {
-    //         candidate.matched_game = c.matchedGame;
-    //       }
-    //       if (c.matchSource) {
-    //         candidate.match_source = c.matchSource;
-    //       }
-    //       return candidate;
-    //     });
-
-    //   const result = await BatchImportGames(importCandidates);
-    //   setImportResult(result);
-    //   setStep("result");
-
-    //   if (result.success > 0) {
-    //     toast.success(`成功导入 ${result.success} 个游戏`);
-    //     onUpdateComplete();
-    //   }
-    // }
-    // catch (error) {
-    //   console.error("Failed to import:", error);
-    //   toast.error("导入失败");
-    //   setStep("preview");
-    // }
-    // finally {
-    //   setIsLoading(false);
-    // }
-  };
 
   const toggleCandidate = (id: string) => {
     selectedIds.includes(id)
@@ -542,7 +494,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                               <td className="px-3 py-2">
                                 {(() => {
                                     var text: string = "";
-                                    text += candidate.source_type + ":" + candidate.source_id;
+                                    if (candidate.source_id != "") { 
+                                      text += candidate.source_type + ":" + candidate.source_id;
+                                    }
+                                    
                                     if (candidate.source_type !== enums.SourceType.DMM && candidate.dmm_id && candidate.dmm_id !== "") {
                                         text += ",DMM:" + candidate.dmm_id;
                                     }

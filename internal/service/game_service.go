@@ -778,6 +778,7 @@ func (s *GameService) UpdateGamesBackground(games []models.Game, req vo.Metadata
 	taskData := map[string]interface{}{
 		"games": games,
 		"req":   req,
+		"delay": 1000,
 	}
 	return s.taskService.StartTask("game_updates", uuid, 1000, enums.Games, len(games), taskData)
 	// return nil
@@ -818,6 +819,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 		var taskData struct {
 			Games []models.Game      `json:"games"`
 			Req   vo.MetadataRequest `json:"req"`
+			Delay int64              `json:"delay"`
 		}
 
 		if err := json.Unmarshal([]byte(data), &taskData); err != nil {
@@ -919,6 +921,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			updateProgress(index, len(taskData.Games), "", fmt.Sprintf("complete for game %s by ID: %v", ngame.Name, err),
 				ngame.ID, enums.Completed, updatedGame)
 
+			time.Sleep(time.Millisecond * 1000)
 		}
 
 		// 标记完成

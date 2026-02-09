@@ -116,8 +116,6 @@ func initTestSchema(t *testing.T, db *sql.DB) {
 			summary TEXT,
 			gender INTEGER,
 			image TEXT
-		}
-	}
 		)`,
 		// 新增 Work 表
 		`CREATE TABLE IF NOT EXISTS works (

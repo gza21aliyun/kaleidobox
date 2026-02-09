@@ -37,6 +37,7 @@ function LibraryPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [tagsFilter, setTags] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const gamesForUpdate = useRef(games)
 
   
 
@@ -246,6 +247,7 @@ function LibraryPage() {
                   <div className="border-t border-brand-200 dark:border-brand-600 my-1" />
                   <button
                     onClick={() => {
+                      gamesForUpdate.current = games;
                       setIsBatchUpdateOpen(true);
                       setIsDropdownOpen(false);
                     }}
@@ -324,12 +326,17 @@ function LibraryPage() {
         isOpen={isBatchImportOpen}
         onClose={() => setIsBatchImportOpen(false)}
         onImportComplete={loadGames}
+        onOpenUpdate={(res) => {
+          gamesForUpdate.current = res;
+          setIsBatchUpdateOpen(true);
+          loadGames();
+        }}
       />
       <BatchUpdateModal
         isOpen={isBatchUpdateOpen}
         onClose={() => setIsBatchUpdateOpen(false)}
         onUpdateComplete={loadGames}
-        games={games}
+        games={gamesForUpdate.current}
       />
     </div>
   );

@@ -16,6 +16,7 @@ import (
 	"lunabox/internal/utils"
 	"lunabox/internal/vo"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -26,12 +27,13 @@ import (
 
 // ImportResult 导入结果
 type ImportResult struct {
-	Success          int      `json:"success"`           // 成功导入数量
-	Skipped          int      `json:"skipped"`           // 跳过数量（已存在）
-	Failed           int      `json:"failed"`            // 失败数量
-	FailedNames      []string `json:"failed_names"`      // 失败的游戏名称
-	SkippedNames     []string `json:"skipped_names"`     // 跳过的游戏名称
-	SessionsImported int      `json:"sessions_imported"` // 导入的游玩记录数量
+	Success          int           `json:"success"`           // 成功导入数量
+	Skipped          int           `json:"skipped"`           // 跳过数量（已存在）
+	Failed           int           `json:"failed"`            // 失败数量
+	FailedNames      []string      `json:"failed_names"`      // 失败的游戏名称
+	SkippedNames     []string      `json:"skipped_names"`     // 跳过的游戏名称
+	SessionsImported int           `json:"sessions_imported"` // 导入的游玩记录数量
+	Games            []models.Game `json:"games"`
 }
 
 type ImportService struct {
@@ -640,10 +642,14 @@ func (s *ImportService) stringToSourceType(sourceType string) enums.SourceType {
 // ==================== 批量导入功能 ====================
 
 // SelectLibraryDirectory 选择游戏库目录
-func (s *ImportService) SelectLibraryDirectory() (string, error) {
-	selection, err := runtime.OpenDirectoryDialog(s.ctx, runtime.OpenDialogOptions{
-		Title: "选择游戏库目录",
-	})
+func (s *ImportService) SelectLibraryDirectory(isLnk bool) (string, error) {
+	options := runtime.OpenDialogOptions{}
+	if !isLnk {
+		options.Title = "选择游戏库目录"
+	} else {
+		options.Title = "选择快捷方式目录"
+	}
+	selection, err := runtime.OpenDirectoryDialog(s.ctx, options)
 	return selection, err
 }
 
@@ -816,6 +822,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 	// 按名称和路径分别建立索引，用于不同维度的去重检查
 	existingNames := make(map[string]string) // name -> id (用于检查同名但不同路径的情况)
 	existingPaths := make(map[string]string) // path -> name (用于检查同一路径)
+	rs := []models.Game{}
 	for _, g := range existingGames {
 		if g.Name != "" {
 			existingNames[strings.ToLower(g.Name)] = g.ID
@@ -825,7 +832,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		}
 	}
 
-	for _, candidate := range candidates {
+	for i, candidate := range candidates {
 		if !candidate.IsSelected {
 			continue
 		}
@@ -836,6 +843,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 				runtime.LogWarningf(s.ctx, "BatchImportGames: path already exists for game %s, skipping: %s", existingName, candidate.SelectedExe)
 				result.Skipped++
 				result.SkippedNames = append(result.SkippedNames, candidate.SearchName+" (路径已存在: "+existingName+")")
+				rs = append(rs, existingGames[i])
 				continue
 			}
 		}
@@ -850,11 +858,12 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		// 注意：同名但路径不同的游戏允许导入（可能是不同版本/安装位置）
 		if existingID, exists := existingNames[strings.ToLower(gameName)]; exists {
 			// 检查是否是同一路径（完全重复的情况）
-			for _, g := range existingGames {
+			for j, g := range existingGames {
 				if g.ID == existingID && g.Path == candidate.SelectedExe {
 					runtime.LogWarningf(s.ctx, "BatchImportGames: game already exists with same path, skipping: %s", gameName)
 					result.Skipped++
 					result.SkippedNames = append(result.SkippedNames, gameName+" (已存在)")
+					rs = append(rs, existingGames[j])
 					continue
 				}
 			}
@@ -880,6 +889,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		game.UpdatedAt = time.Now()
 		game.Tags = ""
 		game.CachedAt = time.Now()
+		rs = append(rs, game)
 
 		// 保存游戏（图片会在后台异步下载）
 		if err := s.gameService.AddGame(game); err != nil {
@@ -896,6 +906,113 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		}
 		result.Success++
 	}
+	result.Games = rs
 
+	return result, nil
+}
+
+func (s *ImportService) BatchImportGamesFolderLnk(dir string) ([]vo.BatchImportCandidate, error) {
+	var candidates []vo.BatchImportCandidate
+
+	// 使用 filepath.Walk 遍历目录及其子目录
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		// 处理遍历错误
+		if err != nil {
+			fmt.Printf("BatchImportGamesFolderLnk: error accessing path %s: %v\n", path, err)
+			return nil // 继续遍历其他文件
+		}
+
+		// 跳过目录
+		if info.IsDir() {
+			return nil
+		}
+
+		// 检查是否为 .lnk 文件
+		if strings.ToLower(filepath.Ext(path)) == ".lnk" {
+			fmt.Printf("BatchImportGamesFolderLnk: processing lnk file: %s\n", path)
+
+			// 调用 ImportGamesLnk 处理单个 lnk 文件
+			candidate, err := s.ImportGamesLnk(path)
+			if err != nil {
+				fmt.Printf("BatchImportGamesFolderLnk: failed to import %s: %v\n", path, err)
+				return nil // 继续处理其他文件
+			}
+
+			candidates = append(candidates, candidate)
+			fmt.Printf("BatchImportGamesFolderLnk: successfully imported %s\n", path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		fmt.Printf("BatchImportGamesFolderLnk: failed to walk directory %s: %v\n", dir, err)
+		return nil, fmt.Errorf("failed to traverse directory: %w", err)
+	}
+
+	fmt.Printf("BatchImportGamesFolderLnk: found %d lnk files in %s\n", len(candidates), dir)
+
+	return candidates, nil
+}
+
+func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate, error) {
+	// 使用 PowerShell 解析 lnk 文件
+	cmd := exec.Command("powershell", "-Command", `
+		chcp 65001 > $null  # 设置为 UTF-8 代码页
+		$shell = New-Object -ComObject WScript.Shell
+		$shortcut = $shell.CreateShortcut("`+linkPath+`")
+		$shortcut.TargetPath
+	`)
+
+	// 设置环境变量确保使用 UTF-8
+	cmd.Env = append(os.Environ(), "LANG=zh_CN.UTF-8", "LC_ALL=zh_CN.UTF-8")
+
+	output, err := cmd.Output()
+	if err != nil {
+		return vo.BatchImportCandidate{}, fmt.Errorf("failed to execute powershell command: %w", err)
+	}
+
+	// PowerShell 输出可能包含 BOM，需要去除
+	targetPath := strings.TrimSpace(string(output))
+	if strings.HasPrefix(targetPath, "\xff\xfe") || strings.HasPrefix(targetPath, "\xfe\xff") {
+		// 移除 UTF-16 BOM
+		targetPath = targetPath[2:]
+	}
+	if targetPath == "" {
+		return vo.BatchImportCandidate{}, fmt.Errorf("could not resolve target path")
+	}
+
+	// 获取文件夹路径和名称
+	folderPath := filepath.Dir(targetPath)
+	folderName := filepath.Base(folderPath)
+
+	// 获取可执行文件名
+	// fileName := filepath.Base(targetPath)
+	linkName := filepath.Base(linkPath)
+
+	// 创建 BatchImportCandidate 对象
+	result := vo.BatchImportCandidate{
+		FolderPath:  folderPath,
+		FolderName:  folderName,
+		Executables: []string{targetPath},                                 // 将目标文件作为可执行文件
+		SelectedExe: targetPath,                                           // 默认选中解析到的目标文件
+		SearchName:  strings.TrimSuffix(linkName, filepath.Ext(linkName)), // 去掉扩展名作为搜索名
+		IsSelected:  true,                                                 // 默认选中
+		MatchStatus: "pending",
+		MatchSource: enums.Local, // 初始状态为待匹配
+	}
+	game := models.Game{
+		Name:       result.SearchName,
+		SourceType: enums.Local,
+		Path:       result.SelectedExe,
+		ID:         uuid.New().String(),
+	}
+	result.MatchedGame = &game
+	fmt.Printf("ImportGamesLnk: successfully parsed lnk file")
+	fmt.Printf("  LNK文件路径: %s", linkPath)
+	fmt.Printf("  目标文件路径: %s", result.SelectedExe)
+	fmt.Printf("  文件夹路径: %s", result.FolderPath)
+	fmt.Printf("  文件夹名称: %s", result.FolderName)
+	fmt.Printf("  搜索名称: %s\n", result.SearchName)
 	return result, nil
 }

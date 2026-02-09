@@ -4,11 +4,12 @@ import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
 
-import { FetchMetadata, FetchMetadataByName } from "../../../wailsjs/go/service/GameService";
+import { FetchMetadata, FetchMetadataByName, GetGamesByIdsStr } from "../../../wailsjs/go/service/GameService";
 import {
   BatchImportGames,
   ScanLibraryDirectory,
   SelectLibraryDirectory,
+  BatchImportGamesFolderLnk,
 } from "../../../wailsjs/go/service/ImportService";
 import { BetterSelect } from "../ui/BetterSelect";
 
@@ -16,6 +17,7 @@ interface BatchImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImportComplete: () => void;
+  onOpenUpdate: (candidates: models.Game[]) => void;
 }
 
 type Step = "select" | "scan" | "preview" | "match" | "importing" | "result";
@@ -33,7 +35,7 @@ interface LocalCandidate {
   allMatches?: vo.GameMetadataFromWebVO[];
 }
 
-export function BatchImportModal({ isOpen, onClose, onImportComplete }: BatchImportModalProps) {
+export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpdate }: BatchImportModalProps) {
   const [step, setStep] = useState<Step>("select");
   const [libraryPath, setLibraryPath] = useState("");
   const [candidates, setCandidates] = useState<LocalCandidate[]>([]);
@@ -55,16 +57,16 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete }: BatchImp
   if (!isOpen)
     return null;
 
-  const handleSelectDirectory = async () => {
+  const handleSelectDirectory = async (isLnk: boolean) => {
     try {
-      const path = await SelectLibraryDirectory();
+      const path = await SelectLibraryDirectory(isLnk);
       if (path) {
         setLibraryPath(path);
         setStep("scan");
         setIsLoading(true);
 
         try {
-          const scanned = await ScanLibraryDirectory(path);
+          const scanned = !isLnk ? await ScanLibraryDirectory(path) : await BatchImportGamesFolderLnk(path);
           const localCandidates: LocalCandidate[] = (scanned || []).map(c => ({
             folderPath: c.folder_path,
             folderName: c.folder_name,
@@ -94,6 +96,37 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete }: BatchImp
       toast.error("选择目录失败");
     }
   };
+
+    const handleUpdate = () => {    
+      const importCandidates: vo.BatchImportCandidate[] = candidates
+        .filter(c => c.isSelected)
+        .map((c) => {
+          const candidate = new vo.BatchImportCandidate({
+            folder_path: c.folderPath,
+            folder_name: c.folderName,
+            executables: c.executables,
+            selected_exe: c.selectedExe,
+            search_name: c.searchName,
+            is_selected: c.isSelected,
+            match_status: c.matchStatus,
+          });
+          if (c.matchedGame) {
+            candidate.matched_game = c.matchedGame;
+          }
+          if (c.matchSource) {
+            candidate.match_source = c.matchSource;
+          }
+          return candidate;
+        });
+
+        // var rs = await BatchImportGames(importCandidates)
+        BatchImportGames(importCandidates).then((res) => { 
+          resetAndClose()
+          onOpenUpdate(res.games)
+        
+        })
+      
+    };
 
   const handleStartMatch = async () => {
     setStep("match");
@@ -369,16 +402,40 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete }: BatchImp
                 <p className="text-sm text-brand-400 dark:text-brand-500">
                   程序将扫描一级子文件夹，每个包含可执行文件的文件夹将被识别为一个游戏
                 </p>
+                
+                <button
+                  onClick={() => {
+                    handleSelectDirectory(false)
+                  }}
+                  disabled={isLoading}
+                  className="flex w-full items-center justify-center rounded-lg py-4 text-white transition disabled:opacity-50 bg-success-500 hover:bg-success-600"
+                >
+                  <div className="i-mdi-folder-search mr-2 text-xl" />
+                  选择游戏库目录
+                </button>
               </div>
 
-              <button
-                onClick={handleSelectDirectory}
-                disabled={isLoading}
-                className="flex w-full items-center justify-center rounded-lg py-4 text-white transition disabled:opacity-50 bg-success-500 hover:bg-success-600"
-              >
-                <div className="i-mdi-folder-search mr-2 text-xl" />
-                选择游戏库目录
-              </button>
+              <div className="text-center py-8">
+                <div className="i-mdi-folder-open text-6xl text-brand-400 mx-auto mb-4" />
+                <p className="text-brand-600 dark:text-brand-300 mb-2">
+                  选择您的快捷方式目录
+                </p>
+                <p className="text-sm text-brand-400 dark:text-brand-500">
+                  程序将扫描所有子文件夹，每个快捷方式将被识别为一个游戏
+                </p>
+                
+                <button
+                  onClick={() => {
+                    handleSelectDirectory(true)
+                  }}
+                  disabled={isLoading}
+                  className="flex w-full items-center justify-center rounded-lg py-4 text-white transition disabled:opacity-50 bg-blue-500 hover:bg-blue-600"
+                >
+                  <div className="i-mdi-folder-search mr-2 text-xl" />
+                  选择快捷方式目录
+                </button>
+              </div>
+              
             </div>
           )}
 
@@ -601,6 +658,17 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete }: BatchImp
                     {selectedCount}
                     {" "}
                     个游戏
+                  </button>
+                  <button
+                    onClick={handleUpdate}
+                    disabled={selectedCount === 0}
+                    className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-success-600 hover:bg-success-700"
+                  >
+                    导入
+                    {" "}
+                    {selectedCount}
+                    {" "}
+                    个游戏并后台更新匹配
                   </button>
                 </div>
               </div>

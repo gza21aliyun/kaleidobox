@@ -59,6 +59,10 @@ export function FilterBar({
 
   // 初始化时从 localStorage 恢复排序设置
   useEffect(() => {
+
+
+    console.log("标签2：", tagsLoaded);
+
     if (storageKey && !initialized) {
       const savedSortBy = localStorage.getItem(`${storageKey}_sortBy`);
       const savedSortOrder = localStorage.getItem(`${storageKey}_sortOrder`);
@@ -95,7 +99,8 @@ export function FilterBar({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // 计算可用标签（tagsLoaded 中除去 tagsFilter 的标签）
-  const availableTags = getRemainedMapFromArrayMap(tagsFilter || [], tagsLoaded || new Map());
+  const availableTags = getMapFromArrayMap(true, tagsFilter || [], tagsLoaded || new Map());
+  const selectedTags = getMapFromArrayMap(false, tagsFilter || [], tagsLoaded || new Map());
   // const [availableTags, setAvailableTags] = useState<string[]>([]);
   // setAvailableTags(tagsLoaded?.filter((tag) => !tagsFilter!.includes(tag)) || []);
 
@@ -195,70 +200,58 @@ export function FilterBar({
 
                         <div className="p-4">
                           <div className="flex flex-wrap gap-2">
-                            {/* {availableTags.map((tag) => (
-                              <button
-                                key={tag}
-                                onClick={() => {
-                                  onTagsFilterChange([...tagsFilter, tag]);
-                                  // setIsDropdownOpen(false);
-                                }}
-                                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer"
-                              >
-                                {tag}
-                              </button>
-                            ))} */}
 
-                                                      <div className="space-y-4">
-                                                        {Array.from(availableTags.entries()).map(([category, tags]) => (
-                                                          <div key={category} className="border border-brand-200 dark:border-brand-700 rounded-lg p-4 bg-white dark:bg-brand-800/30">
-                                                            <h4 className="font-semibold text-brand-800 dark:text-brand-200 mb-3 flex items-center">
-                                                              <div className="i-mdi-folder-outline mr-2 text-brand-500" />
-                                                              {category}
-                                                              <span className="ml-2 text-xs bg-brand-100 dark:bg-brand-700 text-brand-600 dark:text-brand-300 px-2 py-1 rounded-full">
-                                                                {tags.length}
-                                                              </span>
-                                                            </h4>
-                                                            <div className="flex flex-wrap gap-2">
-                                                              {tags.map((tag) => (
-                                                                <button
-                                                                  // key={tag}
-                                                                  // onClick={() => handleTagClick(tag)}
-                                                                  className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
-                                                                          bg-gradient-to-r from-[#e0e000] to-[#c0c000] 
-                                                                          text-brand-800 dark:text-brand-900
-                                                                          hover:from-[#d0d000] hover:to-[#b0b000]
-                                                                          shadow-sm hover:shadow-md
-                                                                          transform hover:-translate-y-0.5
-                                                                          transition-all duration-200 cursor-pointer
-                                                                          border border-[#d0d000]/30"
-                                                                >
-                                                                  <div className="i-mdi-tag mr-1 text-xs" />
-                                                                  {tag.name}
-                                                                </button>
-                                                              ))}
-                                                              {tags.length === 0 && (
-                                                                <p className="text-brand-500 dark:text-brand-400 text-sm italic">
-                                                                  暂无标签
-                                                                </p>
-                                                              )}
-                                                            </div>
-                                                          </div>
-                                                        ))}
-                                                        {availableTags.size === 0 && (
-                                                          <div className="text-center py-8">
-                                                            <div className="i-mdi-tag-off text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
-                                                            <p className="text-brand-600 dark:text-brand-400">
-                                                              没有可用的标签分类
-                                                            </p>
-                                                          </div>
-                                                        )}
-                                                      </div>
+                              <div className="space-y-4">
+                                {Array.from(availableTags.entries()).map(([category, tags]) => (
+                                  <div key={category} className="border border-brand-200 dark:border-brand-700 rounded-lg p-4 bg-white dark:bg-brand-800/30">
+                                    <h4 className="font-semibold text-brand-800 dark:text-brand-200 mb-3 flex items-center">
+                                      <div className="i-mdi-folder-outline mr-2 text-brand-500" />
+                                      {category}
+                                      <span className="ml-2 text-xs bg-brand-100 dark:bg-brand-700 text-brand-600 dark:text-brand-300 px-2 py-1 rounded-full">
+                                        {tags.length}
+                                      </span>
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {tags.map((tag) => (
+                                        <button
+                                          // key={tag}
+                                          onClick={() => onTagsFilterChange([...tagsFilter, tag.name])}
+                                          className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
+                                                  bg-gradient-to-r from-[#e0e000] to-[#c0c000] 
+                                                  text-brand-800 dark:text-brand-900
+                                                  hover:from-[#d0d000] hover:to-[#b0b000]
+                                                  shadow-sm hover:shadow-md
+                                                  transform hover:-translate-y-0.5
+                                                  transition-all duration-200 cursor-pointer
+                                                  border border-[#d0d000]/30"
+                                        >
+                                          <div className="i-mdi-tag mr-1 text-xs" />
+                                          {tag.name}
+                                        </button>
+                                      ))}
+                                      {tags.length === 0 && (
+                                        <p className="text-brand-500 dark:text-brand-400 text-sm italic">
+                                          暂无标签
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                                {availableTags.size === 0 && (
+                                  <div className="text-center py-8">
+                                    <div className="i-mdi-tag-off text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
+                                    <p className="text-brand-600 dark:text-brand-400">
+                                      没有可用的标签分类
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
 
-                                                        {availableTags.size === 0 && (
-                                                          <p className="text-brand-600 dark:text-brand-400 text-sm">没有可用标签</p>
-                                                        )}
-                                                      </div>
-                                                    </div>
+                                {availableTags.size === 0 && (
+                                  <p className="text-brand-600 dark:text-brand-400 text-sm">没有可用标签</p>
+                                )}
+                          </div>
+                        </div>
 
 
 
@@ -271,9 +264,11 @@ export function FilterBar({
               
               <div className="mt-3 mb-3"></div>
               
-              {tagsFilter && tagsFilter.length > 0 && onTagsFilterChange ? (
+              {
+                
+              tagsFilter && tagsFilter.length > 0 && onTagsFilterChange ? (
                 <div className="flex flex-wrap gap-2">
-                  {tagsFilter.map((tag, index) => (
+                  {/* {tagsFilter.map((tag, index) => (
                   <button
                       key={index}
                       className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer relative group"
@@ -290,6 +285,44 @@ export function FilterBar({
                         <div className="relative z-20 i-mdi-close text-xs" />
                       </span>
                   </button>
+                  ))} */}
+                  {Array.from(selectedTags.entries()).map(([category, tags]) => (
+                    <div key={category} className="rounded-lg p-4 bg-transparent dark:bg-transparent border-0 shadow-none">
+                      <h4 className="font-semibold text-brand-800 dark:text-brand-200 mb-3 flex items-center">
+                        <div className="i-mdi-folder-outline mr-2 text-brand-500" />
+                        {category}
+                        <span className="ml-2 text-xs bg-brand-100 dark:bg-brand-700 text-brand-600 dark:text-brand-300 px-2 py-1 rounded-full">
+                          {tags.length}
+                        </span>
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {tags.map((tag) => (
+                          <button
+                            key={tag.name}
+                            onClick={() => {
+                              const newTagsFilter = tagsFilter.filter(t => t !== tag.name);
+                              onTagsFilterChange(newTagsFilter);
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
+                                    bg-gradient-to-r from-blue-500 to-blue-600 
+                                    text-white dark:text-white
+                                    hover:from-blue-600 hover:to-blue-700
+                                    transform hover:-translate-y-0.5
+                                    transition-all duration-200 cursor-pointer
+                                    border border-blue-400/30
+                                    shadow-sm hover:shadow-md"
+                          >
+                            <div className="i-mdi-tag mr-1 text-xs" />
+                            {tag.name}
+                          </button>
+                        ))}
+                        {tags.length === 0 && (
+                          <p className="text-brand-500 dark:text-brand-400 text-sm italic">
+                            暂无标签
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   ))}
                   </div>
               ) : (
@@ -333,13 +366,13 @@ export function FilterBar({
 }
 
 
-export function getRemainedMapFromArrayMap(array: string[], map: Map<string, models.Tag[]>): Map<string, models.Tag[]> { 
+export function getMapFromArrayMap(isRemain: boolean, array: string[], map: Map<string, models.Tag[]>): Map<string, models.Tag[]> { 
     const newMap = new Map<string, models.Tag[]>();
 
     for (const [key, tags] of map) {
       const newTags: models.Tag[] = [];
       for (const tag of tags) {
-        if (!array.includes(tag.name)) {
+        if ((isRemain && !array.includes(tag.name)) || (!isRemain && array.includes(tag.name))) {
           newTags.push(tag);
         }
       }

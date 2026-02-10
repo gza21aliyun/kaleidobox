@@ -133,6 +133,8 @@ function LibraryPage() {
       // setTagsLoaded(uniqueTags);
       const tags = await ListTags();
       const map = arrayToMap(tags, tag => tag.category);
+      
+      
       setTagsLoaded(map);
 
     }

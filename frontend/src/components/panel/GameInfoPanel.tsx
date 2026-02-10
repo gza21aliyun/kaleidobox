@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
 import { ListStaffs } from "../../../wailsjs/go/service/StaffService";
+import { tagMapForEach } from "../utils/Utility";
 import { GetTagListByString } from "../../../wailsjs/go/service/TagService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
@@ -106,7 +107,7 @@ export function GameInfoPanel({
                         <p className="text-brand-600 dark:text-brand-400 text-sm">暂无工作人员信息</p>
                     )}
                 </div>
-                <div className="mt-4">
+                {/* <div className="mt-4">
                     <div className="font-semibold mb-2 text-brand-900 dark:text-white">类型标签</div>
                     <div className="flex flex-wrap gap-2">
                     {game.meta_tags ? (
@@ -126,9 +127,9 @@ export function GameInfoPanel({
                         <p className="text-brand-600 dark:text-brand-400 text-sm">-</p>
                     )}
                     </div>
-                </div>
+                </div> */}
 
-                <div className="mt-4">
+                {/* <div className="mt-4">
                     <div className="font-semibold mb-2 text-brand-900 dark:text-white">标签</div>
                     <div className="flex flex-wrap gap-2">
                     {game.tags ? (
@@ -149,14 +150,15 @@ export function GameInfoPanel({
                         <p className="text-brand-600 dark:text-brand-400 text-sm">-</p>
                     )}
                     </div>
-                </div>
+                </div> */}
 
 
                 <div className="mt-4">
                     <div className="font-semibold mb-2 text-brand-900 dark:text-white">分类标签</div>
                     <div className="space-y-4">
                         {tagsMap && tagsMap.size > 0 ? (
-                            Array.from(tagsMap.entries()).map(([category, tags]) => (
+                            
+                            tagMapForEach(tagsMap, (category, tags) => (
                                 <div key={category} className="border-l-4 border-brand-500 pl-4">
                                     <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
                                         {category}

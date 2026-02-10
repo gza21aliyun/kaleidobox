@@ -56,6 +56,20 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, dmmIsEnabled bool, fn IdFunc
 		price := e.ChildText(".component-legacy-productTile__review")
 		// log.Print("OnHTML 网页列表 ：", e.Text)
 
+		if !strings.Contains(title, "動画版") && !strings.Contains(title, "音楽") {
+			potentialGames = append(potentialGames, struct {
+				Title    string
+				Link     string
+				Review   string
+				CoverUrl string
+			}{
+				Title:    title,
+				Link:     e.Request.AbsoluteURL(link),
+				Review:   price,
+				CoverUrl: e.ChildAttr("span.component-legacy-productTile__thumbnail img", "src"),
+			})
+		}
+
 		potentialGames = append(potentialGames, struct {
 			Title    string
 			Link     string

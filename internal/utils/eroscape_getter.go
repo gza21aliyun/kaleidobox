@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"encoding/json"
-
 	"github.com/PuerkitoBio/goquery" // 添加 GoQuery 导入
 	"github.com/gocolly/colly/v2"    // 添加 Colly 导入
 )
@@ -202,6 +200,7 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 	var charactorPart = "game_character.php?game="
 	var cUrl = b.GetBaseUrl() + charactorPart + request.ID
 	c := CreateCollector(b.GetDomain())
+	var err error = nil
 
 	c.OnHTML("div.role_main", func(e *colly.HTMLElement) {
 		e.DOM.Find("div.character").Each(func(i int, s *goquery.Selection) {
@@ -211,8 +210,10 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			work.SourceGameId = request.ID
 			work.GameName = gameEntity.Game.Name
 			work.Role = enums.CV
-			work.Images = s.Find("img").AttrOr("src", "")
+			work.Images = s.Find("div.character_image img").AttrOr("src", "")
 			work.CharactorName = s.Find("div.character_name").Text()
+			work.WorkSummary, err = s.Find("div.formal_explanation").Html()
+			fmt.Println("角色经历 01: " + work.WorkSummary)
 			charHref := b.GetBaseUrl() + s.Find("div.character_name a").AttrOr("href", "")
 			var err error = nil
 			if charHref != "" {
@@ -228,6 +229,8 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 				work.SourceCharactorId = queryParams.Get("character")
 			}
 			work.WorkSummary, err = s.Find("div.formal_explanation").Html()
+
+			fmt.Println("角色经历 02: " + work.WorkSummary)
 			if err != nil {
 				fmt.Printf("FetchCharactors error: %v\n", err)
 			}
@@ -249,10 +252,18 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			}
 			newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool { return it.SourceStaffId == work.SourceStaffId })
 			if newWork != nil {
-				work.WorkSummary = newWork.WorkSummary
-				work.SourceCharactorId = newWork.SourceCharactorId
-				work.CharactorName = newWork.CharactorName
-				work.Images = newWork.Images
+				if newWork.WorkSummary != "" {
+					work.WorkSummary = newWork.WorkSummary
+				}
+				if newWork.CharactorId != "" {
+					work.CharactorId = newWork.CharactorId
+				}
+				if newWork.CharactorName != "" {
+					work.CharactorName = newWork.CharactorName
+				}
+				if newWork.Images != "" {
+					work.Images = newWork.Images
+				}
 			} else {
 				gameEntity.WorksMap[enums.CV] = append(gameEntity.WorksMap[enums.CV], work)
 			}
@@ -266,7 +277,7 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 	})
 
 	// 访问构建的 URL
-	err := c.Visit(cUrl)
+	err = c.Visit(cUrl)
 	if err != nil {
 		return gameEntity, err
 	}
@@ -278,15 +289,20 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 func (b EroscapeInfoGetter) FetchMetadataById(
 	request vo.MetadataRequest) (models.GameEntity, error) {
 	var game models.Game = request.GetGame()
+	game.SourceType = enums.Eroscape
+	game.SourceID = request.ID
+	game.EroscapeId = request.ID
 	var gameEntity models.GameEntity = models.GameEntity{}
 	gameEntity.Game = game
 	var gamePart = "game.php?game="
 	var gameUrl = b.GetBaseUrl() + gamePart + request.ID
 	c := CreateCollector(b.GetDomain())
 	c.OnHTML("div#main", func(e *colly.HTMLElement) {
+		fmt.Println("开始获取游戏信息 29")
 
 		// 提取封面图片
 		coverURL := e.ChildAttr("div#main_image a img", "src")
+		game.Name = e.ChildText("div#soft-title span")
 		game.CoverURL = coverURL
 		var tagsMap map[string][]models.Tag = make(map[string][]models.Tag)
 		// 提取公司信息
@@ -336,13 +352,16 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		gameEntity.Tags = tagsMap
 		tagList := []models.Tag{}
 		for category, tags := range tagsMap {
-			if category != models.TagCategoryBrand && category != models.TagCategoryBrand {
+			if category != models.TagCategoryBrand && category != models.TagCategoryGameClass {
 				for _, tag := range tags {
 					tagList = append(tagList, tag)
 				}
 			}
 		}
+		fmt.Println("标签01 ", len(tagList))
+
 		game.Tags = JoinString(tagList, ",", func(tag models.Tag) string { return tag.Name })
+		fmt.Println("标签011 ", game.Tags)
 		// jstr, _ := json.Marshal(tagsMap)
 		// log.Printf("tagsMap:" + string(jstr))
 		// game.Tags = strings.Join(tags, ",")
@@ -513,13 +532,25 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		worksMap[enums.CV] = cvWorks
 		gameEntity.WorksMap = worksMap
 
-		jstr2, _ := json.Marshal(worksMap)
-		log.Printf("worksMap: " + string(jstr2))
+		// jstr2, _ := json.Marshal(worksMap)
+		// log.Printf("worksMap: " + string(jstr2))
+
+		e.DOM.Find("div#dlsite_sample_cg_main a").Each(func(i int, s *goquery.Selection) {
+			imgUrl := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
+			game.Images = MergeStrings(game.Images, imgUrl)
+
+		})
+
+		e.DOM.Find("div#dmm_sample_cg_main a").Each(func(i int, s *goquery.Selection) {
+			imgUrl := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
+			game.Images = MergeStrings(game.Images, imgUrl)
+
+		})
 	})
 
 	// 错误处理
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+		fmt.Printf("Request error 36: %s with error: %s\n", r.Request.URL, err)
 	})
 
 	// 访问构建的 URL
@@ -533,12 +564,15 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 
 	// 检查是否成功获取了数据
 	if game.Name == "" {
+		fmt.Println("游戏未找到 37: " + game.Name)
 		return gameEntity, fmt.Errorf("game not found: %s", game.Name)
 	}
 
 	// 设置其他必要字段
 	game.SourceType = enums.Eroscape // 假设你有这个枚举
 	game.CachedAt = time.Now()
-
+	// gameEntity.WorksMap = worksMap
+	gameEntity.Game = game
+	fmt.Println("开始获取Eroscape游戏信息 38 ", gameEntity.Game.Images)
 	return gameEntity, nil
 }

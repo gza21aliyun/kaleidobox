@@ -421,11 +421,13 @@ func TestGameService_UGB(t *testing.T) {
 	workService := service.NewWorkService()
 	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	workService.SetStaffCharactorService(staffService, charactorService)
-	gameService.SetServices(taskService, charactorService, staffService, workService)
+	tagService := service.NewTagService()
+	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
 
 	t.Run("add game success", func(t *testing.T) {
 		// game := createEroscapeGame()
-		game := createBangumiGame()
+		game := createEroscapeGame()
 		game.ID = "add-test-001"
 		t.Logf("add game 01: %s", game.Name)
 		err := gameService.AddGame(game)
@@ -447,6 +449,7 @@ func TestGameService_UGB(t *testing.T) {
 		if savedGame.Company != game.Company {
 			t.Errorf("公司名称不匹配: 期望 %s, 得到 %s", game.Company, savedGame.Company)
 		}
+
 		req := vo.MetadataRequest{
 			Source:                savedGame.SourceType,
 			ID:                    savedGame.SourceID,
@@ -457,6 +460,7 @@ func TestGameService_UGB(t *testing.T) {
 		var games []models.Game = []models.Game{}
 		games = append(games, savedGame)
 		gameService.ExecueteGamesUpdate(games, req)
+		savedGame, err = gameService.GetGameByID(game.ID)
 		// time.Sleep(2 * time.Second)
 		works, err := workService.GetWorksByGameId(game.ID)
 		// allWorks, err := workService.ListWorks()
@@ -506,6 +510,9 @@ func TestGameService_UGB(t *testing.T) {
 		}
 
 		fmt.Printf("works:%d, count: %d\n", len(works), len(works))
+		fmt.Println("标签 02： ", savedGame.Tags)
+		tags, err := tagService.GetTagListByString(savedGame.Tags)
+		fmt.Println("标签 03： ", len(tags))
 	})
 
 }
@@ -528,7 +535,9 @@ func TestGameService_Search(t *testing.T) {
 	workService := service.NewWorkService()
 	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	workService.SetStaffCharactorService(staffService, charactorService)
-	gameService.SetServices(taskService, charactorService, staffService, workService)
+	tagService := service.NewTagService()
+	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
 
 	t.Run("add game success", func(t *testing.T) {
 		gameName := "オトメ世界の歩き方"
@@ -559,7 +568,9 @@ func TestGameService_ImportLnk(t *testing.T) {
 	workService := service.NewWorkService()
 	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	workService.SetStaffCharactorService(staffService, charactorService)
-	gameService.SetServices(taskService, charactorService, staffService, workService)
+	tagService := service.NewTagService()
+	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
 	importServie := service.NewImportService()
 	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
 

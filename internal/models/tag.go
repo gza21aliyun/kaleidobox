@@ -19,4 +19,5 @@ const (
 	TagCategoryPlatform     = "平台"
 	TagCategoryPublisher    = "发行"
 	TagCategoryPlayerNumber = "玩家人数"
+	TagCategory其Other       = "其他"
 )

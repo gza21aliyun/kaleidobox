@@ -10,6 +10,12 @@ import (
 )
 
 func MergeStrings(tagStr1, tagStr2 string) string {
+	if tagStr1 == "" {
+		return tagStr2
+	}
+	if tagStr2 == "" {
+		return tagStr1
+	}
 	// 分割字符串为数组
 	tags1 := strings.Split(tagStr1, ",")
 	tags2 := strings.Split(tagStr2, ",")

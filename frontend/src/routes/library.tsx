@@ -3,16 +3,21 @@ import type { ImportSource } from "../components/modal/GameImportModal";
 import { createRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { GetGames } from "../../wailsjs/go/service/GameService";
+import { ListTags } from "../../wailsjs/go/service/TagService";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { FilterBar } from "../components/bar/FilterBar";
 import { GameCard } from "../components/card/GameCard";
 import { AddGameModal } from "../components/modal/AddGameModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
+import { arrayToMap } from "../components/utils/Utility";
 import { GameImportModal } from "../components/modal/GameImportModal";
 import { LibrarySkeleton } from "../components/skeleton/LibrarySkeleton";
 import { sortOptions, statusOptions } from "../consts/options";
 import { Route as rootRoute } from "./__root";
 import { TaskPanel } from "../components/panel/TaskPanel";
+import { arrayFind, mapToArray } from "../components/utils/Utility";
+
+import { enums, vo } from "../../wailsjs/go/models";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 
 export const Route = createRoute({
@@ -21,9 +26,11 @@ export const Route = createRoute({
   component: LibraryPage,
 });
 
+
+
 function LibraryPage() {
   const [games, setGames] = useState<models.Game[]>([]);
-  const [tagsLoaded, setTagsLoaded] = useState<string[]>([])
+  const [tagsLoaded, setTagsLoaded] = useState<Map<string, models.Tag[]>>(new Map())
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
@@ -38,11 +45,43 @@ function LibraryPage() {
   const [tagsFilter, setTags] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const gamesForUpdate = useRef(games)
-
   
 
   
+
   
+  useEffect(() => {
+      const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
+        
+          // 注意：使用正确的语法从data对象获取值
+          const task : models.TaskNotice = new models.TaskNotice(data);
+          
+          // console.log("received taskid:" + task.id + " current taskid:" + taskId + ", item_id:" + task.item_id +  " item_status:" + task.item_status)
+          if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id !== "") {
+                  const newGame : models.Game = task.item_data as models.Game;
+                  console.log("newGame:", newGame)
+                  const newGames = [...games]
+                  const game = arrayFind(newGames, (it) => it.id === task.item_id)
+                  if (game) {
+                    const index = newGames.indexOf(game)
+                    
+                    newGames[index] = newGame
+                    setGames(newGames)
+                  }
+                  
+  
+              }
+          
+          
+          
+      });
+  
+      return () => {
+          if (unlistenTaskUpdate) {
+          unlistenTaskUpdate(); // 取消事件监听
+          }
+      };
+      }, [games]);
 
   
   
@@ -85,13 +124,17 @@ function LibraryPage() {
     try {
       const result = await GetGames();
       setGames(result || []);
-      const tags: string[] = [];
-      result?.forEach((game) => {
-        const gameTags = game.tags?.split(",") || [];
-        tags.push(...gameTags);
-      });
-      const uniqueTags : string[] = [...new Set(tags.map(tag => tag.trim()))];
-      setTagsLoaded(uniqueTags);
+      // const tags: string[] = [];
+      // result?.forEach((game) => {
+      //   const gameTags = game.tags?.split(",") || [];
+      //   tags.push(...gameTags);
+      // });
+      // const uniqueTags : string[] = [...new Set(tags.map(tag => tag.trim()))];
+      // setTagsLoaded(uniqueTags);
+      const tags = await ListTags();
+      const map = arrayToMap(tags, tag => tag.category);
+      setTagsLoaded(map);
+
     }
     catch (error) {
       console.error("Failed to load games:", error);

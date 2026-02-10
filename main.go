@@ -212,7 +212,7 @@ func main() {
 			imageService.Init(ctx, db, config)
 			workService.Init(ctx, db, config)
 			workService.SetStaffCharactorService(staffService, charactorService)
-			gameService.SetServices(taskService, charactorService, staffService, workService)
+			gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
 			// 设置 StartService 的 BackupService 依赖
 			startService.SetBackupService(backupService)
 			// 设置 ImportService 的 StartService 依赖（用于导入游玩记录）

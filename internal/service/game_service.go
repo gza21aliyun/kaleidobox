@@ -29,6 +29,7 @@ type GameService struct {
 	staffService     *StaffService
 	charactorService *CharactorService
 	workService      *WorkService
+	tagService       *TagService
 }
 
 func NewGameService() *GameService {
@@ -695,7 +696,7 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = bgmGetter.FetchMetadataReq(req, s.config.BangumiAccessToken)
 		gameEntity, e = bgmGetter.FetchWorks(req, gameEntity, s.config.BangumiAccessToken)
 		game = gameEntity.Game
-
+		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap, func(work models.Work) enums.StaffRole { return work.Role }))
 	case enums.VNDB:
 		fmt.Println("Fetching metadata from VNDB")
@@ -713,12 +714,15 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = escGetter.FetchCharactors(req, gameEntity)
 		game = gameEntity.Game
 		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap, func(work models.Work) enums.StaffRole { return work.Role }))
+		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 	case enums.Dmm:
 		fmt.Println("Fetching metadata from DMM")
 		dmmGetter := utils.NewDmmInfoGetter()
 		game.DmmId = req.ID
 		gameEntity, e = dmmGetter.FetchMetadataById(req)
 		game = gameEntity.Game
+		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap, func(work models.Work) enums.StaffRole { return work.Role }))
+		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 	}
 	return game, e
 }
@@ -786,12 +790,13 @@ func (s *GameService) UpdateGamesBackground(games []models.Game, req vo.Metadata
 
 // 设置任务服务引用
 func (s *GameService) SetServices(taskService *TaskService, charactorService *CharactorService,
-	staffService *StaffService, workService *WorkService) {
+	staffService *StaffService, workService *WorkService, tagService *TagService) {
 	s.taskService = taskService
 	// 注册游戏更新任务函数
 	s.charactorService = charactorService
 	s.staffService = staffService
 	s.workService = workService
+	s.tagService = tagService
 }
 
 func (s *GameService) ExecueteGamesUpdate(games []models.Game, req vo.MetadataRequest) {
@@ -910,6 +915,11 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				}
 			}
 			log.Printf("TaskFunc 31 fetch for game %s, id:%s", ngame.Name, updatedGame.SourceID)
+			if updatedGame.SourceID == "" {
+				updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
+					ngame.ID, enums.Error, nil)
+				continue
+			}
 
 			s.FillGame(&ngame, &updatedGame)
 

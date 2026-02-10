@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
 import { ListStaffs } from "../../../wailsjs/go/service/StaffService";
+import { GetTagListByString } from "../../../wailsjs/go/service/TagService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useEffect, useState } from "react";
@@ -17,38 +18,39 @@ export function GameInfoPanel({
     game, config, onTagTaps }: GameEditFormProps) { 
         const navigate = useNavigate();
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
+        const [tagsMap, setTagsMap] = useState<Map<string, models.Tag[]>>(new Map())
+
 
         useEffect(() => { 
             console.log("01 GetWorksMapByGameId", game.id)
-            // GetWorksMapByGameId(game.id).then((res) => { 
-            //     var newWorksMap = new Map(Object.entries(res) as [enums.StaffRole, models.Work[]][])
-                
-            //     console.log("02 GetWorksMapByGameId", game.id)
-            //     console.log("newWorksMap:", res)
-            //     setWorksMap(newWorksMap)
-            
-            // })
             GetWorksByGameId(game.id).then((res) => { 
                 console.log("01 GetWorksByGameId", game.id)
-                console.log("res:", res)
-                var array: models.Work[] = res;
+                console.log("work res:", res)
+                var array: models.Work[] = res || [];
                 var m = new Map<enums.StaffRole, models.Work[]>();
                 for (let i = 0; i < array.length; i++) {
                     const existingItems = m.get(array[i].role) || [];
                     m.set(array[i].role, [...existingItems, array[i]]);
                 }
                 setWorksMap(m)
-                // setWorks(res)
             
             })
-            ListStaffs().then((res) => { 
-                console.log("staffs:", res)
+            console.log("gameTag", game.tags)
+            GetTagListByString(game.tags).then((res) => {
+                console.log("tag res:", res)
+                var array: models.Tag[] = res || []
+                var m = new Map<string, models.Tag[]>();
+                for (let i = 0; i < array.length; i++) {
+                    const existingItems = m.get(array[i].category) || [];
+                    m.set(array[i].category, [...existingItems, array[i]]);
+                }
+                setTagsMap(m)
             })
-            // CountWorks().then((res) => { 
-            //     console.log("03 CountWorks", res)
-            // })
+            
             return () => { 
                 setWorksMap(new Map())
+                setTagsMap(new Map())
+            
             }
         }, [game])
         const handleTagClick = (tag: string) => {
@@ -148,11 +150,51 @@ export function GameInfoPanel({
                     )}
                     </div>
                 </div>
-                {/* <div>{"cover:" + game.cover_url + "\n images:" + game.images}</div> */}
+
+
+                <div className="mt-4">
+                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">分类标签</div>
+                    <div className="space-y-4">
+                        {tagsMap && tagsMap.size > 0 ? (
+                            Array.from(tagsMap.entries()).map(([category, tags]) => (
+                                <div key={category} className="border-l-4 border-brand-500 pl-4">
+                                    <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
+                                        {category}
+                                    </h4>
+                                    <ul className="mt-2 flex flex-wrap gap-2">
+                                        {tags.map((tag: models.Tag, index: number) => (
+                                            <li
+                                                key={index}
+                                                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer"
+                                                onClick={() => {
+                                                    console.log(`Clicked tag: ${tag.name}`);
+                                                    handleTagClick(tag.name);
+                                                    // 可以在这里添加点击事件处理逻辑
+                                                }}
+                                            >
+                                                {tag.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-brand-600 dark:text-brand-400 text-sm">暂无分类标签</p>
+                        )}
+                    </div>
+                </div>
+
+
+                <div className="mt-4">
+                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">分类标签</div>
+                    <div className="flex flex-wrap gap-2">
+                    
+                    </div>
+                </div>
 
                 { game.images.length > 0 && (
                     <div className="flex flex-col gap-2">
-                        <div className="font-semibold mb-2 text-brand-900 dark:text-white">类型标签</div>
+                        <div className="font-semibold mb-2 text-brand-900 dark:text-white">画廊</div>
                         <div className="grid grid-cols-3 gap-2">
                             {game.images.split(",").filter(img => img != game.cover_url && !img.endsWith("pl.jpg")).map((image, index) => (
                                 <img

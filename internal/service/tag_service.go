@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
 )
@@ -25,6 +26,15 @@ func (s *TagService) Init(ctx context.Context, db *sql.DB, config *appconf.AppCo
 
 // CreateTag 创建新的 Tag 记录
 func (s *TagService) CreateTag(tag *models.Tag) error {
+	if tag == nil {
+		return nil
+	}
+	if tag.Name == "" {
+		return nil
+	}
+	if tag.Category == "" {
+		tag.Category = models.TagCategoryBrand
+	}
 	query := `
 		INSERT INTO tags (name, category, group_name, is_h, is_spoiler, block_modify)
 		VALUES (?, ?, ?, ?, ?, ?)
@@ -37,13 +47,14 @@ func (s *TagService) CreateTag(tag *models.Tag) error {
 		tag.IsSpoiler,
 		tag.BlockModify,
 	)
+	fmt.Println("创建标签成功：", tag.Name, " ", tag.Category)
 	return err
 }
 
 func (s *TagService) CreateOrUpdateTag(name string, category string) error {
 	tag, err := s.GetTagByName(name)
-	if err != nil {
-		if err == sql.ErrNoRows {
+	if err != nil || tag == nil {
+		if err == sql.ErrNoRows || tag == nil {
 			tag = &models.Tag{
 				Name:        name,
 				Category:    category,
@@ -70,11 +81,11 @@ func (s *TagService) CreateOrUpdateTag(name string, category string) error {
 	return err
 }
 
-func (s *TagService) CreateOrUpdateTagMapArray(tagMapArray map[string][]string) error {
+func (s *TagService) CreateOrUpdateTagMapArray(tagMapArray map[string][]models.Tag) error {
 
 	for category, names := range tagMapArray {
 		for _, name := range names {
-			err := s.CreateOrUpdateTag(name, category)
+			err := s.CreateOrUpdateTag(name.Name, category)
 			if err != nil {
 				return err
 			}
@@ -166,21 +177,21 @@ func (s *TagService) ListTags() ([]*models.Tag, error) {
 	return tags, nil
 }
 
-func (s *TagService) GetTagListByString(tagString string) ([]*models.Tag, error) {
+func (s *TagService) GetTagListByString(tagString string) ([]models.Tag, error) {
 	query := `
-		SELECT name, category, group, is_h, is_spoiler, block_modify
+		SELECT name, category, group_name, is_h, is_spoiler, block_modify
 		FROM tags
 		WHERE name IN (
 			SELECT unnest(string_to_array(?, ','))
 		)
 	`
-	rows, err := s.db.QueryContext(s.ctx, query)
+	rows, err := s.db.QueryContext(s.ctx, query, tagString)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var tags []*models.Tag
+	var tags []models.Tag
 	for rows.Next() {
 		var tag models.Tag
 		err := rows.Scan(
@@ -194,17 +205,17 @@ func (s *TagService) GetTagListByString(tagString string) ([]*models.Tag, error)
 		if err != nil {
 			return nil, err
 		}
-		tags = append(tags, &tag)
+		tags = append(tags, tag)
 	}
 	return tags, nil
 }
 
-func (s *TagService) GetTagsMapByString(tagString string) (map[string][]*models.Tag, error) {
+func (s *TagService) GetTagsMapByString(tagString string) (map[string][]models.Tag, error) {
 	tags, err := s.GetTagListByString(tagString)
 	if err != nil {
 		return nil, err
 	}
-	var tagsMap map[string][]*models.Tag = make(map[string][]*models.Tag)
+	var tagsMap map[string][]models.Tag = make(map[string][]models.Tag)
 	for _, tag := range tags {
 		tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
 	}

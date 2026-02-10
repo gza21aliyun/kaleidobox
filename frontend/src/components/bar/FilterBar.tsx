@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BetterSelect } from "../ui/BetterSelect";
+import { models } from "../../../wailsjs/go/models";
+import { arrayFind, mapToArray } from "../utils/Utility";
 
 interface SortOption {
   label: string;
@@ -24,7 +26,7 @@ interface FilterBarProps {
   statusFilter?: string;
   onStatusFilterChange?: (value: string) => void;
   onTagsFilterChange?: (value: string[]) => void;
-  tagsLoaded?: string[];
+  tagsLoaded?: Map<string, models.Tag[]>;
   tagsFilter?: string[];
   statusOptions?: FilterOption[];
   actionButton?: React.ReactNode;
@@ -93,7 +95,7 @@ export function FilterBar({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // 计算可用标签（tagsLoaded 中除去 tagsFilter 的标签）
-  const availableTags = tagsLoaded?.filter(tag => !tagsFilter!.includes(tag));
+  const availableTags = getRemainedMapFromArrayMap(tagsFilter || [], tagsLoaded || new Map());
   // const [availableTags, setAvailableTags] = useState<string[]>([]);
   // setAvailableTags(tagsLoaded?.filter((tag) => !tagsFilter!.includes(tag)) || []);
 
@@ -189,9 +191,11 @@ export function FilterBar({
                             <div className="i-mdi-close text-xl" />
                           </button>
                         </div>
+
+
                         <div className="p-4">
                           <div className="flex flex-wrap gap-2">
-                            {availableTags.map((tag) => (
+                            {/* {availableTags.map((tag) => (
                               <button
                                 key={tag}
                                 onClick={() => {
@@ -202,12 +206,62 @@ export function FilterBar({
                               >
                                 {tag}
                               </button>
-                            ))}
-                            {availableTags.length === 0 && (
-                              <p className="text-brand-600 dark:text-brand-400 text-sm">没有可用标签</p>
-                            )}
-                          </div>
-                        </div>
+                            ))} */}
+
+                                                      <div className="space-y-4">
+                                                        {Array.from(availableTags.entries()).map(([category, tags]) => (
+                                                          <div key={category} className="border border-brand-200 dark:border-brand-700 rounded-lg p-4 bg-white dark:bg-brand-800/30">
+                                                            <h4 className="font-semibold text-brand-800 dark:text-brand-200 mb-3 flex items-center">
+                                                              <div className="i-mdi-folder-outline mr-2 text-brand-500" />
+                                                              {category}
+                                                              <span className="ml-2 text-xs bg-brand-100 dark:bg-brand-700 text-brand-600 dark:text-brand-300 px-2 py-1 rounded-full">
+                                                                {tags.length}
+                                                              </span>
+                                                            </h4>
+                                                            <div className="flex flex-wrap gap-2">
+                                                              {tags.map((tag) => (
+                                                                <button
+                                                                  // key={tag}
+                                                                  // onClick={() => handleTagClick(tag)}
+                                                                  className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
+                                                                          bg-gradient-to-r from-[#e0e000] to-[#c0c000] 
+                                                                          text-brand-800 dark:text-brand-900
+                                                                          hover:from-[#d0d000] hover:to-[#b0b000]
+                                                                          shadow-sm hover:shadow-md
+                                                                          transform hover:-translate-y-0.5
+                                                                          transition-all duration-200 cursor-pointer
+                                                                          border border-[#d0d000]/30"
+                                                                >
+                                                                  <div className="i-mdi-tag mr-1 text-xs" />
+                                                                  {tag.name}
+                                                                </button>
+                                                              ))}
+                                                              {tags.length === 0 && (
+                                                                <p className="text-brand-500 dark:text-brand-400 text-sm italic">
+                                                                  暂无标签
+                                                                </p>
+                                                              )}
+                                                            </div>
+                                                          </div>
+                                                        ))}
+                                                        {availableTags.size === 0 && (
+                                                          <div className="text-center py-8">
+                                                            <div className="i-mdi-tag-off text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
+                                                            <p className="text-brand-600 dark:text-brand-400">
+                                                              没有可用的标签分类
+                                                            </p>
+                                                          </div>
+                                                        )}
+                                                      </div>
+
+                                                        {availableTags.size === 0 && (
+                                                          <p className="text-brand-600 dark:text-brand-400 text-sm">没有可用标签</p>
+                                                        )}
+                                                      </div>
+                                                    </div>
+
+
+
                       </div>
                     </div>
                   )}
@@ -276,4 +330,22 @@ export function FilterBar({
     </div>
     
   );
+}
+
+
+export function getRemainedMapFromArrayMap(array: string[], map: Map<string, models.Tag[]>): Map<string, models.Tag[]> { 
+    const newMap = new Map<string, models.Tag[]>();
+
+    for (const [key, tags] of map) {
+      const newTags: models.Tag[] = [];
+      for (const tag of tags) {
+        if (!array.includes(tag.name)) {
+          newTags.push(tag);
+        }
+      }
+      if (newTags.length > 0) {
+        newMap.set(key, newTags);
+      }
+    }
+    return newMap;
 }

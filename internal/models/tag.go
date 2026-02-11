@@ -15,9 +15,11 @@ func (t Tag) GetName() string {
 
 const (
 	TagCategoryBrand        = "品牌"
-	TagCategoryGameClass    = "游戏类型"
+	TagCategoryGenre        = "游戏类型"
 	TagCategoryPlatform     = "平台"
 	TagCategoryPublisher    = "发行"
 	TagCategoryPlayerNumber = "玩家人数"
-	TagCategory其Other       = "其他"
+	TagCategoryOther        = "其他"
+	TagCategoryCustom       = "自定义"
+	TagCategorySeries       = "系列"
 )

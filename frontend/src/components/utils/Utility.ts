@@ -1,6 +1,17 @@
-import { models } from "../../../wailsjs/go/models";
+import { enums, models } from "../../../wailsjs/go/models";
 
 
+
+export const TAG_CATEGORY = {
+    TagCategoryBrand        : "品牌",
+	TagCategoryGenre        : "游戏类型",
+	TagCategoryPlatform     : "平台",
+	TagCategoryPublisher    : "发行",
+	TagCategoryPlayerNumber : "玩家人数",
+	TagCategoryOther        : "其他",
+	TagCategoryCustom       : "自定义",    
+	TagCategorySeries       : "系列",
+} as const;
 export function arrayToMap<T>(ar: T[], keyFn: (key: T) => string): Map<string, T[]>{
     const map = new Map<string, T[]>();
     ar.forEach(item => {
@@ -78,4 +89,77 @@ export function getMapFromArrayMap(array: models.Tag[], map: Map<string, models.
         
     }
     return newMap;
+}
+
+
+export function tagMapForEach(map: Map<string, models.Tag[]>, fn: (key: string, 
+    tags: models.Tag[]) => JSX.Element) : JSX.Element[] {
+        var result: JSX.Element[] = [];            
+        const handle = (key: string) => {
+            console.log("tagMapForEach key: " + key + ",has: " + map.has(key))
+            if (map.has(key)) {
+                result.push(fn(key, map.get(key)!));
+            }
+        };
+        handle(TAG_CATEGORY.TagCategoryBrand);
+        handle(TAG_CATEGORY.TagCategoryGenre);
+        handle(TAG_CATEGORY.TagCategoryPlatform);
+        handle(TAG_CATEGORY.TagCategoryPlayerNumber);
+        handle(TAG_CATEGORY.TagCategorySeries);
+        handle(TAG_CATEGORY.TagCategoryCustom);
+        handle(TAG_CATEGORY.TagCategoryOther);
+        Array.from(map.entries()).map(([key, tags]) => { 
+            if (key != TAG_CATEGORY.TagCategoryOther && key != TAG_CATEGORY.TagCategoryCustom && 
+                key != TAG_CATEGORY.TagCategorySeries && key != TAG_CATEGORY.TagCategoryPlatform && 
+                key != TAG_CATEGORY.TagCategoryPlayerNumber && key != TAG_CATEGORY.TagCategoryGenre && key != TAG_CATEGORY.TagCategoryBrand
+            ) {
+                handle(key);
+            }
+        });
+        return result;
+}
+
+export function workMapForEach(map: Map<enums.StaffRole, models.Work[]>, fn: (key: enums.StaffRole, 
+    tags: models.Work[]) => JSX.Element) : JSX.Element[] {
+        var result: JSX.Element[] = [];            
+        const handle = (role: enums.StaffRole) => {
+            if (map.has(role)) {
+                result.push(fn(role, map.get(role)!));
+            }
+        };
+        handle(enums.StaffRole.DIRECTOR);
+        handle(enums.StaffRole.CHARA_DESIGN);
+        handle(enums.StaffRole.SCENEARIO);
+        handle(enums.StaffRole.ART);
+        handle(enums.StaffRole.STAFF);
+        handle(enums.StaffRole.CV);
+        handle(enums.StaffRole.COMPOSER);
+        handle(enums.StaffRole.SINGER);
+
+
+        return result;
+}
+
+export function charactorsForEach(map: Map<enums.StaffRole, models.Work[]>, fn: ( 
+    work: models.Work) => JSX.Element) : JSX.Element[] {
+        var result: JSX.Element[] = [];        
+        var charactors: models.Work[] = []   
+        const handle = (role: enums.StaffRole) => {
+            if (map.has(role)) {
+                map.get(role)!.forEach((work) => {
+                    if (work.charactor_name != "")
+                        charactors.push(work);
+                        // result.push(fn(work));
+                })
+            }
+        };
+        handle(enums.StaffRole.CV);
+        handle(enums.StaffRole.CHARACTOR);
+        charactors = charactors.sort((a, b) => -a.images.localeCompare(b.images));
+        charactors.forEach((charactor) => {
+            result.push(fn(charactor)); 
+        })
+
+
+        return result;
 }

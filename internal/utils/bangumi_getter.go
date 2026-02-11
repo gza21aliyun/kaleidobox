@@ -324,9 +324,9 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	for _, metaTagText := range bangumiResp.MetaTags {
 		tag := models.Tag{
 			Name:     metaTagText,
-			Category: models.TagCategoryGameClass,
+			Category: models.TagCategoryGenre,
 		}
-		tagsMap[models.TagCategoryGameClass] = append(tagsMap[models.TagCategoryGameClass], tag)
+		tagsMap[models.TagCategoryGenre] = append(tagsMap[models.TagCategoryGenre], tag)
 	}
 	game.Summary = bangumiResp.Summary
 	game.SourceType = enums.Bangumi
@@ -465,7 +465,7 @@ func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxIte
 				tag.BlockModify = true
 				tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
 			} else if strings.Contains(item.Key, "游戏类型") {
-				tag.Category = models.TagCategoryGameClass
+				tag.Category = models.TagCategoryGenre
 				tag.BlockModify = true
 				tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
 			} else if strings.Contains(item.Key, "开发") {

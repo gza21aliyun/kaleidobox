@@ -106,7 +106,7 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 	// if work.Role == enums.Charactor {
 	// 	return nil
 	// }
-	if err == sql.ErrNoRows && work.CharactorId != "" {
+	if newWork.Id == "" && work.CharactorId != "" {
 		newWork, err = s.GetWorkByCharactor(work.GameId, work.CharactorId)
 		if err != nil && err != sql.ErrNoRows {
 			fmt.Println("获取角色工作出错 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)

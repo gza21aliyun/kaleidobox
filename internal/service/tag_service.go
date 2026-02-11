@@ -53,11 +53,15 @@ func (s *TagService) CreateTag(tag *models.Tag) error {
 
 func (s *TagService) CreateOrUpdateTag(name string, category string) error {
 	tag, err := s.GetTagByName(name)
+	cate := category
+	if cate == "" {
+		cate = models.TagCategoryOther
+	}
 	if err != nil || tag == nil {
 		if err == sql.ErrNoRows || tag == nil {
 			tag = &models.Tag{
 				Name:        name,
-				Category:    category,
+				Category:    cate,
 				IsH:         false,
 				IsSpoiler:   false,
 				BlockModify: false,
@@ -66,17 +70,8 @@ func (s *TagService) CreateOrUpdateTag(name string, category string) error {
 		}
 		return err
 	} else {
-		if category != "" {
-			if category == "-1" {
-				if tag.Category != "" {
-					tag.Category = ""
-					return s.UpdateTag(tag)
-				}
-			} else {
-				tag.Category = category
-				return s.UpdateTag(tag)
-			}
-		}
+		tag.Category = cate
+		return s.UpdateTag(tag)
 	}
 	return err
 }

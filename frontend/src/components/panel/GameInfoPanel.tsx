@@ -3,7 +3,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
 import { ListStaffs } from "../../../wailsjs/go/service/StaffService";
-import { tagMapForEach } from "../utils/Utility";
+import { tagMapForEach, workMapForEach, charactorsForEach } from "../utils/Utility";
 import { GetTagListByString } from "../../../wailsjs/go/service/TagService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
@@ -79,7 +79,7 @@ export function GameInfoPanel({
                     <h3 className="text-lg font-semibold mb-3 text-brand-900 dark:text-white">工作人员信息</h3>
                     {worksMap && worksMap.size > 0 ? (
                         <div className="space-y-4">
-                            {Array.from(worksMap.entries()).map(([role, works]) => (
+                            {workMapForEach(worksMap,(role, works) => (
                                 <div key={role} className="border-l-4 border-brand-500 pl-4">
                                     <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
                                         {role.replace(/([A-Z])/g, ' $1').trim()} {/* 将驼峰命名转换为可读格式 */}
@@ -91,8 +91,8 @@ export function GameInfoPanel({
                                                 onClick={() => handleStaffClick(work)}
                                                 className="text-sm text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/50 px-2 py-1 rounded">
                                                     {work.role === enums.StaffRole.CV 
-                                                        ? `${work.charactor_name || '未知角色'} (${work.staff_name || '未知声优'})`
-                                                        : work.staff_name || work.charactor_name || `工作人员 ${index + 1}`
+                                                        ? `${work.staff_name || ''} (${work.charactor_name || '未知角色'})`
+                                                        : work.staff_name || `工作人员 ${index + 1}`
                                                     }
                                                 </li>
                                             ))}
@@ -154,6 +154,70 @@ export function GameInfoPanel({
 
 
                 <div className="mt-4">
+                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">角色</div>
+                    <div className="flex flex-wrap gap-3">
+                        {true ? (
+                            
+                            charactorsForEach(worksMap, (charactor) => (
+                                <div key={`${charactor.charactor_name}-${charactor.staff_name}`} 
+                 className="flex items-center gap-3 bg-white dark:bg-brand-800/30 rounded-lg p-3 border border-brand-200 dark:border-brand-700 min-w-[280px] hover:shadow-md transition-shadow">
+                {/* 角色图片 */}
+                {charactor.images && (
+                    <div className="flex-shrink-0">
+                        <img 
+                            src={charactor.images} 
+                            alt={charactor.charactor_name}
+                            className="w-26 h-40 object-cover rounded-lg"
+                            style={{ objectFit: 'cover', objectPosition: 'center top' }}
+                        />
+                    </div>
+                )}
+                
+                {/* 角色信息 */}
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-brand-900 dark:text-white truncate">
+                        <button
+                                onClick={() => {
+                                    if (charactor.charactor_id) {
+                                        navigate({ to: '/charactor/$charactorId', params: { charactorId: charactor.charactor_id } });
+                                    }
+                                }}
+                                className="text-sm text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
+                            >
+                                {charactor.charactor_name}
+                            </button>
+                        {/* {charactor.charactor_name} */}
+                    </h3>
+                    
+                    {charactor.staff_name && (
+                        <div className="mt-1">
+                            <span className="text-xs text-brand-600 dark:text-brand-400">CV：</span>
+                            <button
+                                onClick={() => {
+                                    if (charactor.staff_id) {
+                                        navigate({ to: '/staff/$staffId', params: { staffId: charactor.staff_id } });
+                                    }
+                                }}
+                                className="text-sm text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
+                            >
+                                {charactor.staff_name}
+                            </button>
+                        </div>
+                    )}
+                </div>
+                
+            </div>
+                                
+                            ))
+                        ) : (
+                            <p className="text-brand-600 dark:text-brand-400 text-sm">暂无分类标签</p>
+                        )}
+                    </div>
+                </div>
+
+
+
+                <div className="mt-4">
                     <div className="font-semibold mb-2 text-brand-900 dark:text-white">分类标签</div>
                     <div className="space-y-4">
                         {tagsMap && tagsMap.size > 0 ? (
@@ -187,12 +251,12 @@ export function GameInfoPanel({
                 </div>
 
 
-                <div className="mt-4">
+                {/* <div className="mt-4">
                     <div className="font-semibold mb-2 text-brand-900 dark:text-white">分类标签</div>
                     <div className="flex flex-wrap gap-2">
                     
                     </div>
-                </div>
+                </div> */}
 
                 { game.images.length > 0 && (
                     <div className="flex flex-col gap-2">

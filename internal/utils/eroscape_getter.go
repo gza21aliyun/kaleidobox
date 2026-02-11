@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -197,10 +198,19 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 	if request.ShouldFetchCharactors == false {
 		return gameEntity, nil
 	}
+	if gameEntity.WorksMap == nil {
+		var worksMap map[enums.StaffRole][]models.Work = make(map[enums.StaffRole][]models.Work)
+		gameEntity.WorksMap = worksMap
+	}
 	var charactorPart = "game_character.php?game="
 	var cUrl = b.GetBaseUrl() + charactorPart + request.ID
 	c := CreateCollector(b.GetDomain())
 	var err error = nil
+	var cvs []models.Work = gameEntity.WorksMap[enums.CV]
+	if cvs == nil {
+		cvs = []models.Work{}
+	}
+	var characters []models.Work = []models.Work{}
 
 	c.OnHTML("div.role_main", func(e *colly.HTMLElement) {
 		e.DOM.Find("div.character").Each(func(i int, s *goquery.Selection) {
@@ -250,22 +260,32 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 				// 提取 character 参数的值
 				work.SourceStaffId = queryParams.Get("creator")
 			}
-			newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool { return it.SourceStaffId == work.SourceStaffId })
-			if newWork != nil {
-				if newWork.WorkSummary != "" {
-					work.WorkSummary = newWork.WorkSummary
-				}
-				if newWork.CharactorId != "" {
-					work.CharactorId = newWork.CharactorId
-				}
-				if newWork.CharactorName != "" {
-					work.CharactorName = newWork.CharactorName
-				}
-				if newWork.Images != "" {
-					work.Images = newWork.Images
-				}
+			if work.SourceStaffId == "" {
+				characters = append(characters, work)
 			} else {
-				gameEntity.WorksMap[enums.CV] = append(gameEntity.WorksMap[enums.CV], work)
+				newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool { return it.SourceStaffId == work.SourceStaffId })
+				if newWork != nil {
+					if work.WorkSummary != "" {
+						newWork.WorkSummary = work.WorkSummary
+					}
+					if work.CharactorId != "" {
+						newWork.CharactorId = work.CharactorId
+					}
+					if work.CharactorName != "" {
+						newWork.CharactorName = work.CharactorName
+					}
+
+					fmt.Println("角色图片 01: " + work.Images)
+					// fmt.p
+					if work.Images != "" {
+						newWork.Images = work.Images
+					}
+					fmt.Println("角色图片 02: " + newWork.Images)
+					cvs = append(cvs, *newWork)
+				} else {
+					cvs = append(cvs, work)
+					gameEntity.WorksMap[enums.CV] = append(gameEntity.WorksMap[enums.CV], work)
+				}
 			}
 
 		})
@@ -284,6 +304,13 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 
 	// 等待收集完成
 	c.Wait()
+	jstr, _ := json.Marshal(gameEntity.WorksMap)
+	log.Printf("worksMap:" + string(jstr))
+
+	// gameEntity.WorksMap[enums.CV] = cvs
+	if len(characters) > 0 {
+		gameEntity.WorksMap[enums.Charactor] = characters
+	}
 	return gameEntity, nil
 }
 func (b EroscapeInfoGetter) FetchMetadataById(
@@ -319,10 +346,10 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			g := strings.TrimSpace(s.Text())
 			genreTag := models.Tag{
 				Name:        g,
-				Category:    models.TagCategoryGameClass,
+				Category:    models.TagCategoryGenre,
 				BlockModify: true,
 			}
-			tagsMap[models.TagCategoryGameClass] = append(tagsMap[models.TagCategoryGameClass], genreTag)
+			tagsMap[models.TagCategoryGenre] = append(tagsMap[models.TagCategoryGenre], genreTag)
 		})
 
 		// 提取简介
@@ -351,11 +378,9 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		})
 		gameEntity.Tags = tagsMap
 		tagList := []models.Tag{}
-		for category, tags := range tagsMap {
-			if category != models.TagCategoryBrand && category != models.TagCategoryGameClass {
-				for _, tag := range tags {
-					tagList = append(tagList, tag)
-				}
+		for _, tags := range tagsMap {
+			for _, tag := range tags {
+				tagList = append(tagList, tag)
 			}
 		}
 		fmt.Println("标签01 ", len(tagList))

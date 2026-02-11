@@ -151,23 +151,29 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 
 		game.Company = company
 
+		tagList := []models.Tag{}
+		tagList = append(tagList, models.Tag{Name: company, Category: models.TagCategoryBrand, BlockModify: true})
+
 		genre := e.ChildText("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow:contains('ゲームジャンル') div.contentsDetailBottom__tableDataRight p")
 		game.MetaTags = genre
+		tagList = append(tagList, models.Tag{Name: genre, Category: models.TagCategoryGenre, BlockModify: true})
 
 		// 提取简介
 		summary, _ := e.DOM.Find("div.area-detail-read").Html()
 		game.Summary = summary
 
 		// 提取标签
-		var tags []string
+		// var tags []string
 		e.DOM.Find("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container li").Each(func(i int, s *goquery.Selection) {
 			tag := strings.TrimSpace(s.Text())
 			if !strings.Contains(tag, "還元") && !strings.Contains(tag, "クーポン") {
-				tags = append(tags, tag)
+				// tags = append(tags, tag)
+				tagList = append(tagList, models.Tag{Name: tag, Category: models.TagCategoryOther})
 			}
 
 		})
-		game.Tags = strings.Join(tags, ",")
+		game.Tags = JoinString(tagList, ",", func(tag models.Tag) string { return tag.Name })
+		gameEntity.Tags = ArrayToMap(tagList, func(t1 models.Tag) string { return t1.Category })
 		// 获取图片
 		var images []string
 		e.DOM.Find("div.productLayout__primaryColumn div.slider-area li img").Each(func(i int, s *goquery.Selection) {

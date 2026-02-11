@@ -16,7 +16,6 @@ import (
 	"lunabox/internal/utils"
 	"lunabox/internal/vo"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -956,28 +955,23 @@ func (s *ImportService) BatchImportGamesFolderLnk(dir string) ([]vo.BatchImportC
 }
 
 func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate, error) {
-	// 使用 PowerShell 解析 lnk 文件
-	cmd := exec.Command("powershell", "-Command", `
-		chcp 65001 > $null  # 设置为 UTF-8 代码页
+	// 使用 PowerShell 解析 lnk 文件（改进版本：无窗口且正确编码）
+	psCommand := `
 		$shell = New-Object -ComObject WScript.Shell
-		$shortcut = $shell.CreateShortcut("`+linkPath+`")
-		$shortcut.TargetPath
-	`)
+		$shortcut = $shell.CreateShortcut("` + linkPath + `")
+		$targetPath = $shortcut.TargetPath
+		# 确保输出为UTF-8编码
+		[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+		Write-Output $targetPath
+	`
 
-	// 设置环境变量确保使用 UTF-8
-	cmd.Env = append(os.Environ(), "LANG=zh_CN.UTF-8", "LC_ALL=zh_CN.UTF-8")
-
-	output, err := cmd.Output()
+	output, err := utils.ExecutePowerShellHidden(psCommand)
 	if err != nil {
 		return vo.BatchImportCandidate{}, fmt.Errorf("failed to execute powershell command: %w", err)
 	}
 
-	// PowerShell 输出可能包含 BOM，需要去除
-	targetPath := strings.TrimSpace(string(output))
-	if strings.HasPrefix(targetPath, "\xff\xfe") || strings.HasPrefix(targetPath, "\xfe\xff") {
-		// 移除 UTF-16 BOM
-		targetPath = targetPath[2:]
-	}
+	// 清理输出中的BOM标记并去除空白
+	targetPath := utils.RemoveBOMAndTrim(output)
 	if targetPath == "" {
 		return vo.BatchImportCandidate{}, fmt.Errorf("could not resolve target path")
 	}

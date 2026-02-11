@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
+	"strings"
 )
 
 type TagService struct {
@@ -140,6 +141,85 @@ func (s *TagService) UpdateTag(tag *models.Tag) error {
 func (s *TagService) DeleteTag(name string) error {
 	query := `DELETE FROM tags WHERE name = ?`
 	_, err := s.db.ExecContext(s.ctx, query, name)
+	return err
+}
+
+func (s *TagService) ListGroups() ([]string, error) {
+	query := `
+		SELECT DISTINCT group_name
+		FROM tags
+		WHERE group_name IS NOT NULL AND group_name != ''
+		ORDER BY group_name
+	`
+	rows, err := s.db.QueryContext(s.ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var groups []string
+	for rows.Next() {
+		var group string
+		err := rows.Scan(&group)
+		if err != nil {
+			return nil, err
+		}
+		groups = append(groups, group)
+	}
+
+	// 检查迭代过程中是否有错误
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return groups, nil
+}
+
+// UpdateTagGroup 更新标签的分组
+func (s *TagService) UpdateTagGroup(tagName string, groupName string) error {
+	query := `
+		UPDATE tags 
+		SET group_name = ? 
+		WHERE name = ?
+	`
+	_, err := s.db.ExecContext(s.ctx, query, groupName, tagName)
+	return err
+}
+
+// UpdateTagsGroup 批量更新多个标签的分组
+func (s *TagService) UpdateTagsGroup(tagNames []string, groupName string) error {
+	if len(tagNames) == 0 {
+		return nil
+	}
+
+	// 构建占位符
+	placeholders := make([]string, len(tagNames))
+	args := make([]interface{}, len(tagNames)+1)
+	args[0] = groupName
+
+	for i, tagName := range tagNames {
+		placeholders[i] = "?"
+		args[i+1] = tagName
+	}
+
+	query := fmt.Sprintf(`
+		UPDATE tags 
+		SET group_name = ? 
+		WHERE name IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	_, err := s.db.ExecContext(s.ctx, query, args...)
+	return err
+}
+
+// DeleteTagGroup 删除标签分组（将该分组下的所有标签的group_name设为空）
+func (s *TagService) DeleteTagGroup(groupName string) error {
+	query := `
+		UPDATE tags 
+		SET group_name = '' 
+		WHERE group_name = ?
+	`
+	_, err := s.db.ExecContext(s.ctx, query, groupName)
 	return err
 }
 

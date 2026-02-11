@@ -70,7 +70,9 @@ func (s *TagService) CreateOrUpdateTag(name string, category string) error {
 		}
 		return err
 	} else {
-		tag.Category = cate
+		if !tag.BlockModify {
+			tag.Category = cate
+		}
 		return s.UpdateTag(tag)
 	}
 	return err

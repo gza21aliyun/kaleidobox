@@ -64,7 +64,7 @@ func ArrayToMap[T1 any, T2 comparable](slice []T1, fn func(t1 T1) T2) map[T2][]T
 	return result
 }
 
-func MapToArray[T1 any, T2 comparable](m map[T2][]T1, fn func(t1 T1) T2) []T1 {
+func MapToArray[T1 any, T2 comparable](m map[T2][]T1) []T1 {
 	var result []T1 = []T1{}
 	for _, item := range m {
 		for _, item2 := range item {

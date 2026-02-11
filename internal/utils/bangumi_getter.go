@@ -338,7 +338,13 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	gameEntity.Tags = tagsMap
 
 	// 从 infobox 中提取开发商信息
-	err = b.extractCompanyFromInfobox(bangumiResp.Infobox, tagsMap, &game)
+	err = b.extractCompanyFromInfobox(bangumiResp.Infobox, &gameEntity, &game)
+	for _, tag := range bangumiResp.Tags {
+		gameEntity.Tags[models.TagCategoryOther] = append(gameEntity.Tags[models.TagCategoryOther], models.Tag{Name: tag.Name})
+	}
+	game.Tags = JoinString(MapToArray(gameEntity.Tags), ",",
+		func(tag models.Tag) string { return tag.Name })
+	fmt.Println("bangumi标签 01", len(gameEntity.Tags[models.TagCategoryOther]))
 	// game.Company = company
 	// companyTag := models.Tag{
 	// 	Name:        company,
@@ -445,7 +451,8 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 }
 
 // extractCompanyFromInfobox 从 infobox 中提取开发商信息
-func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxItem, tagsMap map[string][]models.Tag, game *models.Game) error {
+func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxItem, gameEntity *models.GameEntity, game *models.Game) error {
+	var tagsMap map[string][]models.Tag = gameEntity.Tags
 	for _, item := range infobox {
 		// 查找开发商相关的字段
 		if strings.Contains(item.Key, "开发商") || strings.Contains(item.Key, "开发") {
@@ -507,5 +514,6 @@ func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxIte
 
 		}
 	}
+	gameEntity.Tags = tagsMap
 	return nil
 }

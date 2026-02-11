@@ -697,7 +697,7 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = bgmGetter.FetchWorks(req, gameEntity, s.config.BangumiAccessToken)
 		game = gameEntity.Game
 		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap, func(work models.Work) enums.StaffRole { return work.Role }))
+		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
 	case enums.VNDB:
 		fmt.Println("Fetching metadata from VNDB")
 		vndbGetter := utils.NewVNDBInfoGetter()
@@ -713,7 +713,7 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = escGetter.FetchMetadataById(req)
 		gameEntity, e = escGetter.FetchCharactors(req, gameEntity)
 		game = gameEntity.Game
-		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap, func(work models.Work) enums.StaffRole { return work.Role }))
+		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
 		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 	case enums.Dmm:
 		fmt.Println("Fetching metadata from DMM")
@@ -721,7 +721,7 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		game.DmmId = req.ID
 		gameEntity, e = dmmGetter.FetchMetadataById(req)
 		game = gameEntity.Game
-		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap, func(work models.Work) enums.StaffRole { return work.Role }))
+		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
 		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 	}
 	return game, e

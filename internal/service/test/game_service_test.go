@@ -427,7 +427,7 @@ func TestGameService_UGB(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
 		// game := createEroscapeGame()
-		game := createEroscapeGame()
+		game := createBangumiGame()
 		game.ID = "add-test-001"
 		t.Logf("add game 01: %s", game.Name)
 		err := gameService.AddGame(game)

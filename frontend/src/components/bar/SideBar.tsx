@@ -13,6 +13,8 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
   const navItems = [
     { to: "/", label: "首页", icon: "i-mdi-home" },
     { to: "/library", label: "游戏库", icon: "i-mdi-gamepad-variant" },
+    { to: "/charactor_list", label: "角色", icon: "i-mdi-account-group" },
+    { to: "/tag_list", label: "标签", icon: "i-mdi-tag-multiple" },
     { to: "/stats", label: "统计", icon: "i-mdi-chart-bar" },
     { to: "/categories", label: "收藏", icon: "i-mdi-format-list-bulleted" },
   ];

@@ -15,6 +15,7 @@ import { useAppStore } from "../store";
 import { formatLocalDate } from "../utils/time";
 import { Route as rootRoute } from "./__root";
 import { GameInfoPanel } from "../components/panel/GameInfoPanel";
+import { GameGalleryPanel } from "../components/panel/GameGalleryPanel"; // 新增导入
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -335,6 +336,10 @@ function GameDetailPage() {
               <div className="font-semibold mb-1">添加时间</div>
               <div>{formatLocalDate(game.created_at)}</div>
             </div>
+            <div>
+              <div className="font-semibold mb-1">发售日期</div>
+              <div>{formatLocalDate(game.release_at)}</div>
+            </div>
             {/* Placeholders for missing data */}
           </div>
 
@@ -353,7 +358,7 @@ function GameDetailPage() {
       <div className="border-b border-brand-200 dark:border-brand-700">
         <div className="flex justify-between items-center">
           <nav className="-mb-px flex space-x-8">
-            {["stats", "edit", "backup", "info"].map(tab => (
+            {["stats", "edit", "backup", "info", "gallery"].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -368,6 +373,7 @@ function GameDetailPage() {
                 {tab === "edit" && "编辑"}
                 {tab === "backup" && "备份"}
                 {tab === "info" && "游戏信息"}
+                {tab === "gallery" && "画廊"}
               </button>
             ))}
           </nav>
@@ -408,6 +414,12 @@ function GameDetailPage() {
           game={game}
           config={config || undefined}
           onTagTaps={handleTagTaps}
+        />
+      )}
+
+      {activeTab === "gallery" && game && (
+        <GameGalleryPanel
+          game={game}
         />
       )}
 

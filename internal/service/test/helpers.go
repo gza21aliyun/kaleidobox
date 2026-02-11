@@ -51,7 +51,7 @@ func initTestSchema(t *testing.T, db *sql.DB) {
 			created_at TIMESTAMP,
 			updated_at TIMESTAMP,
 			tags TEXT,
-			meta_tags TEXT,
+			arguments TEXT,
 			images TEXT,
 			bangumi_id TEXT,
 			dmm_id TEXT,

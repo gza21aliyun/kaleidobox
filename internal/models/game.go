@@ -20,7 +20,7 @@ type Game struct {
 	CreatedAt         time.Time        `json:"created_at"`
 	UpdatedAt         time.Time        `json:"updated_at"`
 	Tags              string           `json:"tags"`
-	MetaTags          string           `json:"meta_tags"`
+	Arguments         string           `json:"arguments"`
 	Images            string           `json:"images"`
 	BangumiId         string           `json:"bangumi_id"`
 	DmmId             string           `json:"dmm_id"`
@@ -53,4 +53,7 @@ type GameBackup struct {
 type ImageBackup struct {
 	Url       string `json:"url"`
 	LocalPath string `json:"local_path"`
+}
+
+type GameFilter struct {
 }

@@ -48,7 +48,7 @@ func (s *StartService) SetBackupService(backupService *BackupService) {
 // 当游戏进程退出时，自动保存游玩记录到数据库
 func (s *StartService) StartGameWithTracking(gameID string) (bool, error) {
 	// 获取游戏路径
-	path, err := s.getGamePath(gameID)
+	path, arguments, err := s.getGamePath(gameID)
 	if err != nil {
 		runtime.LogErrorf(s.ctx, "failed to get game path: %v", err)
 		return false, fmt.Errorf("failed to get game path: %w", err)
@@ -71,13 +71,21 @@ func (s *StartService) StartGameWithTracking(gameID string) (bool, error) {
 	// 如果启用了 Locale Emulator
 	if useLE && s.config.LocaleEmulatorPath != "" {
 		runtime.LogInfof(s.ctx, "Starting game with Locale Emulator: %s", gameID)
-		cmd = exec.Command(s.config.LocaleEmulatorPath, path)
-		cmd.Dir = filepath.Dir(path)
+		if arguments == "" {
+			cmd = exec.Command(s.config.LocaleEmulatorPath, path)
+		} else {
+			cmd = exec.Command(s.config.LocaleEmulatorPath, path, arguments)
+		}
+
 	} else {
 		// 普通启动
-		cmd = exec.Command(path)
-		cmd.Dir = filepath.Dir(path)
+		if arguments == "" {
+			cmd = exec.Command(path)
+		} else {
+			cmd = exec.Command(path, arguments)
+		}
 	}
+	cmd.Dir = filepath.Dir(path)
 
 	if err := cmd.Start(); err != nil {
 		runtime.LogErrorf(s.ctx, "failed to start game: %v", err)
@@ -232,22 +240,23 @@ func (s *StartService) autoBackupGameSave(gameID string) {
 	runtime.LogInfof(s.ctx, "Auto backup completed for game: %s", gameID)
 }
 
-func (s *StartService) getGamePath(gameID string) (string, error) {
+func (s *StartService) getGamePath(gameID string) (string, string, error) {
 	var path string
+	var arguments string
 	err := s.db.QueryRowContext(
 		s.ctx,
-		"SELECT COALESCE(path, '') FROM games WHERE id = ?",
+		"SELECT COALESCE(path, ''), COALESCE(arguments, '') FROM games WHERE id = ?",
 		gameID,
-	).Scan(&path)
+	).Scan(&path, &arguments)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", fmt.Errorf("game not found: %s", gameID)
+		return "", "", fmt.Errorf("game not found: %s", gameID)
 	}
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return path, nil
+	return path, arguments, nil
 }
 
 // getGameLaunchConfig 获取游戏的启动配置

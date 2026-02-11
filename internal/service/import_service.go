@@ -884,6 +884,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 
 		game.ID = uuid.New().String()
 		game.Path = candidate.SelectedExe
+		game.Arguments = candidate.Arguments
 		game.CreatedAt = time.Now()
 		game.UpdatedAt = time.Now()
 		game.Tags = ""
@@ -959,10 +960,24 @@ func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate
 	psCommand := `
 		$shell = New-Object -ComObject WScript.Shell
 		$shortcut = $shell.CreateShortcut("` + linkPath + `")
+		
+		# 分别获取目标路径和参数
 		$targetPath = $shortcut.TargetPath
-		# 确保输出为UTF-8编码
+		$arguments = $shortcut.Arguments
+		$workingDirectory = $shortcut.WorkingDirectory
+		$windowStyle = $shortcut.WindowStyle
+		
+		# 创建JSON格式输出，便于解析
+		$result = @{
+			TargetPath = $targetPath
+			Arguments = $arguments
+			WorkingDirectory = $workingDirectory
+			WindowStyle = $windowStyle
+		}
+		
+		# 转换为JSON并输出
 		[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-		Write-Output $targetPath
+		ConvertTo-Json $result -Compress
 	`
 
 	output, err := utils.ExecutePowerShellHidden(psCommand)
@@ -970,8 +985,27 @@ func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate
 		return vo.BatchImportCandidate{}, fmt.Errorf("failed to execute powershell command: %w", err)
 	}
 
+	// 解析JSON输出
+	var shortcutInfo struct {
+		TargetPath       string `json:"TargetPath"`
+		Arguments        string `json:"Arguments"`
+		WorkingDirectory string `json:"WorkingDirectory"`
+		WindowStyle      int    `json:"WindowStyle"`
+	}
+
+	if err := json.Unmarshal(output, &shortcutInfo); err != nil {
+		return vo.BatchImportCandidate{}, fmt.Errorf("failed to parse shortcut info: %w", err)
+	}
+
+	// 构建完整命令行
+	fullCommand := shortcutInfo.TargetPath
+	if shortcutInfo.Arguments != "" {
+		fullCommand += " " + shortcutInfo.Arguments
+	}
+
 	// 清理输出中的BOM标记并去除空白
-	targetPath := utils.RemoveBOMAndTrim(output)
+	// targetPath := utils.RemoveBOMAndTrim(output)
+	targetPath := shortcutInfo.TargetPath
 	if targetPath == "" {
 		return vo.BatchImportCandidate{}, fmt.Errorf("could not resolve target path")
 	}
@@ -994,19 +1028,22 @@ func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate
 		IsSelected:  true,                                                 // 默认选中
 		MatchStatus: "pending",
 		MatchSource: enums.Local, // 初始状态为待匹配
+		Arguments:   shortcutInfo.Arguments,
 	}
 	game := models.Game{
 		Name:       result.SearchName,
 		SourceType: enums.Local,
 		Path:       result.SelectedExe,
+		Arguments:  result.Arguments,
 		ID:         uuid.New().String(),
 	}
 	result.MatchedGame = &game
 	fmt.Printf("ImportGamesLnk: successfully parsed lnk file")
 	fmt.Printf("  LNK文件路径: %s", linkPath)
 	fmt.Printf("  目标文件路径: %s", result.SelectedExe)
-	fmt.Printf("  文件夹路径: %s", result.FolderPath)
-	fmt.Printf("  文件夹名称: %s", result.FolderName)
+	fmt.Printf("  targetPath路径: %s", targetPath)
+	fmt.Printf("  fullcommand路径: %s", fullCommand)
+	fmt.Printf("  WorkingDirectory路径: %s", shortcutInfo.WorkingDirectory)
 	fmt.Printf("  搜索名称: %s\n", result.SearchName)
 	return result, nil
 }

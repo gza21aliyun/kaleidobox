@@ -55,6 +55,8 @@ func ExecutePowerShellHidden(command string) ([]byte, error) {
 
 // RemoveBOMAndTrim 清理PowerShell输出中的BOM标记并去除空白
 func RemoveBOMAndTrim(output []byte) string {
+	outputStr := string(output)
+	fmt.Println("logutil RemoveBOMAndTrim bofore:", outputStr)
 	result := strings.TrimSpace(string(output))
 
 	// 移除可能的BOM标记

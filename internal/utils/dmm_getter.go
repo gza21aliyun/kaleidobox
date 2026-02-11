@@ -155,7 +155,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		tagList = append(tagList, models.Tag{Name: company, Category: models.TagCategoryBrand, BlockModify: true})
 
 		genre := e.ChildText("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow:contains('ゲームジャンル') div.contentsDetailBottom__tableDataRight p")
-		game.MetaTags = genre
+		// game.Arguments = genre
 		tagList = append(tagList, models.Tag{Name: genre, Category: models.TagCategoryGenre, BlockModify: true})
 
 		// 提取简介

@@ -30,6 +30,7 @@ type BatchImportCandidate struct {
 	MatchedGame *models.Game     `json:"matched_game,omitempty"` // 匹配到的游戏信息
 	MatchSource enums.SourceType `json:"match_source,omitempty"` // 匹配来源
 	MatchStatus string           `json:"match_status"`           // 匹配状态: pending, matched, not_found, error
+	Arguments   string           `json:"arguments"`
 }
 
 // BatchImportRequest 批量导入请求

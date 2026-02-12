@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { BetterSelect } from "../ui/BetterSelect";
 import { models } from "../../../wailsjs/go/models";
 import { arrayFind, mapToArray } from "../utils/Utility";
+import { ListTags, GetTagListByGroup, UpdateTagsGroup, ListGroups } from "../../../wailsjs/go/service/TagService";
+import { FilterChooseTagModal, FilterChooseGroupModal } from "../modal/FilterChooseTagModal";
 
 interface SortOption {
   label: string;
@@ -56,6 +58,11 @@ export function FilterBar({
 }: FilterBarProps) {
   const [initialized, setInitialized] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+    // 在组件顶部添加状态
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+
 
   // 初始化时从 localStorage 恢复排序设置
   useEffect(() => {
@@ -95,8 +102,40 @@ export function FilterBar({
       localStorage.setItem(`${storageKey}_sortOrder`, order);
     }
   };
-    // 在组件顶部添加状态
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // const handleGroupChoose = async (group: string) => {
+  //   var tags = await GetTagListByGroup(group)
+  //   tags = [...(tagsFilter || []), ...tags]
+  //   tags = [...new Set(tags)]
+  //   onTagsFilterChange?.(tags)
+  // };
+
+
+  // useEffect(() => {
+  //   ListGroups().then((res) => {
+  //     tagGroups.current = res;
+  //   })
+  // }, []);
+
+  
+  // const tagGroups = useRef<string[]>([]);
+  const getTagGroups = () => {
+    tagsLoaded;
+    const groupMap : Map<string, string[]> = new Map()
+    const tagArray : models.Tag[]= mapToArray(tagsLoaded || new Map())
+    for (const tag of tagArray) {
+      if (!tag.group || tag.group === "") {
+        continue;
+      }
+      if (groupMap.has(tag.group)) {
+        groupMap.set(tag.group, [...(groupMap.get(tag.group) || []), tag.name])
+      } else {
+        groupMap.set(tag.group, [tag.name])
+      }
+    }
+    return groupMap;
+  }
+
 
   // 计算可用标签（tagsLoaded 中除去 tagsFilter 的标签）
   const availableTags = getMapFromArrayMap(true, tagsFilter || [], tagsLoaded || new Map());
@@ -174,90 +213,101 @@ export function FilterBar({
 
               <div className="flex items-center gap-2">
                 <div className="font-semibold text-brand-900 dark:text-white">标签</div>
-                <div className="relative">
+                <div className="relative flex items-center gap-2">
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="p-1 rounded-full hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
                     aria-label="添加标签"
                   >
                     <div className="i-mdi-plus text-base" />
+                    <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
+                      选择标签
+                    </span>
                   </button>
                   
+                  { tagsFilter && onTagsFilterChange && (
+                    <FilterChooseTagModal
+                      isOpen={isDropdownOpen}
+                      onClose={() => setIsDropdownOpen(false)}
+                      availableTags={availableTags}
+                      tagsFilter={tagsFilter!}
+                      onTagsFilterChange={onTagsFilterChange!}
+                    />
+                  )}
 
-                  {isDropdownOpen && availableTags && onTagsFilterChange && tagsFilter && (
+                  
+
+                  <button
+                    onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
+                    aria-label="选择标签分组"
+                  >
+                    <div className="i-mdi-folder-multiple text-base" />
+                    <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
+                      选择分组
+                    </span>
+                  </button>
+
+                  { tagsFilter && onTagsFilterChange && (
+                    <FilterChooseGroupModal
+                      isOpen={isGroupDropdownOpen}
+                      onClose={() => setIsGroupDropdownOpen(false)}
+                      onTagsFilterChange={onTagsFilterChange}
+                      availableTags={availableTags || new Map()}
+                      tagsFilter={tagsFilter}
+                    />
+                  )}
+
+                  {/* {isGroupDropdownOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                      <div className="bg-white dark:bg-brand-900 rounded-lg shadow-xl w-[1200px] max-w-[95vw] max-h-[90vh] overflow-y-auto">
+                      <div className="bg-white dark:bg-brand-900 rounded-lg shadow-xl w-[600px] max-w-[90vw] max-h-[80vh] overflow-y-auto">
                         <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
-                          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签</h3>
+                          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签分组</h3>
                           <button 
-                            onClick={() => setIsDropdownOpen(false)}
+                            onClick={() => setIsGroupDropdownOpen(false)}
                             className="text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-200"
                           >
                             <div className="i-mdi-close text-xl" />
                           </button>
                         </div>
 
-
                         <div className="p-4">
-                          <div className="flex flex-wrap gap-2">
-
-                              <div className="space-y-4">
-                                {Array.from(availableTags.entries()).map(([category, tags]) => (
-                                  <div key={category} className="border border-brand-200 dark:border-brand-700 rounded-lg p-4 bg-white dark:bg-brand-800/30">
-                                    <h4 className="font-semibold text-brand-800 dark:text-brand-200 mb-3 flex items-center">
-                                      <div className="i-mdi-folder-outline mr-2 text-brand-500" />
-                                      {category}
-                                      <span className="ml-2 text-xs bg-brand-100 dark:bg-brand-700 text-brand-600 dark:text-brand-300 px-2 py-1 rounded-full">
-                                        {tags.length}
+                          {tagGroups.current.length > 0 ? (
+                            <div className="space-y-3">
+                              {tagGroups.current.map((group) => (
+                                <button
+                                  key={group}
+                                  onClick={() => {
+                                    handleGroupChoose(group);
+                                    setIsGroupDropdownOpen(false);
+                                  }}
+                                  className="w-full text-left p-3 rounded-lg border border-brand-200 dark:border-brand-700 
+                                          hover:bg-brand-50 dark:hover:bg-brand-800/50 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                      <div className="i-mdi-folder mr-2 text-brand-500" />
+                                      <span className="font-medium text-brand-900 dark:text-white">
+                                        {group}
                                       </span>
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                      {tags.map((tag) => (
-                                        <button
-                                          // key={tag}
-                                          onClick={() => onTagsFilterChange([...tagsFilter, tag.name])}
-                                          className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
-                                                  bg-gradient-to-r from-[#e0e000] to-[#c0c000] 
-                                                  text-brand-800 dark:text-brand-900
-                                                  hover:from-[#d0d000] hover:to-[#b0b000]
-                                                  shadow-sm hover:shadow-md
-                                                  transform hover:-translate-y-0.5
-                                                  transition-all duration-200 cursor-pointer
-                                                  border border-[#d0d000]/30"
-                                        >
-                                          <div className="i-mdi-tag mr-1 text-xs" />
-                                          {tag.name}
-                                        </button>
-                                      ))}
-                                      {tags.length === 0 && (
-                                        <p className="text-brand-500 dark:text-brand-400 text-sm italic">
-                                          暂无标签
-                                        </p>
-                                      )}
                                     </div>
+                                    <div className="i-mdi-chevron-right text-brand-400" />
                                   </div>
-                                ))}
-                                {availableTags.size === 0 && (
-                                  <div className="text-center py-8">
-                                    <div className="i-mdi-tag-off text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
-                                    <p className="text-brand-600 dark:text-brand-400">
-                                      没有可用的标签分类
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-
-                                {availableTags.size === 0 && (
-                                  <p className="text-brand-600 dark:text-brand-400 text-sm">没有可用标签</p>
-                                )}
-                          </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <div className="i-mdi-folder-outline text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
+                              <p className="text-brand-600 dark:text-brand-400">
+                                暂无标签分组
+                              </p>
+                            </div>
+                          )}
                         </div>
-
-
-
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                 </div>
               </div>
@@ -268,24 +318,7 @@ export function FilterBar({
                 
               tagsFilter && tagsFilter.length > 0 && onTagsFilterChange ? (
                 <div className="flex flex-wrap gap-2">
-                  {/* {tagsFilter.map((tag, index) => (
-                  <button
-                      key={index}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer relative group"
-                      onClick={() => {
-                      // 在这里添加点击标签时的处理逻辑
-                      // 从 tagsFilter 中移除当前标签
-                        const newTagsFilter = tagsFilter.filter(t => t !== tag);
-                        onTagsFilterChange(newTagsFilter);
-                      }}
-                  >
-                      <span className="relative z-10">{tag.trim()}</span>
-                      <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-15">
-                        <div className="absolute inset-0 bg-white bg-opacity-50 dark:bg-black dark:bg-opacity-40 rounded-full z-1"></div>
-                        <div className="relative z-20 i-mdi-close text-xs" />
-                      </span>
-                  </button>
-                  ))} */}
+                  
                   {Array.from(selectedTags.entries()).map(([category, tags]) => (
                     <div key={category} className="rounded-lg p-4 bg-transparent dark:bg-transparent border-0 shadow-none">
                       <h4 className="font-semibold text-brand-800 dark:text-brand-200 mb-3 flex items-center">
@@ -332,26 +365,31 @@ export function FilterBar({
               
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 mt-4">
             <div className="flex justify-center">
               <button 
                 onClick={() => setExpanded(!expanded)}
-                className="focus:outline-none"
+                className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-brand-100 dark:bg-brand-800 hover:bg-brand-200 dark:hover:bg-brand-700 focus:outline-none transition-colors"
               >
+                <span className="text-brand-700 dark:text-brand-300 font-medium">
+                  过滤器
+                </span>
                 <div className={`i-mdi-chevron-down text-lg text-brand-500 dark:text-brand-400 transition-transform duration-200 ${!expanded ? 'rotate-180' : ''}`} />
               </button>
             </div>
           </div>
-
         </div>
         
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mt-4">
           <div className="flex justify-center">
             <button 
               onClick={() => setExpanded(!expanded)}
-              className="focus:outline-none"
+              className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-brand-100 dark:bg-brand-800 hover:bg-brand-200 dark:hover:bg-brand-700 focus:outline-none transition-colors"
             >
+              <span className="text-brand-700 dark:text-brand-300 font-medium">
+                过滤器
+              </span>
               <div className={`i-mdi-chevron-down text-lg text-brand-500 dark:text-brand-400 transition-transform duration-200 ${!expanded ? 'rotate-180' : ''}`} />
             </button>
           </div>

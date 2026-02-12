@@ -287,6 +287,32 @@ func (s *TagService) GetTagListByString(tagString string) ([]models.Tag, error) 
 	return tags, nil
 }
 
+func (s *TagService) GetTagListByGroup(group string) ([]string, error) {
+	query := `
+		SELECT name
+		FROM tags
+		WHERE group_name = ?
+	`
+	rows, err := s.db.QueryContext(s.ctx, query, group)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tags []string
+	for rows.Next() {
+		var tagName string
+		err := rows.Scan(
+			&tagName,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tagName)
+	}
+	return tags, nil
+}
+
 func (s *TagService) GetTagsMapByString(tagString string) (map[string][]models.Tag, error) {
 	tags, err := s.GetTagListByString(tagString)
 	if err != nil {

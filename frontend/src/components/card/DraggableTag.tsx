@@ -124,7 +124,7 @@ export function DroppableGroup({
         )}
       </div>
       <div className="flex flex-wrap gap-1">
-        {tags?.slice(0, 5).map(tag => (
+        {tags?.map(tag => (
           <span
             key={tag.name}
             className="px-2 py-1 bg-brand-100 dark:bg-brand-900/30 text-brand-800 dark:text-brand-200 text-xs rounded-full"
@@ -132,11 +132,6 @@ export function DroppableGroup({
             {tag.name}
           </span>
         ))}
-        {tags && tags.length > 5 && (
-          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
-            +{tags.length - 5} 更多
-          </span>
-        )}
       </div>
     </div>
   );

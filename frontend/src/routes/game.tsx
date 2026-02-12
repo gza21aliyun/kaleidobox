@@ -37,6 +37,7 @@ function GameDetailPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isInitialMount = useRef(true);
   const originalGameData = useRef<models.Game | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -56,6 +57,16 @@ function GameDetailPage() {
     };
     loadData();
   }, [gameId]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      // 重置高度以获取准确的scrollHeight
+      textareaRef.current.style.height = 'auto';
+      // 设置为内容的实际高度
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+    
+  }, [game?.summary || ""]); // 当summary变化时重新计算高度
 
   // 延迟显示骨架屏
   useEffect(() => {
@@ -345,11 +356,22 @@ function GameDetailPage() {
 
           
 
+        
           <div className="mt-4">
             <div className="font-semibold mb-2 text-brand-900 dark:text-white">简介</div>
-            <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed line-clamp-10">
-              {game.summary || "暂无简介"}
-            </p>
+            <textarea
+              ref={textareaRef}
+              value={game.summary || "暂无简介"}
+              disabled={true}
+              className="w-full bg-transparent border-0 outline-none text-brand-600 dark:text-brand-400 text-sm leading-relaxed resize-none"
+              style={{
+                height: 'auto',
+                overflow: 'hidden',
+                resize: 'none',
+                padding: 0,
+                margin: 0
+              }}
+            />
           </div>
         </div>
       </div>

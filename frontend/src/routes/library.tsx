@@ -44,6 +44,7 @@ function LibraryPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [tagsFilter, setTags] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [filterExpanded, setFilterExpanded] = useState(true);
   const gamesForUpdate = useRef(games)
   
 
@@ -117,6 +118,7 @@ function LibraryPage() {
     const tagsParam = urlParams.get('tags');
     if (tagsParam) {
       setTags([decodeURIComponent(tagsParam)]);
+      setFilterExpanded(false);
     }
   }, []);
 
@@ -211,6 +213,7 @@ function LibraryPage() {
         onTagsFilterChange={setTags}
         tagsLoaded={tagsLoaded}
         tagsFilter={tagsFilter}
+        filterExpanded={filterExpanded}
         statusOptions={statusOptions}
         storageKey="library"
         actionButton={(

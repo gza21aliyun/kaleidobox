@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { BetterSelect } from "../ui/BetterSelect";
 import { models } from "../../../wailsjs/go/models";
-import { arrayFind, mapToArray } from "../utils/Utility";
+import { arrayContains, mapToArray, tagMapForEach } from "../utils/Utility";
 import { ListTags, GetTagListByGroup, UpdateTagsGroup, ListGroups } from "../../../wailsjs/go/service/TagService";
 import { FilterChooseTagModal, FilterChooseGroupModal } from "../modal/FilterChooseTagModal";
 
@@ -35,6 +35,7 @@ interface FilterBarProps {
   extraButtons?: React.ReactNode;
   // 持久化存储键，传入后会自动保存和恢复排序设置
   storageKey?: string;
+  filterExpanded: boolean;
 }
 
 export function FilterBar({
@@ -55,14 +56,18 @@ export function FilterBar({
   actionButton,
   extraButtons,
   storageKey,
+  filterExpanded,
 }: FilterBarProps) {
   const [initialized, setInitialized] = useState(false);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(filterExpanded);
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
     // 在组件顶部添加状态
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 
+  useEffect(() => {
+    setExpanded(filterExpanded)
+  }, [filterExpanded])
 
   // 初始化时从 localStorage 恢复排序设置
   useEffect(() => {
@@ -103,20 +108,6 @@ export function FilterBar({
     }
   };
 
-  // const handleGroupChoose = async (group: string) => {
-  //   var tags = await GetTagListByGroup(group)
-  //   tags = [...(tagsFilter || []), ...tags]
-  //   tags = [...new Set(tags)]
-  //   onTagsFilterChange?.(tags)
-  // };
-
-
-  // useEffect(() => {
-  //   ListGroups().then((res) => {
-  //     tagGroups.current = res;
-  //   })
-  // }, []);
-
   
   // const tagGroups = useRef<string[]>([]);
   const getTagGroups = () => {
@@ -140,12 +131,6 @@ export function FilterBar({
   // 计算可用标签（tagsLoaded 中除去 tagsFilter 的标签）
   const availableTags = getMapFromArrayMap(true, tagsFilter || [], tagsLoaded || new Map());
   const selectedTags = getMapFromArrayMap(false, tagsFilter || [], tagsLoaded || new Map());
-  // const [availableTags, setAvailableTags] = useState<string[]>([]);
-  // setAvailableTags(tagsLoaded?.filter((tag) => !tagsFilter!.includes(tag)) || []);
-
-  // const handleTagsFilterChange = (selectedTags: string[], tag: string) => { 
-  //   onTagsFilterChange?.(selectedTags)
-  // };
   return (
     <div> 
       <div className="flex flex-wrap items-center justify-between gap-4 my-4">
@@ -312,21 +297,32 @@ export function FilterBar({
                 </div>
               </div>
               
-              <div className="mt-3 mb-3"></div>
-              
               {
                 
               tagsFilter && tagsFilter.length > 0 && onTagsFilterChange ? (
                 <div className="flex flex-wrap gap-2">
                   
-                  {Array.from(selectedTags.entries()).map(([category, tags]) => (
-                    <div key={category} className="rounded-lg p-4 bg-transparent dark:bg-transparent border-0 shadow-none">
+                  {tagMapForEach(selectedTags, (category, tags) => (
+                    <div 
+                      key={category} 
+                      className="rounded-lg p-4 bg-transparent dark:bg-transparent border-0 shadow-none">
                       <h4 className="font-semibold text-brand-800 dark:text-brand-200 mb-3 flex items-center">
                         <div className="i-mdi-folder-outline mr-2 text-brand-500" />
                         {category}
                         <span className="ml-2 text-xs bg-brand-100 dark:bg-brand-700 text-brand-600 dark:text-brand-300 px-2 py-1 rounded-full">
                           {tags.length}
                         </span>
+                        <button
+                          onClick={(e) => {
+                            // e.stopPropagation();
+                            const newTagsFilter = tagsFilter.filter(t => !arrayContains(tags, (tag) => {return tag.name == t;}));
+                            onTagsFilterChange(newTagsFilter);
+                          }}
+                          className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+                          title="删除分类"
+                        >
+                          <div className="i-mdi-delete text-red-500 hover:text-red-700 dark:hover:text-red-400" />
+                        </button>
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {tags.map((tag) => (

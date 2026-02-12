@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { models } from "../../../wailsjs/go/models";
-import { mapToArray } from "../utils/Utility";
+import { mapToArray, tagMapForEach } from "../utils/Utility";
 
 interface FilterChooseTagModalProps {
   isOpen: boolean;
@@ -54,12 +54,6 @@ export function FilterChooseTagModal({
     }));
   };
 
-//    const handleGroupChoose = async (group: string) => {
-//     var tags = await GetTagListByGroup(group)
-//     tags = [...(tagsFilter || []), ...tags]
-//     tags = [...new Set(tags)]
-//     onTagsFilterChange?.(tags)
-//   };
 
   // 检查分类是否全选
   const isCategoryFullySelected = (category: string, tags: models.Tag[]) => {
@@ -85,7 +79,7 @@ export function FilterChooseTagModal({
 
         <div className="p-4">
           <div className="space-y-4">
-            {Array.from(availableTags.entries()).map(([category, tags]) => {
+            {tagMapForEach(availableTags, (category, tags) => {
               const isExpanded = expandedCategories[category] ?? true;
               const isFullySelected = isCategoryFullySelected(category, tags);
               

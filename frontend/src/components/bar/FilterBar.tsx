@@ -36,6 +36,10 @@ interface FilterBarProps {
   // 持久化存储键，传入后会自动保存和恢复排序设置
   storageKey?: string;
   filterExpanded: boolean;
+  releaseStartDate?: string;
+  onReleaseStartDateChange?: (date: string) => void;
+  releaseEndDate?: string;
+  onReleaseEndDateChange?: (date: string) => void;
 }
 
 export function FilterBar({
@@ -57,6 +61,10 @@ export function FilterBar({
   extraButtons,
   storageKey,
   filterExpanded,
+  releaseStartDate,
+  onReleaseStartDateChange,
+  releaseEndDate,
+  onReleaseEndDateChange,
 }: FilterBarProps) {
   const [initialized, setInitialized] = useState(false);
   const [expanded, setExpanded] = useState(filterExpanded);
@@ -127,6 +135,14 @@ export function FilterBar({
     return groupMap;
   }
 
+  const handleClearFilters = () => {
+    onSearchChange("");
+    if (onStatusFilterChange) onStatusFilterChange("");
+    if (onTagsFilterChange) onTagsFilterChange([]);
+    if (onReleaseStartDateChange) onReleaseStartDateChange("");
+    if (onReleaseEndDateChange) onReleaseEndDateChange("");
+  };
+
 
   // 计算可用标签（tagsLoaded 中除去 tagsFilter 的标签）
   const availableTags = getMapFromArrayMap(true, tagsFilter || [], tagsLoaded || new Map());
@@ -154,6 +170,27 @@ export function FilterBar({
         </div>
 
         <div className="flex items-center gap-2">
+
+          {true && (
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="glass-panel p-2
+                        text-red-500 dark:text-red-400
+                        hover:text-red-700 dark:hover:text-red-300
+                        bg-white dark:bg-brand-800
+                        border border-red-200 dark:border-red-700
+                        rounded-lg
+                        hover:bg-red-50 dark:hover:bg-red-900/20
+                        transition-colors"
+              title="清除所有过滤器"
+            >
+              <div className="i-mdi-filter-remove text-xl" />
+            </button>
+          )}
+
+
+
           {/* 状态筛选 */}
           {statusOptions && onStatusFilterChange && (
             <BetterSelect
@@ -196,106 +233,98 @@ export function FilterBar({
         <div id="expanded-filter-bar">
           <div className="mt-4">
 
-              <div className="flex items-center gap-2">
-                <div className="font-semibold text-brand-900 dark:text-white">标签</div>
-                <div className="relative flex items-center gap-2">
-                  <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
-                    aria-label="添加标签"
-                  >
-                    <div className="i-mdi-plus text-base" />
-                    <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
-                      选择标签
-                    </span>
-                  </button>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-brand-900 dark:text-white">标签</div>
+                  <div className="relative flex items-center gap-2">
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
+                      aria-label="添加标签"
+                    >
+                      <div className="i-mdi-plus text-base" />
+                      <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
+                        选择标签
+                      </span>
+                    </button>
+                    
+                    { tagsFilter && onTagsFilterChange && (
+                      <FilterChooseTagModal
+                        isOpen={isDropdownOpen}
+                        onClose={() => setIsDropdownOpen(false)}
+                        availableTags={availableTags}
+                        tagsFilter={tagsFilter!}
+                        onTagsFilterChange={onTagsFilterChange!}
+                      />
+                    )}
+
+                    
+
+                    <button
+                      onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
+                      aria-label="选择标签分组"
+                    >
+                      <div className="i-mdi-folder-multiple text-base" />
+                      <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
+                        选择分组
+                      </span>
+                    </button>
+
+                    { tagsFilter && onTagsFilterChange && (
+                      <FilterChooseGroupModal
+                        isOpen={isGroupDropdownOpen}
+                        onClose={() => setIsGroupDropdownOpen(false)}
+                        onTagsFilterChange={onTagsFilterChange}
+                        availableTags={availableTags || new Map()}
+                        tagsFilter={tagsFilter}
+                      />
+                    )}
+
+
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-brand-700 dark:text-brand-300 whitespace-nowrap">
+                    发售日期:
+                  </span>
                   
-                  { tagsFilter && onTagsFilterChange && (
-                    <FilterChooseTagModal
-                      isOpen={isDropdownOpen}
-                      onClose={() => setIsDropdownOpen(false)}
-                      availableTags={availableTags}
-                      tagsFilter={tagsFilter!}
-                      onTagsFilterChange={onTagsFilterChange!}
+                  {/* 开始日期 */}
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={releaseStartDate || ""}
+                      onChange={(e) => onReleaseStartDateChange?.(e.target.value)}
+                      className="glass-input px-3 py-2 text-sm text-brand-900 dark:text-white
+                                bg-white dark:bg-brand-900
+                                border border-brand-300 dark:border-brand-700
+                                rounded-lg
+                                focus:ring-neutral-500 focus:border-neutral-500
+                                dark:focus:ring-neutral-500 dark:focus:border-neutral-500
+                                w-32"
                     />
-                  )}
-
+                  </div>
                   
-
-                  <button
-                    onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
-                    aria-label="选择标签分组"
-                  >
-                    <div className="i-mdi-folder-multiple text-base" />
-                    <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
-                      选择分组
-                    </span>
-                  </button>
-
-                  { tagsFilter && onTagsFilterChange && (
-                    <FilterChooseGroupModal
-                      isOpen={isGroupDropdownOpen}
-                      onClose={() => setIsGroupDropdownOpen(false)}
-                      onTagsFilterChange={onTagsFilterChange}
-                      availableTags={availableTags || new Map()}
-                      tagsFilter={tagsFilter}
+                  <span className="text-brand-500">-</span>
+                  
+                  {/* 结束日期 */}
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={releaseEndDate || ""}
+                      onChange={(e) => onReleaseEndDateChange?.(e.target.value)}
+                      className="glass-input px-3 py-2 text-sm text-brand-900 dark:text-white
+                                bg-white dark:bg-brand-900
+                                border border-brand-300 dark:border-brand-700
+                                rounded-lg
+                                focus:ring-neutral-500 focus:border-neutral-500
+                                dark:focus:ring-neutral-500 dark:focus:border-neutral-500
+                                w-32"
                     />
-                  )}
-
-                  {/* {isGroupDropdownOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                      <div className="bg-white dark:bg-brand-900 rounded-lg shadow-xl w-[600px] max-w-[90vw] max-h-[80vh] overflow-y-auto">
-                        <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
-                          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签分组</h3>
-                          <button 
-                            onClick={() => setIsGroupDropdownOpen(false)}
-                            className="text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-200"
-                          >
-                            <div className="i-mdi-close text-xl" />
-                          </button>
-                        </div>
-
-                        <div className="p-4">
-                          {tagGroups.current.length > 0 ? (
-                            <div className="space-y-3">
-                              {tagGroups.current.map((group) => (
-                                <button
-                                  key={group}
-                                  onClick={() => {
-                                    handleGroupChoose(group);
-                                    setIsGroupDropdownOpen(false);
-                                  }}
-                                  className="w-full text-left p-3 rounded-lg border border-brand-200 dark:border-brand-700 
-                                          hover:bg-brand-50 dark:hover:bg-brand-800/50 transition-colors"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                      <div className="i-mdi-folder mr-2 text-brand-500" />
-                                      <span className="font-medium text-brand-900 dark:text-white">
-                                        {group}
-                                      </span>
-                                    </div>
-                                    <div className="i-mdi-chevron-right text-brand-400" />
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8">
-                              <div className="i-mdi-folder-outline text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
-                              <p className="text-brand-600 dark:text-brand-400">
-                                暂无标签分组
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )} */}
-
+                  </div>
                 </div>
               </div>
+              
               
               {
                 

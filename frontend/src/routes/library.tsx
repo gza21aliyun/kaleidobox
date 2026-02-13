@@ -16,6 +16,7 @@ import { sortOptions, statusOptions } from "../consts/options";
 import { Route as rootRoute } from "./__root";
 import { TaskPanel } from "../components/panel/TaskPanel";
 import { arrayFind, mapToArray } from "../components/utils/Utility";
+import { formatLocalDate } from "../utils/time";
 
 import { enums, vo } from "../../wailsjs/go/models";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
@@ -39,13 +40,15 @@ function LibraryPage() {
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "created_at">("created_at");
+  const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [tagsFilter, setTags] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [filterExpanded, setFilterExpanded] = useState(true);
   const gamesForUpdate = useRef(games)
+  const [releaseStartDate, setReleaseStartDate] = useState<string>("");
+  const [releaseEndDate, setReleaseEndDate] = useState<string>("");
   
 
   
@@ -165,6 +168,23 @@ function LibraryPage() {
           return false;
         }
       }
+      // 发售日期过滤
+      if (releaseStartDate && game.release_at) {
+        const gameDate = new Date(formatLocalDate(game.release_at));
+        const startDate = new Date(releaseStartDate);
+        if (gameDate < startDate) {
+          return false;
+        }
+      }
+      if (releaseEndDate && game.release_at) {
+        const gameDate = new Date(formatLocalDate(game.release_at));
+        const endDate = new Date(releaseEndDate);
+        // 将结束日期设置为当天的最后一刻
+        endDate.setHours(23, 59, 59, 999);
+        if (gameDate > endDate) {
+          return false;
+        }
+      }
       return true;
     })
     .sort((a, b) => {
@@ -176,6 +196,8 @@ function LibraryPage() {
         case "created_at":
           comparison = String(a.created_at || "").localeCompare(String(b.created_at || ""));
           break;
+        case "release_at":
+          comparison = String(a.release_at || "").localeCompare(String(b.release_at || ""));
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
@@ -204,7 +226,7 @@ function LibraryPage() {
         onSearchChange={setSearchQuery}
         searchPlaceholder="搜索游戏..."
         sortBy={sortBy}
-        onSortByChange={val => setSortBy(val as "name" | "created_at")}
+        onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at")}
         sortOptions={sortOptions}
         sortOrder={sortOrder}
         onSortOrderChange={setSortOrder}
@@ -215,6 +237,10 @@ function LibraryPage() {
         tagsFilter={tagsFilter}
         filterExpanded={filterExpanded}
         statusOptions={statusOptions}
+        releaseStartDate={releaseStartDate}
+        onReleaseStartDateChange={setReleaseStartDate}
+        releaseEndDate={releaseEndDate}
+        onReleaseEndDateChange={setReleaseEndDate}
         storageKey="library"
         actionButton={(
           <div className="relative" ref={dropdownRef}>

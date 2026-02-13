@@ -2,6 +2,7 @@ import type { models } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "react-hot-toast";
 import { enums } from "../../../wailsjs/go/models";
+import { formatLocalDate } from "../../utils/time";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
 
 interface GameCardProps {
@@ -10,6 +11,7 @@ interface GameCardProps {
 
 export function GameCard({ game }: GameCardProps) {
   const navigate = useNavigate();
+  
 
   const handleStartGame = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -87,6 +89,9 @@ export function GameCard({ game }: GameCardProps) {
         </h3>
         <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight">
           {game.company || "Unknown Developer"}
+        </p>
+        <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight">
+          {formatLocalDate(game.release_at)}
         </p>
       </div>
     </div>

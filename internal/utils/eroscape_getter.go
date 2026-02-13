@@ -360,22 +360,39 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		// var tags []string
 
 		e.DOM.Find("table#att_pov_table tr").Each(func(i int, s *goquery.Selection) {
-			// tag := strings.TrimSpace(s.Text())
-			// if !strings.Contains(tag, "還元") && !strings.Contains(tag, "クーポン") {
-			// 	tags = append(tags, tag)
-			// }
 			category := s.Find("th").Text()
 			s.Find("td a").Each(func(i2 int, s2 *goquery.Selection) {
+				category := strings.TrimSpace(category)
+				blockModify := false
+				if category == "ジャンル" {
+					category = models.TagCategoryGenre
+					blockModify = true
+
+				}
 				var newTag models.Tag = models.Tag{
-					Name:      strings.TrimSpace(s2.Text()),
-					Category:  strings.TrimSpace(category),
-					IsH:       category == "エロシーン",
-					IsSpoiler: category == "シナリオ",
+					Name:        strings.TrimSpace(s2.Text()),
+					Category:    category,
+					IsH:         category == "エロシーン",
+					IsSpoiler:   category == "シナリオ",
+					BlockModify: blockModify,
 				}
 				tagsMap[category] = append(tagsMap[category], newTag)
 			})
 
 		})
+
+		e.DOM.Find("div#gamegroup > ul > li > a").Each(func(i int, s *goquery.Selection) {
+			series := s.Text()
+			if series != "" {
+				seriesTag := models.Tag{
+					Name:        series,
+					BlockModify: true,
+					Category:    models.TagCategorySeries,
+				}
+				tagsMap[models.TagCategorySeries] = append(tagsMap[models.TagCategorySeries], seriesTag)
+			}
+		})
+
 		gameEntity.Tags = tagsMap
 		tagList := []models.Tag{}
 		for _, tags := range tagsMap {
@@ -507,7 +524,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 				staffId := queryParams.Get("creater")
 				work := models.Work{
 					GameId:        game.ID,
-					Role:          enums.Director,
+					Role:          enums.Staff,
 					StaffName:     staffName,
 					SourceStaffId: staffId,
 					SourceType:    enums.Dmm,
@@ -515,6 +532,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 				worksMap[work.Role] = append(worksMap[work.Role], work)
 			}
 		})
+
 		var cvWorks []models.Work = []models.Work{}
 		e.DOM.Find("table#creater_infomation_table tr#seiyu a").Each(func(i int, s *goquery.Selection) {
 			staffName := strings.TrimSpace(s.Text())

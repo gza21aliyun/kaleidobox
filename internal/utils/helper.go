@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"lunabox/internal/models"
 	"lunabox/internal/vo"
+	"regexp"
 	"strings"
 )
 
@@ -111,4 +112,15 @@ func Find[T1 any](slice1 []T1, fn func(t1 T1) bool) *T1 {
 func setupTestContext() context.Context {
 	// 创建一个简单的context，避免调用Wails runtime
 	return context.WithValue(context.Background(), "test_mode", true)
+}
+
+func isValidDateFormat(v string) bool {
+	// 定义正则表达式模式：YYYY年M月D日
+	pattern := `^\d{4}年(0?[1-9]|1[0-2])月(0?[1-9]|[12]\d|3[01])日$`
+
+	// 编译正则表达式
+	re := regexp.MustCompile(pattern)
+
+	// 使用正则表达式匹配字符串
+	return re.MatchString(v)
 }

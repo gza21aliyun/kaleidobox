@@ -95,19 +95,15 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 	}
 	// fmt.Println("12 CreateOrUpdateWorkStaffCharactor")
 	newWork := models.Work{}
-	if work.StaffId != "" {
-		newWork, err = s.GetWorkByStaff(work.GameId, work.StaffId)
+	if work.StaffName != "" {
+		newWork, err = s.GetWorkByStaff(work.GameId, work.StaffName)
 		if err != nil && err != sql.ErrNoRows {
 			fmt.Println("获取员工工作出错 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)
 			return err
 		}
 	}
-	// fmt.Println("13 CreateOrUpdateWorkStaffCharactor")
-	// if work.Role == enums.Charactor {
-	// 	return nil
-	// }
-	if newWork.Id == "" && work.CharactorId != "" {
-		newWork, err = s.GetWorkByCharactor(work.GameId, work.CharactorId)
+	if newWork.Id == "" && work.CharactorName != "" {
+		newWork, err = s.GetWorkByCharactor(work.GameId, work.CharactorName)
 		if err != nil && err != sql.ErrNoRows {
 			fmt.Println("获取角色工作出错 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)
 			return err
@@ -143,13 +139,13 @@ func (s *WorkService) CreateOrUpdateListWorkStaffCharactor(works []models.Work) 
 	}
 }
 
-func (s *WorkService) GetWorkByStaff(gameId, staffId string) (models.Work, error) {
+func (s *WorkService) GetWorkByStaff(gameId, staffName string) (models.Work, error) {
 	query := `
 		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover
 		FROM works
-		WHERE game_id = ? AND staff_id = ?
+		WHERE game_id = ? AND staff_name = ?
 	`
-	return s.GetWorkByQueryIds(query, gameId, staffId)
+	return s.GetWorkByQueryIds(query, gameId, staffName)
 }
 
 func (s *WorkService) GetWorkByStaffId(staffId string) (models.Work, error) {
@@ -161,13 +157,13 @@ func (s *WorkService) GetWorkByStaffId(staffId string) (models.Work, error) {
 	return s.GetWorkByQueryIds(query, staffId, "")
 }
 
-func (s *WorkService) GetWorkByCharactor(gameId, charactorId string) (models.Work, error) {
+func (s *WorkService) GetWorkByCharactor(gameId, charactorName string) (models.Work, error) {
 	query := `
 		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover
 		FROM works
-		WHERE game_id = ? AND charactor_id = ?
+		WHERE game_id = ? AND charactor_name = ?
 	`
-	return s.GetWorkByQueryIds(query, gameId, charactorId)
+	return s.GetWorkByQueryIds(query, gameId, charactorName)
 }
 
 func (s *WorkService) GetWorkByQueryIds(query string, id1 string, id2 string) (models.Work, error) {

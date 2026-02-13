@@ -345,29 +345,6 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	game.Tags = JoinString(MapToArray(gameEntity.Tags), ",",
 		func(tag models.Tag) string { return tag.Name })
 	fmt.Println("bangumi标签 01", len(gameEntity.Tags[models.TagCategoryOther]))
-	// game.Company = company
-	// companyTag := models.Tag{
-	// 	Name:        company,
-	// 	Category:    models.TagCategoryBrand,
-	// 	BlockModify: true,
-	// }
-	// tagsMap[models.TagCategoryBrand] = append(tagsMap[models.TagCategoryBrand], companyTag)
-	// for _, box := range bangumiResp.Infobox {
-	// 	tag := models.Tag{Name: box.Value.(string)}
-	// 	if box.Key == "平台" {
-	// 		tag.Category = models.TagCategoryPlatform
-	// 		tag.BlockModify = true
-	// 		tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
-	// 	} else if box.Key == "发行" {
-	// 		tag.Category = models.TagCategoryPublisher
-	// 		tag.BlockModify = true
-	// 		tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
-	// 	} else if box.Key == "游戏类型" {
-	// 		tag.Category = models.TagCategoryGameClass
-	// 		tag.BlockModify = true
-	// 		tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
-	// 	}
-	// }
 	gameEntity.Tags = tagsMap
 	gameEntity.Game = game
 
@@ -462,12 +439,16 @@ func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxIte
 		switch v := item.Value.(type) {
 		case string:
 			tag.Name = v
+			if isValidDateFormat(v) {
+				break
+			}
 
 			if strings.Contains(item.Key, "平台") {
 				tag.Category = models.TagCategoryPlatform
 				tag.BlockModify = true
 				tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)
-			} else if strings.Contains(item.Key, "发行") {
+			} else if strings.Contains(item.Key, "发行商") {
+
 				tag.Category = models.TagCategoryPublisher
 				tag.BlockModify = true
 				tagsMap[tag.Category] = append(tagsMap[tag.Category], tag)

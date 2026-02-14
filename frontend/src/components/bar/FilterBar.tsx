@@ -35,7 +35,7 @@ interface FilterBarProps {
   extraButtons?: React.ReactNode;
   // 持久化存储键，传入后会自动保存和恢复排序设置
   storageKey?: string;
-  filterExpanded: boolean;
+  filterExpanded?: boolean;
   releaseStartDate?: string;
   onReleaseStartDateChange?: (date: string) => void;
   releaseEndDate?: string;
@@ -67,14 +67,17 @@ export function FilterBar({
   onReleaseEndDateChange,
 }: FilterBarProps) {
   const [initialized, setInitialized] = useState(false);
-  const [expanded, setExpanded] = useState(filterExpanded);
+  const [expanded, setExpanded] = useState(filterExpanded == undefined ? false : filterExpanded);
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
     // 在组件顶部添加状态
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 
   useEffect(() => {
-    setExpanded(filterExpanded)
+    if (filterExpanded != undefined) {
+      setExpanded(filterExpanded)
+    }
+    
   }, [filterExpanded])
 
   // 初始化时从 localStorage 恢复排序设置

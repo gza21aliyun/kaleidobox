@@ -578,3 +578,33 @@ func TestGameService_ImportLnk(t *testing.T) {
 		importServie.BatchImportGamesFolderLnk(`J:\新しいフォルダー\KURO\`)
 	})
 }
+
+func TestGameService_DownloadSave(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	config := appconf.AppConfig{}
+	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
+	config.EroscapeUseMirror = true
+
+	gameService := service.NewGameService()
+	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	taskService := service.NewTaskService()
+	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	charactorService := service.NewCharactorService()
+	charactorService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	staffService := service.NewStaffService()
+	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService := service.NewWorkService()
+	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService.SetStaffCharactorService(staffService, charactorService)
+	tagService := service.NewTagService()
+	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
+	importServie := service.NewImportService()
+	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
+
+	t.Run("import success", func(t *testing.T) {
+		getter := utils.NewSaveInfoGetter()
+		getter.FetchSeiyaSave("サクラノ詩")
+	})
+}

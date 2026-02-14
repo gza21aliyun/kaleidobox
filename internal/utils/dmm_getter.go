@@ -70,17 +70,6 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, dmmIsEnabled bool, fn IdFunc
 			})
 		}
 
-		potentialGames = append(potentialGames, struct {
-			Title    string
-			Link     string
-			Review   string
-			CoverUrl string
-		}{
-			Title:    title,
-			Link:     e.Request.AbsoluteURL(link),
-			Review:   price,
-			CoverUrl: e.ChildAttr("span.component-legacy-productTile__thumbnail img", "src"),
-		})
 	})
 
 	// 在访问完搜索页面后进行过滤和处理

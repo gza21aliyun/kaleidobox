@@ -17,6 +17,7 @@ import { Route as rootRoute } from "./__root";
 import { GameInfoPanel } from "../components/panel/GameInfoPanel";
 import { GameGalleryPanel } from "../components/panel/GameGalleryPanel"; // 新增导入
 import { GameIntroPanel } from "../components/panel/GameIntroPanel";
+import { OpenBrowser } from "../../wailsjs/go/service/ImportService"; 
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -43,6 +44,7 @@ function GameDetailPage() {
       try {
         const gameData = await GetGameByID(gameId);
         setGame(gameData);
+        console.log("gameData", gameData);
         originalGameData.current = gameData;
         isInitialMount.current = false;
       }
@@ -269,6 +271,14 @@ function GameDetailPage() {
     }
   };
 
+  const getEroscapeUrl = () => {
+    if (config?.eroscape_use_mirror || false) {
+      return `https://koko.kyara.top/game.php?game=${game.eroscape_id}`
+    } else {
+      return `https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=${game.eroscape_id}`
+    }
+  }
+
   return (
     <div className={`space-y-8 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       {/* Back Button */}
@@ -346,6 +356,40 @@ function GameDetailPage() {
           </div>
 
           
+          <div className="flex gap-2 mt-4">
+            {game.bangumi_id && (
+              <button
+                onClick={() => window.open(`https://bgm.tv/subject/${game.bangumi_id}`)}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Bangumi
+              </button>
+            )}
+            {game.ymgal_id && (
+              <button
+                onClick={() => window.open(`https://www.ymgal.games/co/${game.ymgal_id}`)}
+                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+              >
+                夜幕Gal
+              </button>
+            )}
+            {game.dmm_id && (
+              <button
+                onClick={() => window.open(`https://dlsoft.dmm.co.jp/detail/${game.dmm_id}/`)}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                Dmm
+              </button>
+            )}
+            {game.eroscape_id && (
+              <button
+                onClick={() => OpenBrowser(getEroscapeUrl())}
+                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+              >
+                批评空间
+              </button>
+            )}
+          </div>
 
         
           

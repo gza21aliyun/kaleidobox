@@ -126,7 +126,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		return gameEntity, fmt.Errorf("DMM ID is required to fetch metadata by ID")
 	}
 	fmt.Println("开始获取DMM游戏信息 37 " + request.ID)
-
+	game.DmmId = request.ID
 	dmmUrl := fmt.Sprintf("https://dlsoft.dmm.co.jp/detail/%s/", request.ID)
 	c := CreateCollector("*dmm.co.jp")
 
@@ -162,7 +162,8 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		// var tags []string
 		e.DOM.Find("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container li").Each(func(i int, s *goquery.Selection) {
 			tag := strings.TrimSpace(s.Text())
-			if !strings.Contains(tag, "還元") && !strings.Contains(tag, "クーポン") && !strings.Contains(tag, "セール") {
+			if !strings.Contains(tag, "還元") && !strings.Contains(tag, "クーポン") && !strings.Contains(tag, "セール") &&
+				!strings.Contains(tag, "独占販売") {
 				// tags = append(tags, tag)
 				tagList = append(tagList, models.Tag{Name: tag, Category: models.TagCategoryOther})
 			}

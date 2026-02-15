@@ -1047,3 +1047,7 @@ func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate
 	fmt.Printf("  搜索名称: %s\n", result.SearchName)
 	return result, nil
 }
+
+func (s *ImportService) OpenBrowser(url string) error {
+	return utils.OpenBrowser(url)
+}

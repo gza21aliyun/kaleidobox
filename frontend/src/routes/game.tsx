@@ -16,6 +16,7 @@ import { formatLocalDate } from "../utils/time";
 import { Route as rootRoute } from "./__root";
 import { GameInfoPanel } from "../components/panel/GameInfoPanel";
 import { GameGalleryPanel } from "../components/panel/GameGalleryPanel"; // 新增导入
+import { GameIntroPanel } from "../components/panel/GameIntroPanel";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -37,8 +38,6 @@ function GameDetailPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isInitialMount = useRef(true);
   const originalGameData = useRef<models.Game | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -58,15 +57,7 @@ function GameDetailPage() {
     loadData();
   }, [gameId]);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      // 重置高度以获取准确的scrollHeight
-      textareaRef.current.style.height = 'auto';
-      // 设置为内容的实际高度
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-    
-  }, [game?.summary || ""]); // 当summary变化时重新计算高度
+  
 
   // 延迟显示骨架屏
   useEffect(() => {
@@ -357,22 +348,7 @@ function GameDetailPage() {
           
 
         
-          <div className="mt-4">
-            <div className="font-semibold mb-2 text-brand-900 dark:text-white">简介</div>
-            <textarea
-              ref={textareaRef}
-              value={game.summary || "暂无简介"}
-              disabled={true}
-              className="w-full bg-transparent border-0 outline-none text-brand-600 dark:text-brand-400 text-sm leading-relaxed resize-none"
-              style={{
-                height: 'auto',
-                overflow: 'hidden',
-                resize: 'none',
-                padding: 0,
-                margin: 0
-              }}
-            />
-          </div>
+          
         </div>
       </div>
 
@@ -380,7 +356,7 @@ function GameDetailPage() {
       <div className="border-b border-brand-200 dark:border-brand-700">
         <div className="flex justify-between items-center">
           <nav className="-mb-px flex space-x-8">
-            {["stats", "edit", "backup", "info", "gallery"].map(tab => (
+            {["intro","stats", "edit", "backup", "info", "gallery"].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -396,6 +372,7 @@ function GameDetailPage() {
                 {tab === "backup" && "备份"}
                 {tab === "info" && "游戏信息"}
                 {tab === "gallery" && "画廊"}
+                {tab === "intro" && "介绍"}
               </button>
             ))}
           </nav>
@@ -442,6 +419,13 @@ function GameDetailPage() {
       {activeTab === "gallery" && game && (
         <GameGalleryPanel
           game={game}
+        />
+      )}
+
+      {activeTab === "intro" && game && (
+        <GameIntroPanel
+          game={game}
+          onTagTaps={handleTagTaps}
         />
       )}
 

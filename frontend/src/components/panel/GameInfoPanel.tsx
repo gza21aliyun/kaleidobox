@@ -98,67 +98,6 @@ export function GameInfoPanel({
                 </div>
 
 
-                <div className="mt-4">
-                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">角色</div>
-                    <div className="flex flex-wrap gap-3">
-                        {true ? (
-                            
-                            charactorsForEach(worksMap, (charactor) => (
-                                <div key={`${charactor.charactor_name}-${charactor.staff_name}`} 
-                                    className="flex items-center gap-3 bg-white dark:bg-brand-800/30 rounded-lg p-3 border border-brand-200 dark:border-brand-700 min-w-[280px] hover:shadow-md transition-shadow">
-                                    {/* 角色图片 */}
-                                    {charactor.images && (
-                                        <div className="flex-shrink-0">
-                                            <img 
-                                                src={charactor.images} 
-                                                alt={charactor.charactor_name}
-                                                className="w-26 h-40 object-cover rounded-lg"
-                                                style={{ objectFit: 'cover', objectPosition: 'center top' }}
-                                            />
-                                        </div>
-                                    )}
-                                    
-                                    {/* 角色信息 */}
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-brand-900 dark:text-white truncate">
-                                            <button
-                                                    onClick={() => {
-                                                        if (charactor.charactor_id) {
-                                                            navigate({ to: '/charactor/$charactorId', params: { charactorId: charactor.charactor_id } });
-                                                        }
-                                                    }}
-                                                    className="text-sm text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
-                                                >
-                                                    {charactor.charactor_name}
-                                                </button>
-                                            {/* {charactor.charactor_name} */}
-                                        </h3>
-                                        
-                                        {charactor.staff_name && (
-                                            <div className="mt-1">
-                                                <span className="text-xs text-brand-600 dark:text-brand-400">CV：</span>
-                                                <button
-                                                    onClick={() => {
-                                                        if (charactor.staff_id) {
-                                                            navigate({ to: '/staff/$staffId', params: { staffId: charactor.staff_id } });
-                                                        }
-                                                    }}
-                                                    className="text-sm text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
-                                                >
-                                                    {charactor.staff_name}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                </div>
-                                
-                            ))
-                        ) : (
-                            <p className="text-brand-600 dark:text-brand-400 text-sm">暂无分类标签</p>
-                        )}
-                    </div>
-                </div>
 
 
 

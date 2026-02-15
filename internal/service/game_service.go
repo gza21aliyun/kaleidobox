@@ -129,7 +129,7 @@ func (s *GameService) AddGame(game models.Game) error {
 	)
 
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "AddGame: failed to insert game %s: %v", game.Name, err)
+		fmt.Printf("AddGame: failed to insert game %s: %vn", game.Name, err)
 		return err
 	}
 
@@ -712,7 +712,9 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		game.EroscapeId = req.ID
 		gameEntity, e = escGetter.FetchMetadataById(req)
 		gameEntity, e = escGetter.FetchCharactors(req, gameEntity)
+		gameEntity, e = escGetter.FetchImages(req, gameEntity)
 		game = gameEntity.Game
+		fmt.Println("发售日3：", game.ReleaseAt)
 		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
 		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 	case enums.Dmm:
@@ -877,6 +879,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				// 	ID:     id,
 				// }
 				updatedGame, err = s.FetchMetadata(taskData.Req)
+				fmt.Println("发售日5：", updatedGame.ReleaseAt)
 				if err != nil {
 
 					log.Printf("Failed to fetch metadata for game %s by ID: %s %v", ngame.Name, id, err)
@@ -922,6 +925,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			}
 
 			s.FillGame(&ngame, &updatedGame)
+			fmt.Println("发售日4：", updatedGame.ReleaseAt)
 
 			// 更新游戏
 			if err := s.UpdateGame(updatedGame); err != nil {
@@ -964,14 +968,17 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game) {
 	updatedGame.SourceID = ngame.SourceID
 	updatedGame.CachedAt = time.Now()
 	updatedGame.Tags = utils.MergeStrings(updatedGame.Tags, ngame.Tags)
-	updatedGame.Charactors = utils.MergeStrings(updatedGame.Charactors, ngame.Charactors)
-	updatedGame.Staffs = utils.MergeStrings(updatedGame.Staffs, ngame.Staffs)
-	updatedGame.Images = utils.MergeStrings(updatedGame.Images, ngame.Images)
+	// updatedGame.Charactors = utils.MergeStrings(updatedGame.Charactors, ngame.Charactors)
+	// updatedGame.Staffs = utils.MergeStrings(updatedGame.Staffs, ngame.Staffs)
+	// updatedGame.Images = utils.MergeStrings(updatedGame.Images, ngame.Images)
 
 	updatedGame.SavePath = ngame.SavePath
-	updatedGame.ReleaseAt = ngame.ReleaseAt
+	// updatedGame.ReleaseAt = ngame.ReleaseAt
 	updatedGame.Status = ngame.Status
-	updatedGame.Summary = ngame.Summary
+	if ngame.Summary != "" {
+		updatedGame.Summary = ngame.Summary
+	}
+
 	updatedGame.UseMagpie = ngame.UseMagpie
 	updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
 }

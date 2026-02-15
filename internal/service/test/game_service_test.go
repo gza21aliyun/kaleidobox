@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
@@ -15,6 +14,53 @@ import (
 
 	_ "github.com/duckdb/duckdb-go/v2"
 )
+
+type GameCheck func(game models.Game, services Services) error
+
+type Services struct {
+	GameService      *service.GameService
+	TaskService      *service.TaskService
+	CharactorService *service.CharactorService
+	StaffService     *service.StaffService
+	WorkService      *service.WorkService
+	TagService       *service.TagService
+	ImportService    *service.ImportService
+}
+
+func createServices(t *testing.T) *Services {
+	db, _ := setupTestDB(t)
+	// defer cleanup()
+	config := appconf.AppConfig{}
+	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
+	config.EroscapeUseMirror = false
+
+	gameService := service.NewGameService()
+	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	taskService := service.NewTaskService()
+	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	charactorService := service.NewCharactorService()
+	charactorService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	staffService := service.NewStaffService()
+	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService := service.NewWorkService()
+	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	workService.SetStaffCharactorService(staffService, charactorService)
+	tagService := service.NewTagService()
+	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
+	importServie := service.NewImportService()
+	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
+	services := Services{
+		GameService:      gameService,
+		TaskService:      taskService,
+		CharactorService: charactorService,
+		StaffService:     staffService,
+		WorkService:      workService,
+		TagService:       tagService,
+		ImportService:    importServie,
+	}
+	return &services
+}
 
 // createTestGame 创建测试游戏数据
 func createTestGame() models.Game {
@@ -44,23 +90,6 @@ func createBangumiGame() models.Game {
 		Path:       "C:\\Games\\TestGame\\game.exe",
 		SourceType: enums.Bangumi,
 		SourceID:   "466861",
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		ReleaseAt:  time.Now(),
-		CachedAt:   time.Now(),
-	}
-}
-
-func createEroscapeGame() models.Game {
-	return models.Game{
-		ID:         "test-eroscape-001",
-		Name:       "测试游戏",
-		CoverURL:   "https://example.com/cover.jpg",
-		Company:    "测试公司",
-		Summary:    "这是一个测试游戏",
-		Path:       "C:\\Games\\TestGame\\game.exe",
-		SourceType: enums.Eroscape,
-		SourceID:   "38234",
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 		ReleaseAt:  time.Now(),
@@ -408,7 +437,7 @@ func TestGameService_UGB(t *testing.T) {
 	defer cleanup()
 	config := appconf.AppConfig{}
 	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
-	config.EroscapeUseMirror = true
+	config.EroscapeUseMirror = false
 
 	gameService := service.NewGameService()
 	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
@@ -426,7 +455,6 @@ func TestGameService_UGB(t *testing.T) {
 	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
 
 	t.Run("add game success", func(t *testing.T) {
-		// game := createEroscapeGame()
 		game := createBangumiGame()
 		game.ID = "add-test-001"
 		t.Logf("add game 01: %s", game.Name)
@@ -455,6 +483,7 @@ func TestGameService_UGB(t *testing.T) {
 			ID:                    savedGame.SourceID,
 			ShouldFetchStaffs:     true,
 			ShouldFetchCharactors: true,
+			ShouldFetchImages:     true,
 			DbGameId:              game.ID,
 		}
 		var games []models.Game = []models.Game{}
@@ -465,54 +494,56 @@ func TestGameService_UGB(t *testing.T) {
 		works, err := workService.GetWorksByGameId(game.ID)
 		// allWorks, err := workService.ListWorks()
 
-		if len(works) > 0 {
-			firstWork := works[1]
+		// if len(works) > 0 {
+		// 	firstWork := works[1]
 
-			// 创建可序列化的结构体
-			serializableWork := struct {
-				Id                string `json:"id"`
-				GameId            string `json:"game_id"`
-				StaffId           string `json:"staff_id"`
-				Role              string `json:"role"`
-				CharactorId       string `json:"charactor_id"`
-				CharactorName     string `json:"charactor_name"`
-				StaffName         string `json:"staff_name"`
-				WorkSummary       string `json:"work_summary"`
-				SourceType        string `json:"source_type"`
-				SourceStaffId     string `json:"source_staff_id"`
-				SourceCharactorId string `json:"source_charactor_id"`
-				SourceGameId      string `json:"source_game_id"`
-				Images            string `json:"images"`
-			}{
-				Id:                firstWork.Id,
-				GameId:            firstWork.GameId,
-				StaffId:           firstWork.StaffId,
-				Role:              string(firstWork.Role),
-				CharactorId:       firstWork.CharactorId,
-				CharactorName:     firstWork.CharactorName,
-				StaffName:         firstWork.StaffName,
-				WorkSummary:       firstWork.WorkSummary,
-				SourceType:        string(firstWork.SourceType),
-				SourceStaffId:     firstWork.SourceStaffId,
-				SourceCharactorId: firstWork.SourceCharactorId,
-				SourceGameId:      firstWork.SourceGameId,
-				Images:            firstWork.Images,
-			}
+		// 	// 创建可序列化的结构体
+		// 	serializableWork := struct {
+		// 		Id                string `json:"id"`
+		// 		GameId            string `json:"game_id"`
+		// 		StaffId           string `json:"staff_id"`
+		// 		Role              string `json:"role"`
+		// 		CharactorId       string `json:"charactor_id"`
+		// 		CharactorName     string `json:"charactor_name"`
+		// 		StaffName         string `json:"staff_name"`
+		// 		WorkSummary       string `json:"work_summary"`
+		// 		SourceType        string `json:"source_type"`
+		// 		SourceStaffId     string `json:"source_staff_id"`
+		// 		SourceCharactorId string `json:"source_charactor_id"`
+		// 		SourceGameId      string `json:"source_game_id"`
+		// 		Images            string `json:"images"`
+		// 	}{
+		// 		Id:                firstWork.Id,
+		// 		GameId:            firstWork.GameId,
+		// 		StaffId:           firstWork.StaffId,
+		// 		Role:              string(firstWork.Role),
+		// 		CharactorId:       firstWork.CharactorId,
+		// 		CharactorName:     firstWork.CharactorName,
+		// 		StaffName:         firstWork.StaffName,
+		// 		WorkSummary:       firstWork.WorkSummary,
+		// 		SourceType:        string(firstWork.SourceType),
+		// 		SourceStaffId:     firstWork.SourceStaffId,
+		// 		SourceCharactorId: firstWork.SourceCharactorId,
+		// 		SourceGameId:      firstWork.SourceGameId,
+		// 		Images:            firstWork.Images,
+		// 	}
 
-			jsonData, err := json.MarshalIndent(serializableWork, "", "  ")
-			if err != nil {
-				t.Logf("序列化失败: %v", err)
-			} else {
-				t.Logf("第一个作品的JSON数据:\n%s", string(jsonData))
-			}
-		} else {
-			t.Log("没有找到任何作品数据")
-		}
+		// 	jsonData, err := json.MarshalIndent(serializableWork, "", "  ")
+		// 	if err != nil {
+		// 		t.Logf("序列化失败: %v", err)
+		// 	} else {
+		// 		t.Logf("第一个作品的JSON数据:\n%s", string(jsonData))
+		// 	}
+		// } else {
+		// 	t.Log("没有找到任何作品数据")
+		// }
 
 		fmt.Printf("works:%d, count: %d\n", len(works), len(works))
 		fmt.Println("标签 02： ", savedGame.Tags)
 		tags, err := tagService.GetTagListByString(savedGame.Tags)
 		fmt.Println("标签 03： ", len(tags))
+		fmt.Println("游戏读取图库： ", savedGame.Images)
+		fmt.Println("游戏发售日： ", savedGame.ReleaseAt)
 	})
 
 }
@@ -606,5 +637,76 @@ func TestGameService_DownloadSave(t *testing.T) {
 	t.Run("import success", func(t *testing.T) {
 		getter := utils.NewSaveInfoGetter()
 		getter.FetchSeiyaSave("サクラノ詩")
+	})
+}
+
+func createEroscapeGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
+	releaseAt, _ := time.Parse("2006-01-01", "2025-01-01")
+	game := models.Game{
+		ID:         "test-eroscape-001",
+		Name:       "测试游戏",
+		CoverURL:   "https://example.com/cover.jpg",
+		Company:    "测试公司",
+		Summary:    "这是一个测试游戏",
+		Path:       "C:\\Games\\TestGame\\game.exe",
+		SourceType: enums.Eroscape,
+		// SourceID:   "38234",
+		SourceID:  "23035",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		ReleaseAt: releaseAt,
+		CachedAt:  time.Now(),
+	}
+	return game, func(oldGame models.Game, services Services) error {
+			_, err := services.GameService.GetGameByID(oldGame.ID)
+			if err != nil {
+				return fmt.Errorf("读取游戏错误 err:%v\n", err)
+			}
+			chara1, err := services.WorkService.GetWorkByCharactor(game.ID, "月詠")
+			if err != nil || chara1.Id == "" {
+				return fmt.Errorf("读取角色错误 err:%v\n", err)
+			}
+			if chara1.Images == "" {
+				return fmt.Errorf("月詠 角色图片为空")
+
+			}
+
+			return nil
+		}, vo.MetadataRequest{
+			ID:                    game.SourceID,
+			DbGameId:              game.ID,
+			ShouldFetchStaffs:     true,
+			ShouldFetchCharactors: true,
+			Source:                enums.Eroscape,
+		}
+}
+
+func TestGameService_BGArray(t *testing.T) {
+
+	t.Run("add game success", func(t *testing.T) {
+		game, checkFn, req := createEroscapeGameCheck()
+		services := createServices(t)
+		t.Logf("add game 01: %s", game.Name)
+		err := services.GameService.AddGame(game)
+		if err != nil {
+			t.Fatalf("添加游戏失败: %v", err)
+		}
+
+		t.Logf("add game 02: %s", game.Name)
+
+		// 验证游戏已添加
+		savedGame, err := services.GameService.GetGameByID(game.ID)
+		if err != nil {
+			t.Fatalf("获取游戏失败: %v", err)
+		}
+		var games []models.Game = []models.Game{}
+		games = append(games, savedGame)
+		services.GameService.ExecueteGamesUpdate(games, req)
+		savedGame, err = services.GameService.GetGameByID(game.ID)
+		err = checkFn(savedGame, *services)
+		if err != nil {
+			t.Fatalf("验证游戏失败: %v", err)
+		}
+
 	})
 }

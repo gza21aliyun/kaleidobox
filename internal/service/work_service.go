@@ -74,7 +74,7 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 	charactor := models.Charactor{}
 	var err error = nil
 	if work.StaffName != "" {
-		fmt.Printf("07 CreateOrUpdateWorkStaffCharactor %s %s %s %s\n", work.StaffName, work.CharactorName, string(work.Role), work.GameId)
+		fmt.Printf("07 CreateOrUpdateWorkStaffCharactor %s %s %s %s %s\n", work.StaffName, work.CharactorName, string(work.Role), work.GameId, work.Images)
 		staff, err = s.staffService.CreateOrUpdateStaff(work.StaffName, work.GameId, work.SourceGameId, work.SourceType,
 			work.SourceStaffId, work.Role, work.StaffImage)
 		if err != nil {
@@ -119,7 +119,7 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 			return err
 		}
 	} else {
-		fmt.Println("16 CreateOrUpdateWorkStaffCharactor", err)
+		fmt.Printf("16 CreateOrUpdateWorkStaffCharactor:%v, id:%s\n", err, newWork.Id)
 		work.Id = newWork.Id
 		return s.UpdateWork(work)
 	}
@@ -240,6 +240,17 @@ func (s *WorkService) GetWorkGamesByCharactorId(charactorId string) ([]models.Wo
 	return works, err
 }
 
+func (s *WorkService) GetWorkGamesById(id string) (models.Work, error) {
+	query := `
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover 
+		FROM works
+		WHERE id = ?
+
+	`
+	works, err := s.GetWorkByQueryIds(query, id, "")
+	return works, err
+}
+
 func (s *WorkService) GetWorksByQueryId(query, id1 string) ([]models.Work, error) {
 	rows, err := s.db.QueryContext(s.ctx, query, id1)
 	if err != nil {
@@ -299,11 +310,11 @@ func (s *WorkService) GetWorksMapByGameId(gameId string) (map[enums.StaffRole][]
 func (s *WorkService) UpdateWork(work models.Work) error {
 	query := `
 		UPDATE works
-		SET id = ?, role = ?, charactor_name = ?, staff_name = ?, work_summary = ?, source_type = ?, source_staff_id = ?, source_charactor_id = ?, source_game_id = ?, images = ?, game_name = ?, game_cover = ? 
-		WHERE game_id = ? AND staff_id = ? AND charactor_id = ?
+		SET role = ?, charactor_name = ?, staff_name = ?, work_summary = ?, source_type = ?, source_staff_id = ?, source_charactor_id = ?, source_game_id = ?, images = ?, game_name = ?, game_cover = ?,
+		game_id = ?, staff_id = ?, charactor_id = ? 
+		WHERE id = ?
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
-		work.Id,
 		string(work.Role),
 		work.CharactorName,
 		work.StaffName,
@@ -311,18 +322,23 @@ func (s *WorkService) UpdateWork(work models.Work) error {
 		string(work.SourceType),
 		work.SourceStaffId,
 		work.SourceCharactorId,
-		work.GameId,
-		work.StaffId,
-		work.CharactorId,
 		work.SourceGameId,
 		work.Images,
 		work.GameName,
 		work.StaffImage,
+		work.GameId,
+		work.StaffId,
+		work.CharactorId,
+		work.Id,
 	)
 	if err != nil {
-		fmt.Println("更新工作失败 gameId:%s, staffName: %s, charactorName: %s, err: %v",
+		fmt.Printf("更新工作失败 gameId:%s, staffName: %s, charactorName: %s, err: %v\n",
 			work.GameId, work.StaffName, work.CharactorName, err)
+		return err
 	}
+	// newWork, _ := s.GetWorkGamesById(work.Id)
+	// fmt.Printf("更新工作成功 gameId:%s, staffName: %s, charactorName: %s, images: %v, img:%s\n",
+	// 	newWork.GameId, newWork.StaffName, newWork.CharactorName, newWork.Images, work.Images)
 	return err
 }
 

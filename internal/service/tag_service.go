@@ -48,7 +48,7 @@ func (s *TagService) CreateTag(tag *models.Tag) error {
 		tag.IsSpoiler,
 		tag.BlockModify,
 	)
-	fmt.Println("创建标签成功：", tag.Name, " ", tag.Category)
+	// fmt.Println("创建标签成功：", tag.Name, " ", tag.Category)
 	return err
 }
 

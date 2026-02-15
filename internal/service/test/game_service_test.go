@@ -681,10 +681,47 @@ func createEroscapeGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 		}
 }
 
+func createDmmGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
+	releaseAt, _ := time.Parse("2006-01-01", "2025-01-01")
+	game := models.Game{
+		ID:         "test-eroscape-001",
+		Name:       "测试游戏",
+		CoverURL:   "https://example.com/cover.jpg",
+		Company:    "测试公司",
+		Summary:    "这是一个测试游戏",
+		Path:       "C:\\Games\\TestGame\\game.exe",
+		SourceType: enums.Dmm,
+		// SourceID:   "38234",
+		SourceID:  "hobc_0509",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		ReleaseAt: releaseAt,
+		CachedAt:  time.Now(),
+	}
+	return game, func(oldGame models.Game, services Services) error {
+			_, err := services.GameService.GetGameByID(oldGame.ID)
+			if err != nil {
+				return fmt.Errorf("读取游戏错误 err:%v\n", err)
+			}
+			charactor, err := services.WorkService.GetWorkByStaff(oldGame.ID, "古都ことり")
+			if charactor.CharactorName != "朱鷺坂 アリス" {
+				return fmt.Errorf("错误：cv:古都ことり  朱鷺坂 アリス，c:%v", charactor)
+			}
+
+			return nil
+		}, vo.MetadataRequest{
+			ID:                    game.SourceID,
+			DbGameId:              game.ID,
+			ShouldFetchStaffs:     true,
+			ShouldFetchCharactors: true,
+			Source:                enums.Dmm,
+		}
+}
+
 func TestGameService_BGArray(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
-		game, checkFn, req := createEroscapeGameCheck()
+		game, checkFn, req := createDmmGameCheck()
 		services := createServices(t)
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)

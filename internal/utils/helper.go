@@ -109,6 +109,15 @@ func Find[T1 any](slice1 []T1, fn func(t1 T1) bool) *T1 {
 	return nil
 }
 
+func Contains[T1 any](slice1 []T1, fn func(t1 T1) bool) bool {
+	for _, item1 := range slice1 {
+		if fn(item1) {
+			return true
+		}
+	}
+	return false
+}
+
 func setupTestContext() context.Context {
 	// 创建一个简单的context，避免调用Wails runtime
 	return context.WithValue(context.Background(), "test_mode", true)

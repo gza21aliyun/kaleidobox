@@ -14,6 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/labstack/gommon v0.4.2
 	github.com/wailsapp/wails/v2 v2.11.0
+	golang.org/x/text v0.31.0
 )
 
 require (
@@ -89,7 +90,6 @@ require (
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/telemetry v0.0.0-20251008203120-078029d740a8 // indirect
-	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/appengine v1.6.8 // indirect

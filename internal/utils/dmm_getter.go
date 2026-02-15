@@ -121,6 +121,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 	var game models.Game = request.GetGame()
 	var gameEntity models.GameEntity = models.GameEntity{}
 	gameEntity.Game = game
+	var err error = nil
 	if request.ID == "" {
 		return gameEntity, fmt.Errorf("DMM ID is required to fetch metadata by ID")
 	}
@@ -148,14 +149,20 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		tagList = append(tagList, models.Tag{Name: genre, Category: models.TagCategoryGenre, BlockModify: true})
 
 		// 提取简介
-		summary, _ := e.DOM.Find("div.area-detail-read").Html()
+		summary, _ := e.DOM.Find("p.text-overflow").Html()
+		summary = strings.ReplaceAll(summary, "<br/>", "\n")
 		game.Summary = summary
-
+		releaseAt := e.ChildText("div.item-info__release-date__content__date") + ":00"
+		game.ReleaseAt, err = time.Parse("2006/01/02 15:04:05", releaseAt)
+		fmt.Printf("发售日11：%v, %s, %v\n", game.ReleaseAt, releaseAt, err)
+		if err != nil {
+			return
+		}
 		// 提取标签
 		// var tags []string
 		e.DOM.Find("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container li").Each(func(i int, s *goquery.Selection) {
 			tag := strings.TrimSpace(s.Text())
-			if !strings.Contains(tag, "還元") && !strings.Contains(tag, "クーポン") {
+			if !strings.Contains(tag, "還元") && !strings.Contains(tag, "クーポン") && !strings.Contains(tag, "セール") {
 				// tags = append(tags, tag)
 				tagList = append(tagList, models.Tag{Name: tag, Category: models.TagCategoryOther})
 			}
@@ -257,24 +264,44 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 
 		e.DOM.Find("div.detailGuide__sect div.detailGuide__box-chr").Each(func(i int, s *goquery.Selection) {
 
-			charactorName := strings.TrimSpace(s.Find("span.detailGuide__lin-hgt").Text())
+			charactorName := strings.Split(strings.TrimSpace(s.Find("span.detailGuide__lin-hgt").Text()), "(")[0]
+			boxText := strings.TrimSpace(s.Find("p").Eq(0).Text())
+			line1 := strings.Split(boxText, "\n")[0]
+			// line2 := strings.Split(boxText, "\n")[1] 身高三维
+			staffName := strings.Split(line1, "CV：")[1]
+			fmt.Printf("boxtext:%s\n", staffName)
+
+			newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool {
+				fmt.Printf("boxtext 03:%s\n", it.StaffName)
+				return it.StaffName == staffName
+			})
 			image := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
 			summary, _ := s.Find("p").Eq(1).Html()
 
-			summary = strings.TrimSpace(summary)
+			summary = strings.ReplaceAll(strings.TrimSpace(summary), "<br/>", "\n")
 
 			if charactorName != "" {
+				if newWork != nil {
+					fmt.Printf("boxtext 01:%s\n", staffName)
+					newWork.CharactorName = charactorName
+					newWork.WorkSummary = summary
+					newWork.Images = image
 
-				work := models.Work{
-					GameId:        game.ID,
-					Role:          enums.Charactor,
-					CharactorName: charactorName,
-					WorkSummary:   summary,
-					Images:        image,
-					SourceType:    enums.Dmm,
-					GameName:      game.Name,
+				} else {
+					fmt.Printf("boxtext 02:%s\n", staffName)
+					work := models.Work{
+						GameId:        game.ID,
+						Role:          enums.Charactor,
+						CharactorName: charactorName,
+						StaffName:     staffName,
+						WorkSummary:   summary,
+						Images:        image,
+						SourceType:    enums.Dmm,
+						GameName:      game.Name,
+					}
+					worksMap[work.Role] = append(worksMap[work.Role], work)
 				}
-				worksMap[work.Role] = append(worksMap[work.Role], work)
+
 			}
 		})
 		jstr, _ := json.Marshal(worksMap)
@@ -289,9 +316,9 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 	})
 
 	// 访问构建的 URL
-	err := c.Visit(dmmUrl)
+	err = c.Visit(dmmUrl)
 	if err != nil {
-		fmt.Println("开始获取DMM游戏信息 40 " + game.CoverURL)
+		fmt.Printf("开始获取DMM游戏信息 40 err: %s\n", err)
 		return gameEntity, err
 	}
 
@@ -304,6 +331,8 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		fmt.Println("开始获取DMM游戏信息 40 " + game.CoverURL)
 		return gameEntity, fmt.Errorf("game not found: %s", game.SourceID)
 	}
+	gameEntity = combineCharacters(gameEntity)
+	fmt.Print("角色人数：", len(gameEntity.WorksMap[enums.Charactor]))
 
 	// 设置其他必要字段
 	game.SourceType = enums.Dmm // 假设你有这个枚举
@@ -313,4 +342,44 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 	fmt.Println("开始获取DMM游戏信息 38 " + game.CoverURL)
 
 	return gameEntity, nil
+}
+
+func combineCharacters(gameEntity models.GameEntity) models.GameEntity {
+	worksMap := gameEntity.WorksMap
+	charactors := worksMap[enums.Charactor]
+	cvs := worksMap[enums.CV]
+	newCvs := []models.Work{}
+	remainCvs := []models.Work{}
+	newCharactors := []models.Work{}
+	for _, c := range charactors {
+		newWork := Find(cvs, func(it models.Work) bool {
+			fmt.Printf("boxtext 03, c.staffName:%s, cv.staffName:%s\n", c.StaffName, it.StaffName)
+			return it.StaffName != "" && it.StaffName == c.StaffName
+		})
+		if newWork != nil {
+			newWork.SourceCharactorId = c.SourceCharactorId
+			newWork.CharactorName = c.CharactorName
+			newWork.WorkSummary = c.WorkSummary
+			newWork.Images = c.Images
+			newCvs = append(newCvs, *newWork)
+		} else {
+			newCharactors = append(newCharactors, c)
+		}
+	}
+	for _, cv := range cvs {
+		newWork := Find(newCvs, func(it models.Work) bool {
+			return it.StaffName == cv.StaffName
+		})
+		if newWork == nil {
+			remainCvs = append(remainCvs, cv)
+		}
+	}
+
+	worksMap[enums.Charactor] = newCharactors
+	worksMap[enums.CV] = append(newCvs, remainCvs...)
+	gameEntity.WorksMap = worksMap
+
+	fmt.Printf("角色人数02：%d, data: %v\n", len(newCharactors), worksMap[enums.CV])
+	return gameEntity
+
 }

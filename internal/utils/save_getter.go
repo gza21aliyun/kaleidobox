@@ -6,7 +6,9 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -35,22 +37,60 @@ type potentialGame struct {
 	Link  string
 }
 
-func (b SaveInfoGetter) FetchSeiyaSave(name string) error {
+// ExtractFilename 从 URL 中提取文件名
+func ExtractFilename(rawURL string) (string, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("URL 解析失败: %v", err)
+	}
+
+	// 尝试从查询参数中获取文件名
+	query := parsedURL.Query()
+	filename := query.Get("filename")
+
+	// 如果查询参数中没有文件名，则从路径中提取
+	if filename == "" {
+		filename = path.Base(parsedURL.Path)
+	}
+
+	return filename, nil
+}
+
+func (b SaveInfoGetter) FetchSeiyaSave(name string, folder string, isOverride bool) (string, error) {
 	url, err := b.FetchSeiyaSaveUrl(name)
+	if err != nil {
+		return "", fmt.Errorf("获取存档链接失败 err:%v", err)
+	}
+	fileName, err := ExtractFilename(url)
+	if err != nil {
+		return "", fmt.Errorf("获取文件名失败 err:%v", err)
+	}
 	// dataDir, err := GetDataDir()
 	// coversDestDir := filepath.Join(dataDir, "1.zip")
-	zipPath := `C:\temp\projects\lunabox\build\bin\1.zip`
+	zipPath := folder + "\\" + fileName
 	err = downloadFile(url, zipPath)
-	destDir := `C:\temp\projects\lunabox\build\bin\extracted`
-	target := `C:\temp\projects\lunabox\build\bin\target`
-	if err := extractZip(zipPath, destDir); err != nil {
-		return fmt.Errorf("解压失败: %v", err)
-	}
-	err = overrideFiles(destDir, target)
 	if err != nil {
-		fmt.Println("FetchSeiyaSave错误：", err)
+		return "", fmt.Errorf("下载文件失败 err:%v", err)
 	}
-	return err
+
+	target := folder
+
+	if isOverride {
+		extractedDir := filepath.Join(os.TempDir() + "extracted")
+		err = extractZip(zipPath, extractedDir)
+		if err != nil {
+			return "", fmt.Errorf("解压失败: %v", err)
+		}
+		err = overrideFiles(extractedDir, target)
+		if err != nil {
+			return "", fmt.Errorf("FetchSeiyaSave错误：%v", err)
+		}
+		err = os.Remove(zipPath)
+		err = os.Remove(extractedDir)
+		return "", err
+	}
+
+	return zipPath, err
 }
 
 func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
@@ -63,6 +103,7 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 	}
 	gameName := ""
 	gameLink := ""
+	firstName := strings.Split(name, " ")[0]
 
 	// 处理搜索结果页面中的游戏条目
 	c.OnHTML("div > table > tbody > tr > th table tbody tr", func(e *colly.HTMLElement) {
@@ -80,6 +121,10 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 		// }
 
 		if link == "" || title == "" || strings.Contains(link, "#") || !strings.Contains(link, "save/") {
+			return
+		}
+
+		if !strings.Contains(title, firstName) {
 			return
 		}
 		fmt.Println("title:", title)
@@ -104,6 +149,11 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 			gameLink = gameFound.Link
 			return
 		}
+
+		if len(potentialGames) > 0 {
+			gameName = potentialGames[0].Title
+			gameLink = potentialGames[0].Link
+		}
 	})
 
 	// 错误处理
@@ -114,12 +164,15 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 	// 访问构建的 URL
 	err := c.Visit(url)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("找不到游戏%s的存档,err:%v", name, err)
 	}
 
 	// 等待收集完成
 	c.Wait()
 	fmt.Printf("找到游戏‘%s’的存档%s\n", gameName, gameLink)
+	if gameLink == "" {
+		return "", fmt.Errorf("找不到游戏%s的存档", name)
+	}
 
 	return gameLink, err
 }

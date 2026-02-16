@@ -1,7 +1,9 @@
 import type { appconf, models } from "../../../wailsjs/go/models";
 import { toast } from "react-hot-toast";
+import { OpenFolder } from "../../../wailsjs/go/service/BackupService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
+import { getFolderPath } from "../utils/Utility";
 
 interface GameEditFormProps {
   game: models.Game;
@@ -110,6 +112,13 @@ export function GameEditPanel({
             >
               选择
             </button>
+            <button
+              type="button"
+              onClick={() => OpenFolder(getFolderPath(game.path))}
+              className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
+            >
+              打开路径
+            </button>
           </div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
             游戏参数
@@ -143,6 +152,16 @@ export function GameEditPanel({
             >
               选择
             </button>
+            {game.save_path && (
+              <button
+                type="button"
+                onClick={() => OpenFolder(game.save_path)}
+                className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
+              >
+                打开路径
+              </button>
+            )}
+            
           </div>
           <p className="mt-1 text-xs text-brand-500">设置存档目录后可使用备份功能</p>
         </div>

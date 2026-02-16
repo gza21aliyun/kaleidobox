@@ -163,3 +163,24 @@ export function charactorsForEach(map: Map<enums.StaffRole, models.Work[]>, fn: 
 
         return result;
 }
+
+/**
+ * 从文件路径中提取文件夹路径
+ * @param filePath 完整文件路径
+ * @returns 文件夹路径
+ */
+export function getFolderPath(filePath: string): string {
+  // 找到最后一个斜杠或反斜杠的位置
+  const lastSlashIndex = Math.max(
+    filePath.lastIndexOf("/"),
+    filePath.lastIndexOf("\\")
+  );
+
+  // 如果没有找到斜杠，返回当前目录
+  if (lastSlashIndex === -1) {
+    return ".";
+  }
+
+  // 截取文件夹路径
+  return filePath.substring(0, lastSlashIndex);
+}

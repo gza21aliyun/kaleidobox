@@ -8,10 +8,13 @@ import {
   GetCloudGameBackups,
   GetGameBackups,
   OpenBackupFolder,
+  OpenFolder,
   RestoreBackup,
   RestoreFromCloud,
   UploadGameBackupToCloud,
+  DownloadSave,
 } from "../../../wailsjs/go/service/BackupService";
+import { GetGameByID } from "../../../wailsjs/go/service/GameService";
 import { useAppStore } from "../../store";
 import { formatFileSize } from "../../utils/size";
 import { formatLocalDateTime } from "../../utils/time";
@@ -29,6 +32,8 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
   const [cloudStatus, setCloudStatus] = useState<vo.CloudBackupStatus | null>(null);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDownloading, setDownloading] = useState(false);
+  const [isOverriding, setOverriding] = useState(false);
   const [loadingLocal, setLoadingLocal] = useState(true);
   const [loadingCloud, setLoadingCloud] = useState(false);
 
@@ -60,6 +65,50 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
       setLoadingLocal(false);
     }
   }, [gameId]);
+
+  const handleDownloadSave = (isOverride: boolean) => {
+    if (isOverride) {
+      setOverriding(true)
+    } else {
+      setDownloading(true);
+    }
+    
+    GetGameByID(gameId).then(game => {
+      if (game) {
+        DownloadSave(game, isOverride).then(path => {
+          if (isOverride) {
+            toast.success("已覆盖存档");
+          } else {
+            toast.success(`已下载存档: ${path}`, {
+              style: {
+                width: "800px", // 设置更宽的宽度
+              },
+            });
+          }
+          if (isOverride) {
+            setOverriding(false)
+          } else {
+            setDownloading(false);
+          }
+        }).catch(err => {
+          toast.error(`下载存档失败: ${err.message}`);
+          if (isOverride) {
+            setOverriding(false)
+          } else {
+            setDownloading(false);
+          }
+        });
+      }
+    });
+  }
+
+  const handleOpenSaveFolder = () => {
+    GetGameByID(gameId).then(game => {
+      OpenFolder(game.save_path)
+    }).catch(err => {
+      toast.error(`获取游戏信息失败: ${err.message}`);
+    });
+  };
 
   const loadCloudStatus = useCallback(async () => {
     try {
@@ -208,7 +257,10 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
               {savePath ? `存档目录: ${savePath}` : "请先在编辑页面设置存档目录"}
             </p>
           </div>
-          <div className="flex gap-2">
+        </div>
+
+
+        <div className="flex gap-2">
             <button
               onClick={handleOpenBackupFolder}
               className="glass-btn-none px-4 py-2 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-700 rounded-md transition-colors"
@@ -223,8 +275,37 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
               {isBackingUp && <div className="i-mdi-loading animate-spin" />}
               {isBackingUp ? "备份中..." : "立即备份"}
             </button>
+            {savePath && (
+              <button
+                onClick={() => handleDownloadSave(false)}
+                disabled={isDownloading || !savePath}
+                className="glass-btn-neutral px-4 py-2 bg-neutral-600 text-white rounded-md hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isDownloading && <div className="i-mdi-loading animate-spin" />}
+                下载存档
+              </button>
+            )}
+
+            {savePath && (
+              <button
+                onClick={() => handleDownloadSave(true)}
+                disabled={isOverriding || !savePath}
+                className="glass-btn-neutral px-4 py-2 bg-neutral-600 text-white rounded-md hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isOverriding && <div className="i-mdi-loading animate-spin" />}
+                覆盖存档
+              </button>
+            )}
+
+            {savePath && (
+              <button
+                onClick={handleOpenSaveFolder}
+                className="glass-btn-none px-4 py-2 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-700 rounded-md transition-colors"
+              >
+                打开存档文件夹
+              </button>
+             )}
           </div>
-        </div>
       </div>
 
       {/* 本地备份历史列表 */}

@@ -636,7 +636,7 @@ func TestGameService_DownloadSave(t *testing.T) {
 
 	t.Run("import success", func(t *testing.T) {
 		getter := utils.NewSaveInfoGetter()
-		getter.FetchSeiyaSave("サクラノ詩")
+		getter.FetchSeiyaSave("サクラノ詩", "C:\\temp\\projects\\lunabox\\build\\bin", true)
 	})
 }
 

@@ -148,6 +148,14 @@ func (s *BackupService) OpenBackupFolder(gameID string) error {
 	return utils.OpenDirectory(gameBackupDir)
 }
 
+func (s *BackupService) OpenFolder(path string) error {
+	fmt.Printf("openfolder:%s\n", path)
+	if path == "" {
+		return nil
+	}
+	return utils.OpenDirectory(path)
+}
+
 // ========== 游戏存档本地备份方法 ==========
 
 // GetGameBackups 获取游戏的备份历史（直接读取文件夹，不使用数据库）
@@ -466,6 +474,15 @@ func (s *BackupService) cleanupOldCloudBackups(gameID string) {
 	for i := retention; i < len(items); i++ {
 		provider.DeleteObject(s.ctx, items[i].Key)
 	}
+}
+
+// 下载存档
+func (s *BackupService) DownloadSave(game models.Game, isOverride bool) (string, error) {
+	if game.SavePath == "" {
+		return "", fmt.Errorf("还没设置存档位置")
+	}
+	getter := utils.NewSaveInfoGetter()
+	return getter.FetchSeiyaSave(game.Name, game.SavePath, isOverride)
 }
 
 // ========== 数据库本地备份方法 ==========

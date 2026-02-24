@@ -26,7 +26,7 @@ type Game struct {
 	DmmId             string           `json:"dmm_id"`
 	EroscapeId        string           `json:"eroscape_id"`
 	YmgalId           string           `json:"ymgal_id"`
-	Charactors        string           `json:"charactors"`
+	SearchName        string           `json:"search_name"`
 	Staffs            string           `json:"staffs"`
 	ReleaseAt         time.Time        `json:"release_at"`
 	RelatedGames      string           `json:"related_games"`

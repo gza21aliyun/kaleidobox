@@ -96,7 +96,7 @@ func (s *GameService) AddGame(game models.Game) error {
 	query := `INSERT INTO games (
 		id, name, cover_url, company, summary, path, 
 		source_type, cached_at, source_id, created_at, updated_at,
-		tags, arguments, images, bangumi_id, dmm_id, eroscape_id, ymgal_id, charactors, staffs, release_at, related_games, 
+		tags, arguments, images, bangumi_id, dmm_id, eroscape_id, ymgal_id, search_name, staffs, release_at, related_games, 
 		use_locale_emulator, use_magpie
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -119,7 +119,7 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.DmmId,
 		game.EroscapeId,
 		game.YmgalId,
-		game.Charactors,
+		game.SearchName,
 		game.Staffs,
 		game.ReleaseAt,
 		game.RelatedGames,
@@ -232,7 +232,7 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 		COALESCE(dmm_id, '') as dmm_id,
 		COALESCE(eroscape_id, '') as eroscape_id,
 		COALESCE(ymgal_id, '') as ymgal_id,
-		COALESCE(charactors, '') as charactors,
+		COALESCE(search_name, '') as search_name,
 		COALESCE(staffs, '') as staffs,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
@@ -276,7 +276,7 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 			&game.DmmId,
 			&game.EroscapeId,
 			&game.YmgalId,
-			&game.Charactors,
+			&game.SearchName,
 			&game.Staffs,
 			&game.ReleaseAt,
 			&game.RelatedGames,
@@ -326,7 +326,7 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 		COALESCE(dmm_id, '') as dmm_id,
 		COALESCE(eroscape_id, '') as eroscape_id,
 		COALESCE(ymgal_id, '') as ymgal_id,
-		COALESCE(charactors, '') as charactors,
+		COALESCE(search_name, '') as search_name,
 		COALESCE(staffs, '') as staffs,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
@@ -370,7 +370,7 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 			&game.DmmId,
 			&game.EroscapeId,
 			&game.YmgalId,
-			&game.Charactors,
+			&game.SearchName,
 			&game.Staffs,
 			&game.ReleaseAt,
 			&game.RelatedGames,
@@ -416,7 +416,7 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		COALESCE(dmm_id, '') as dmm_id,
 		COALESCE(eroscape_id, '') as eroscape_id,
 		COALESCE(ymgal_id, '') as ymgal_id,
-		COALESCE(charactors, '') as charactors,
+		COALESCE(search_name, '') as search_name,
 		COALESCE(staffs, '') as staffs,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
@@ -450,7 +450,7 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		&game.DmmId,
 		&game.EroscapeId,
 		&game.YmgalId,
-		&game.Charactors,
+		&game.SearchName,
 		&game.Staffs,
 		&game.ReleaseAt,
 		&game.RelatedGames,
@@ -490,7 +490,7 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		dmm_id = ?,
 		eroscape_id = ?,
 		ymgal_id = ?,
-		charactors = ?,
+		search_name = ?,
 		staffs = ?,
 		release_at = ?,
 		related_games = ?,
@@ -515,7 +515,7 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		game.DmmId,
 		game.EroscapeId,
 		game.YmgalId,
-		game.Charactors,
+		game.SearchName,
 		game.Staffs,
 		game.ReleaseAt,
 		game.RelatedGames,
@@ -893,24 +893,24 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				if taskData.Req.Source == enums.Bangumi {
 					// log.Printf("TaskFunc 21 fetch for game %s", ngame.Name)
 					bgmGetter := utils.NewBangumiInfoGetter()
-					updatedGame, _ = bgmGetter.FetchMetadataByName(ngame.Name, s.config.BangumiAccessToken)
+					updatedGame, _ = bgmGetter.FetchMetadataByName(ngame.SearchName, s.config.BangumiAccessToken)
 				} else if taskData.Req.Source == enums.VNDB {
 					// log.Printf("TaskFunc 22 fetch for game %s", ngame.Name)
 					vndbGetter := utils.NewVNDBInfoGetter()
-					updatedGame, _ = vndbGetter.FetchMetadataByName(ngame.Name, s.config.VNDBAccessToken)
+					updatedGame, _ = vndbGetter.FetchMetadataByName(ngame.SearchName, s.config.VNDBAccessToken)
 				} else if taskData.Req.Source == enums.Ymgal {
 					// log.Printf("TaskFunc 23 fetch for game %s", ngame.Name)
 					ymgalGetter := utils.NewYmgalInfoGetter()
-					updatedGame, _ = ymgalGetter.FetchMetadataByName(ngame.Name, "")
+					updatedGame, _ = ymgalGetter.FetchMetadataByName(ngame.SearchName, "")
 				} else if taskData.Req.Source == enums.Eroscape {
 					// log.Printf("TaskFunc 24 fetch for game %s", ngame.Name)
 					escGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-					esc, _ := escGetter.FetchMetadataByName(ngame.Name, true)
+					esc, _ := escGetter.FetchMetadataByName(ngame.SearchName, true)
 					updatedGame = esc
 				} else if taskData.Req.Source == enums.Dmm {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 					dmmGetter := utils.NewDmmInfoGetter()
-					dmm, _ := dmmGetter.FetchMetadataByName(ngame.Name, true)
+					dmm, _ := dmmGetter.FetchMetadataByName(ngame.SearchName, true)
 					updatedGame = dmm
 				} else {
 					// log.Printf("TaskFunc 26 fetch for game %s", ngame.Name)

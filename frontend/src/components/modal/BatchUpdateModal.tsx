@@ -222,7 +222,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
       oldGame.staffs = game.staffs
       oldGame.summary = game.summary
       oldGame.name = game.name
-      oldGame.charactors = game.charactors
+      oldGame.search_name = game.search_name
       setCandidates(updated);
     }
     setShowManualSelect(false);

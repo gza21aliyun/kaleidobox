@@ -584,6 +584,7 @@ func (s *ImportService) convertPlayniteToGame(pg playnite.PlayniteGame) models.G
 	game := models.Game{
 		ID:         pg.ID,
 		Name:       pg.Name,
+		SearchName: pg.Name,
 		Company:    pg.Company,
 		Summary:    pg.Summary,
 		Path:       pg.Path,
@@ -878,6 +879,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 			// 没有匹配到元数据，创建基本游戏信息
 			game = models.Game{
 				Name:       candidate.SearchName,
+				SearchName: candidate.SearchName,
 				SourceType: enums.Local,
 			}
 		}
@@ -1032,6 +1034,7 @@ func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate
 	}
 	game := models.Game{
 		Name:       result.SearchName,
+		SearchName: result.SearchName,
 		SourceType: enums.Local,
 		Path:       result.SelectedExe,
 		Arguments:  result.Arguments,

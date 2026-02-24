@@ -57,7 +57,7 @@ func initTestSchema(t *testing.T, db *sql.DB) {
 			dmm_id TEXT,
 			ymgal_id TEXT,
 			eroscape_id TEXT,
-			charactors TEXT,
+			search_name TEXT,
 			staffs TEXT,
 			release_at TIMESTAMP,
 			related_games TEXT,

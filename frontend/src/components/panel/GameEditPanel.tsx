@@ -61,6 +61,18 @@ export function GameEditPanel({
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
+            搜索名称
+          </label>
+          <input
+            type="text"
+            value={game.search_name}
+            onChange={e => onGameChange({ ...game, search_name: e.target.value } as models.Game)}
+            className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
             封面图片
           </label>
           <div className="flex gap-2">

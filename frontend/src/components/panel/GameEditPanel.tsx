@@ -119,13 +119,13 @@ export function GameEditPanel({
                 title="在文件管理器中打开位置"
               />
             </div>
-            <button
+            {/* <button
               type="button"
               onClick={() => OpenFolder(getFolderPath(game.path))}
               className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
             >
               打开路径
-            </button>
+            </button> */}
           </div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
             游戏参数

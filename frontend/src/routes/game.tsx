@@ -527,14 +527,6 @@ function GameDetailPage() {
         />
       )}
 
-      {activeTab === "launch" && game && (
-        <GameLaunchPanel
-          game={game}
-          config={config || undefined}
-          onGameChange={setGame}
-          onSelectProcessExecutable={handleSelectProcessExecutable}
-        />
-      )}
 
       {activeTab === "backup" && (
         <GameBackupPanel gameId={gameId} savePath={game?.save_path} />

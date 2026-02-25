@@ -67,7 +67,7 @@ function LibraryPage() {
     onConfirm: () => { },
   });
   const [filterExpanded, setFilterExpanded] = useState(true);
-  const gamesForUpdate = useRef(games)
+  // const gamesForUpdate = useRef(games)
   const [releaseStartDate, setReleaseStartDate] = useState<string>("");
   const [releaseEndDate, setReleaseEndDate] = useState<string>("");
   
@@ -180,6 +180,9 @@ function LibraryPage() {
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
+  const filterSelected = filteredGames.filter(game => selectedGameIds.includes(game.id))
+  const filterSelectedIds = filterSelected.map(game => game.id)
+
   const handleBatchModeChange = (enabled: boolean) => {
     setBatchMode(enabled);
     if (!enabled) {
@@ -220,13 +223,13 @@ function LibraryPage() {
   };
 
   const handleBatchStatusUpdate = async (newStatus: string) => {
-    if (selectedGameIds.length === 0)
+    if (filterSelectedIds.length === 0)
       return;
     try {
-      await BatchUpdateStatus(selectedGameIds, newStatus);
+      await BatchUpdateStatus(filterSelectedIds, newStatus);
       await fetchGames();
       const label = statusConfig[newStatus as keyof typeof statusConfig]?.label ?? newStatus;
-      toast.success(`已将 ${selectedGameIds.length} 个游戏状态更新为「${label}」`);
+      toast.success(`已将 ${filterSelectedIds.length} 个游戏状态更新为「${label}」`);
     }
     catch (error) {
       console.error("Failed to batch update status:", error);
@@ -235,7 +238,7 @@ function LibraryPage() {
   };
 
   const openBatchAddModal = async () => {
-    if (selectedGameIds.length === 0)
+    if (filterSelectedIds.length === 0)
       return;
     try {
       const result = await GetCategories();
@@ -249,11 +252,11 @@ function LibraryPage() {
   };
 
   const handleBatchAddToCategory = async (categoryIds: string[]) => {
-    if (selectedGameIds.length === 0 || categoryIds.length === 0)
+    if (filterSelectedIds.length === 0 || categoryIds.length === 0)
       return;
     try {
-      await AddGamesToCategories(selectedGameIds, categoryIds);
-      toast.success(`已添加 ${selectedGameIds.length} 个游戏到收藏`);
+      await AddGamesToCategories(filterSelectedIds, categoryIds);
+      toast.success(`已添加 ${filterSelectedIds.length} 个游戏到收藏`);
       setSelectedGameIds([]);
       setBatchMode(false);
     }
@@ -264,16 +267,16 @@ function LibraryPage() {
   };
 
   const handleBatchDelete = () => {
-    if (selectedGameIds.length === 0)
+    if (filterSelectedIds.length === 0)
       return;
     setConfirmConfig({
       isOpen: true,
       title: "批量删除游戏",
-      message: `确定要删除选中的 ${selectedGameIds.length} 个游戏吗？此操作将从库中移除这些游戏，但不会删除本地游戏文件。`,
+      message: `确定要删除选中的 ${filterSelectedIds.length} 个游戏吗？此操作将从库中移除这些游戏，但不会删除本地游戏文件。`,
       type: "danger",
       onConfirm: async () => {
         try {
-          await DeleteGames(selectedGameIds);
+          await DeleteGames(filterSelectedIds);
           await fetchGames();
           setSelectedGameIds([]);
           setBatchMode(false);
@@ -287,9 +290,35 @@ function LibraryPage() {
     });
   };
 
+  const loadGames = async () => {
+    try {
+      const result = await fetchGames();
+      // setGames(result || []);
+      // const tags: string[] = [];
+      // result?.forEach((game) => {
+      //   const gameTags = game.tags?.split(",") || [];
+      //   tags.push(...gameTags);
+      // });
+      // const uniqueTags : string[] = [...new Set(tags.map(tag => tag.trim()))];
+      // setTagsLoaded(uniqueTags);
+      const tags = await ListTags();
+      const map = arrayToMap(tags, tag => tag.category);
+      
+      
+      setTagsLoaded(map);
+
+    }
+    catch (error) {
+      console.error("Failed to load games:", error);
+    }
+    finally {
+      // setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchGames();
-  }, [fetchGames]);
+    loadGames();
+  }, []);
 
   if (gamesLoading && games.length === 0) {
     if (!showSkeleton) {
@@ -329,7 +358,7 @@ function LibraryPage() {
         storageKey="library"
         batchMode={batchMode}
         onBatchModeChange={handleBatchModeChange}
-        selectedCount={selectedGameIds.length}
+        selectedCount={filterSelectedIds.length}
         onSelectAll={handleSelectAll}
         onClearSelection={handleClearSelection}
         batchActions={(
@@ -339,14 +368,14 @@ function LibraryPage() {
               title="设为状态"
               align="end"
               menuWidth="min-w-[130px]"
-              disabled={selectedGameIds.length === 0}
+              disabled={filterSelectedIds.length === 0}
               trigger={(
                 <div
                   title="批量更新状态"
                   className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
                               bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
                               rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
-                              ${selectedGameIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                              ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <div className="i-mdi-tag-edit-outline text-lg" />
                 </div>
@@ -364,25 +393,37 @@ function LibraryPage() {
             <button
               type="button"
               onClick={openBatchAddModal}
-              disabled={selectedGameIds.length === 0}
+              disabled={filterSelectedIds.length === 0}
               title="批量添加到收藏"
               className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
                           bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
                           rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
-                          ${selectedGameIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                          ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <div className="i-mdi-folder-plus-outline text-lg" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {setIsBatchUpdateOpen(true)}}
+              disabled={filterSelectedIds.length === 0}
+              title="更新游戏库"
+              className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
+                          bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
+                          rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
+                          ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <div className="i-mdi-folder-multiple text-lg" />
             </button>
             {/* 批量删除 */}
             <button
               type="button"
               onClick={handleBatchDelete}
-              disabled={selectedGameIds.length === 0}
+              disabled={filterSelectedIds.length === 0}
               title="批量删除"
               className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
                           bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
                           rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-error-600 dark:text-error-400
-                          ${selectedGameIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                          ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <div className="i-mdi-delete text-lg" />
             </button>
@@ -432,6 +473,20 @@ function LibraryPage() {
                 icon: "i-mdi-application-import",
                 iconColor: "text-purple-500",
                 onClick: () => setImportSource("playnite"),
+              },
+              {
+                key: "update",
+                label: "更新游戏库",
+                description: "选择数据源更新游戏库",
+                icon: "i-mdi-folder-multiple",
+                iconColor: "text-blue-500",
+                onClick: () => {
+                  if (filterSelectedIds.length === 0 || !batchMode) {
+                    setSelectedGameIds(games.map((game) => game.id))
+                  }
+                  // gamesForUpdate.current = games;
+                  setIsBatchUpdateOpen(true);
+                },
               },
             ]}
           />
@@ -504,7 +559,8 @@ function LibraryPage() {
         onClose={() => setIsBatchImportOpen(false)}
         onImportComplete={fetchGames}
         onOpenUpdate={(res) => {
-          gamesForUpdate.current = res;
+          setSelectedGameIds(res.map((g) => g.id))
+          // gamesForUpdate.current = res;
           setIsBatchUpdateOpen(true);
           fetchGames();
         }}
@@ -523,8 +579,8 @@ function LibraryPage() {
       <BatchUpdateModal
         isOpen={isBatchUpdateOpen}
         onClose={() => setIsBatchUpdateOpen(false)}
-        onUpdateComplete={fetchGames}
-        games={gamesForUpdate.current}
+        onUpdateComplete={loadGames}
+        games={filterSelected}
       />
 
       <ConfirmModal

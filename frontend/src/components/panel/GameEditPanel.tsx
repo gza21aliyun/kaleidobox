@@ -1,9 +1,11 @@
 import type { appconf, models } from "../../../wailsjs/go/models";
 import { toast } from "react-hot-toast";
+import { useEffect, useRef, useState } from "react";
 import { OpenFolder } from "../../../wailsjs/go/service/BackupService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { getFolderPath } from "../utils/Utility";
+import { BatchUpdateModal } from "../../components/modal/BatchUpdateModal";
 
 interface GameEditFormProps {
   game: models.Game;
@@ -14,6 +16,7 @@ interface GameEditFormProps {
   onSelectSaveDirectory: () => void;
   onSelectCoverImage: () => void;
   onUpdateFromRemote?: () => void;
+  onLoadGame?: () => void;
 }
 
 export function GameEditPanel({
@@ -25,7 +28,10 @@ export function GameEditPanel({
   onSelectSaveDirectory,
   onSelectCoverImage,
   onUpdateFromRemote,
+  onLoadGame,
 }: GameEditFormProps) {
+  
+  const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const hasLocaleEmulatorPath = config?.locale_emulator_path && config?.locale_emulator_path.length > 0;
   const hasMagpiePath = config?.magpie_path && config?.magpie_path.length > 0;
 
@@ -277,6 +283,15 @@ export function GameEditPanel({
                 从远程更新
               </button>
             )}
+            {onLoadGame && (
+              <button
+                type="button"
+                onClick={() => setIsBatchUpdateOpen(true)}
+                className="glass-btn-neutral px-6 py-2 bg-accent-500 text-white rounded-md hover:bg-accent-700 transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-accent-500"
+              >
+                选择源更新
+              </button>
+            )}
             <button
               type="button"
               onClick={onDelete}
@@ -286,6 +301,13 @@ export function GameEditPanel({
             </button>
           </div>
         </div>
+        
+      <BatchUpdateModal
+        isOpen={isBatchUpdateOpen}
+        onClose={() => setIsBatchUpdateOpen(false)}
+        onUpdateComplete={() => {onLoadGame?.();}}
+        games={[game]}
+      />
       </div>
     </div>
   );

@@ -39,8 +39,8 @@ function GameDetailPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isInitialMount = useRef(true);
   const originalGameData = useRef<models.Game | null>(null);
-  useEffect(() => {
-    const loadData = async () => {
+
+  const loadData = async () => {
       try {
         const gameData = await GetGameByID(gameId);
         setGame(gameData);
@@ -56,6 +56,9 @@ function GameDetailPage() {
         setIsLoading(false);
       }
     };
+
+  useEffect(() => {
+    
     loadData();
   }, [gameId]);
 
@@ -445,6 +448,7 @@ function GameDetailPage() {
           onSelectSaveDirectory={handleSelectSaveDirectory}
           onSelectCoverImage={handleSelectCoverImage}
           onUpdateFromRemote={handleUpdateFromRemote}
+          onLoadGame={loadData}
         />
       )}
 

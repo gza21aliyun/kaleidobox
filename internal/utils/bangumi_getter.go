@@ -172,6 +172,7 @@ func (b BangumiInfoGetter) FetchWorks(request vo.MetadataRequest, gameEntity mod
 		// }(resp3.Body)
 		if resp3 == nil {
 			fmt.Println("resp3 is  nil")
+			return gameEntity, err
 		}
 		var staffs []bangumiStaff
 		if err := json.NewDecoder(resp3.Body).Decode(&staffs); err != nil {
@@ -328,6 +329,7 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 		}
 		tagsMap[models.TagCategoryGenre] = append(tagsMap[models.TagCategoryGenre], tag)
 	}
+	fmt.Printf("summary 01: %s", bangumiResp.Summary)
 	game.Summary = bangumiResp.Summary
 	game.SourceType = enums.Bangumi
 	game.ReleaseAt, err = time.Parse("2006-01-02", bangumiResp.Date)

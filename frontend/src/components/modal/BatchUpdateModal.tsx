@@ -47,10 +47,11 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   const [manualId, setManualId] = useState("");
   const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
   const taskId = useRef("");
-  const [isOverwrite, setIsOverWrite]  = useState(false);
-  const [shouldLoadStaffs, setShouldLoadStaffs] = useState(false);
-  const [shouldLoadCharacters, setShouldLoadCharacters] = useState(false);
-  const [shouldLoadImages, setShouldLoadImages] = useState(false);
+  const [shouldOverwrite, setIsOverWrite]  = useState(true);
+  const [shouldLoadStaffs, setShouldLoadStaffs] = useState(true);
+  const [shouldLoadCharacters, setShouldLoadCharacters] = useState(true);
+  const [shouldLoadImages, setShouldLoadImages] = useState(true);
+  const [shouldLoadTags, setShouldLoadTags] = useState(true);
   const [itemIdMatching, setItemIdMatching] = useState("")
 
   // Move this useEffect to the top level, right after all useState declarations
@@ -154,11 +155,13 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
     const req = new vo.MetadataRequest({
       id: uuid,
       source: source,
-      isOverwrite: isOverwrite,
+      is_overwrite: shouldOverwrite,
       should_fetch_staffs: shouldLoadStaffs,
       should_fetch_charactors: shouldLoadCharacters,
       should_fetch_images: shouldLoadImages,
+      should_fetch_tags: shouldLoadTags,
     });
+    console.log("req:", req)
     UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), req, uuid)
     
     
@@ -167,7 +170,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
   const toggleCandidate = (id: string) => {
     selectedIds.includes(id)
-      ? setSelectedIds(selectedIds.filter((id) => id !== id))
+      ? setSelectedIds(selectedIds.filter((itemId) => itemId !== id))
       : setSelectedIds([...selectedIds, id]);
   };
 
@@ -296,40 +299,58 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
           
             <div className="min-w-[150px] rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3"> {/* 调整内边距 */}
               <div className="flex items-center gap-2"> {/* 水平布局放置标签和选择器 */}
-                <span className="text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap">数据源:</span> {/* 标签移到左侧 */}
-                <BetterSelect
-                  value={source}
-                  onChange={(value) => {
-                    if (source !== value as enums.SourceType) {
-                        setSource(value as enums.SourceType)
-                        setUpdatedIds([])
-                        setItemIdMatching("")
-                        setFailedIds([])
-                        taskId.current = ""
-                    }
-                    
-                  }}
-                  options={[
-                    { value: enums.SourceType.BANGUMI, label: "Bangumi" },
-                    { value: enums.SourceType.VNDB, label: "VNDB" },
-                    { value: enums.SourceType.YMGAL, label: "月幕Gal" },
-                    { value: enums.SourceType.DMM, label: "DMM" },
-                    { value: enums.SourceType.EROSCAPE, label: "EroScape" },
-                  ]}
-                  className="min-w-[200px] flex-1" // 设置最小宽度并允许伸缩
-                />
+                
                 {/* 更新选项开关 */}
                 <div className="glass-card bg-brand-50 dark:bg-brand-800/30 rounded-lg p-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
+
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg"> 
+                      <span className="text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap"></span> {/* 标签移到左侧 */}
+                      <BetterSelect
+                        value={source}
+                        onChange={(value) => {
+                          if (source !== value as enums.SourceType) {
+                              setSource(value as enums.SourceType)
+                              setUpdatedIds([])
+                              setItemIdMatching("")
+                              setFailedIds([])
+                              taskId.current = ""
+                          }
+                          
+                        }}
+                        options={[
+                          { value: enums.SourceType.BANGUMI, label: "Bangumi" },
+                          { value: enums.SourceType.VNDB, label: "VNDB" },
+                          { value: enums.SourceType.YMGAL, label: "月幕Gal" },
+                          { value: enums.SourceType.DMM, label: "DMM" },
+                          { value: enums.SourceType.EROSCAPE, label: "EroScape" },
+                        ]}
+                        className="min-w-[120px] w-[150px]"
+                      />
+                    </div>
+
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         覆盖数据
                       </label>
                       <BetterSwitch
                         id="overwrite_switch"
-                        checked={isOverwrite}
+                        checked={shouldOverwrite}
                         onCheckedChange={(checked) => {
                           setIsOverWrite(checked);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        标签
+                      </label>
+                      <BetterSwitch
+                        id="load_tags_switch"
+                        checked={shouldLoadTags}
+                        onCheckedChange={(checked) => {
+                          setShouldLoadTags(checked);
                         }}
                       />
                     </div>
@@ -395,7 +416,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
             <div className="space-y-4">
               {/* Summary */}
               <div className="flex gap-4">
-                <div className="flex-1 rounded-lg bg-neutral-50 dark:bg-neutral-900/20 p-4 text-center">
+                <div 
+                  onClick={() => {
+                      setSelectedIds(candidates.map(c => c.id))
+                    }}
+                  className="flex-1 rounded-lg bg-neutral-50 dark:bg-neutral-900/20 p-4 text-center cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-900/30 transition-colors duration-200"
+                  title="点击选取全部游戏">
                   <div className="text-3xl font-bold text-neutral-600 dark:text-neutral-400">
                     {candidates.length}
                   </div>
@@ -403,7 +429,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                     游戏数
                   </div>
                 </div>
-                <div className="flex-1 rounded-lg bg-success-50 dark:bg-success-900/20 p-4 text-center">
+                <div 
+                  onClick={() => {
+                      setSelectedIds(updatedIds)
+                    }}
+                  className="flex-1 rounded-lg bg-success-50 dark:bg-success-900/20 p-4 text-center cursor-pointer hover:bg-success-100 dark:hover:bg-success-900/30 transition-colors duration-200"
+                  title="选取已更新">
                   <div className="text-3xl font-bold text-success-600 dark:text-success-400">
                     {updatedCount}
                   </div>
@@ -412,17 +443,24 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                   </div>
                 </div>
                 {notFoundCount > 0 && (
-                  <div className="flex-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 text-center">
-                    <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                      {notFoundCount}
-                    </div>
-                    <div className="text-sm text-orange-700 dark:text-orange-300">
-                      未匹配
-                    </div>
+                  <div
+                    onClick={() => {
+                      setSelectedIds(candidates.filter(c => !isMatched(c, source)).map(c => c.id))
+                    }}
+                    className="flex-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors duration-200"
+                    title="选取未匹配">
+                      <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                        {notFoundCount}
+                      </div>
+                      <div className="text-sm text-orange-700 dark:text-orange-300">
+                        未匹配
+                      </div>
                   </div>
                 )}
                 {pendingCount > 0 && (
-                  <div className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-900/20 p-4 text-center">
+                  <div 
+                    
+                    className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-900/20 p-4 text-center">
                     <div className="text-3xl font-bold text-gray-600 dark:text-gray-400">
                       {pendingCount}
                     </div>
@@ -510,6 +548,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                                     if (candidate.source_type !== enums.SourceType.YMGAL && candidate.ymgal_id && candidate.ymgal_id !== "") {
                                         text += ",YMGal:" + candidate.ymgal_id;
                                     }
+
                                     return text;
                                 })()}
                               </td>

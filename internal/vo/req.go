@@ -16,6 +16,7 @@ type MetadataRequest struct {
 	ShouldFetchCharactors bool             `json:"should_fetch_charactors"`
 	IsOverwrite           bool             `json:"is_overwrite"`
 	ShouldFetchImages     bool             `json:"should_fetch_images"`
+	ShouldFetchTags       bool             `json:"should_fetch_tags"`
 	DbGameId              string           `json:"db_game_id"`
 }
 

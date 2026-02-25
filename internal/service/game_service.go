@@ -539,6 +539,7 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		runtime.LogWarningf(s.ctx, "UpdateGame: game not found with id: %s", game.ID)
 		return fmt.Errorf("game not found with id: %s", game.ID)
 	}
+	fmt.Printf("成功更新游戏：%s\n", game.Name)
 
 	return nil
 }
@@ -696,8 +697,13 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = bgmGetter.FetchMetadataReq(req, s.config.BangumiAccessToken)
 		gameEntity, e = bgmGetter.FetchWorks(req, gameEntity, s.config.BangumiAccessToken)
 		game = gameEntity.Game
-		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		if req.IsOverwrite && req.ShouldFetchTags {
+			s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		}
+		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		}
+
 	case enums.VNDB:
 		fmt.Println("Fetching metadata from VNDB")
 		vndbGetter := utils.NewVNDBInfoGetter()
@@ -715,16 +721,24 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = escGetter.FetchImages(req, gameEntity)
 		game = gameEntity.Game
 		fmt.Println("发售日3：", game.ReleaseAt)
-		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		}
+		if req.IsOverwrite && req.ShouldFetchTags {
+			s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		}
 	case enums.Dmm:
 		fmt.Println("Fetching metadata from DMM")
 		dmmGetter := utils.NewDmmInfoGetter()
 		game.DmmId = req.ID
 		gameEntity, e = dmmGetter.FetchMetadataById(req)
 		game = gameEntity.Game
-		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		}
+		if req.IsOverwrite && req.ShouldFetchTags {
+			s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		}
 	}
 	return game, e
 }
@@ -861,6 +875,9 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			} else if taskData.Req.Source == enums.Dmm && strings.TrimSpace(ngame.DmmId) != "" {
 				id = ngame.DmmId
 				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
+			} else if taskData.Req.Source == enums.Bangumi && strings.TrimSpace(ngame.BangumiId) != "" {
+				id = ngame.BangumiId
+				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
 			}
 
 			taskData.Req.ID = id
@@ -880,42 +897,50 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				// }
 				updatedGame, err = s.FetchMetadata(taskData.Req)
 				fmt.Println("发售日5：", updatedGame.ReleaseAt)
-				if err != nil {
 
-					log.Printf("Failed to fetch metadata for game %s by ID: %s %v", ngame.Name, id, err)
-					updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
-						ngame.ID, enums.Error, nil)
-					continue
-				}
 			} else {
 				log.Printf("TaskFunc 13 fetch metadata 03 for game %s", ngame.Name)
 				// 通过名称获取元数据
 				if taskData.Req.Source == enums.Bangumi {
 					// log.Printf("TaskFunc 21 fetch for game %s", ngame.Name)
 					bgmGetter := utils.NewBangumiInfoGetter()
-					updatedGame, _ = bgmGetter.FetchMetadataByName(ngame.SearchName, s.config.BangumiAccessToken)
+					updatedGame, err = bgmGetter.FetchMetadataByName(ngame.SearchName, s.config.BangumiAccessToken)
 				} else if taskData.Req.Source == enums.VNDB {
 					// log.Printf("TaskFunc 22 fetch for game %s", ngame.Name)
 					vndbGetter := utils.NewVNDBInfoGetter()
-					updatedGame, _ = vndbGetter.FetchMetadataByName(ngame.SearchName, s.config.VNDBAccessToken)
+					updatedGame, err = vndbGetter.FetchMetadataByName(ngame.SearchName, s.config.VNDBAccessToken)
 				} else if taskData.Req.Source == enums.Ymgal {
 					// log.Printf("TaskFunc 23 fetch for game %s", ngame.Name)
 					ymgalGetter := utils.NewYmgalInfoGetter()
-					updatedGame, _ = ymgalGetter.FetchMetadataByName(ngame.SearchName, "")
+					updatedGame, err = ymgalGetter.FetchMetadataByName(ngame.SearchName, "")
 				} else if taskData.Req.Source == enums.Eroscape {
 					// log.Printf("TaskFunc 24 fetch for game %s", ngame.Name)
 					escGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-					esc, _ := escGetter.FetchMetadataByName(ngame.SearchName, true)
-					updatedGame = esc
+					updatedGame, err = escGetter.FetchMetadataByName(ngame.SearchName, true)
+					// updatedGame = esc
 				} else if taskData.Req.Source == enums.Dmm {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 					dmmGetter := utils.NewDmmInfoGetter()
-					dmm, _ := dmmGetter.FetchMetadataByName(ngame.SearchName, true)
-					updatedGame = dmm
+					updatedGame, err = dmmGetter.FetchMetadataByName(ngame.SearchName, true)
+					// updatedGame = dmm
 				} else {
 					// log.Printf("TaskFunc 26 fetch for game %s", ngame.Name)
 					return errors.New("未知的来源 ")
 				}
+				if updatedGame.SourceID != "" {
+					id = updatedGame.SourceID
+					req := taskData.Req
+					req.ID = id
+					fmt.Printf("id 23:%s, sourceId=%s, sourceType1=%s, source2=%s, bangumiId:%s\n", id, updatedGame.SourceID, string(updatedGame.SourceType), string(taskData.Req.Source), updatedGame.BangumiId)
+					updatedGame, err = s.FetchMetadata(req)
+				}
+			}
+			if err != nil {
+
+				log.Printf("Failed to fetch metadata for game %s by ID: %s %v", ngame.Name, id, err)
+				updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
+					ngame.ID, enums.Error, nil)
+				continue
 			}
 			log.Printf("TaskFunc 31 fetch for game %s, id:%s", ngame.Name, updatedGame.SourceID)
 			if updatedGame.SourceID == "" {
@@ -924,7 +949,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				continue
 			}
 
-			s.FillGame(&ngame, &updatedGame)
+			s.FillGame(&ngame, &updatedGame, taskData.Req)
 			fmt.Println("发售日4：", updatedGame.ReleaseAt)
 
 			// 更新游戏
@@ -944,7 +969,9 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 	}
 }
 
-func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game) {
+func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game, req vo.MetadataRequest) {
+	fmt.Printf("fill game %s, tags:%v, staffs:%v, chara:%v, overwrite:%v, images:%v\n", ngame.Name, req.ShouldFetchTags, req.ShouldFetchStaffs, req.ShouldFetchCharactors,
+		req.IsOverwrite, req.ShouldFetchImages)
 	updatedGame.ID = ngame.ID
 	updatedGame.Path = ngame.Path
 	if updatedGame.BangumiId == "" {
@@ -959,15 +986,35 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game) {
 	if updatedGame.YmgalId == "" {
 		updatedGame.YmgalId = ngame.YmgalId
 	}
-	if updatedGame.Name == "" {
+	if ngame.Name != "" && !req.IsOverwrite {
 		updatedGame.Name = ngame.Name
 	}
 
+	if ngame.Summary != "" && !req.IsOverwrite {
+		updatedGame.Summary = ngame.Summary
+	}
+
 	updatedGame.CreatedAt = ngame.CreatedAt
-	updatedGame.SourceType = ngame.SourceType
-	updatedGame.SourceID = ngame.SourceID
+	if !req.IsOverwrite {
+		updatedGame.SourceType = ngame.SourceType
+		updatedGame.SourceID = ngame.SourceID
+		// updatedGame.Name = ngame.Name
+		// updatedGame.Summary = ngame.Summary
+	}
+
+	if !req.IsOverwrite || !req.ShouldFetchTags {
+		updatedGame.Tags = ngame.Tags
+	}
+
+	if !req.IsOverwrite || !req.ShouldFetchImages {
+		updatedGame.Images = ngame.Images
+		updatedGame.CoverURL = ngame.CoverURL
+	}
+
 	updatedGame.CachedAt = time.Now()
-	updatedGame.Tags = utils.MergeStrings(updatedGame.Tags, ngame.Tags)
+
+	// updatedGame.Tags = utils.MergeStrings(updatedGame.Tags, ngame.Tags)
+
 	// updatedGame.Charactors = utils.MergeStrings(updatedGame.Charactors, ngame.Charactors)
 	// updatedGame.Staffs = utils.MergeStrings(updatedGame.Staffs, ngame.Staffs)
 	// updatedGame.Images = utils.MergeStrings(updatedGame.Images, ngame.Images)
@@ -975,11 +1022,10 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game) {
 	updatedGame.SavePath = ngame.SavePath
 	// updatedGame.ReleaseAt = ngame.ReleaseAt
 	updatedGame.Status = ngame.Status
-	if ngame.Summary != "" {
-		updatedGame.Summary = ngame.Summary
-	}
 
 	updatedGame.UseMagpie = ngame.UseMagpie
+	updatedGame.Arguments = ngame.Arguments
+	updatedGame.SearchName = ngame.SearchName
 	updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
 }
 

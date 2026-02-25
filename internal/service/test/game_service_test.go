@@ -677,6 +677,9 @@ func createEroscapeGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 			DbGameId:              game.ID,
 			ShouldFetchStaffs:     true,
 			ShouldFetchCharactors: true,
+			ShouldFetchImages:     true,
+			ShouldFetchTags:       true,
+			IsOverwrite:           true,
 			Source:                enums.Eroscape,
 		}
 }
@@ -714,6 +717,9 @@ func createDmmGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 			DbGameId:              game.ID,
 			ShouldFetchStaffs:     true,
 			ShouldFetchCharactors: true,
+			ShouldFetchTags:       true,
+			IsOverwrite:           true,
+			ShouldFetchImages:     true,
 			Source:                enums.Dmm,
 		}
 }
@@ -726,15 +732,14 @@ func TestGameService_BGArray(t *testing.T) {
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)
 		if err != nil {
-			t.Fatalf("添加游戏失败: %v", err)
+			t.Fatalf("add game failed: %v", err)
 		}
 
 		t.Logf("add game 02: %s", game.Name)
 
-		// 验证游戏已添加
 		savedGame, err := services.GameService.GetGameByID(game.ID)
 		if err != nil {
-			t.Fatalf("获取游戏失败: %v", err)
+			t.Fatalf("fetch game failed: %v", err)
 		}
 		var games []models.Game = []models.Game{}
 		games = append(games, savedGame)
@@ -742,7 +747,7 @@ func TestGameService_BGArray(t *testing.T) {
 		savedGame, err = services.GameService.GetGameByID(game.ID)
 		err = checkFn(savedGame, *services)
 		if err != nil {
-			t.Fatalf("验证游戏失败: %v", err)
+			t.Fatalf("verify game failed: %v", err)
 		}
 
 	})

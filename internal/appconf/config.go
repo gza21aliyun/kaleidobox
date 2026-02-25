@@ -38,8 +38,10 @@ type AppConfig struct {
 	OneDriveClientID     string `json:"onedrive_client_id,omitempty"`     // OneDrive Client ID
 	OneDriveRefreshToken string `json:"onedrive_refresh_token,omitempty"` // OneDrive Refresh Token（OAuth 授权后获得）
 	// 数据库备份
-	LastDBBackupTime string `json:"last_db_backup_time,omitempty"` // 上次数据库备份时间
-	PendingDBRestore string `json:"pending_db_restore,omitempty"`  // 待恢复的数据库备份路径（重启后执行）
+	LastDBBackupTime   string `json:"last_db_backup_time,omitempty"`   // 上次数据库备份时间
+	PendingDBRestore   string `json:"pending_db_restore,omitempty"`    // 待恢复的数据库备份路径（重启后执行）
+	LastFullBackupTime string `json:"last_full_backup_time,omitempty"` // 上次全量数据备份时间
+	PendingFullRestore string `json:"pending_full_restore,omitempty"`  // 待恢复的全量数据备份路径（重启后执行）
 	// 自动备份配置
 	AutoBackupDB          bool `json:"auto_backup_db"`                 // 退出时自动备份数据库
 	AutoBackupGameSave    bool `json:"auto_backup_game_save"`          // 游戏退出时自动备份存档
@@ -69,9 +71,13 @@ type AppConfig struct {
 	// Locale Emulator 和 Magpie 配置
 	LocaleEmulatorPath string `json:"locale_emulator_path,omitempty"` // Locale Emulator 可执行文件路径
 	MagpiePath         string `json:"magpie_path,omitempty"`          // Magpie 可执行文件路径
-	DmmIsEnabled       bool   `json:"dmm_is_enabled"`
-	EroscapeIsEnabled  bool   `json:"eroscape_is_enabled"`
-	EroscapeUseMirror  bool   `json:"eroscape_use_mirror"`
+	// 进程检测配置
+	AutoDetectGameProcess bool `json:"auto_detect_game_process"` // 是否启用自动游戏进程检测（分阶段检测策略）
+	// 时区配置
+	TimeZone          string `json:"time_zone,omitempty"` // 数据库使用的 IANA 时区名称（如 "Asia/Shanghai"）
+	DmmIsEnabled      bool   `json:"dmm_is_enabled"`
+	EroscapeIsEnabled bool   `json:"eroscape_is_enabled"`
+	EroscapeUseMirror bool   `json:"eroscape_use_mirror"`
 }
 
 // getConfigPath 获取配置文件路径
@@ -101,6 +107,7 @@ func LoadConfig() (*AppConfig, error) {
 		BackupPassword:         "",
 		BackupUserID:           "",
 		S3Endpoint:             "",
+		TimeZone:               "",
 		S3Region:               "",
 		S3Bucket:               "",
 		S3AccessKey:            "",
@@ -110,6 +117,8 @@ func LoadConfig() (*AppConfig, error) {
 		OneDriveRefreshToken:   "",
 		LastDBBackupTime:       "",
 		PendingDBRestore:       "",
+		LastFullBackupTime:     "",
+		PendingFullRestore:     "",
 		AutoBackupDB:           false,
 		AutoBackupGameSave:     false,
 		AutoUploadToCloud:      false,
@@ -131,8 +140,9 @@ func LoadConfig() (*AppConfig, error) {
 		BackgroundIsLight:       true,  // 默认是浅色调
 		LocaleEmulatorPath:      "",
 		MagpiePath:              "",
-		DmmIsEnabled:            false,
-		EroscapeIsEnabled:       false,
+		AutoDetectGameProcess:   true, // 默认启用自动检测，保持向后兼容
+		DmmIsEnabled:            true,
+		EroscapeIsEnabled:       true,
 		EroscapeUseMirror:       false,
 	}
 

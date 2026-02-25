@@ -5,13 +5,52 @@ import { enums } from "../../../wailsjs/go/models";
 import { formatLocalDate } from "../../utils/time";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
 
-interface GameCardProps {
-  game: models.Game;
+// ── 高亮工具：将文本中匹配 query 的部分高亮显示 ──────────────────────────────
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query || !text) {
+    return <>{text}</>;
+  }
+  const q = query.toLowerCase();
+  const idx = text.toLowerCase().indexOf(q);
+  if (idx === -1) {
+    return <>{text}</>;
+  }
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-yellow-300/80 dark:bg-yellow-500/50 text-inherit rounded-[2px] px-[1px]">
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  );
 }
 
-export function GameCard({ game }: GameCardProps) {
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface GameCardProps {
+  game: models.Game;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onSelectChange?: (selected: boolean) => void;
+  /** 当前搜索词，用于高亮游戏名和开发商 */
+  searchQuery?: string;
+}
+
+export function GameCard({
+  game,
+  selectionMode = false,
+  selected = false,
+  onSelectChange,
+  searchQuery = "",
+}: GameCardProps) {
   const navigate = useNavigate();
   
+
+  const handleToggleSelect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectChange?.(!selected);
+  };
 
   const handleStartGame = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -27,8 +66,7 @@ export function GameCard({ game }: GameCardProps) {
       }
       catch (error) {
         console.error("Failed to start game:", error);
-        const notyfication = `${game.name} 启动失败, 查询日志获得帮助`;
-        toast.error(notyfication);
+        toast.error(`${game.name} 启动失败, 查询日志获得帮助`);
       }
     }
   };
@@ -38,9 +76,27 @@ export function GameCard({ game }: GameCardProps) {
   };
 
   const isCompleted = game.status === enums.GameStatus.COMPLETED;
+  const companyDisplay = game.company || "Unknown Developer";
 
   return (
-    <div className="glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800">
+    <div
+      className={`glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
+      onClick={selectionMode ? handleToggleSelect : undefined}
+    >
+      {selectionMode && (
+        <button
+          type="button"
+          onClick={handleToggleSelect}
+          className={`absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border
+                      ${selected
+          ? "bg-neutral-600 text-white border-neutral-600"
+          : "bg-white/90 text-transparent border-brand-300 dark:bg-brand-800/90 dark:border-brand-600"}
+                      shadow-sm`}
+          title={selected ? "取消选择" : "选择"}
+        >
+          <div className="i-mdi-check text-sm" />
+        </button>
+      )}
       <div className="relative aspect-[3/3.6] w-full overflow-hidden bg-brand-200 dark:bg-brand-700">
         {game.cover_url
           ? (
@@ -49,6 +105,8 @@ export function GameCard({ game }: GameCardProps) {
                 alt={game.name}
                 referrerPolicy="no-referrer"
                 className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
+                draggable="false"
+                onDragStart={e => e.preventDefault()}
               />
             )
           : (
@@ -64,31 +122,32 @@ export function GameCard({ game }: GameCardProps) {
           </div>
         )}
 
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 backdrop-blur-[2px] transition-all duration-300 group-hover:opacity-100">
-          <button
-            onClick={handleStartGame}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-600 text-white shadow-lg transition-transform hover:scale-110 hover:bg-neutral-500 active:scale-95"
-            title="启动游戏"
-          >
-            <div className="i-mdi-play text-lg" />
-          </button>
-          <button
-            onClick={handleViewDetails}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
-            title="查看详情"
-          >
-            <div className="i-mdi-information-variant text-lg" />
-          </button>
-        </div>
+        {!selectionMode && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 backdrop-blur-[2px] transition-all duration-300 group-hover:opacity-100">
+            <button
+              onClick={handleStartGame}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-600 text-white shadow-lg transition-transform hover:scale-110 hover:bg-neutral-500 active:scale-95"
+              title="启动游戏"
+            >
+              <div className="i-mdi-play text-lg" />
+            </button>
+            <button
+              onClick={handleViewDetails}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
+              title="查看详情"
+            >
+              <div className="i-mdi-information-variant text-lg" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="px-2 pt-1 pb-2">
         <h3 className="truncate text-sm font-bold text-brand-900 dark:text-white leading-tight" title={game.name}>
-          {game.name}
+          <HighlightText text={game.name} query={searchQuery} />
         </h3>
-        <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight">
-          {game.company || "Unknown Developer"}
+        <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight" title={companyDisplay}>
+          <HighlightText text={companyDisplay} query={searchQuery} />
         </p>
         <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight">
           {formatLocalDate(game.release_at)}

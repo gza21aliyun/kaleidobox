@@ -147,7 +147,7 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
 
   const handleCreateBackup = async () => {
     if (!savePath) {
-      toast.error("请先设置存档目录");
+      toast.error("请先设置存档路径");
       return;
     }
     setIsBackingUp(true);
@@ -165,7 +165,7 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
   };
 
   const handleRestoreBackup = async (backupPath: string, createdAt: any) => {
-    const time = formatLocalDateTime(createdAt);
+    const time = formatLocalDateTime(createdAt, config?.time_zone);
     setConfirmConfig({
       isOpen: true,
       title: "恢复存档",
@@ -254,7 +254,7 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
           <div>
             <h3 className="text-lg font-semibold text-brand-900 dark:text-white">存档备份</h3>
             <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
-              {savePath ? `存档目录: ${savePath}` : "请先在编辑页面设置存档目录"}
+              {savePath ? `存档路径: ${savePath}` : "请先在编辑页面设置存档路径（文件或文件夹）"}
             </p>
           </div>
         </div>
@@ -340,7 +340,7 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
                         <div className="i-mdi-archive text-2xl text-brand-500" />
                         <div>
                           <div className="font-medium text-brand-900 dark:text-white">
-                            {formatLocalDateTime(backup.created_at)}
+                            {formatLocalDateTime(backup.created_at, config?.time_zone)}
                           </div>
                           <div className="text-sm text-brand-500">
                             大小:
@@ -418,10 +418,10 @@ export function GameBackupPanel({ gameId, savePath }: GameBackupPanelProps) {
                           <div className="i-mdi-cloud-check text-2xl text-neutral-500" />
                           <div>
                             <div className="font-medium text-brand-900 dark:text-white">
-                              {backup.name || formatLocalDateTime(backup.created_at)}
+                              {backup.name || formatLocalDateTime(backup.created_at, config?.time_zone)}
                             </div>
                             <div className="text-sm text-brand-500">
-                              {formatLocalDateTime(backup.created_at)}
+                              {formatLocalDateTime(backup.created_at, config?.time_zone)}
                             </div>
                           </div>
                         </div>

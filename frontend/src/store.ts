@@ -1,8 +1,9 @@
 import { create } from "zustand";
 
-import type { appconf, vo } from "../wailsjs/go/models";
+import type { appconf, models, vo } from "../wailsjs/go/models";
 
 import { GetAppConfig, UpdateAppConfig } from "../wailsjs/go/service/ConfigService";
+import { GetGames } from "../wailsjs/go/service/GameService";
 import { GetHomePageData } from "../wailsjs/go/service/HomeService";
 
 type AISummaryCache = {
@@ -19,10 +20,15 @@ type AppState = {
   fetchHomeData: () => Promise<void>;
   fetchConfig: () => Promise<void>;
   updateConfig: (config: appconf.AppConfig) => Promise<void>;
+  // 游戏列表全局状态
+  games: models.Game[];
+  gamesLoading: boolean;
+  fetchGames: () => Promise<void>;
   // AI Summary 缓存
   aiSummaryCache: AISummaryCache;
   setAISummary: (dimension: string, summary: string) => void;
   getAISummary: (dimension: string) => string | undefined;
+  setGames: (games: models.Game[]) => void;
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -41,6 +47,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   homeData: null,
   config: null,
   isLoading: false,
+  games: [],
+  gamesLoading: false,
   fetchHomeData: async () => {
     set({ isLoading: true });
     try {
@@ -72,6 +80,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error("Failed to update config:", error);
     }
   },
+  // 游戏列表管理
+  fetchGames: async () => {
+    set({ gamesLoading: true });
+    try {
+      const result = await GetGames();
+      set({ games: result || [] });
+    }
+    catch (error) {
+      console.error("Failed to fetch games:", error);
+    }
+    finally {
+      set({ gamesLoading: false });
+    }
+  },
   // AI Summary 缓存
   aiSummaryCache: {},
   setAISummary: (dimension: string, summary: string) => {
@@ -81,5 +103,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   getAISummary: () => {
     return undefined; // 这个方法不需要，直接用 selector 访问
+  },
+  setGames: (gamesToSet: models.Game[]) => {
+    set({ games: gamesToSet || [] });
   },
 }));

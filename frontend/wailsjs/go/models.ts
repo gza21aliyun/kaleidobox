@@ -26,6 +26,8 @@ export namespace appconf {
 	    onedrive_refresh_token?: string;
 	    last_db_backup_time?: string;
 	    pending_db_restore?: string;
+	    last_full_backup_time?: string;
+	    pending_full_restore?: string;
 	    auto_backup_db: boolean;
 	    auto_backup_game_save: boolean;
 	    auto_upload_to_cloud?: boolean;
@@ -48,9 +50,8 @@ export namespace appconf {
 	    background_is_light: boolean;
 	    locale_emulator_path?: string;
 	    magpie_path?: string;
-	    dmm_is_enabled: boolean;
-	    eroscape_is_enabled: boolean;
-	    eroscape_use_mirror: boolean;
+	    auto_detect_game_process: boolean;
+	    time_zone?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppConfig(source);
@@ -83,6 +84,8 @@ export namespace appconf {
 	        this.onedrive_refresh_token = source["onedrive_refresh_token"];
 	        this.last_db_backup_time = source["last_db_backup_time"];
 	        this.pending_db_restore = source["pending_db_restore"];
+	        this.last_full_backup_time = source["last_full_backup_time"];
+	        this.pending_full_restore = source["pending_full_restore"];
 	        this.auto_backup_db = source["auto_backup_db"];
 	        this.auto_backup_game_save = source["auto_backup_game_save"];
 	        this.auto_upload_to_cloud = source["auto_upload_to_cloud"];
@@ -105,9 +108,8 @@ export namespace appconf {
 	        this.background_is_light = source["background_is_light"];
 	        this.locale_emulator_path = source["locale_emulator_path"];
 	        this.magpie_path = source["magpie_path"];
-	        this.dmm_is_enabled = source["dmm_is_enabled"];
-	        this.eroscape_is_enabled = source["eroscape_is_enabled"];
-	        this.eroscape_use_mirror = source["eroscape_use_mirror"];
+	        this.auto_detect_game_process = source["auto_detect_game_process"];
+	        this.time_zone = source["time_zone"];
 	    }
 	}
 
@@ -115,14 +117,6 @@ export namespace appconf {
 
 export namespace enums {
 	
-	export enum SourceType {
-	    LOCAL = "local",
-	    BANGUMI = "bangumi",
-	    VNDB = "vndb",
-	    YMGAL = "ymgal",
-	    DMM = "dmm",
-	    EROSCAPE = "批评空间",
-	}
 	export enum Period {
 	    DAY = "day",
 	    WEEK = "week",
@@ -140,31 +134,11 @@ export namespace enums {
 	    COMPLETED = "completed",
 	    ON_HOLD = "on_hold",
 	}
-	export enum TaskStatus {
-	    INITIAL = "初始",
-	    STARTED = "已开始",
-	    PAUSED = "暂停",
-	    COMPLETED = "完成",
-	    ERROR = "错误",
-	    CANCELED = "取消",
-	}
-	export enum TaskType {
-	    GAMES = "游戏",
-	    CHARACTORS = "角色",
-	    STAFFS = "工作人员",
-	    IMAGES = "图片",
-	    RELATIONS = "关系",
-	}
-	export enum StaffRole {
-	    STAFF = "工作人员",
-	    CV = "声优",
-	    SCENEARIO = "剧本",
-	    DIRECTOR = "监督",
-	    COMPOSER = "音乐",
-	    CHARA_DESIGN = "人设",
-	    CHARACTOR = "角色",
-	    SINGER = "歌手",
-	    ART = "画师",
+	export enum SourceType {
+	    LOCAL = "local",
+	    BANGUMI = "bangumi",
+	    VNDB = "vndb",
+	    YMGAL = "ymgal",
 	}
 
 }
@@ -209,6 +183,7 @@ export namespace models {
 	    summary: string;
 	    path: string;
 	    save_path: string;
+	    process_name: string;
 	    status: enums.GameStatus;
 	    source_type: enums.SourceType;
 	    cached_at: time.Time;
@@ -242,6 +217,7 @@ export namespace models {
 	        this.summary = source["summary"];
 	        this.path = source["path"];
 	        this.save_path = source["save_path"];
+	        this.process_name = source["process_name"];
 	        this.status = source["status"];
 	        this.source_type = source["source_type"];
 	        this.cached_at = this.convertValues(source["cached_at"], time.Time);
@@ -640,6 +616,20 @@ export namespace service {
 	        this.sessions_imported = source["sessions_imported"];
 	    }
 	}
+	export class LaunchOptions {
+	    UseLocaleEmulator?: boolean;
+	    UseMagpie?: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new LaunchOptions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.UseLocaleEmulator = source["UseLocaleEmulator"];
+	        this.UseMagpie = source["UseMagpie"];
+	    }
+	}
 	export class PreviewGame {
 	    name: string;
 	    developer: string;
@@ -680,35 +670,11 @@ export namespace service {
 		    return a;
 		}
 	}
-	export class StaffService {
+	export class SessionService {
 	
 	
 	    static createFrom(source: any = {}) {
-	        return new StaffService(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	
-	    }
-	}
-	export class StartService {
-	
-	
-	    static createFrom(source: any = {}) {
-	        return new StartService(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	
-	    }
-	}
-	export class TaskService {
-	
-	
-	    static createFrom(source: any = {}) {
-	        return new TaskService(source);
+	        return new SessionService(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -782,6 +748,25 @@ export namespace time {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	
+	    }
+	}
+
+}
+
+export namespace utils {
+	
+	export class ProcessInfo {
+	    name: string;
+	    pid: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProcessInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.pid = source["pid"];
 	    }
 	}
 
@@ -1197,7 +1182,7 @@ export namespace vo {
 	}
 	export class LastPlayedGame {
 	    game: models.Game;
-	    last_played_at: string;
+	    last_played_at: time.Time;
 	    last_played_dur: number;
 	    total_played_dur: number;
 	    is_playing: boolean;
@@ -1209,7 +1194,7 @@ export namespace vo {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.game = this.convertValues(source["game"], models.Game);
-	        this.last_played_at = source["last_played_at"];
+	        this.last_played_at = this.convertValues(source["last_played_at"], time.Time);
 	        this.last_played_dur = source["last_played_dur"];
 	        this.total_played_dur = source["total_played_dur"];
 	        this.is_playing = source["is_playing"];
@@ -1298,6 +1283,12 @@ export namespace vo {
 	    end_date: string;
 	    total_play_count: number;
 	    total_play_duration: number;
+	    total_games_count: number;
+	    completed_games_count: number;
+	    library_games_count: number;
+	    all_sessions_count: number;
+	    all_sessions_duration: number;
+	    all_completed_games_count: number;
 	    play_time_leaderboard: GamePlayStats[];
 	    timeline: TimePoint[];
 	    leaderboard_series: GameTrendSeries[];
@@ -1313,6 +1304,12 @@ export namespace vo {
 	        this.end_date = source["end_date"];
 	        this.total_play_count = source["total_play_count"];
 	        this.total_play_duration = source["total_play_duration"];
+	        this.total_games_count = source["total_games_count"];
+	        this.completed_games_count = source["completed_games_count"];
+	        this.library_games_count = source["library_games_count"];
+	        this.all_sessions_count = source["all_sessions_count"];
+	        this.all_sessions_duration = source["all_sessions_duration"];
+	        this.all_completed_games_count = source["all_completed_games_count"];
 	        this.play_time_leaderboard = this.convertValues(source["play_time_leaderboard"], GamePlayStats);
 	        this.timeline = this.convertValues(source["timeline"], TimePoint);
 	        this.leaderboard_series = this.convertValues(source["leaderboard_series"], GameTrendSeries);

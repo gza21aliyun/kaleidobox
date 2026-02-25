@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"lunabox/internal/cli"
+	"lunabox/internal/cli/ipc"
 	"lunabox/internal/utils"
 	"net/http"
 	"path/filepath"
@@ -71,6 +73,7 @@ func main() {
 	versionService := service.NewVersionService()
 	templateService := service.NewTemplateService()
 	updateService := service.NewUpdateService()
+	sessionService := service.NewSessionService()
 	taskService := service.NewTaskService() // 添加任务服务
 	staffService := service.NewStaffService()
 	charactorService := service.NewCharactorService()
@@ -129,6 +132,13 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 18, G: 20, B: 22, A: 255},
 		StartHidden:      true,
 		Frameless:        true, // 启用无边框模式
+		// 启用拖拽文件导入功能
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop:     true,
+			DisableWebViewDrop: true,
+			CSSDropProperty:    "--wails-drop-target",
+			CSSDropValue:       "drop",
+		},
 		// 样式完全交由wails前端控制
 		Windows: &windows.Options{
 			WebviewIsTransparent: true,
@@ -157,6 +167,16 @@ func main() {
 			appCtx = ctx
 			var err error
 
+			// 检查是否有待恢复的全量数据备份（在打开数据库前执行）
+			if config.PendingFullRestore != "" {
+				restored, restoreErr := service.ExecuteFullDataRestore(config)
+				if restoreErr != nil {
+					appLogger.Error("fail to restore full data: " + restoreErr.Error())
+				} else if restored {
+					appLogger.Info("full data restored successfully")
+				}
+			}
+
 			// 检查是否有待恢复的数据库备份（在打开数据库前执行）
 			if config.PendingDBRestore != "" {
 				restored, restoreErr := service.ExecuteDBRestore(config)
@@ -177,7 +197,24 @@ func main() {
 				appLogger.Fatal(err.Error())
 			}
 
-			if err := initSchema(db); err != nil {
+			// 设置时区为本地时区，确保 TIMESTAMPTZ 的聚合操作使用正确的日界线
+			// 这对于按日期统计游戏时长非常重要
+			// 注意：需要用户在前端设置时区（使用 Intl.DateTimeFormat().resolvedOptions().timeZone）
+			timeZone := config.TimeZone
+			if timeZone == "" {
+				// 未配置时区，使用 UTC 作为默认值
+				timeZone = "UTC"
+				appLogger.Warning("TimeZone not configured, using UTC. Please set timezone in settings.")
+			}
+
+			_, err = db.Exec(fmt.Sprintf("SET TimeZone = '%s'", timeZone))
+			if err != nil {
+				appLogger.Warning("Failed to set timezone: " + err.Error())
+			} else {
+				appLogger.Info("Database timezone set to: " + timeZone)
+			}
+
+			if err := migrations.InitSchema(db); err != nil {
 				appLogger.Fatal(err.Error())
 			}
 
@@ -199,6 +236,7 @@ func main() {
 			backupService.Init(ctx, db, config)
 			homeService.Init(ctx, db, config)
 			statsService.Init(ctx, db, config)
+			sessionService.Init(ctx, db, config)
 			startService.Init(ctx, db, config)
 			categoryService.Init(ctx, db, config)
 			importService.Init(ctx, db, config, gameService)
@@ -215,8 +253,25 @@ func main() {
 			gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
 			// 设置 StartService 的 BackupService 依赖
 			startService.SetBackupService(backupService)
-			// 设置 ImportService 的 StartService 依赖（用于导入游玩记录）
-			importService.SetStartService(startService)
+			startService.SetGameService(gameService)
+			startService.SetSessionService(sessionService)
+
+			// 设置 ImportService 的 SessionService 依赖（用于导入游玩记录）
+			importService.SetSessionService(sessionService)
+
+			// 启动 IPC Server (用于 CLI 通信)
+			// 构造 CLI CoreApp 以共享 GUI 的服务实例
+			cliApp := &cli.CoreApp{
+				Config:         config,
+				DB:             db,
+				Ctx:            ctx,
+				GameService:    gameService,
+				StartService:   startService,
+				SessionService: sessionService,
+				BackupService:  backupService,
+				VersionService: versionService,
+			}
+			ipc.StartServer(cliApp)
 
 			// 在 Wails 启动后初始化系统托盘
 			// TODO: 升级wails v3，使用原生的托盘功能
@@ -245,6 +300,10 @@ func main() {
 				latestConfig.WindowHeight = config.WindowHeight
 				config = &latestConfig
 			}
+
+			// 清理所有待定的进程选择会话（防止遗留临时会话）
+			appLogger.Info("cleaning up pending process selections...")
+			startService.CleanupPendingSessions()
 
 			// 自动备份数据库（在关闭数据库前）
 			if config.AutoBackupDB {
@@ -280,6 +339,7 @@ func main() {
 			versionService,
 			templateService,
 			updateService,
+			sessionService,
 			taskService,
 			charactorService,
 			staffService,
@@ -301,145 +361,6 @@ func main() {
 	if bootstrapErr != nil {
 		appLogger.Fatal(bootstrapErr.Error())
 	}
-}
-
-func initSchema(db *sql.DB) error {
-	queries := []string{
-		`CREATE TABLE IF NOT EXISTS users (
-			id TEXT PRIMARY KEY,
-			created_at TIMESTAMP,
-			default_backup_target TEXT
-		)`,
-		`CREATE TABLE IF NOT EXISTS categories (
-			id TEXT PRIMARY KEY,
-			name TEXT,
-			created_at TIMESTAMP,
-			updated_at TIMESTAMP,
-			is_system BOOLEAN
-		)`,
-		`CREATE TABLE IF NOT EXISTS games (
-			id TEXT PRIMARY KEY,
-			name TEXT,
-			cover_url TEXT,
-			company TEXT,
-			summary TEXT,
-			path TEXT,
-			save_path TEXT,
-			status TEXT DEFAULT 'not_started',
-			source_type TEXT,
-			cached_at TIMESTAMP,
-			source_id TEXT,
-			created_at TIMESTAMP,
-			updated_at TIMESTAMP,
-			tags TEXT,
-			arguments TEXT,
-			images TEXT,
-			bangumi_id TEXT,
-			dmm_id TEXT,
-			ymgal_id TEXT,
-			eroscape_id TEXT,
-			search_name TEXT,
-			staffs TEXT,
-			release_at TIMESTAMP,
-			related_games TEXT,
-			use_locale_emulator BOOLEAN DEFAULT FALSE,
-			use_magpie BOOLEAN DEFAULT FALSE
-		)`,
-		`CREATE TABLE IF NOT EXISTS game_categories (
-			game_id TEXT,
-			category_id TEXT,
-			PRIMARY KEY (game_id, category_id)
-		)`,
-		`CREATE TABLE IF NOT EXISTS play_sessions (
-			id TEXT PRIMARY KEY,
-			game_id TEXT,
-			start_time TIMESTAMP,
-			end_time TIMESTAMP,
-			duration INTEGER
-		)`,
-		// 新增 Task 表
-		`CREATE TABLE IF NOT EXISTS tasks (
-			id TEXT PRIMARY KEY,
-			name TEXT,
-			status TEXT,
-			type TEXT,
-			completed INTEGER,
-			total INTEGER,
-			working_on TEXT,
-			description TEXT,
-			warning TEXT,
-			deley INTEGER,
-			json_data TEXT,
-			item_id TEXT,
-		)`,
-
-		// 新增 Charactor 表
-		`CREATE TABLE IF NOT EXISTS charactors (
-			id TEXT PRIMARY KEY,
-			name TEXT,
-			other_names TEXT,
-			image_path TEXT,
-			images TEXT,
-			source_charactor_id TEXT,
-            source_type TEXT,
-			game_ids TEXT,
-			summary TEXT,
-			gender INTEGER
-		)`,
-		// 新增 Staff 表
-		`CREATE TABLE IF NOT EXISTS staffs (
-			id TEXT PRIMARY KEY,
-			name TEXT,
-			other_names TEXT,
-			roles TEXT,
-			source_staff_id TEXT,
-            source_type TEXT,
-			game_ids TEXT,
-			summary TEXT,
-			gender INTEGER,
-			image TEXT
-		)`,
-		// 新增 Work 表
-		`CREATE TABLE IF NOT EXISTS works (
-			id TEXT PRIMARY KEY,
-			game_id TEXT,
-			staff_id TEXT,
-			role TEXT,
-			charactor_id TEXT,
-			charactor_name TEXT,
-			staff_name TEXT,
-			work_summary TEXT,
-            source_type TEXT,
-			source_staff_id TEXT,
-			source_charactor_id TEXT,
-			source_game_id TEXT,
-			images TEXT,
-			game_name TEXT,
-			game_cover TEXT
-		)`,
-		// 新增 Tag 表
-		`CREATE TABLE IF NOT EXISTS tags (
-			name TEXT PRIMARY KEY,
-			category TEXT,
-			group_name TEXT,
-			is_h BOOLEAN DEFAULT FALSE,
-			is_spoiler BOOLEAN DEFAULT FALSE,
-			block_modify BOOLEAN DEFAULT FALSE
-		)`,
-		`CREATE TABLE IF NOT EXISTS image_backup (
-			url TEXT PRIMARY KEY,
-			local_path TEXT
-		)`,
-	}
-
-	for _, query := range queries {
-		_, err := db.Exec(query)
-		if err != nil {
-			fmt.Println("创建表失败:", err)
-			return err
-		}
-	}
-	return nil
 }
 
 // 系统托盘初始化

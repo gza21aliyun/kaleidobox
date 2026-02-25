@@ -261,7 +261,7 @@ func (y YmgalInfoGetter) getAccessToken() (string, error) {
 		return "", err
 	}
 
-	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
+	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.4.0 (desktop) (https://github.com/Saramanda9988/LunaBox)")
 
 	resp, err := y.client.Do(req)
 	if err != nil {
@@ -310,7 +310,7 @@ func (y YmgalInfoGetter) FetchMetadata(id string, token string) (models.Game, er
 		return models.Game{}, err
 	}
 
-	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
+	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.4.0 (desktop) (https://github.com/Saramanda9988/LunaBox)")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("version", "1")
 	req.Header.Set("Accept", "application/json;charset=utf-8")
@@ -387,7 +387,7 @@ func (y YmgalInfoGetter) FetchMetadataByName(name string, token string) (models.
 		return models.Game{}, err
 	}
 
-	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
+	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.4.0 (desktop) (https://github.com/Saramanda9988/LunaBox)")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("version", "1")
 	req.Header.Set("Accept", "application/json;charset=utf-8")

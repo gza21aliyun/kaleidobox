@@ -1,5 +1,4 @@
 import type { models } from "../../../wailsjs/go/models";
-import { createPortal } from "react-dom";
 
 interface AddGameToCategoryModalProps {
   isOpen: boolean;
@@ -17,7 +16,7 @@ export function AddGameToCategoryModal({
   if (!isOpen)
     return null;
 
-  return createPortal(
+  return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl h-[80vh] rounded-xl bg-white flex flex-col shadow-xl dark:bg-brand-800">
         <div className="p-6 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
@@ -43,7 +42,7 @@ export function AddGameToCategoryModal({
                       <div className="w-full aspect-[3/4] rounded-lg overflow-hidden bg-brand-200 dark:bg-brand-700 mb-2 relative">
                         {game.cover_url
                           ? (
-                              <img src={game.cover_url} alt={game.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              <img src={game.cover_url} alt={game.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" draggable="false" onDragStart={e => e.preventDefault()} />
                             )
                           : (
                               <div className="w-full h-full flex items-center justify-center text-brand-400">
@@ -68,7 +67,6 @@ export function AddGameToCategoryModal({
               )}
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }

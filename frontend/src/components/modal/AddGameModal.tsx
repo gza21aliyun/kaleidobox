@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
 import { enums, models, vo } from "../../../wailsjs/go/models";
 import { AddGame, FetchMetadata, FetchMetadataByName, SelectCoverImageWithTempID, SelectGameExecutable } from "../../../wailsjs/go/service/GameService";
@@ -163,7 +162,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
     }
   };
 
-  return createPortal(
+  return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl dark:bg-brand-800">
         <div className="flex items-center justify-between">
@@ -240,7 +239,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
                     <div className="aspect-[3/4] w-full overflow-hidden rounded-md bg-brand-200 dark:bg-brand-700">
                       {item.Game!.cover_url
                         ? (
-                            <img src={item.Game!.cover_url} alt={item.Game!.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                            <img src={item.Game!.cover_url} alt={item.Game!.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" draggable="false" onDragStart={e => e.preventDefault()} />
                           )
                         : (
                             <div className="flex h-full items-center justify-center text-brand-400">
@@ -403,7 +402,6 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
           </div>
         )}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }

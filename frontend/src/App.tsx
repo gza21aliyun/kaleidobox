@@ -1,7 +1,10 @@
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
-import { WindowShow } from "../wailsjs/runtime/runtime";
+import { SafeQuit } from "../wailsjs/go/service/ConfigService";
+import { EventsOff, EventsOn, WindowShow } from "../wailsjs/runtime/runtime";
+import { ProcessSelectModal } from "./components/modal/ProcessSelectModal";
+import { TimezoneSelectModal } from "./components/modal/TimezoneSelectModal";
 import { UpdateDialog } from "./components/ui/UpdateDialog";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
 import { Route as rootRoute } from "./routes/__root";
@@ -30,12 +33,64 @@ declare module "@tanstack/react-router" {
 }
 
 function App() {
-  const { config, fetchConfig } = useAppStore();
+  const { config, fetchConfig, updateConfig } = useAppStore();
   const { updateInfo, showUpdateDialog, setShowUpdateDialog, handleSkipVersion } = useUpdateCheck();
+  const [showTimezoneModal, setShowTimezoneModal] = useState(false);
+  const [processSelectData, setProcessSelectData] = useState<{
+    isOpen: boolean;
+    gameID: string;
+    launcherExeName: string;
+  }>({ isOpen: false, gameID: "", launcherExeName: "" });
 
   useEffect(() => {
     fetchConfig();
   }, [fetchConfig]);
+
+  // 监听后端发送的进程选择事件
+  useEffect(() => {
+    const handleProcessSelectRequired = (data: { gameID: string; sessionID: string; launcherExeName: string }) => {
+      console.warn("Process select required:", data);
+
+      // 将窗口显示到前台
+      WindowShow();
+
+      setProcessSelectData({
+        isOpen: true,
+        gameID: data.gameID,
+        launcherExeName: data.launcherExeName,
+      });
+    };
+
+    EventsOn("process-select-required", handleProcessSelectRequired);
+
+    return () => {
+      EventsOff("process-select-required");
+    };
+  }, []);
+
+  // 检查时区配置，如果未设置则显示选择弹窗
+  useEffect(() => {
+    if (config && (!config.time_zone || config.time_zone === "")) {
+      setShowTimezoneModal(true);
+    }
+  }, [config]);
+
+  const handleTimezoneConfirm = async (timezone: string) => {
+    if (!config)
+      return;
+
+    // 更新配置
+    const newConfig = { ...config, time_zone: timezone };
+    await updateConfig(newConfig);
+
+    // 关闭弹窗
+    setShowTimezoneModal(false);
+
+    // 延迟 500ms 后重启应用
+    setTimeout(() => {
+      SafeQuit();
+    }, 500);
+  };
 
   useEffect(() => {
     if (!config)
@@ -117,6 +172,17 @@ function App() {
           onSkip={handleSkipVersion}
         />
       )}
+      <TimezoneSelectModal
+        isOpen={showTimezoneModal}
+        onConfirm={handleTimezoneConfirm}
+      />
+      <ProcessSelectModal
+        isOpen={processSelectData.isOpen}
+        gameID={processSelectData.gameID}
+        launcherExeName={processSelectData.launcherExeName}
+        onClose={() => setProcessSelectData({ isOpen: false, gameID: "", launcherExeName: "" })}
+        onSelected={() => setProcessSelectData({ isOpen: false, gameID: "", launcherExeName: "" })}
+      />
     </>
   );
 }

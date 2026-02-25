@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"lunabox/internal/appconf"
+	"lunabox/internal/applog"
 	"lunabox/internal/enums"
 	"lunabox/internal/vo"
 	"net/http"
@@ -41,7 +42,7 @@ func (s *StatsService) ExportStatsImage(base64Data string) error {
 
 	data, err := base64.StdEncoding.DecodeString(base64Data)
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to decode base64 data: %v", err)
+		applog.LogErrorf(s.ctx, "failed to decode base64 data: %v", err)
 		return fmt.Errorf("failed to decode base64 data: %w", err)
 	}
 
@@ -57,7 +58,7 @@ func (s *StatsService) ExportStatsImage(base64Data string) error {
 	})
 
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to open save dialog: %v", err)
+		applog.LogErrorf(s.ctx, "failed to open save dialog: %v", err)
 		return fmt.Errorf("failed to open save dialog: %w", err)
 	}
 
@@ -66,7 +67,7 @@ func (s *StatsService) ExportStatsImage(base64Data string) error {
 	}
 
 	if err := os.WriteFile(filename, data, 0644); err != nil {
-		runtime.LogErrorf(s.ctx, "failed to save file: %v", err)
+		applog.LogErrorf(s.ctx, "failed to save file: %v", err)
 		return fmt.Errorf("failed to save file: %w", err)
 	}
 
@@ -76,19 +77,19 @@ func (s *StatsService) ExportStatsImage(base64Data string) error {
 func (s *StatsService) FetchImageAsBase64(url string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to fetch image: %v", err)
+		applog.LogErrorf(s.ctx, "failed to fetch image: %v", err)
 		return "", fmt.Errorf("failed to fetch image: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		runtime.LogErrorf(s.ctx, "failed to fetch image, status code: %d", resp.StatusCode)
+		applog.LogErrorf(s.ctx, "failed to fetch image, status code: %d", resp.StatusCode)
 		return "", fmt.Errorf("failed to fetch image, status code: %d", resp.StatusCode)
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to read image body: %v", err)
+		applog.LogErrorf(s.ctx, "failed to read image body: %v", err)
 		return "", fmt.Errorf("failed to read image body: %w", err)
 	}
 
@@ -177,13 +178,13 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 		// For 'all' dimension without custom dates, we need special handling
 		err := s.db.QueryRowContext(s.ctx, queryTotal, req.GameID, req.GameID).Scan(&stats.TotalPlayCount, &stats.TotalPlayTime)
 		if err != nil {
-			runtime.LogErrorf(s.ctx, "failed to get total play count and duration: %v", err)
+			applog.LogErrorf(s.ctx, "failed to get total play count and duration: %v", err)
 			return stats, err
 		}
 	} else {
 		err := s.db.QueryRowContext(s.ctx, queryTotal, req.GameID).Scan(&stats.TotalPlayCount, &stats.TotalPlayTime)
 		if err != nil {
-			runtime.LogErrorf(s.ctx, "failed to get total play count and duration: %v", err)
+			applog.LogErrorf(s.ctx, "failed to get total play count and duration: %v", err)
 			return stats, err
 		}
 	}
@@ -191,7 +192,7 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 	// 2. Today Play Time (always show today regardless of period)
 	err := s.db.QueryRowContext(s.ctx, "SELECT COALESCE(SUM(duration), 0) FROM play_sessions WHERE game_id = ? AND start_time >= current_date", req.GameID).Scan(&stats.TodayPlayTime)
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to get today play time: %v", err)
+		applog.LogErrorf(s.ctx, "failed to get today play time: %v", err)
 		return stats, err
 	}
 
@@ -217,7 +218,7 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 		rows, err = s.db.QueryContext(s.ctx, queryTimeline, req.GameID)
 	}
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to query play history: %v", err)
+		applog.LogErrorf(s.ctx, "failed to query play history: %v", err)
 		return stats, err
 	}
 	defer rows.Close()
@@ -226,7 +227,7 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 	for rows.Next() {
 		var item vo.DailyPlayTime
 		if err := rows.Scan(&item.Date, &item.Duration); err != nil {
-			runtime.LogErrorf(s.ctx, "failed to scan play history: %v", err)
+			applog.LogErrorf(s.ctx, "failed to scan play history: %v", err)
 			return stats, err
 		}
 		stats.RecentPlayHistory = append(stats.RecentPlayHistory, item)
@@ -243,7 +244,6 @@ func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.Perio
 		startDate    string
 		endDate      string
 		dateFormat   string
-		truncUnit    string
 		stepInterval string
 	)
 
@@ -273,7 +273,6 @@ func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.Perio
 
 	// 所有维度都按日聚合
 	dateFormat = "%Y-%m-%d"
-	truncUnit = "day"
 	stepInterval = "INTERVAL 1 DAY"
 
 	// 构建日期表达式
@@ -292,15 +291,61 @@ func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.Perio
 		seriesEnd = endDate
 	}
 
-	// 1. Total Play Count & Duration
+	// 总游玩次数和时长
 	queryTotal := fmt.Sprintf("SELECT COALESCE(COUNT(*), 0), COALESCE(SUM(duration), 0) FROM play_sessions WHERE start_time >= %s AND start_time <= %s + INTERVAL 1 DAY", startDateExpr, endDateExpr)
 	err := s.db.QueryRowContext(s.ctx, queryTotal).Scan(&stats.TotalPlayCount, &stats.TotalPlayDuration)
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to get total play count and duration: %v", err)
+		applog.LogErrorf(s.ctx, "failed to get total play count and duration: %v", err)
 		return stats, err
 	}
 
-	// 2. Leaderboard (Top 5)
+	// 查询本期间内游玩过的游戏数量、已通关游戏数量和库中所有游戏数量
+	queryGameStats := fmt.Sprintf(`
+		SELECT 
+			COUNT(DISTINCT ps.game_id),
+			COUNT(DISTINCT CASE WHEN g.status = 'completed' THEN g.id END)
+		FROM play_sessions ps
+		JOIN games g ON ps.game_id = g.id
+		WHERE ps.start_time >= %s AND ps.start_time <= %s + INTERVAL 1 DAY
+	`, startDateExpr, endDateExpr)
+	err = s.db.QueryRowContext(s.ctx, queryGameStats).Scan(&stats.TotalGamesCount, &stats.CompletedGamesCount)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "failed to get game stats: %v", err)
+		return stats, err
+	}
+
+	// 查询库中所有游戏，一次查询获取数量和已通关数量
+	queryLibraryGames := "SELECT status FROM games"
+	rows, err := s.db.QueryContext(s.ctx, queryLibraryGames)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "failed to get library games: %v", err)
+		return stats, err
+	}
+	defer rows.Close()
+
+	completedCount := 0
+	totalCount := 0
+	for rows.Next() {
+		var status string
+		if err := rows.Scan(&status); err != nil {
+			applog.LogErrorf(s.ctx, "failed to scan game status: %v", err)
+			return stats, err
+		}
+		totalCount++
+		if status == "completed" {
+			completedCount++
+		}
+	}
+	stats.LibraryGamesCount = totalCount
+	stats.AllCompletedGamesCount = completedCount
+
+	// 查询所有session数量和总时长
+	queryAllSessions := "SELECT COALESCE(COUNT(*), 0), COALESCE(SUM(duration), 0) FROM play_sessions"
+	err = s.db.QueryRowContext(s.ctx, queryAllSessions).Scan(&stats.AllSessionsCount, &stats.AllSessionsDuration)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "failed to get all sessions stats: %v", err)
+		return stats, err
+	}
 	stats.PlayTimeLeaderboard = make([]vo.GamePlayStats, 0)
 	queryLeaderboard := fmt.Sprintf(`
 		SELECT ps.game_id, g.name, COALESCE(g.cover_url, '') as cover_url, SUM(ps.duration) as total 
@@ -312,16 +357,17 @@ func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.Perio
 		LIMIT 5
 	`, startDateExpr, endDateExpr)
 
-	rows, err := s.db.QueryContext(s.ctx, queryLeaderboard)
+	// 构建Leaderboard
+	rows, err = s.db.QueryContext(s.ctx, queryLeaderboard)
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to query leaderboard: %v", err)
+		applog.LogErrorf(s.ctx, "failed to query leaderboard: %v", err)
 		return stats, err
 	}
 
 	for rows.Next() {
 		var item vo.GamePlayStats
 		if err := rows.Scan(&item.GameID, &item.GameName, &item.CoverUrl, &item.TotalDuration); err != nil {
-			runtime.LogErrorf(s.ctx, "failed to scan leaderboard: %v", err)
+			applog.LogErrorf(s.ctx, "failed to scan leaderboard: %v", err)
 			rows.Close()
 			return stats, err
 		}
@@ -330,6 +376,8 @@ func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.Perio
 	rows.Close()
 
 	// 3. Timeline (Total)
+	// 注意：使用 ps.start_time::DATE 将 TIMESTAMPTZ 转换为本地日期进行匹配
+	// 这样可以正确地按用户本地时区的日期进行聚合
 	stats.Timeline = make([]vo.TimePoint, 0)
 	queryTimeline := fmt.Sprintf(`
 		WITH dates AS (
@@ -340,21 +388,21 @@ func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.Perio
 			strftime(d.day, '%s'), 
 			COALESCE(SUM(ps.duration), 0)
 		FROM dates d
-		LEFT JOIN play_sessions ps ON date_trunc('%s', ps.start_time) = d.day
+		LEFT JOIN play_sessions ps ON ps.start_time::DATE = d.day
 		GROUP BY d.day
 		ORDER BY d.day ASC
-	`, seriesStart, seriesEnd, stepInterval, dateFormat, truncUnit)
+	`, seriesStart, seriesEnd, stepInterval, dateFormat)
 
 	rows, err = s.db.QueryContext(s.ctx, queryTimeline)
 	if err != nil {
-		runtime.LogErrorf(s.ctx, "failed to query timeline: %v", err)
+		applog.LogErrorf(s.ctx, "failed to query timeline: %v", err)
 		return stats, err
 	}
 
 	for rows.Next() {
 		var item vo.TimePoint
 		if err := rows.Scan(&item.Label, &item.Duration); err != nil {
-			runtime.LogErrorf(s.ctx, "failed to scan timeline: %v", err)
+			applog.LogErrorf(s.ctx, "failed to scan timeline: %v", err)
 			rows.Close()
 			return stats, err
 		}
@@ -363,6 +411,7 @@ func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.Perio
 	rows.Close()
 
 	// 4. Leaderboard Series
+	// 使用 ps.start_time::DATE 进行本地时区日期匹配
 	stats.LeaderboardSeries = make([]vo.GameTrendSeries, 0)
 	for _, game := range stats.PlayTimeLeaderboard {
 		series := vo.GameTrendSeries{
@@ -380,21 +429,21 @@ func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.Perio
 				strftime(d.day, '%s'), 
 				COALESCE(SUM(ps.duration), 0)
 			FROM dates d
-			LEFT JOIN play_sessions ps ON ps.game_id = ? AND date_trunc('%s', ps.start_time) = d.day
+			LEFT JOIN play_sessions ps ON ps.game_id = ? AND ps.start_time::DATE = d.day
 			GROUP BY d.day
 			ORDER BY d.day ASC
-		`, seriesStart, seriesEnd, stepInterval, dateFormat, truncUnit)
+		`, seriesStart, seriesEnd, stepInterval, dateFormat)
 
 		rows, err := s.db.QueryContext(s.ctx, queryGameSeries, game.GameID)
 		if err != nil {
-			runtime.LogErrorf(s.ctx, "failed to query leaderboard series for game %s: %v", game.GameID, err)
+			applog.LogErrorf(s.ctx, "failed to query leaderboard series for game %s: %v", game.GameID, err)
 			return stats, err
 		}
 
 		for rows.Next() {
 			var p vo.TimePoint
 			if err := rows.Scan(&p.Label, &p.Duration); err != nil {
-				runtime.LogErrorf(s.ctx, "failed to scan leaderboard series for game %s: %v", game.GameID, err)
+				applog.LogErrorf(s.ctx, "failed to scan leaderboard series for game %s: %v", game.GameID, err)
 				rows.Close()
 				return stats, err
 			}

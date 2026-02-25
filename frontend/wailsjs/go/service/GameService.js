@@ -6,12 +6,16 @@ export function AddGame(arg1) {
   return window['go']['service']['GameService']['AddGame'](arg1);
 }
 
+export function BatchUpdateStatus(arg1, arg2) {
+  return window['go']['service']['GameService']['BatchUpdateStatus'](arg1, arg2);
+}
+
 export function DeleteGame(arg1) {
   return window['go']['service']['GameService']['DeleteGame'](arg1);
 }
 
-export function ExecueteGamesUpdate(arg1, arg2) {
-  return window['go']['service']['GameService']['ExecueteGamesUpdate'](arg1, arg2);
+export function DeleteGames(arg1) {
+  return window['go']['service']['GameService']['DeleteGames'](arg1);
 }
 
 export function FetchMetadata(arg1) {
@@ -34,8 +38,16 @@ export function GetGames() {
   return window['go']['service']['GameService']['GetGames']();
 }
 
+export function GetRunningProcesses() {
+  return window['go']['service']['GameService']['GetRunningProcesses']();
+}
+
 export function Init(arg1, arg2, arg3) {
   return window['go']['service']['GameService']['Init'](arg1, arg2, arg3);
+}
+
+export function OpenLocalPath(arg1) {
+  return window['go']['service']['GameService']['OpenLocalPath'](arg1);
 }
 
 export function SelectCoverImage(arg1) {
@@ -54,8 +66,8 @@ export function SelectSaveDirectory() {
   return window['go']['service']['GameService']['SelectSaveDirectory']();
 }
 
-export function SetServices(arg1, arg2, arg3, arg4) {
-  return window['go']['service']['GameService']['SetServices'](arg1, arg2, arg3, arg4);
+export function SelectSaveFile() {
+  return window['go']['service']['GameService']['SelectSaveFile']();
 }
 
 export function UpdateGame(arg1) {
@@ -66,6 +78,6 @@ export function UpdateGameFromRemote(arg1) {
   return window['go']['service']['GameService']['UpdateGameFromRemote'](arg1);
 }
 
-export function UpdateGamesBackground(arg1, arg2, arg3) {
-  return window['go']['service']['GameService']['UpdateGamesBackground'](arg1, arg2, arg3);
+export function UpdateGameProcessName(arg1, arg2) {
+  return window['go']['service']['GameService']['UpdateGameProcessName'](arg1, arg2);
 }

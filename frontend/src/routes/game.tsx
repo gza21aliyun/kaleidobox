@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { enums } from "../../wailsjs/go/models";
 import { AddGameToCategory, GetCategories, GetCategoriesByGame, RemoveGameFromCategory } from "../../wailsjs/go/service/CategoryService";
-import { DeleteGame, GetGameByID, SelectCoverImage, SelectGameExecutable, SelectSaveDirectory, UpdateGame, UpdateGameFromRemote } from "../../wailsjs/go/service/GameService";
+import { DeleteGame, GetGameByID, SelectCoverImage, SelectGameExecutable, SelectSaveDirectory, SelectSaveFile, UpdateGame, UpdateGameFromRemote } from "../../wailsjs/go/service/GameService";
+import { StartGameWithTracking } from "../../wailsjs/go/service/StartService";
 import { AddToCategoryModal } from "../components/modal/AddToCategoryModal";
 import { ConfirmModal } from "../components/modal/ConfirmModal";
 import { GameBackupPanel } from "../components/panel/GameBackupPanel";
 import { GameEditPanel } from "../components/panel/GameEditPanel";
+import { GameLaunchPanel } from "../components/panel/GameLaunchPanel";
 import { GameStatsPanel } from "../components/panel/GameStatsPanel";
 import { GameDetailSkeleton } from "../components/skeleton/GameDetailSkeleton";
 import { useAppStore } from "../store";
@@ -160,7 +162,20 @@ function GameDetailPage() {
     }
     catch (error) {
       console.error("Failed to select save directory:", error);
-      toast.error("选择存档目录失败");
+      toast.error("选择存档路径失败");
+    }
+  };
+
+  const handleSelectSaveFile = async () => {
+    try {
+      const path = await SelectSaveFile();
+      if (path && game) {
+        setGame({ ...game, save_path: path } as models.Game);
+      }
+    }
+    catch (error) {
+      console.error("Failed to select save file:", error);
+      toast.error("选择存档路径失败");
     }
   };
 
@@ -200,6 +215,24 @@ function GameDetailPage() {
     [enums.GameStatus.PLAYING]: { label: "游玩中", icon: "i-mdi-gamepad-variant", color: "bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300" },
     [enums.GameStatus.COMPLETED]: { label: "已通关", icon: "i-mdi-trophy", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" },
     [enums.GameStatus.ON_HOLD]: { label: "搁置", icon: "i-mdi-pause-circle-outline", color: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" },
+  };
+
+  const handleStartGame = async () => {
+    if (!game || !game.id)
+      return;
+    try {
+      const started = await StartGameWithTracking(game.id);
+      if (started) {
+        toast.success(`${game.name}启动成功`);
+      }
+      else {
+        toast.error(`${game.name}启动失败（未能启动）`);
+      }
+    }
+    catch (error) {
+      console.error("Failed to start game:", error);
+      toast.error(`${game.name} 启动失败, 查询日志获得帮助`);
+    }
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -274,6 +307,23 @@ function GameDetailPage() {
     }
   };
 
+  const handleSelectProcessExecutable = async () => {
+    try {
+      const path = await SelectGameExecutable();
+      if (path && game) {
+        // 从路径中提取文件名
+        const filename = path.split(/[\\/]/).pop();
+        if (filename) {
+          setGame({ ...game, process_name: filename } as models.Game);
+        }
+      }
+    }
+    catch (error) {
+      console.error("Failed to select executable:", error);
+      toast.error("选择文件失败");
+    }
+  };
+
   const getEroscapeUrl = () => {
     if (config?.eroscape_use_mirror || false) {
       return `https://koko.kyara.top/game.php?game=${game.eroscape_id}`
@@ -287,7 +337,7 @@ function GameDetailPage() {
       {/* Back Button */}
       <button
         onClick={() => window.history.back()}
-        className="flex rounded-md items-center text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
+        className="flex rounded-md items-center text-brand-750 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
       >
         <div className="i-mdi-arrow-left text-2xl mr-1" />
         <span>返回</span>
@@ -295,7 +345,7 @@ function GameDetailPage() {
 
       {/* Header Section */}
       <div className="flex gap-6 items-center">
-        <div className="relative w-60 flex-shrink-0 rounded-lg overflow-hidden shadow-lg bg-brand-200 dark:bg-brand-800" data-glass="bg-white/5 dark:bg-black/5">
+        <div className="relative w-60 flex-shrink-0 rounded-lg overflow-hidden shadow-lg bg-brand-200 dark:bg-brand-800">
           {game.cover_url
             ? (
                 <img
@@ -303,6 +353,8 @@ function GameDetailPage() {
                   alt={game.name}
                   className="w-full h-auto block"
                   referrerPolicy="no-referrer"
+                  draggable="false"
+                  onDragStart={e => e.preventDefault()}
                 />
               )
             : (
@@ -315,30 +367,43 @@ function GameDetailPage() {
         <div className="flex-1 space-y-4">
           <div className="flex flex-col gap-3">
             <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{game.name}</h1>
-            {/* 状态标签组 */}
-            <div className="flex gap-1.5">
-              {Object.entries(statusConfig).map(([key, config]) => {
-                const isActive = (game.status || enums.GameStatus.NOT_STARTED) === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => handleStatusChange(key)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                      isActive
+            {/* 操作和状态标签组 */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleStartGame}
+                className="flex items-center gap-1.5 rounded-lg bg-neutral-600 text-white shadow-md hover:bg-neutral-700 transition-all duration-300 px-4 py-1.5 text-sm font-medium dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+              >
+                <div className="i-mdi-play text-lg" />
+                启动游戏
+              </button>
+
+              <div className="h-6 w-px bg-brand-200 dark:bg-brand-700" />
+              {" "}
+              {/* 分隔线 */}
+
+              <div className="flex gap-1.5">
+                {Object.entries(statusConfig).map(([key, config]) => {
+                  const isActive = (game.status || enums.GameStatus.NOT_STARTED) === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleStatusChange(key)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isActive
                         ? `${config.color} ring-2 ring-offset-1 ring-brand-400 dark:ring-offset-brand-900`
                         : "bg-brand-100 text-brand-500 dark:bg-brand-700 dark:text-brand-400 hover:bg-brand-200 dark:hover:bg-brand-600"
-                    }`}
-                    title={config.label}
-                  >
-                    <div className={`${config.icon} text-sm`} />
-                    {isActive && <span>{config.label}</span>}
-                  </button>
-                );
-              })}
+                      }`}
+                      title={config.label}
+                    >
+                      <div className={`${config.icon} text-base`} />
+                      {isActive && <span>{config.label}</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-4 text-sm text-brand-600 dark:text-brand-400">
+          <div className="grid grid-cols-4 gap-4 text-sm text-brand-750 dark:text-brand-400">
             <div>
               <div className="font-semibold mb-1">数据来源</div>
               <div>{game.source_type}</div>
@@ -349,11 +414,11 @@ function GameDetailPage() {
             </div>
             <div>
               <div className="font-semibold mb-1">添加时间</div>
-              <div>{formatLocalDate(game.created_at)}</div>
+              <div>{formatLocalDate(game.created_at, config?.time_zone)}</div>
             </div>
             <div>
               <div className="font-semibold mb-1">发售日期</div>
-              <div>{formatLocalDate(game.release_at)}</div>
+              <div>{formatLocalDate(game.release_at, config?.time_zone)}</div>
             </div>
             {/* Placeholders for missing data */}
           </div>
@@ -403,19 +468,20 @@ function GameDetailPage() {
       <div className="border-b border-brand-200 dark:border-brand-700">
         <div className="flex justify-between items-center">
           <nav className="-mb-px flex space-x-8">
-            {["intro","stats", "edit", "backup", "info", "gallery"].map(tab => (
+            {["intro","stats", "edit", "launch", "backup", "info", "gallery"].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`
                   whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
                   ${activeTab === tab
-                ? "border-neutral-500 text-neutral-600 dark:text-neutral-400"
-                : "border-transparent text-brand-500 hover:text-brand-700 hover:border-brand-300 dark:text-brand-400 dark:hover:text-brand-300"}
+                ? "border-neutral-500 text-brand-700 dark:text-neutral-400"
+                : "border-transparent text-brand-700 hover:text-brand-750 hover:border-brand-300 dark:text-brand-400 dark:hover:text-brand-300"}
                 `}
               >
                 {tab === "stats" && "游戏统计"}
                 {tab === "edit" && "编辑"}
+                {tab === "launch" && "启动配置"}
                 {tab === "backup" && "备份"}
                 {tab === "info" && "游戏信息"}
                 {tab === "gallery" && "画廊"}
@@ -425,7 +491,7 @@ function GameDetailPage() {
           </nav>
           <button
             onClick={openCategoryModal}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-100 text-brand-600 hover:text-brand-200 dark:bg-brand-900 dark:text-brand-400 dark:hover:text-brand-700 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-100 text-brand-750 hover:text-brand-200 dark:bg-brand-900 dark:text-brand-400 dark:hover:text-brand-700 transition-colors"
             title="添加到收藏"
           >
             <div className="i-mdi-folder-plus-outline text-lg" />
@@ -441,14 +507,32 @@ function GameDetailPage() {
       {activeTab === "edit" && game && (
         <GameEditPanel
           game={game}
-          config={config || undefined}
           onGameChange={setGame}
           onDelete={handleDeleteGame}
           onSelectExecutable={handleSelectExecutable}
           onSelectSaveDirectory={handleSelectSaveDirectory}
+          onSelectSaveFile={handleSelectSaveFile}
           onSelectCoverImage={handleSelectCoverImage}
           onUpdateFromRemote={handleUpdateFromRemote}
           onLoadGame={loadData}
+        />
+      )}
+
+      {activeTab === "launch" && game && (
+        <GameLaunchPanel
+          game={game}
+          config={config || undefined}
+          onGameChange={setGame}
+          onSelectProcessExecutable={handleSelectProcessExecutable}
+        />
+      )}
+
+      {activeTab === "launch" && game && (
+        <GameLaunchPanel
+          game={game}
+          config={config || undefined}
+          onGameChange={setGame}
+          onSelectProcessExecutable={handleSelectProcessExecutable}
         />
       )}
 

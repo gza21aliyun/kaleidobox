@@ -30,6 +30,10 @@ export function PreviewPlayniteImport(arg1) {
   return window['go']['service']['ImportService']['PreviewPlayniteImport'](arg1);
 }
 
+export function ProcessDroppedPaths(arg1) {
+  return window['go']['service']['ImportService']['ProcessDroppedPaths'](arg1);
+}
+
 export function ScanLibraryDirectory(arg1) {
   return window['go']['service']['ImportService']['ScanLibraryDirectory'](arg1);
 }
@@ -46,6 +50,6 @@ export function SelectZipFile() {
   return window['go']['service']['ImportService']['SelectZipFile']();
 }
 
-export function SetStartService(arg1) {
-  return window['go']['service']['ImportService']['SetStartService'](arg1);
+export function SetSessionService(arg1) {
+  return window['go']['service']['ImportService']['SetSessionService'](arg1);
 }

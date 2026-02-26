@@ -20,6 +20,7 @@ const (
 	TagCategoryPublisher    = "发行"
 	TagCategoryPlayerNumber = "玩家人数"
 	TagCategoryOther        = "其他"
+	TagCategoryProperty     = "属性"
 	TagCategoryCustom       = "自定义"
 	TagCategorySeries       = "系列"
 )

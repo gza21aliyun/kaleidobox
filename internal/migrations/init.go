@@ -50,7 +50,7 @@ func SchemaQueries() []string {
 			ymgal_id TEXT,
 			eroscape_id TEXT,
 			search_name TEXT,
-			staffs TEXT,
+			dlsite_id TEXT,
 			release_at TIMESTAMPTZ,
 			related_games TEXT,
 			use_locale_emulator BOOLEAN DEFAULT FALSE,
@@ -140,7 +140,10 @@ func SchemaQueries() []string {
 		)`,
 		`CREATE TABLE IF NOT EXISTS image_backup (
 			url TEXT PRIMARY KEY,
-			local_path TEXT
+			local_path TEXT,
+			subject_id TEXT,
+			subject_type INTEGER
+
 		)`,
 	}
 	return queries

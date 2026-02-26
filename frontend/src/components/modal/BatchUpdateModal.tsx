@@ -116,7 +116,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
       setMatchedIds([]);
       setFailedIds([]);
     }
-  }, [isOpen, games]); // 当isOpen或games变化时执行
+  }, [isOpen]); // 当isOpen或games变化时执行
 
   if (!isOpen)
     return null;
@@ -219,10 +219,13 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
       if (source === enums.SourceType.YMGAL) {
         oldGame.ymgal_id = game.ymgal_id
       }
+      if (source === enums.SourceType.DLSITE) {
+        oldGame.dlsite_id = game.dlsite_id
+      }
       oldGame.images = game.images
       oldGame.tags = game.tags
       oldGame.release_at = game.release_at
-      oldGame.staffs = game.staffs
+      oldGame.process_name = game.process_name
       oldGame.summary = game.summary
       oldGame.name = game.name
       oldGame.search_name = game.search_name
@@ -323,7 +326,8 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                           { value: enums.SourceType.VNDB, label: "VNDB" },
                           { value: enums.SourceType.YMGAL, label: "月幕Gal" },
                           { value: enums.SourceType.DMM, label: "DMM" },
-                          { value: enums.SourceType.EROSCAPE, label: "EroScape" },
+                          { value: enums.SourceType.EROSCAPE, label: "批评空间" },
+                          { value: enums.SourceType.DLSITE, label: "DlSite" },
                         ]}
                         className="min-w-[120px] w-[150px]"
                       />

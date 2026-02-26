@@ -198,6 +198,13 @@ func NewDmmInfoGetter() *DmmInfoGetter {
 	}
 }
 
+func NewDlsiteInfoGetter() *DlsiteInfoGetter {
+	return &DlsiteInfoGetter{
+		client:  &http.Client{},
+		timeout: 10 * time.Second,
+	}
+}
+
 var _ Getter = (*YmgalInfoGetter)(nil)
 
 const (

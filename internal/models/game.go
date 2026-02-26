@@ -28,7 +28,7 @@ type Game struct {
 	EroscapeId        string           `json:"eroscape_id"`
 	YmgalId           string           `json:"ymgal_id"`
 	SearchName        string           `json:"search_name"`
-	Staffs            string           `json:"staffs"`
+	DlsiteId          string           `json:"dlsite_id"`
 	ReleaseAt         time.Time        `json:"release_at"`
 	RelatedGames      string           `json:"related_games"`
 	UseLocaleEmulator bool             `json:"use_locale_emulator"` // 是否使用 Locale Emulator 转区启动
@@ -52,8 +52,10 @@ type GameBackup struct {
 }
 
 type ImageBackup struct {
-	Url       string `json:"url"`
-	LocalPath string `json:"local_path"`
+	Url         string `json:"url"`
+	LocalPath   string `json:"local_path"`
+	SubjectId   string `json:"subject_id"`
+	SubjectType string `json:"subject_type"`
 }
 
 type GameFilter struct {

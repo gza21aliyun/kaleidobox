@@ -97,7 +97,7 @@ func (s *GameService) AddGame(game models.Game) error {
 	query := `INSERT INTO games (
 		id, name, cover_url, company, summary, path, 
 		source_type, cached_at, source_id, created_at, updated_at,
-		tags, arguments, images, bangumi_id, dmm_id, eroscape_id, ymgal_id, search_name, staffs, release_at, related_games, 
+		tags, arguments, images, bangumi_id, dmm_id, eroscape_id, ymgal_id, search_name, dlsite_id, release_at, related_games, 
 		use_locale_emulator, use_magpie, process_name
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -121,7 +121,7 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.EroscapeId,
 		game.YmgalId,
 		game.SearchName,
-		game.Staffs,
+		game.DlsiteId,
 		game.ReleaseAt,
 		game.RelatedGames,
 
@@ -286,7 +286,7 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 		COALESCE(eroscape_id, '') as eroscape_id,
 		COALESCE(ymgal_id, '') as ymgal_id,
 		COALESCE(search_name, '') as search_name,
-		COALESCE(staffs, '') as staffs,
+		COALESCE(dlsite_id, '') as dlsite_id,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
@@ -330,7 +330,7 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 			&game.EroscapeId,
 			&game.YmgalId,
 			&game.SearchName,
-			&game.Staffs,
+			&game.DlsiteId,
 			&game.ReleaseAt,
 			&game.RelatedGames,
 			&game.UseLocaleEmulator,
@@ -382,7 +382,7 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 		COALESCE(eroscape_id, '') as eroscape_id,
 		COALESCE(ymgal_id, '') as ymgal_id,
 		COALESCE(search_name, '') as search_name,
-		COALESCE(staffs, '') as staffs,
+		COALESCE(dlsite_id, '') as dlsite_id,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
@@ -427,7 +427,7 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 			&game.EroscapeId,
 			&game.YmgalId,
 			&game.SearchName,
-			&game.Staffs,
+			&game.DlsiteId,
 			&game.ReleaseAt,
 			&game.RelatedGames,
 			&game.UseLocaleEmulator,
@@ -474,7 +474,7 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		COALESCE(eroscape_id, '') as eroscape_id,
 		COALESCE(ymgal_id, '') as ymgal_id,
 		COALESCE(search_name, '') as search_name,
-		COALESCE(staffs, '') as staffs,
+		COALESCE(dlsite_id, '') as dlsite_id,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
@@ -509,7 +509,7 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		&game.EroscapeId,
 		&game.YmgalId,
 		&game.SearchName,
-		&game.Staffs,
+		&game.DlsiteId,
 		&game.ReleaseAt,
 		&game.RelatedGames,
 		&game.UseLocaleEmulator,
@@ -550,7 +550,7 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		eroscape_id = ?,
 		ymgal_id = ?,
 		search_name = ?,
-		staffs = ?,
+		dlsite_id = ?,
 		release_at = ?,
 		related_games = ?,
 		use_locale_emulator = ?,
@@ -576,7 +576,7 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		game.EroscapeId,
 		game.YmgalId,
 		game.SearchName,
-		game.Staffs,
+		game.DlsiteId,
 		game.ReleaseAt,
 		game.RelatedGames,
 		game.UseLocaleEmulator,
@@ -684,7 +684,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	var mu sync.Mutex
 
 	// 这里暂不处理任何错误，直接尝试从多个来源并发获取数据，空就是网络问题或未找到，不管它
-	wg.Add(5)
+	wg.Add(6)
 
 	go func() {
 		defer wg.Done()
@@ -726,6 +726,17 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 		if dmm != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dmm, Game: dmm})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		dlsiteGetter := utils.NewDlsiteInfoGetter()
+		dlsite, _ := dlsiteGetter.FetchMetadataByName(name)
+		if dlsite != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dlsite, Game: dlsite})
 			mu.Unlock()
 		}
 	}()
@@ -800,6 +811,19 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		dmmGetter := utils.NewDmmInfoGetter()
 		game.DmmId = req.ID
 		gameEntity, e = dmmGetter.FetchMetadataById(req)
+		game = gameEntity.Game
+		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		}
+		if req.IsOverwrite && req.ShouldFetchTags {
+			s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		}
+
+	case enums.Dlsite:
+		fmt.Println("Fetching metadata from dlsite")
+		dlsiteGetter := utils.NewDlsiteInfoGetter()
+		game.DlsiteId = req.ID
+		gameEntity, e = dlsiteGetter.FetchMetadataById2(req)
 		game = gameEntity.Game
 		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
 			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
@@ -1028,6 +1052,9 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			} else if taskData.Req.Source == enums.Bangumi && strings.TrimSpace(ngame.BangumiId) != "" {
 				id = ngame.BangumiId
 				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
+			} else if taskData.Req.Source == enums.Dlsite && strings.TrimSpace(ngame.DlsiteId) != "" {
+				id = ngame.DlsiteId
+				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
 			}
 
 			taskData.Req.ID = id
@@ -1072,6 +1099,11 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 					dmmGetter := utils.NewDmmInfoGetter()
 					updatedGame, err = dmmGetter.FetchMetadataByName(ngame.SearchName, true)
+					// updatedGame = dmm
+				} else if taskData.Req.Source == enums.Dlsite {
+					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
+					dlsiteGetter := utils.NewDlsiteInfoGetter()
+					updatedGame, err = dlsiteGetter.FetchMetadataByName(ngame.SearchName)
 					// updatedGame = dmm
 				} else {
 					// log.Printf("TaskFunc 26 fetch for game %s", ngame.Name)
@@ -1135,6 +1167,9 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game, req
 	}
 	if updatedGame.YmgalId == "" {
 		updatedGame.YmgalId = ngame.YmgalId
+	}
+	if updatedGame.DlsiteId == "" {
+		updatedGame.DlsiteId = ngame.DlsiteId
 	}
 	if ngame.Name != "" && !req.IsOverwrite {
 		updatedGame.Name = ngame.Name

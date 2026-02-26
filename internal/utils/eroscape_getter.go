@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,13 +48,31 @@ func CreateCollector(domain string) *colly.Collector {
 		Delay:       2 * time.Second, // 延迟请求
 	})
 
+	c.WithTransport(&http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+		DisableCompression: true, // 禁用自动解压缩
+	})
+
 	// 首先，设置请求前的处理
 	c.OnRequest(func(r *colly.Request) {
 
 		fmt.Println("Visiting", r.URL.String()) // 打印正在访问的 URL
 		cookie3 := &http.Cookie{Name: "age_check_done", Value: "1"}
+		cookie4 := &http.Cookie{Name: "adultchecked", Value: "1"}
+		cookie5 := &http.Cookie{Name: "locale", Value: "ja-jp"}
+		cookie6 := &http.Cookie{Name: "localesuggested", Value: "true"}
 
-		r.Headers.Set("Cookie", cookie3.Name+"="+cookie3.Value)
+		// 将所有cookie组合成一个字符串
+		cookies := fmt.Sprintf("%s=%s; %s=%s; %s=%s, %s=%s",
+			cookie3.Name, cookie3.Value,
+			cookie4.Name, cookie4.Value,
+			cookie5.Name, cookie5.Value,
+			cookie6.Name, cookie6.Value,
+		)
+
+		r.Headers.Set("Cookie", cookies)
 
 		// 设置额外的请求头
 		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")

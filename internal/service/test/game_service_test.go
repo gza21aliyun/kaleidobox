@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"lunabox/internal/appconf"
+	"lunabox/internal/applog"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"lunabox/internal/service"
@@ -786,10 +787,50 @@ func createDmmGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 		}
 }
 
+func createDlsiteGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
+	releaseAt, _ := time.Parse("2006-01-01", "2025-01-01")
+	game := models.Game{
+		ID:         "test-eroscape-001",
+		Name:       "测试游戏",
+		CoverURL:   "https://example.com/cover.jpg",
+		Company:    "测试公司",
+		Summary:    "这是一个测试游戏",
+		Path:       "C:\\Games\\TestGame\\game.exe",
+		SourceType: enums.Dlsite,
+		SourceID:   "VJ010141",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		ReleaseAt:  releaseAt,
+		CachedAt:   time.Now(),
+	}
+	return game, func(oldGame models.Game, services Services) error {
+			_, err := services.GameService.GetGameByID(oldGame.ID)
+			if err != nil {
+				return fmt.Errorf("读取游戏错误 err:%v\n", err)
+			}
+			charactor, err := services.WorkService.GetWorkByStaff(oldGame.ID, "桜川未央")
+			if charactor.Id == "" {
+				return fmt.Errorf("错误：cv:	桜川未央，c:%v", charactor)
+			}
+
+			return nil
+		}, vo.MetadataRequest{
+			ID:                    game.SourceID,
+			DbGameId:              game.ID,
+			ShouldFetchStaffs:     true,
+			ShouldFetchCharactors: true,
+			ShouldFetchTags:       true,
+			IsOverwrite:           true,
+			ShouldFetchImages:     true,
+			Source:                enums.Dlsite,
+		}
+}
+
 func TestGameService_BGArray(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
-		game, checkFn, req := createDmmGameCheck()
+		applog.SetMode(applog.ModeCLI)
+		game, checkFn, req := createDlsiteGameCheck()
 		services := createServices(t)
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)

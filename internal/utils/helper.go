@@ -118,6 +118,14 @@ func Contains[T1 any](slice1 []T1, fn func(t1 T1) bool) bool {
 	return false
 }
 
+func MapArray[T1 any, T2 any](slice1 []T1, fn func(t1 T1) T2) []T2 {
+	var result []T2
+	for _, item1 := range slice1 {
+		result = append(result, fn(item1))
+	}
+	return result
+}
+
 func setupTestContext() context.Context {
 	// 创建一个简单的context，避免调用Wails runtime
 	return context.WithValue(context.Background(), "test_mode", true)

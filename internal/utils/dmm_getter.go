@@ -38,6 +38,8 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, dmmIsEnabled bool, fn IdFunc
 		return models.Game{}, fmt.Errorf("DMM is not enabled")
 	}
 	var url string = "https://dlsoft.dmm.co.jp/search/?service=pcgame&searchstr="
+	// mainTitle := getMainTitle(name)
+	// url += mainTitle
 	url += name
 	var game = models.Game{}
 	c := CreateCollector("*dmm.co.jp")
@@ -74,6 +76,16 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, dmmIsEnabled bool, fn IdFunc
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
+		// gameFound := searchNameByRegex(potentialGames, name, []string{"セット"}, func(t1 struct {
+		// 	Title string
+		// 	GameId string
+		// }) string {return t1.Title})
+		// if gameFound != nil {
+		// 	game.Name = gameFound.Title
+		// 	game.SourceID = gameFound.GameId
+		// 	game.SourceType = enums.Eroscape
+		// 	game.EroscapeId = gameFound.GameId
+		// }
 		for _, gameFound := range potentialGames {
 			// 应用过滤条件
 			if gameFound.Review == "" {
@@ -265,12 +277,16 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 
 		e.DOM.Find("div.detailGuide__sect div.detailGuide__box-chr").Each(func(i int, s *goquery.Selection) {
 
-			charactorName := strings.Split(strings.TrimSpace(s.Find("span.detailGuide__lin-hgt").Text()), "(")[0]
+			charactorName := strings.ReplaceAll(strings.Split(strings.TrimSpace(s.Find("span.detailGuide__lin-hgt").Text()), "(")[0], " ", "")
 			boxText := strings.TrimSpace(s.Find("p").Eq(0).Text())
+			fmt.Printf("boxtext 022:%s\n", boxText)
 			line1 := strings.Split(boxText, "\n")[0]
 			// line2 := strings.Split(boxText, "\n")[1] 身高三维
-			staffName := strings.Split(line1, "CV：")[1]
-			fmt.Printf("boxtext:%s\n", staffName)
+			staffBox := strings.Split(line1, "CV：")
+			var staffName string = ""
+			if len(staffBox) > 1 {
+				staffName = strings.TrimSpace(staffBox[1])
+			}
 
 			newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool {
 				fmt.Printf("boxtext 03:%s\n", it.StaffName)

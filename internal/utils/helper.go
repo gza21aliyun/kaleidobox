@@ -7,6 +7,7 @@ import (
 	"lunabox/internal/models"
 	"lunabox/internal/vo"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -140,4 +141,122 @@ func isValidDateFormat(v string) bool {
 
 	// 使用正则表达式匹配字符串
 	return re.MatchString(v)
+}
+
+func generateSearchRegex(searchName string) string {
+	// 检查是否包含有效的分隔符（除了纯空格）
+	hasValidSeparator := regexp.MustCompile(`[－\-~～]`).MatchString(searchName)
+
+	if !hasValidSeparator {
+		// 没有有效分隔符，整个字符串作为主标题处理
+		mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
+		return fmt.Sprintf(`^.*?%s.*$`, mainTitle)
+	}
+
+	// 有有效分隔符，尝试分离主标题和副标题
+	// 使用非空格分隔符进行分割
+	separatorPattern := `[－\-~～]+`
+	parts := regexp.MustCompile(separatorPattern).Split(searchName, -1)
+
+	if len(parts) >= 2 {
+		// 成功分离出主标题和副标题
+		mainTitle := strings.TrimSpace(parts[0])
+		subTitle := strings.TrimSpace(parts[1])
+
+		if mainTitle != "" && subTitle != "" {
+			// 都不为空，构建成对匹配
+			mainQuoted := regexp.QuoteMeta(mainTitle)
+			subQuoted := regexp.QuoteMeta(subTitle)
+			// 修复：使用单个+而不是++
+			sepPattern := `[－\-~～\s]*` // 改为*表示可选的分隔符
+
+			return fmt.Sprintf(
+				`^.*?%s%s%s.*$`,
+				mainQuoted,
+				sepPattern,
+				subQuoted,
+			)
+		}
+	}
+
+	// 默认情况：整个字符串作为主标题
+	mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
+	return fmt.Sprintf(`^.*?%s.*$`, mainTitle)
+}
+
+func getMainTitle(searchName string) string {
+	// 检查是否包含有效的分隔符（除了纯空格）
+	hasValidSeparator := regexp.MustCompile(`[－\-~～]`).MatchString(searchName)
+
+	if !hasValidSeparator {
+		// 没有有效分隔符，整个字符串作为主标题处理
+		mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
+		return mainTitle
+	}
+
+	// 有有效分隔符，尝试分离主标题和副标题
+	// 使用非空格分隔符进行分割
+	separatorPattern := `[－\-~～]+`
+	parts := regexp.MustCompile(separatorPattern).Split(searchName, -1)
+
+	if len(parts) >= 2 {
+		// 成功分离出主标题和副标题
+		mainTitle := strings.TrimSpace(parts[0])
+		subTitle := strings.TrimSpace(parts[1])
+
+		if mainTitle != "" && subTitle != "" {
+			// 都不为空，构建成对匹配
+			return mainTitle
+		}
+	}
+
+	// 默认情况：整个字符串作为主标题
+	mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
+	return mainTitle
+}
+
+func searchByRegex[T1 any](slice1 []T1, pattern string, excludeWords []string, fn func(t1 T1) string) []T1 {
+	if len(slice1) == 0 {
+		return nil
+	}
+	re := regexp.MustCompile(pattern)
+	var result []T1 = []T1{}
+	for _, item := range slice1 {
+		target := fn(item)
+		if re.MatchString(target) {
+			isExcluded := false
+			for _, word := range excludeWords {
+				if strings.Contains(target, word) {
+					isExcluded = true
+					break
+				}
+			}
+			if !isExcluded {
+				result = append(result, item)
+			}
+		}
+	}
+	return result
+}
+
+func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
+	mainTitle := getMainTitle(searchName)
+	result := searchByRegex(slice1, generateSearchRegex(searchName), excludeWords, fn)
+
+	switch len(result) {
+	case 0:
+		return nil
+	case 1:
+		return &result[0]
+	default:
+		sort.Slice(result, func(i, j int) bool {
+			return len(fn(result[i])) < len(fn(result[j]))
+		})
+		for _, item := range result {
+			if strings.Contains(fn(item), mainTitle) {
+				return &item
+			}
+		}
+	}
+	return &result[0]
 }

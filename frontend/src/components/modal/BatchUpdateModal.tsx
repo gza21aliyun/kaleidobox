@@ -176,7 +176,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
   const updateSearchName = (index: number, name: string) => {
     const updated = [...candidates];
-    updated[index].name = name;
+    updated[index].search_name = name;
     setCandidates(updated);
   };
 
@@ -528,7 +528,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                               <td className="px-3 py-2">
                                 <input
                                   type="text"
-                                  value={candidate.name}
+                                  value={candidate.search_name}
                                   onChange={e => updateSearchName(index, e.target.value)}
                                   className="w-full bg-transparent border-b border-transparent hover:border-brand-300 focus:border-neutral-500 focus:outline-none text-sm text-brand-900 dark:text-white"
                                 />

@@ -1,8 +1,9 @@
-import type { models, vo } from "../../wailsjs/go/models";
+import { models, vo } from "../../wailsjs/go/models";
 import { createRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { enums } from "../../wailsjs/go/models";
+import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { AddGameToCategory, GetCategories, GetCategoriesByGame, RemoveGameFromCategory } from "../../wailsjs/go/service/CategoryService";
 import { DeleteGame, GetGameByID, SelectCoverImage, SelectGameExecutable, SelectSaveDirectory, SelectSaveFile, UpdateGame, UpdateGameFromRemote } from "../../wailsjs/go/service/GameService";
 import { StartGameWithTracking } from "../../wailsjs/go/service/StartService";
@@ -41,6 +42,32 @@ function GameDetailPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isInitialMount = useRef(true);
   const originalGameData = useRef<models.Game | null>(null);
+
+  useEffect(() => {
+        const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
+          
+            // 注意：使用正确的语法从data对象获取值
+            const task : models.TaskNotice = new models.TaskNotice(data);
+            
+            // console.log("received taskid:" + task.id + " current taskid:" + taskId + ", item_id:" + task.item_id +  " item_status:" + task.item_status)
+            if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id == gameId) {
+                    const newGame : models.Game = task.item_data as models.Game;
+                    console.log("newGame:", newGame)
+                    setGame(newGame)
+                    
+    
+                }
+            
+            
+            
+        });
+    
+        return () => {
+            if (unlistenTaskUpdate) {
+            unlistenTaskUpdate(); // 取消事件监听
+            }
+        };
+        }, [game]);
 
   const loadData = async () => {
       try {

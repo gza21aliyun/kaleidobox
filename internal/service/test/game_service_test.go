@@ -634,13 +634,20 @@ func TestGameService_Search(t *testing.T) {
 	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
 
 	t.Run("add game success", func(t *testing.T) {
-		gameName := "オトメ世界の歩き方"
-		bgmGetter := utils.NewBangumiInfoGetter()
-		bgm, err := bgmGetter.FetchMetadataByName(gameName, config.BangumiAccessToken)
+		// gameName := "オトメ世界の歩き方"
+		gameName := "ものべの -happy end-"
+		// gameName := "ものべの"
+
+		bgmGetter := utils.NewDlsiteInfoGetter()
+		bgm, err := bgmGetter.FetchMetadataByName(gameName)
 
 		// dmmGetter := utils.NewDmmInfoGetter()
 		// dmm, _ := dmmGetter.FetchMetadataByName(name, s.config.DmmIsEnabled)
-		fmt.Printf("%s 游戏Id：%s ,err: %v\n", gameName, bgm.Company, err)
+		fmt.Printf("%s 游戏Id：%s ,err: %v\n", gameName, bgm.SourceID, err)
+		if err != nil {
+			t.Fatalf("err: %v\n", err)
+		}
+
 	})
 }
 
@@ -757,8 +764,8 @@ func createDmmGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 		Summary:    "这是一个测试游戏",
 		Path:       "C:\\Games\\TestGame\\game.exe",
 		SourceType: enums.Dmm,
-		// SourceID:   "38234",
-		SourceID:  "hobc_0509",
+		// SourceID:   "hobc_0509",
+		SourceID:  "views_0384",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		ReleaseAt: releaseAt,
@@ -830,7 +837,7 @@ func TestGameService_BGArray(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
 		applog.SetMode(applog.ModeCLI)
-		game, checkFn, req := createDlsiteGameCheck()
+		game, checkFn, req := createDmmGameCheck()
 		services := createServices(t)
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)

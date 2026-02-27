@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,8 +26,9 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-// const searchBaseUrl = `https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword/%s/ana_flg/all/work_category[0]/doujin/work_category[1]/pc/order/trend/work_type_category[0]/game/options_and_or/and/from/fs.header`
-const searchBaseUrl = `https://210.140.64.86/maniax/fsr/=/language/jp/sex_category[0]/male/keyword/%s/ana_flg/all/work_category[0]/doujin/work_category[1]/pc/order/trend/work_type_category[0]/game/options_and_or/and/from/fs.header`
+const searchBaseUrl = `https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword/%s/ana_flg/all/work_category[0]/doujin/work_category[1]/pc/order/trend/work_type_category[0]/game/options_and_or/and/from/fs.header`
+
+// const searchBaseUrl = `https://210.140.64.86/maniax/fsr/=/language/jp/sex_category[0]/male/keyword/%s/ana_flg/all/work_category[0]/doujin/work_category[1]/pc/order/trend/work_type_category[0]/game/options_and_or/and/from/fs.header`
 
 const apiUrl = `https://www.dlsite.com/%s/api/=/product.json?workno=%s&locale=ja-jp`
 
@@ -52,103 +54,103 @@ type DlsiteWorkResponse struct {
 	DirectedBy        interface{}   `json:"directed_by"`
 	DirectX           string        `json:"directx"`
 	// Discount                  *DlsiteDiscount        `json:"discount"`
-	DistFlag               int                 `json:"dist_flag"`
-	DlFormat               int                 `json:"dl_format"`
-	Etc                    interface{}         `json:"etc"`
-	FileDate               interface{}         `json:"file_date"`
-	FileSize               interface{}         `json:"file_size"`
-	FileType               string              `json:"file_type"`
-	FileTypeString         string              `json:"file_type_string"`
-	FileTypeSpecial        interface{}         `json:"file_type_special"`
-	GalleryMode            string              `json:"gallery_mode"`
-	HDD                    interface{}         `json:"hdd"`
-	HSceneMode             string              `json:"h_scene_mode"`
-	Intro                  interface{}         `json:"intro"`
-	IntroMasked            interface{}         `json:"intro_masked"`
-	IntroS                 string              `json:"intro_s"`
-	IntroSMasked           string              `json:"intro_s_masked"`
-	LabelID                interface{}         `json:"label_id"`
-	LabelName              interface{}         `json:"label_name"`
-	Machine                string              `json:"machine"`
-	MachineStringList      map[string]string   `json:"machine_string_list"`
-	Memory                 string              `json:"memory"`
-	MessageSkip            string              `json:"message_skip"`
-	MiniResolution         string              `json:"mini_resolution"`
-	ModifyFlg              interface{}         `json:"modify_flg"`
-	MusicBy                string              `json:"music_by"`
-	OnSale                 int                 `json:"on_sale"`
-	Options                string              `json:"options"`
-	OriginalIllust         string              `json:"original_illust"`
-	Other                  interface{}         `json:"other"`
-	OthersBy               interface{}         `json:"others_by"`
-	Pages                  interface{}         `json:"pages"`
-	PageNumber             interface{}         `json:"page_number"`
-	ProductPoint           interface{}         `json:"product_point"`
-	ProductPointEndDate    interface{}         `json:"product_point_end_date"`
-	Point                  int                 `json:"point"`
-	Price                  int                 `json:"price"`
-	PriceWithoutTax        int                 `json:"price_without_tax"`
-	PriceEn                float64             `json:"price_en"`
-	PriceEur               float64             `json:"price_eur"`
-	ProductionWorkno       interface{}         `json:"production_workno"`
-	PublisherWorkno        interface{}         `json:"publisher_workno"`
-	RegistDate             string              `json:"regist_date"`
-	RegularPrice           interface{}         `json:"regular_price"`
-	ScenarioBy             string              `json:"scenario_by"`
-	ScreenMode             string              `json:"screen_mode"`
-	SeriesID               interface{}         `json:"series_id"`
-	SeriesName             interface{}         `json:"series_name"`
-	SeriesNameMasked       interface{}         `json:"series_name_masked"`
-	SexCategory            int                 `json:"sex_category"`
-	SofrinAppNo            interface{}         `json:"sofrin_app_no"`
-	VocalTrack             string              `json:"vocal_track"`
-	Voice                  string              `json:"voice"`
-	VoiceBy                string              `json:"voice_by"`
-	VRAM                   interface{}         `json:"vram"`
-	Workno                 string              `json:"workno"`
-	WorkName               string              `json:"work_name"`
-	WorkNameMasked         string              `json:"work_name_masked"`
-	WorkNameKana           string              `json:"work_name_kana"`
-	WorkType               string              `json:"work_type"`
-	WorkTypeString         string              `json:"work_type_string"`
-	WorkTypeSpecial        string              `json:"work_type_special"`
-	WorkTypeSpecialMasked  string              `json:"work_type_special_masked"`
-	WorkAttributes         string              `json:"work_attributes"`
-	ProductID              string              `json:"product_id"`
-	BaseProductID          string              `json:"base_product_id"`
-	MakerID                string              `json:"maker_id"`
-	MakerName              string              `json:"maker_name"`
-	MakerNameEn            string              `json:"maker_name_en"`
-	AltName                string              `json:"alt_name"`
-	AltNameMasked          string              `json:"alt_name_masked"`
-	ProductName            string              `json:"product_name"`
-	SiteID                 string              `json:"site_id"`
-	SiteIDTouch            string              `json:"site_id_touch"`
-	IsAna                  bool                `json:"is_ana"`
-	WorkCategory           string              `json:"work_category"`
-	Platform               []string            `json:"platform"`
-	IsPCWork               bool                `json:"is_pc_work"`
-	IsSmartphoneWork       bool                `json:"is_smartphone_work"`
-	IsAndroidOnlyWork      bool                `json:"is_android_only_work"`
-	IsIOSOnlyWork          bool                `json:"is_ios_only_work"`
-	IsAndroidOrIOSOnlyWork bool                `json:"is_android_or_ios_only_work"`
-	IsDLPlayboxOnlyWork    bool                `json:"is_dlplaybox_only_work"`
-	IsAlmightWork          bool                `json:"is_almight_work"`
-	IsDLSitePlayWork       bool                `json:"is_dlsiteplay_work"`
-	IsDLSitePlayOnlyWork   bool                `json:"is_dlsiteplay_only_work"`
-	WorkParts              []interface{}       `json:"work_parts"`
-	Introductions          interface{}         `json:"introductions"`
-	IntroductionsMasked    interface{}         `json:"introductions_masked"`
-	SalesPrice             interface{}         `json:"sales_price"`
-	ImageMain              *DlsiteImage        `json:"image_main"`
-	ImageThum              *DlsiteImage        `json:"image_thum"`
-	ImageThumMini          *DlsiteImage        `json:"image_thum_mini"`
-	ImageThumTouch         *DlsiteImage        `json:"image_thum_touch"`
-	ImageThumMiniTouch     []DlsiteImageTouch  `json:"image_thum_mini_touch"`
-	ImageMini              *DlsiteImage        `json:"image_mini"`
-	ImageSamples           []DlsiteImageSample `json:"image_samples"`
-	ImageThumb             string              `json:"image_thumb"`
-	ImageThumbTouch        string              `json:"image_thumb_touch"`
+	DistFlag               int               `json:"dist_flag"`
+	DlFormat               int               `json:"dl_format"`
+	Etc                    interface{}       `json:"etc"`
+	FileDate               interface{}       `json:"file_date"`
+	FileSize               interface{}       `json:"file_size"`
+	FileType               string            `json:"file_type"`
+	FileTypeString         string            `json:"file_type_string"`
+	FileTypeSpecial        interface{}       `json:"file_type_special"`
+	GalleryMode            string            `json:"gallery_mode"`
+	HDD                    interface{}       `json:"hdd"`
+	HSceneMode             string            `json:"h_scene_mode"`
+	Intro                  interface{}       `json:"intro"`
+	IntroMasked            interface{}       `json:"intro_masked"`
+	IntroS                 string            `json:"intro_s"`
+	IntroSMasked           string            `json:"intro_s_masked"`
+	LabelID                interface{}       `json:"label_id"`
+	LabelName              interface{}       `json:"label_name"`
+	Machine                string            `json:"machine"`
+	MachineStringList      map[string]string `json:"machine_string_list"`
+	Memory                 string            `json:"memory"`
+	MessageSkip            string            `json:"message_skip"`
+	MiniResolution         string            `json:"mini_resolution"`
+	ModifyFlg              interface{}       `json:"modify_flg"`
+	MusicBy                string            `json:"music_by"`
+	OnSale                 int               `json:"on_sale"`
+	Options                string            `json:"options"`
+	OriginalIllust         string            `json:"original_illust"`
+	Other                  interface{}       `json:"other"`
+	OthersBy               interface{}       `json:"others_by"`
+	Pages                  interface{}       `json:"pages"`
+	PageNumber             interface{}       `json:"page_number"`
+	ProductPoint           interface{}       `json:"product_point"`
+	ProductPointEndDate    interface{}       `json:"product_point_end_date"`
+	Point                  int               `json:"point"`
+	Price                  int               `json:"price"`
+	PriceWithoutTax        int               `json:"price_without_tax"`
+	PriceEn                float64           `json:"price_en"`
+	PriceEur               float64           `json:"price_eur"`
+	ProductionWorkno       interface{}       `json:"production_workno"`
+	PublisherWorkno        interface{}       `json:"publisher_workno"`
+	RegistDate             string            `json:"regist_date"`
+	RegularPrice           interface{}       `json:"regular_price"`
+	ScenarioBy             string            `json:"scenario_by"`
+	ScreenMode             string            `json:"screen_mode"`
+	SeriesID               interface{}       `json:"series_id"`
+	SeriesName             interface{}       `json:"series_name"`
+	SeriesNameMasked       interface{}       `json:"series_name_masked"`
+	SexCategory            int               `json:"sex_category"`
+	SofrinAppNo            interface{}       `json:"sofrin_app_no"`
+	VocalTrack             string            `json:"vocal_track"`
+	Voice                  string            `json:"voice"`
+	VoiceBy                string            `json:"voice_by"`
+	VRAM                   interface{}       `json:"vram"`
+	Workno                 string            `json:"workno"`
+	WorkName               string            `json:"work_name"`
+	WorkNameMasked         string            `json:"work_name_masked"`
+	WorkNameKana           string            `json:"work_name_kana"`
+	WorkType               string            `json:"work_type"`
+	WorkTypeString         string            `json:"work_type_string"`
+	WorkTypeSpecial        string            `json:"work_type_special"`
+	WorkTypeSpecialMasked  string            `json:"work_type_special_masked"`
+	WorkAttributes         string            `json:"work_attributes"`
+	ProductID              string            `json:"product_id"`
+	BaseProductID          string            `json:"base_product_id"`
+	MakerID                string            `json:"maker_id"`
+	MakerName              string            `json:"maker_name"`
+	MakerNameEn            string            `json:"maker_name_en"`
+	AltName                string            `json:"alt_name"`
+	AltNameMasked          string            `json:"alt_name_masked"`
+	ProductName            string            `json:"product_name"`
+	SiteID                 string            `json:"site_id"`
+	SiteIDTouch            string            `json:"site_id_touch"`
+	IsAna                  bool              `json:"is_ana"`
+	WorkCategory           string            `json:"work_category"`
+	Platform               []string          `json:"platform"`
+	IsPCWork               bool              `json:"is_pc_work"`
+	IsSmartphoneWork       bool              `json:"is_smartphone_work"`
+	IsAndroidOnlyWork      bool              `json:"is_android_only_work"`
+	IsIOSOnlyWork          bool              `json:"is_ios_only_work"`
+	IsAndroidOrIOSOnlyWork bool              `json:"is_android_or_ios_only_work"`
+	IsDLPlayboxOnlyWork    bool              `json:"is_dlplaybox_only_work"`
+	IsAlmightWork          bool              `json:"is_almight_work"`
+	IsDLSitePlayWork       bool              `json:"is_dlsiteplay_work"`
+	IsDLSitePlayOnlyWork   bool              `json:"is_dlsiteplay_only_work"`
+	WorkParts              []interface{}     `json:"work_parts"`
+	Introductions          interface{}       `json:"introductions"`
+	IntroductionsMasked    interface{}       `json:"introductions_masked"`
+	SalesPrice             interface{}       `json:"sales_price"`
+	ImageMain              *DlsiteImage      `json:"image_main"`
+	ImageThum              *DlsiteImage      `json:"image_thum"`
+	ImageThumMini          *DlsiteImage      `json:"image_thum_mini"`
+	// ImageThumTouch         *DlsiteImage        `json:"image_thum_touch"`
+	ImageThumMiniTouch []DlsiteImageTouch  `json:"image_thum_mini_touch"`
+	ImageMini          *DlsiteImage        `json:"image_mini"`
+	ImageSamples       []DlsiteImageSample `json:"image_samples"`
+	ImageThumb         string              `json:"image_thumb"`
+	ImageThumbTouch    string              `json:"image_thumb_touch"`
 	// Contents                  []DlsiteContent        `json:"contents"`
 	ContentsTouch         interface{} `json:"contents_touch"`
 	IsSplitContent        bool        `json:"is_split_content"`
@@ -156,8 +158,8 @@ type DlsiteWorkResponse struct {
 	ContentCountTouch     int         `json:"content_count_touch"`
 	ContentsFileSize      int64       `json:"contents_file_size"`
 	ContentsFileSizeTouch int         `json:"contents_file_size_touch"`
-	Trials                bool        `json:"trials"`
-	TrialsTouch           bool        `json:"trials_touch"`
+	// Trials                bool        `json:"trials"`
+	// TrialsTouch           bool        `json:"trials_touch"`
 	// Movies                    []DlsiteMovie          `json:"movies"`
 	EpubSample              []interface{} `json:"epub_sample"`
 	SampleType              string        `json:"sample_type"`
@@ -180,25 +182,25 @@ type DlsiteWorkResponse struct {
 	WorkRentals  []interface{} `json:"work_rentals"`
 	IsRentalWork bool          `json:"is_rental_work"`
 	// TranslationInfo           DlsiteTranslationInfo  `json:"translation_info"`
-	DisplayOrder              int            `json:"display_order"`
-	IsOauthWork               bool           `json:"is_oauth_work"`
-	IsShowRate                bool           `json:"is_show_rate"`
-	RateAverageStar           int            `json:"rate_average_star"`
-	RateCountDetail           map[string]int `json:"rate_count_detail"`
-	RankTotal                 int            `json:"rank_total"`
-	RankTotalDate             string         `json:"rank_total_date"`
-	RankYear                  int            `json:"rank_year"`
-	RankYearDate              int            `json:"rank_year_date"`
-	RankMonth                 int            `json:"rank_month"`
-	RankMonthDate             string         `json:"rank_month_date"`
-	RankWeek                  int            `json:"rank_week"`
-	RankWeekDate              string         `json:"rank_week_date"`
-	RankDay                   int            `json:"rank_day"`
-	RankDayDate               string         `json:"rank_day_date"`
-	IsPackChild               bool           `json:"is_pack_child"`
-	WorkPackParent            []interface{}  `json:"work_pack_parent"`
-	IsPackParent              bool           `json:"is_pack_parent"`
-	WorkPackChildren          []interface{}  `json:"work_pack_children"`
+	DisplayOrder    int            `json:"display_order"`
+	IsOauthWork     bool           `json:"is_oauth_work"`
+	IsShowRate      bool           `json:"is_show_rate"`
+	RateAverageStar int            `json:"rate_average_star"`
+	RateCountDetail map[string]int `json:"rate_count_detail"`
+	RankTotal       int            `json:"rank_total"`
+	RankTotalDate   string         `json:"rank_total_date"`
+	RankYear        int            `json:"rank_year"`
+	RankYearDate    int            `json:"rank_year_date"`
+	RankMonth       int            `json:"rank_month"`
+	RankMonthDate   string         `json:"rank_month_date"`
+	RankWeek        int            `json:"rank_week"`
+	RankWeekDate    string         `json:"rank_week_date"`
+	RankDay         int            `json:"rank_day"`
+	RankDayDate     string         `json:"rank_day_date"`
+	IsPackChild     bool           `json:"is_pack_child"`
+	WorkPackParent  []interface{}  `json:"work_pack_parent"`
+	IsPackParent    bool           `json:"is_pack_parent"`
+	// WorkPackChildren          []interface{}  `json:"work_pack_children"`
 	PackType                  interface{}    `json:"pack_type"`
 	IsVoicePack               bool           `json:"is_voice_pack"`
 	VoicePackParent           []interface{}  `json:"voice_pack_parent"`
@@ -467,13 +469,14 @@ func (b DlsiteInfoGetter) FetchMetadataByName(name string) (models.Game, error) 
 	return game, err
 }
 
-func (b DlsiteInfoGetter) FetchByNameImpl(name string, fn IdFunction) (models.Game, error) {
+func (b DlsiteInfoGetter) FetchByNameImpl(searchName string, fn IdFunction) (models.Game, error) {
 	// if !dmmIsEnabled {
 	// 	return models.Game{}, fmt.Errorf("DMM is not enabled")
 	// }
-	var url string = fmt.Sprintf(searchBaseUrl, name)
+	mainTitle := getMainTitle(searchName)
+	var url string = fmt.Sprintf(searchBaseUrl, mainTitle)
 	var game = models.Game{}
-	c := CreateCollector("*dlsite.com")
+	// c := CreateCollector2("*dlsite.com")
 
 	var potentialGames []struct {
 		Title    string
@@ -482,12 +485,19 @@ func (b DlsiteInfoGetter) FetchByNameImpl(name string, fn IdFunction) (models.Ga
 		CoverUrl string
 	}
 
-	// 处理搜索结果页面中的游戏条目
-	c.OnHTML("ul#search_result_img_box li dl", func(e *colly.HTMLElement) {
-		// title := e.ChildText(".component-legacy-productTile__title")
-		link := e.ChildAttr("a", "href")
+	rawData, _ := getRawResponse(url)
+	document, err := goquery.NewDocumentFromReader(bytes.NewReader(rawData))
+	document.Find("ul#search_result_img_box li > dl").Each(func(i int, e *goquery.Selection) {
+		// e.Find("")
+
+		link := e.Find("dl > dt > a").AttrOr("href", "")
 		// price := e.ChildText(".component-legacy-productTile__review")
 		// log.Print("OnHTML 网页列表 ：", e.Text)
+		title := e.Find("div.multiline_truncate").Text()
+		fmt.Println("link 03:", link)
+		fmt.Println("link 034:", title)
+		// html, _ := e.Html()
+		// fmt.Println("link 033:", html)
 
 		if link != "" {
 			potentialGames = append(potentialGames, struct {
@@ -496,58 +506,75 @@ func (b DlsiteInfoGetter) FetchByNameImpl(name string, fn IdFunction) (models.Ga
 				Review   string
 				CoverUrl string
 			}{
-				Title: name,
-				Link:  e.Request.AbsoluteURL(link),
+				Title: title,
+				Link:  link,
 				// Review:   price,
 				// CoverUrl: e.ChildAttr("span.component-legacy-productTile__thumbnail img", "src"),
 			})
 		}
 
 	})
-
-	// 在访问完搜索页面后进行过滤和处理
-	c.OnScraped(func(r *colly.Response) {
-		for _, gameFound := range potentialGames {
-			// 应用过滤条件
-			// if gameFound.Review == "" {
-			// 	continue
-			// }
-			if strings.Contains(gameFound.Title, "セット") {
-				continue
-			}
-			if gameFound.Link == "" {
-				continue
-			}
-			game.Name = gameFound.Title
-			fmt.Println("dlsite详情：" + gameFound.Link)
-			linkParts := strings.Split(gameFound.Link, "/")
-			id := strings.ReplaceAll(linkParts[len(linkParts)-1], ".html", "")
-			fmt.Println("05 id: " + id)
-			game.SourceID = id
-			game.SourceType = enums.Dlsite
-			game.DlsiteId = game.SourceID
-			game.CoverURL = gameFound.CoverUrl
-			// c.Visit(gameFound.Link) // 不在这里访问详情页
-			return
-		}
+	fmt.Println("link 04:", len(potentialGames))
+	gameFound := searchNameByRegex(potentialGames, searchName, []string{"セット"}, func(t1 struct {
+		Title    string
+		Link     string
+		Review   string
+		CoverUrl string
+	}) string {
+		return t1.Title
 	})
+	if gameFound != nil {
+		game.Name = gameFound.Title
+		fmt.Println("dlsite详情：" + gameFound.Link)
+		linkParts := strings.Split(gameFound.Link, "/")
+		id := strings.ReplaceAll(linkParts[len(linkParts)-1], ".html", "")
+		fmt.Println("05 id: " + id)
+		game.SourceID = id
+		game.SourceType = enums.Dlsite
+		game.DlsiteId = game.SourceID
+		game.CoverURL = gameFound.CoverUrl
+	}
 
-	// 错误处理
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
-	})
-
-	// 访问构建的 URL
-	err := c.Visit(url)
 	if err != nil {
 		return models.Game{}, err
 	}
 
 	// 等待收集完成
-	c.Wait()
+	// c.Wait()
+	if game.SourceID == "" {
+		return game, errors.New("游戏未找到")
+	}
 	game, err = fn(GetReqEntity(&game))
 
 	return game, err
+}
+
+// 获取原始响应数据的函数
+func getRawResponse(url string) ([]byte, error) {
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// 设置相同的请求头
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }
 
 func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models.GameEntity, error) {
@@ -1080,37 +1107,6 @@ func isValidJapaneseText(text string) bool {
 	fmt.Printf("日文字符比例: %.2f%% (%d/%d)\n", ratio*100, japaneseCount, totalCount)
 
 	return ratio > 0.3 // 至少30%的日文字符
-}
-
-// 检查常见日文词汇（增强检测）
-func containsCommonJapaneseWords(text string) bool {
-	commonWords := []string{
-		"作品名", "タイトル", "メーカー", "サークル", "同人",
-		"ゲーム", "ソフト", "ダウンロード", "価格", "販売日",
-		"DLSite", "RJ", "VJ", "PRO", "MANIAX",
-	}
-
-	for _, word := range commonWords {
-		if strings.Contains(text, word) {
-			return true
-		}
-	}
-	return false
-}
-
-// 检查是否包含日文字符
-func containsJapanese(text string) bool {
-	for _, r := range text {
-		// 检查日文字符范围
-		if (r >= 0x3040 && r <= 0x309F) || // 平假名
-			(r >= 0x30A0 && r <= 0x30FF) || // 片假名
-			(r >= 0x4E00 && r <= 0x9FFF) || // 汉字
-			(r >= 0x3400 && r <= 0x4DBF) || // 扩展汉字
-			(r >= 0xF900 && r <= 0xFAFF) { // 兼容汉字
-			return true
-		}
-	}
-	return false
 }
 
 // 辅助函数

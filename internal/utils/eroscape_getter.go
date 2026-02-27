@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,12 +47,12 @@ func CreateCollector(domain string) *colly.Collector {
 		Delay:       2 * time.Second, // 延迟请求
 	})
 
-	c.WithTransport(&http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-		DisableCompression: true, // 禁用自动解压缩
-	})
+	// c.WithTransport(&http.Transport{
+	// 	TLSClientConfig: &tls.Config{
+	// 		InsecureSkipVerify: true,
+	// 	},
+	// 	DisableCompression: true, // 禁用自动解压缩
+	// })
 
 	// 首先，设置请求前的处理
 	c.OnRequest(func(r *colly.Request) {
@@ -129,6 +128,9 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 	var url string = b.GetBaseUrl() + searchPart
 	// var gameUrl = baseUrl + gamePart
 
+	// mainTitle := getMainTitle(name)
+	// url += mainTitle
+
 	url += name
 	var game = models.Game{}
 	c := CreateCollector(b.GetDomain())
@@ -170,12 +172,23 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
+		// gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4"}, func(t1 struct {
+		// 	Title string
+		// 	GameId string
+		// }) string {return t1.Title})
+		// if gameFound != nil {
+		// 	game.Name = gameFound.Title
+		// 	game.SourceID = gameFound.GameId
+		// 	game.SourceType = enums.Eroscape
+		// 	game.EroscapeId = gameFound.GameId
+		// }
+
 		sort.Slice(potentialGames, func(i, j int) bool {
 			return len(potentialGames[i].Title) < len(potentialGames[j].Title)
 		})
 		for _, gameFound := range potentialGames {
 			// 应用过滤条件
-			if strings.Contains(gameFound.Title, "セット") {
+			if strings.Contains(gameFound.Title, "セット") || strings.Contains(gameFound.Title, "PSV") || strings.Contains(gameFound.Title, "PS4") {
 				continue
 			}
 			// if gameFound.Link == "" {

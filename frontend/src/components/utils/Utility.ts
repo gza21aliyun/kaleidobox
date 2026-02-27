@@ -96,7 +96,7 @@ export function tagMapForEach(map: Map<string, models.Tag[]>, fn: (key: string,
     tags: models.Tag[]) => JSX.Element) : JSX.Element[] {
         var result: JSX.Element[] = [];            
         const handle = (key: string) => {
-            console.log("tagMapForEach key: " + key + ",has: " + map.has(key))
+            // console.log("tagMapForEach key: " + key + ",has: " + map.has(key))
             if (map.has(key)) {
                 result.push(fn(key, map.get(key)!));
             }

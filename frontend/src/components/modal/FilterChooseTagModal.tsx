@@ -24,9 +24,31 @@ export function FilterChooseTagModal({
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => ({
       ...prev,
-      [category]: !prev[category]
+      [category]: !(prev[category] ?? true)
     }));
   };
+
+  const isAllCategoriesClosed = () => {
+    console.log("isAllCategories:start");
+    for (const category of availableTags.keys()) {
+      if (expandedCategories[category] ?? true) {
+        console.log("isAllCategoriesClosed cate " + category + ":", expandedCategories[category]);
+        
+        return false;
+      }
+    }
+    console.log("isAllCategories:", true);
+    return true;
+  }
+
+  const toggleAllCategory = (isExpanded: boolean) => {
+    console.log("toggleAll:", isExpanded)
+    let rs: Record<string, boolean> = {}
+    availableTags.keys().forEach(category => {
+      rs[category] = isExpanded;
+    });
+    setExpandedCategories(rs);
+  }
 
   // 全选/取消全选
   const toggleSelectAllInCategory = (category: string, tags: models.Tag[]) => {
@@ -68,7 +90,20 @@ export function FilterChooseTagModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white dark:bg-brand-900 rounded-lg shadow-xl w-[1200px] max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签</h3>
+          <div className="flex items-center">
+            <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签</h3>
+            {/* 折叠按钮 */}
+            <button
+              onClick={() => toggleAllCategory(isAllCategoriesClosed())}
+              className="p-1 rounded hover:bg-brand-100 dark:hover:bg-brand-700 transition-colors"
+            >
+              <div className={`
+                i-mdi-chevron-down text-brand-500 transition-transform duration-200
+                ${!isAllCategoriesClosed() ? 'rotate-180' : ''}
+              `} />
+            </button>
+          </div>
+          
           <button 
             onClick={onClose}
             className="text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-200"

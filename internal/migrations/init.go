@@ -1,6 +1,9 @@
 package migrations
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+)
 
 func InitSchema(db *sql.DB) error {
 	queries := SchemaQueries()
@@ -8,6 +11,7 @@ func InitSchema(db *sql.DB) error {
 	for _, query := range queries {
 		_, err := db.Exec(query)
 		if err != nil {
+			fmt.Printf("创建数据库表失败: %v\n", err)
 			return err
 		}
 	}
@@ -142,8 +146,32 @@ func SchemaQueries() []string {
 			url TEXT PRIMARY KEY,
 			local_path TEXT,
 			subject_id TEXT,
-			subject_type INTEGER
-
+			subject_type INTEGER,
+			image_type INTEGER
+		)`,
+		// 新增统一的快捷键配置表
+		`CREATE TABLE IF NOT EXISTS hotkeys (
+			id TEXT PRIMARY KEY,
+			game_id TEXT,              -- 当为 'global' 时表示全局配置
+			name TEXT NOT NULL,
+			device_type TEXT NOT NULL, -- keyboard | dualsense | dualshock4 | joycon | xinput
+			key_code TEXT NOT NULL,    -- 按键码
+			modifiers TEXT,            -- 修饰键 (ctrl,shift,alt,win等)
+			action_type TEXT NOT NULL, -- start_game | stop_game | toggle_pause | screenshot | custom
+			action_params TEXT,        -- 动作参数 (JSON格式)
+			is_enabled BOOLEAN DEFAULT TRUE,
+			created_at TIMESTAMPTZ,
+			updated_at TIMESTAMPTZ,
+		)`,
+		// 新增已连接设备表
+		`CREATE TABLE IF NOT EXISTS connected_devices (
+			id TEXT PRIMARY KEY,
+			device_type TEXT NOT NULL, -- keyboard | dualsense | dualshock4 | joycon | xinput
+			device_name TEXT NOT NULL,
+			device_id TEXT NOT NULL,   -- 设备唯一标识
+			is_active BOOLEAN DEFAULT TRUE,
+			connected_at TIMESTAMPTZ,
+			last_seen_at TIMESTAMPTZ
 		)`,
 	}
 	return queries

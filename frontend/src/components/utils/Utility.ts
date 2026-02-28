@@ -24,6 +24,14 @@ export function arrayToMap<T>(ar: T[], keyFn: (key: T) => string): Map<string, T
     return map;
 }
 
+export function arrayMapString<T>(ar: T[], keyFn: (key: T) => string): string[]{
+    const array: string[] = [];
+    ar.forEach(item => {
+        array.push(keyFn(item));
+    });
+    return array;
+}
+
 export function mapToArray<T>(map: Map<string, T[]>): T[]{
     const ar: T[] = [];
     map.forEach(value => {

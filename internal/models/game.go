@@ -56,6 +56,7 @@ type ImageBackup struct {
 	LocalPath   string `json:"local_path"`
 	SubjectId   string `json:"subject_id"`
 	SubjectType string `json:"subject_type"`
+	ImageType   string `json:"image_type"`
 }
 
 type GameFilter struct {

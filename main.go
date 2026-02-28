@@ -80,6 +80,7 @@ func main() {
 	workService := service.NewWorkService()
 	tagService := service.NewTagService()
 	imageService := service.NewImageService()
+	hotkeyService := service.NewHotkeyService()
 
 	// 创建本地文件处理器
 	localFileHandler, err := utils.NewLocalFileHandler()
@@ -248,6 +249,7 @@ func main() {
 			charactorService.Init(ctx, db, config)
 			tagService.Init(ctx, db, config)
 			imageService.Init(ctx, db, config)
+			hotkeyService.Init(ctx, db, config)
 			workService.Init(ctx, db, config)
 			workService.SetStaffCharactorService(staffService, charactorService)
 			gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
@@ -345,6 +347,7 @@ func main() {
 			staffService,
 			tagService,
 			imageService,
+			hotkeyService,
 			workService,
 		},
 		EnumBind: []interface{}{
@@ -355,6 +358,9 @@ func main() {
 			enums.AllTaskStatus,
 			enums.AllTaskTypes,
 			enums.AllStaffRoles,
+			enums.AllDeviceTypes,
+			enums.AllModifierKeys,
+			enums.AllHotkeyActionTypes,
 		},
 	})
 

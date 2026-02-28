@@ -55,8 +55,8 @@ type ImageBackup struct {
 	Url         string `json:"url"`
 	LocalPath   string `json:"local_path"`
 	SubjectId   string `json:"subject_id"`
-	SubjectType string `json:"subject_type"`
-	ImageType   string `json:"image_type"`
+	SubjectType int    `json:"subject_type"` //0 游戏 1 人物 2 工作人员 3 作品
+	ImageType   int    `json:"image_type"`   //0/0 游戏封面 0/1 游戏背景 0/2 官图 0/3 截图 1/0
 }
 
 type GameFilter struct {

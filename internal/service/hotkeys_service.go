@@ -6,9 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"image"
-	"image/jpeg"
-	"os"
 	"sync"
 	"time"
 	"unsafe"
@@ -52,6 +49,8 @@ type HotkeyService struct {
 	// 当前焦点进程信息
 	focusedProcessName string
 	processCheckTicker *time.Ticker
+
+	imageService *ImageService
 }
 
 // Windows API函数声明
@@ -65,7 +64,6 @@ var (
 	procOpenProcess                = kernel32.NewProc("OpenProcess")
 	procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
 	procCloseHandle                = kernel32.NewProc("CloseHandle")
-	procGetDIBits                  = gdi32.NewProc("GetDIBits")
 
 	procGetDC                  = user32.NewProc("GetDC")
 	procReleaseDC              = user32.NewProc("ReleaseDC")
@@ -82,21 +80,10 @@ var (
 
 const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-	SRCCOPY                           = 0x00CC0020
 )
 
-// Rect 结构体定义
-type Rect struct {
-	Left   int32
-	Top    int32
-	Right  int32
-	Bottom int32
-}
-
-// Point 结构体定义
-type Point struct {
-	X int32
-	Y int32
+func (s *HotkeyService) SetImageService(imageService *ImageService) {
+	s.imageService = imageService
 }
 
 func NewHotkeyService() *HotkeyService {
@@ -464,7 +451,7 @@ func (s *HotkeyService) handleKeyboardEvent(event keyboard.KeyEvent) {
 	keyCode := fmt.Sprintf("%d", event.Key)
 	hotkey, exists := s.hotkeys[keyCode]
 	if keyCode == "74" {
-		s.takeScreenshot()
+		s.imageService.takeScreenshot(s.activeGameID)
 		return
 	}
 	if !exists {
@@ -531,7 +518,7 @@ func (s *HotkeyService) executeHotkeyAction(actionType enums.HotkeyActionType, p
 	case enums.HotkeyActionTogglePause:
 		s.toggleGamePause()
 	case enums.HotkeyActionScreenshot:
-		s.takeScreenshot()
+		s.imageService.takeScreenshot(s.activeGameID)
 	case enums.HotkeyActionCustom:
 		s.executeCustomAction(params)
 	default:
@@ -662,418 +649,6 @@ func (s *HotkeyService) toggleGamePause() {
 	if gameID != "" {
 		applog.LogInfof(s.ctx, "Toggling pause for game: %s", gameID)
 	}
-}
-
-// 修正后的纯Windows API截图实现
-func (s *HotkeyService) takeScreenshot() {
-	applog.LogInfof(s.ctx, "Taking screenshot using Windows API")
-
-	// 获取前台窗口句柄
-	hwnd, _, _ := procGetForegroundWindow.Call()
-	if hwnd == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get foreground window")
-		return
-	}
-
-	// 获取窗口位置和大小
-	var rect Rect
-	ret, _, _ := procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&rect)))
-	if ret == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get window rectangle")
-		return
-	}
-
-	width := int(rect.Right - rect.Left)
-	height := int(rect.Bottom - rect.Top)
-
-	if width <= 0 || height <= 0 {
-		applog.LogErrorf(s.ctx, "Invalid window dimensions: %dx%d", width, height)
-		return
-	}
-
-	// 获取屏幕DC
-	screenDC, _, _ := procGetDC.Call(0)
-	if screenDC == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get screen DC")
-		return
-	}
-	defer procReleaseDC.Call(0, screenDC)
-
-	// 创建内存DC
-	memDC, _, _ := procCreateCompatibleDC.Call(screenDC)
-	if memDC == 0 {
-		applog.LogErrorf(s.ctx, "Failed to create memory DC")
-		return
-	}
-	defer procDeleteDC.Call(memDC)
-
-	// 创建位图
-	hBitmap, _, _ := procCreateCompatibleBitmap.Call(screenDC, uintptr(width), uintptr(height))
-	if hBitmap == 0 {
-		applog.LogErrorf(s.ctx, "Failed to create bitmap")
-		return
-	}
-	defer procDeleteObject.Call(hBitmap)
-
-	// 选择位图到内存DC
-	oldObj, _, _ := procSelectObject.Call(memDC, hBitmap)
-	defer procSelectObject.Call(memDC, oldObj)
-
-	// 复制屏幕内容到位图
-	success, _, _ := procBitBlt.Call(
-		memDC, 0, 0, uintptr(width), uintptr(height),
-		screenDC, uintptr(rect.Left), uintptr(rect.Top), SRCCOPY,
-	)
-
-	if success == 0 {
-		applog.LogErrorf(s.ctx, "Failed to copy screen to bitmap")
-		return
-	}
-
-	// 将位图数据提取出来并保存为文件
-	s.saveBitmapToFile(hBitmap, width, height, "1.jpg")
-	applog.LogInfof(s.ctx, "Screenshot saved as 1.jpg (%dx%d)", width, height)
-}
-
-// saveBitmapToFile 将位图保存为JPEG文件
-// func (s *HotkeyService) saveBitmapToFile(hBitmap uintptr, width, height int, filename string) {
-// 	// 获取位图信息
-// 	type BITMAPINFOHEADER struct {
-// 		BiSize          uint32
-// 		BiWidth         int32
-// 		BiHeight        int32
-// 		BiPlanes        uint16
-// 		BiBitCount      uint16
-// 		BiCompression   uint32
-// 		BiSizeImage     uint32
-// 		BiXPelsPerMeter int32
-// 		BiYPelsPerMeter int32
-// 		BiClrUsed       uint32
-// 		BiClrImportant  uint32
-// 	}
-
-// 	var bmi struct {
-// 		BmiHeader BITMAPINFOHEADER
-// 	}
-
-// 	bmi.BmiHeader.BiSize = uint32(unsafe.Sizeof(bmi.BmiHeader))
-// 	bmi.BmiHeader.BiWidth = int32(width)
-// 	bmi.BmiHeader.BiHeight = int32(-height) // 负值表示自上而下
-// 	bmi.BmiHeader.BiPlanes = 1
-// 	bmi.BmiHeader.BiBitCount = 32
-// 	bmi.BmiHeader.BiCompression = 0 // BI_RGB
-
-// 	// 分配像素缓冲区
-// 	bufferSize := width * height * 4
-// 	pixels := make([]byte, bufferSize)
-
-// 	// 获取设备上下文
-// 	screenDC, _, _ := procGetDC.Call(0)
-// 	defer procReleaseDC.Call(0, screenDC)
-
-// 	// 获取位图数据
-// 	ret, _, _ := procGetDIBits.Call(
-// 		screenDC,
-// 		hBitmap,
-// 		0,
-// 		uintptr(height),
-// 		uintptr(unsafe.Pointer(&pixels[0])),
-// 		uintptr(unsafe.Pointer(&bmi)),
-// 		0, // DIB_RGB_COLORS
-// 	)
-
-// 	if ret == 0 {
-// 		applog.LogErrorf(s.ctx, "Failed to get DIB bits")
-// 		return
-// 	}
-
-// 	// 将BGRA数据转换为image.RGBA格式
-// 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-
-// 	for y := 0; y < height; y++ {
-// 		for x := 0; x < width; x++ {
-// 			srcIdx := (y*width + x) * 4
-// 			dstIdx := y*img.Stride + x*4
-
-// 			// BGRA to RGBA转换
-// 			img.Pix[dstIdx+0] = pixels[srcIdx+2] // R
-// 			img.Pix[dstIdx+1] = pixels[srcIdx+1] // G
-// 			img.Pix[dstIdx+2] = pixels[srcIdx+0] // B
-// 			img.Pix[dstIdx+3] = pixels[srcIdx+3] // A
-// 		}
-// 	}
-
-// 	// 保存为JPEG文件
-// 	file, err := os.Create(filename)
-// 	if err != nil {
-// 		applog.LogErrorf(s.ctx, "Failed to create JPEG file %s: %v", filename, err)
-// 		return
-// 	}
-// 	defer file.Close()
-
-// 	// JPEG编码选项
-// 	options := jpeg.Options{
-// 		Quality: 90, // 高质量
-// 	}
-
-// 	err = jpeg.Encode(file, img, &options)
-// 	if err != nil {
-// 		applog.LogErrorf(s.ctx, "Failed to encode JPEG: %v", err)
-// 		return
-// 	}
-
-// 	applog.LogInfof(s.ctx, "Screenshot saved as %s (%dx%d)", filename, width, height)
-// }
-
-// saveBitmapToFile 将位图保存为JPEG文件 - 修正版本
-func (s *HotkeyService) saveBitmapToFile(hBitmap uintptr, width, height int, filename string) {
-	// 使用更简单直接的方法获取位图数据
-	screenDC, _, _ := procGetDC.Call(0)
-	if screenDC == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get screen DC")
-		return
-	}
-	defer procReleaseDC.Call(0, screenDC)
-
-	// 创建内存DC
-	memDC, _, _ := procCreateCompatibleDC.Call(screenDC)
-	if memDC == 0 {
-		applog.LogErrorf(s.ctx, "Failed to create memory DC")
-		return
-	}
-	defer procDeleteDC.Call(memDC)
-
-	// 创建新的位图用于数据提取
-	newBitmap, _, _ := procCreateCompatibleBitmap.Call(screenDC, uintptr(width), uintptr(height))
-	if newBitmap == 0 {
-		applog.LogErrorf(s.ctx, "Failed to create compatible bitmap")
-		return
-	}
-	defer procDeleteObject.Call(newBitmap)
-
-	// 选择新位图到内存DC
-	oldBitmap, _, _ := procSelectObject.Call(memDC, newBitmap)
-	defer procSelectObject.Call(memDC, oldBitmap)
-
-	// 从原始位图复制数据到新位图
-	success, _, _ := procBitBlt.Call(
-		memDC, 0, 0, uintptr(width), uintptr(height),
-		screenDC, 0, 0, SRCCOPY,
-	)
-
-	if success == 0 {
-		applog.LogErrorf(s.ctx, "Failed to copy bitmap data")
-		return
-	}
-
-	// 使用更可靠的GetDIBits调用方式
-	type BITMAPINFOHEADER struct {
-		BiSize          uint32
-		BiWidth         int32
-		BiHeight        int32
-		BiPlanes        uint16
-		BiBitCount      uint16
-		BiCompression   uint32
-		BiSizeImage     uint32
-		BiXPelsPerMeter int32
-		BiYPelsPerMeter int32
-		BiClrUsed       uint32
-		BiClrImportant  uint32
-	}
-
-	// 创建BITMAPINFO结构
-	bmi := struct {
-		Header BITMAPINFOHEADER
-		Colors [256]uint32 // 调色板颜色（32位位图不需要）
-	}{
-		Header: BITMAPINFOHEADER{
-			BiSize:        uint32(unsafe.Sizeof(BITMAPINFOHEADER{})),
-			BiWidth:       int32(width),
-			BiHeight:      int32(-height), // 负值表示自上而下的DIB
-			BiPlanes:      1,
-			BiBitCount:    32,
-			BiCompression: 0, // BI_RGB
-		},
-	}
-
-	// 分配像素缓冲区 (BGRA格式)
-	bufferSize := width * height * 4
-	pixels := make([]byte, bufferSize)
-
-	// 获取位图数据 - 使用正确的参数顺序
-	ret, _, err := procGetDIBits.Call(
-		memDC,                               // hdc
-		newBitmap,                           // hbmp
-		0,                                   // uStartScan
-		uintptr(height),                     // cScanLines
-		uintptr(unsafe.Pointer(&pixels[0])), // lpvBits
-		uintptr(unsafe.Pointer(&bmi)),       // lpbi
-		0,                                   // uUsage (DIB_RGB_COLORS = 0)
-	)
-
-	if ret == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get DIB bits, error: %v", err)
-		// 尝试另一种方法
-		s.saveAsBMPDirectly(newBitmap, width, height, "1.bmp")
-		return
-	}
-
-	// 转换BGRA到RGBA
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
-
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			srcIdx := (y*width + x) * 4
-			dstIdx := y*img.Stride + x*4
-
-			// BGRA to RGBA
-			img.Pix[dstIdx+0] = pixels[srcIdx+2] // R
-			img.Pix[dstIdx+1] = pixels[srcIdx+1] // G
-			img.Pix[dstIdx+2] = pixels[srcIdx+0] // B
-			img.Pix[dstIdx+3] = pixels[srcIdx+3] // A
-		}
-	}
-
-	// 保存为JPEG
-	jpegFilename := "1.jpg"
-	file, err := os.Create(jpegFilename)
-	if err != nil {
-		applog.LogErrorf(s.ctx, "Failed to create JPEG file: %v", err)
-		return
-	}
-	defer file.Close()
-
-	options := jpeg.Options{Quality: 90}
-	err = jpeg.Encode(file, img, &options)
-	if err != nil {
-		applog.LogErrorf(s.ctx, "Failed to encode JPEG: %v", err)
-		return
-	}
-
-	applog.LogInfof(s.ctx, "Screenshot saved as %s (%dx%d)", jpegFilename, width, height)
-}
-
-// saveAsBMPDirectly 实现BMP格式保存
-func (s *HotkeyService) saveAsBMPDirectly(hBitmap uintptr, width, height int, filename string) {
-	applog.LogInfof(s.ctx, "Saving bitmap as BMP format: %s", filename)
-
-	// 获取设备上下文
-	screenDC, _, _ := procGetDC.Call(0)
-	if screenDC == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get screen DC for BMP saving")
-		return
-	}
-	defer procReleaseDC.Call(0, screenDC)
-
-	// 创建BITMAPINFO结构用于获取位图数据
-	type BITMAPINFOHEADER struct {
-		BiSize          uint32
-		BiWidth         int32
-		BiHeight        int32
-		BiPlanes        uint16
-		BiBitCount      uint16
-		BiCompression   uint32
-		BiSizeImage     uint32
-		BiXPelsPerMeter int32
-		BiYPelsPerMeter int32
-		BiClrUsed       uint32
-		BiClrImportant  uint32
-	}
-
-	bmi := struct {
-		Header BITMAPINFOHEADER
-	}{
-		Header: BITMAPINFOHEADER{
-			BiSize:        uint32(unsafe.Sizeof(BITMAPINFOHEADER{})),
-			BiWidth:       int32(width),
-			BiHeight:      int32(-height), // 负值表示自上而下
-			BiPlanes:      1,
-			BiBitCount:    32,
-			BiCompression: 0, // BI_RGB
-		},
-	}
-
-	// 分配像素缓冲区
-	bufferSize := width * height * 4
-	pixels := make([]byte, bufferSize)
-
-	// 获取位图数据
-	ret, _, _ := procGetDIBits.Call(
-		screenDC,
-		hBitmap,
-		0,
-		uintptr(height),
-		uintptr(unsafe.Pointer(&pixels[0])),
-		uintptr(unsafe.Pointer(&bmi)),
-		0, // DIB_RGB_COLORS
-	)
-
-	if ret == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get DIB bits for BMP saving")
-		return
-	}
-
-	// 创建BMP文件
-	file, err := os.Create(filename)
-	if err != nil {
-		applog.LogErrorf(s.ctx, "Failed to create BMP file %s: %v", filename, err)
-		return
-	}
-	defer file.Close()
-
-	// 写入BMP文件头 (14 bytes)
-	fileHeader := make([]byte, 14)
-	fileHeader[0] = 'B'
-	fileHeader[1] = 'M'
-
-	// 计算文件总大小
-	fileSize := uint32(14 + 40 + bufferSize) // 文件头 + 信息头 + 像素数据
-	binary.LittleEndian.PutUint32(fileHeader[2:6], fileSize)
-
-	// 保留字段设为0
-	binary.LittleEndian.PutUint32(fileHeader[6:10], 0)
-
-	// 数据偏移量 (文件头 + 信息头)
-	binary.LittleEndian.PutUint32(fileHeader[10:14], 54)
-
-	file.Write(fileHeader)
-
-	// 写入BMP信息头 (40 bytes)
-	infoHeader := make([]byte, 40)
-
-	// 信息头大小
-	binary.LittleEndian.PutUint32(infoHeader[0:4], 40)
-
-	// 图像宽度和高度
-	binary.LittleEndian.PutUint32(infoHeader[4:8], uint32(width))
-	binary.LittleEndian.PutUint32(infoHeader[8:12], uint32(height))
-
-	// 平面数
-	binary.LittleEndian.PutUint16(infoHeader[12:14], 1)
-
-	// 位深度
-	binary.LittleEndian.PutUint16(infoHeader[14:16], 32)
-
-	// 压缩方式 (BI_RGB = 0)
-	binary.LittleEndian.PutUint32(infoHeader[16:20], 0)
-
-	// 图像大小 (0表示未压缩)
-	binary.LittleEndian.PutUint32(infoHeader[20:24], 0)
-
-	// 分辨率 (设为默认值)
-	binary.LittleEndian.PutUint32(infoHeader[24:28], 0)
-	binary.LittleEndian.PutUint32(infoHeader[28:32], 0)
-
-	// 颜色数和重要颜色数
-	binary.LittleEndian.PutUint32(infoHeader[32:36], 0)
-	binary.LittleEndian.PutUint32(infoHeader[36:40], 0)
-
-	file.Write(infoHeader)
-
-	// 写入像素数据（BGRA格式）
-	file.Write(pixels)
-
-	applog.LogInfof(s.ctx, "BMP screenshot saved as %s (%dx%d)", filename, width, height)
 }
 
 // createBMPFileHeader 创建BMP文件头

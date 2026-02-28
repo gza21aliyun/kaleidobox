@@ -2,8 +2,11 @@ import { models, enums } from "../../../wailsjs/go/models";
 import { 
   GetGlobalHotkeys, UpdateHotkey, 
   AddHotkey } from "../../../wailsjs/go/service/HotkeyService";
+import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useState, useEffect } from "react";
 import { ScreenshotHotkeyModal } from "../modal/ScreenshotHotkeyModal";
+import { ImageBackupCard } from "../card/ImageCard";
+import { arrayMapString } from "../utils/Utility";
 // import { 
 //   DeviceType, 
 //   HotkeyActionType, 
@@ -19,7 +22,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
   // 截图相关状态
   const [screenshotHotkey, setScreenshotHotkey] = useState<models.Hotkey | null>(null);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
-  const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [screenshots, setScreenshots] = useState<models.ImageBackup[]>([]);
   const [loading, setLoading] = useState(true);
 
   // 检查是否有图片且过滤条件满足
@@ -47,7 +50,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       setLoading(true);
       // 这里应该调用获取游戏截图的API
       // 暂时使用空数组
-      setScreenshots([]);
+      let rs = await FetchImages(game.id, 0, 3);
+      setScreenshots(rs);
     } catch (error) {
       console.error("加载截图失败:", error);
     } finally {
@@ -120,16 +124,19 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
           ) : screenshots.length > 0 ? (
             <div className="grid grid-cols-3 gap-2">
               {screenshots.map((screenshot, index) => (
-                <img
-                  key={`screenshot-${index}`}
-                  src={screenshot}
-                  alt={`Screenshot ${index + 1}`}
-                  className="w-full h-auto object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
+                // <img
+                //   key={`screenshot-${index}`}
+                //   src={screenshot}
+                //   alt={`Screenshot ${index + 1}`}
+                //   className="w-full h-auto object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                //   onError={(e) => {
+                //     const target = e.target as HTMLImageElement;
+                //     target.style.display = 'none';
+                //   }}
+                // />
+                <ImageBackupCard
+                  imageBackup={screenshot}
+                  />
               ))}
             </div>
           ) : (

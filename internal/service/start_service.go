@@ -3,15 +3,18 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/xml"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
 	"lunabox/internal/models"
 	"lunabox/internal/service/timer"
 	"lunabox/internal/utils"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -615,4 +618,128 @@ func (s *StartService) startMagpie() {
 	}
 
 	applog.LogInfof(s.ctx, "Magpie started successfully")
+}
+
+func (s *StartService) detectNewProcesses(targetPID int, interval time.Duration, timeout time.Duration) {
+	startTime := time.Now()
+	knownPIDs := make(map[int]bool)
+
+	// 初始化已知进程列表
+	initialProcesses, err := utils.GetRunningProcesses()
+	if err != nil {
+		applog.LogErrorf(s.ctx, "Failed to list initial processes: %v", err)
+		return
+	}
+	for _, proc := range initialProcesses {
+		knownPIDs[int(proc.PID)] = true
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			currentProcesses, err := utils.GetRunningProcessesWithPaths()
+			if err != nil {
+				applog.LogErrorf(s.ctx, "Failed to list current processes: %v", err)
+				continue
+			}
+
+			// 检查是否有新进程
+			for _, proc := range currentProcesses {
+				if !knownPIDs[int(proc.PID)] {
+					// 检查该进程是否由目标进程启动
+					if int(proc.PPID) == targetPID {
+						applog.LogInfof(s.ctx, "Detected new process launched by PID %d: %s (PID: %d)", targetPID, proc.Name, proc.PID)
+						// 可以在这里添加业务逻辑，例如记录或通知
+					}
+					knownPIDs[int(proc.PID)] = true
+				}
+			}
+
+			// 超时退出
+			if time.Since(startTime) > timeout {
+				applog.LogInfof(s.ctx, "Process monitoring timeout reached")
+				return
+			}
+		case <-s.ctx.Done():
+			applog.LogInfof(s.ctx, "Process monitoring cancelled")
+			return
+		}
+	}
+}
+
+// 使用 Sysmon 或 ETW 捕获进程的文件操作
+func (s *StartService) detectProcessSavePath(pid string) (string, error) {
+	// 构造需要管理员权限的命令（例如启动 Sysmon）
+	cmd := exec.Command("powershell", "-Command", "Start-Process sysmon.exe -ArgumentList '-accepteula -i' -Verb RunAs")
+
+	// 设置隐藏窗口属性（可选）
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow: true,
+	}
+
+	// 执行命令
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to request admin privileges: %w", err)
+	}
+
+	// 等待一段时间让 Sysmon 启动并收集日志
+	time.Sleep(10 * time.Second)
+
+	// 解析日志文件（后续逻辑）
+	logFile := "C:\\Windows\\Sysmon\\sysmon.log"
+	events, err := parseSysmonLog(logFile, pid)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse Sysmon log: %w", err)
+	}
+
+	// 返回最新文件路径
+	if len(events) > 0 {
+		latestEvent := events[len(events)-1]
+		return filepath.Dir(latestEvent.FilePath), nil
+	}
+
+	return "", fmt.Errorf("no file creation events found for PID %s", pid)
+}
+
+// SysmonEvent 定义 Sysmon 日志中的事件结构
+type SysmonEvent struct {
+	EventID   int    `xml:"EventID"`
+	ProcessId string `xml:"EventData>Data[name='ProcessId']"`
+	FilePath  string `xml:"EventData>Data[name='TargetFilename']"`
+}
+
+// parseSysmonLog 解析 Sysmon 日志文件，筛选出与指定 PID 相关的文件创建事件
+func parseSysmonLog(logFile string, targetPID string) ([]SysmonEvent, error) {
+	// 读取日志文件内容
+	data, err := os.ReadFile(logFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read log file: %w", err)
+	}
+
+	// 解析 XML 内容
+	var events struct {
+		Events []SysmonEvent `xml:"Event"`
+	}
+	if err := xml.Unmarshal(data, &events); err != nil {
+		return nil, fmt.Errorf("failed to parse XML: %w", err)
+	}
+
+	// 筛选出与目标 PID 相关的事件
+	var filteredEvents []SysmonEvent
+	for _, event := range events.Events {
+		if event.EventID == 11 && event.ProcessId == targetPID { // EventID 11 表示文件创建
+			filteredEvents = append(filteredEvents, event)
+		}
+	}
+
+	return filteredEvents, nil
+}
+
+func clearSysmonLogs() error {
+	// 使用 PowerShell 清除日志
+	cmd := exec.Command("powershell", "-Command", "Clear-EventLog -LogName 'Microsoft-Windows-Sysmon/Operational'")
+	return cmd.Run()
 }

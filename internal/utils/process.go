@@ -22,6 +22,7 @@ const (
 	INFINITE                  = 0xFFFFFFFF
 	PROCESS_QUERY_INFORMATION = 0x0400
 	TH32CS_SNAPPROCESS        = 0x00000002
+	TH32CS_SNAPMODULE         = 0x00000008
 	MAX_PATH                  = 260
 )
 
@@ -419,4 +420,127 @@ func WaitForProcessExitAsync(pid uint32) (*ProcessMonitor, <-chan struct{}, erro
 		return nil, nil, err
 	}
 	return pm, exitChan, nil
+}
+
+// ProcessInfo 进程信息（扩展字段）
+type NewProcessInfo struct {
+	Name string `json:"name"` // 进程名
+	PID  uint32 `json:"pid"`  // 进程ID
+	PPID uint32 `json:"ppid"` // 父进程ID（新增）
+	// Path string `json:"path"` // 进程路径（新增）
+}
+
+// MODULEENTRY32W Windows API 模块快照结构体
+type MODULEENTRY32W struct {
+	Size         uint32
+	ModuleID     uint32
+	ProcessID    uint32
+	GlblcntUsage uint32
+	ProccntUsage uint32
+	ModBaseAddr  uintptr
+	ModBaseSize  uint32
+	HModule      uintptr
+	SzModule     [MAX_PATH]uint16
+	SzExePath    [MAX_PATH]uint16
+}
+
+var (
+	procModule32First = kernel32.NewProc("Module32FirstW")
+	procModule32Next  = kernel32.NewProc("Module32NextW")
+)
+
+// GetRunningProcessesWithPaths 获取系统中正在运行的进程列表（包含完整路径）
+func GetRunningProcessesWithPaths() ([]NewProcessInfo, error) {
+	// 创建进程快照
+	snapshot, _, err := procCreateToolhelp32Snapshot.Call(
+		uintptr(TH32CS_SNAPPROCESS),
+		0,
+	)
+	if snapshot == uintptr(syscall.InvalidHandle) {
+		return nil, fmt.Errorf("failed to create process snapshot: %w", err)
+	}
+	defer procCloseHandle.Call(snapshot)
+
+	var processes []NewProcessInfo
+	var pe32 PROCESSENTRY32W
+	pe32.Size = uint32(unsafe.Sizeof(pe32))
+
+	// 获取第一个进程
+	ret, _, _ := procProcess32First.Call(snapshot, uintptr(unsafe.Pointer(&pe32)))
+	if ret == 0 {
+		return nil, fmt.Errorf("failed to get first process")
+	}
+
+	// 遍历所有进程
+	for {
+		// 跳过系统进程（PID 为 0 或 4）
+		if pe32.ProcessID == 0 || pe32.ProcessID == 4 {
+			if !getNextProcess(snapshot, &pe32) {
+				break
+			}
+			continue
+		}
+
+		// 获取进程名
+		exeName := syscall.UTF16ToString(pe32.ExeFile[:])
+		if !strings.HasSuffix(strings.ToLower(exeName), ".exe") {
+			if !getNextProcess(snapshot, &pe32) {
+				break
+			}
+			continue
+		}
+
+		// 获取进程路径
+		// path, err := getProcessPath(pe32.ProcessID)
+		// if err != nil {
+		// 	applog.LogWarningf(context.Background(), "Failed to get path for PID %d: %v", pe32.ProcessID, err)
+		// 	path = "" // 如果无法获取路径，则留空
+		// }
+
+		// 添加到结果列表
+		processes = append(processes, NewProcessInfo{
+			Name: exeName,
+			PID:  pe32.ProcessID,
+			PPID: pe32.ParentProcessID,
+			// Path: path,
+		})
+
+		// 获取下一个进程
+		if !getNextProcess(snapshot, &pe32) {
+			break
+		}
+	}
+
+	return processes, nil
+}
+
+// getNextProcess 获取下一个进程信息
+func getNextProcess(snapshot uintptr, pe32 *PROCESSENTRY32W) bool {
+	ret, _, _ := procProcess32Next.Call(snapshot, uintptr(unsafe.Pointer(pe32)))
+	return ret != 0
+}
+
+// getProcessPath 获取指定 PID 进程的完整路径
+func (p NewProcessInfo) getProcessPath() (string, error) {
+	// 创建模块快照
+	snapshot, _, err := procCreateToolhelp32Snapshot.Call(
+		uintptr(TH32CS_SNAPMODULE),
+		uintptr(p.PID),
+	)
+	if snapshot == uintptr(syscall.InvalidHandle) {
+		return "", fmt.Errorf("failed to create module snapshot for PID %d: %w", p.PID, err)
+	}
+	defer procCloseHandle.Call(snapshot)
+
+	var me32 MODULEENTRY32W
+	me32.Size = uint32(unsafe.Sizeof(me32))
+
+	// 获取第一个模块（通常是可执行文件）
+	ret, _, _ := procModule32First.Call(snapshot, uintptr(unsafe.Pointer(&me32)))
+	if ret == 0 {
+		return "", fmt.Errorf("failed to get first module for PID %d", p.PID)
+	}
+
+	// 返回模块路径
+	return syscall.UTF16ToString(me32.SzExePath[:]), nil
 }

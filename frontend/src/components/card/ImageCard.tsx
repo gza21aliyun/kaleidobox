@@ -15,7 +15,7 @@ export function ImageCard({
     useEffect(() => {
         GetImageBackupByUrl(url).then((res) => {
             if (res.local_path !== "") {
-                setImageUrl(res.local_path);
+                setImageUrl(getLocalPath(res.local_path));
             } else if (res.url !== "") {
                 setImageUrl(res.url);
             }
@@ -43,24 +43,37 @@ interface ImageBackupProps {
 export function ImageBackupCard({
     imageBackup
 }: ImageBackupProps) { 
-    const getLocalPath = () => {
-        console.log("local path 01:", imageBackup.local_path)
-        if (!imageBackup.local_path) {
-            return ""
-        }
-        const ar = imageBackup.local_path.split("\\")
-        if (ar.length <2) {
-            return ""
-        }
-        const path = `/local/${ar[ar.length - 2]}/${ar[ar.length - 1]}`
-        return path;
-    }
+    // const getLocalPath = () => {
+    //     console.log("local path 01:", imageBackup.local_path)
+    //     if (!imageBackup.local_path) {
+    //         return ""
+    //     }
+    //     const ar = imageBackup.local_path.split("\\")
+    //     if (ar.length < 3) {
+    //         return ""
+    //     }
+    //     const path = `/local/${ar[ar.length - 2]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`
+    //     return path;
+    // }
     return (
         <div className="image-card">
             { imageBackup.local_path !== "" ? 
-            (<img src={getLocalPath()} alt="Image" />) : 
+            (<img src={getLocalPath(imageBackup.local_path)} alt="Image" />) : 
             ( <img src={imageBackup.url} alt="Image" /> )}
             
         </div>
     );
 }
+
+function getLocalPath(localPath: string)  {
+        console.log("local path 01:", localPath)
+        if (!localPath) {
+            return ""
+        }
+        const ar = localPath.split("\\")
+        if (ar.length < 3) {
+            return ""
+        }
+        const path = `/local/${ar[ar.length - 2]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`
+        return path;
+    }

@@ -17,6 +17,8 @@ import (
 	"image/jpeg"
 	"os"
 
+	"github.com/go-vgo/robotgo"
+
 	"github.com/google/uuid"
 )
 
@@ -334,6 +336,88 @@ func joinStrings(strs []string, sep string) string {
 		result += sep + strs[i]
 	}
 	return result
+}
+
+func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
+	// pid := getCurrentForegroundProcessId()
+	// 1. 获取当前焦点窗口的句柄
+	// hwnd := robotgo.GetHWND()
+	// if hwnd == 0 {
+	// 	return "", fmt.Errorf("failed to get focused window handle")
+	// }
+
+	// 2. 获取窗口的位置和尺寸
+	// x, y, width, height := robotgo.GetBounds(int(pid))
+	// if width <= 0 || height <= 0 {
+	// 	return "", fmt.Errorf("invalid window dimensions: %dx%d", width, height)
+	// }
+
+	hwnd, _, _ := procGetForegroundWindow.Call()
+	if hwnd == 0 {
+		applog.LogErrorf(s.ctx, "Failed to get foreground window")
+		return
+	}
+
+	// 获取窗口位置和大小
+	var rect Rect
+	ret, _, _ := procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&rect)))
+	if ret == 0 {
+		applog.LogErrorf(s.ctx, "Failed to get window rectangle")
+		return
+	}
+	rect.Left += 8
+	rect.Bottom -= 8
+	rect.Right -= 8
+	rect.Top += 4
+
+	width := int(rect.Right - rect.Left)
+	height := int(rect.Bottom - rect.Top)
+
+	name := uuid.New().String()
+	dataDir, err := utils.GetDataDir()
+	if err != nil {
+		return
+
+	}
+	path := fmt.Sprintf(`%s\%s`, dataDir, "images")
+	// path = `C:\temp\projects`
+	_, err = os.Stat(path)
+	if err != nil {
+		err := os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return
+		}
+	}
+	path = fmt.Sprintf(`%s\%s`, path, gameId)
+	_, err = os.Stat(path)
+	if err != nil {
+		err := os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return
+		}
+	}
+
+	fileName := fmt.Sprintf(`%s\%s.jpeg`, path, name)
+	// image, err := robotgo.Capture(x, y, width, height)
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to capture: %v", err)
+	// }
+	// 3. 截图指定区域
+	// err = robotgo.SaveJpeg(image, fileName, 90)
+	err = robotgo.SaveCapture(fileName, int(rect.Left), int(rect.Top), width, height)
+	if err != nil {
+		applog.LogInfof(s.ctx, "failed to save screenshot: %v", err)
+		return
+	}
+	err = s.CreateOrUpdateImageBackup(models.ImageBackup{
+		Url:         fileName,
+		LocalPath:   fileName,
+		SubjectId:   gameId,
+		SubjectType: 0,
+		ImageType:   3,
+	})
+
+	return
 }
 
 // 修正后的纯Windows API截图实现

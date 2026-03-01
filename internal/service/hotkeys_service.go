@@ -530,7 +530,8 @@ func (s *HotkeyService) executeHotkeyAction(actionType enums.HotkeyActionType, p
 	case enums.HotkeyActionTogglePause:
 		s.toggleGamePause()
 	case enums.HotkeyActionScreenshot:
-		s.imageService.TakeScreenshot(s.activeGameID)
+		// s.imageService.TakeScreenshot(s.activeGameID)
+		s.imageService.TakeScreenshotOfFocusedWindow(s.activeGameID)
 	case enums.HotkeyActionCustom:
 		s.executeCustomAction(params)
 	default:
@@ -1163,7 +1164,7 @@ func (s *HotkeyService) hasMatchingHotkey(keyCode int, modifiers []int) bool {
 }
 
 // getCurrentForegroundProcessId 获取当前前台窗口的进程名称
-func (s *HotkeyService) getCurrentForegroundProcessId() uint32 {
+func getCurrentForegroundProcessId() uint32 {
 	// 获取前台窗口句柄
 	hwnd, _, _ := procGetForegroundWindow.Call()
 	if hwnd == 0 {
@@ -1235,7 +1236,7 @@ func (s *HotkeyService) startProcessFocusMonitoring() {
 				// sessions := s.activeTimeTracker.GetAllActiveSessions()
 				games := s.startService.getSessionGames()
 
-				newProcessId := s.getCurrentForegroundProcessId()
+				newProcessId := getCurrentForegroundProcessId()
 				// applog.LogInfof(s.ctx, "startProcessFocusMonitoring 02, num of sessions:%s, pid:%d\n",
 				// 	utils.JoinString(games, ",", func(t1 GameProcess) string { return strconv.FormatUint(uint64(t1.ProcessID), 10) }), newProcessId)
 				checked := false

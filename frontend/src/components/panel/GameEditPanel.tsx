@@ -189,6 +189,10 @@ export function GameEditPanel({
                 { value: "bangumi", label: "Bangumi" },
                 { value: "vndb", label: "VNDB" },
                 { value: "ymgal", label: "月幕Galgame" },
+                { value: "dmm", label: "DMM" },
+                { value: "eroscape", label: "批评空间" },
+                { value: "dlsite", label: "DlSite" }
+
               ]}
             />
           </div>

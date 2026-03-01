@@ -13,6 +13,7 @@ export const TAG_CATEGORY = {
 	TagCategorySeries       : "系列",
 } as const;
 export function arrayToMap<T>(ar: T[], keyFn: (key: T) => string): Map<string, T[]>{
+    if (!ar) return new Map<string, T[]>();
     const map = new Map<string, T[]>();
     ar.forEach(item => {
         const key = keyFn(item);
@@ -25,6 +26,7 @@ export function arrayToMap<T>(ar: T[], keyFn: (key: T) => string): Map<string, T
 }
 
 export function arrayMapString<T>(ar: T[], keyFn: (key: T) => string): string[]{
+    if (!ar) return [];
     const array: string[] = [];
     ar.forEach(item => {
         array.push(keyFn(item));
@@ -33,6 +35,7 @@ export function arrayMapString<T>(ar: T[], keyFn: (key: T) => string): string[]{
 }
 
 export function mapToArray<T>(map: Map<string, T[]>): T[]{
+    if (!map) return [];
     const ar: T[] = [];
     map.forEach(value => {
         ar.push(...value);
@@ -41,6 +44,7 @@ export function mapToArray<T>(map: Map<string, T[]>): T[]{
 }
 
 export function checkMapItem<T>(map: Map<string, T[]>, fn: (item: T) => boolean): boolean {
+    if (!map) return false;
     map.forEach(value => {
         for (const item of value) {
             if (fn(item)) {
@@ -52,6 +56,7 @@ export function checkMapItem<T>(map: Map<string, T[]>, fn: (item: T) => boolean)
 }
 
 export function findMapItem<T>(map: Map<string, T[]>, fn: (item: T) => boolean): T | null {
+    if (!map) return null;
     map.forEach(value => {
         for (const item of value) {
             if (fn(item)) {
@@ -63,6 +68,7 @@ export function findMapItem<T>(map: Map<string, T[]>, fn: (item: T) => boolean):
 }
 
 export function arrayContains<T>(arr: T[], fn: (item: T) => boolean): boolean {
+    if (!arr) return false;
     for (const item of arr) {
         if (fn(item)) {
             return true;
@@ -71,7 +77,22 @@ export function arrayContains<T>(arr: T[], fn: (item: T) => boolean): boolean {
     return false;
 }
 
+export function joinString<T>(arr: T[], seperator: string, fn: (item: T) => string): string {
+    if (!arr) return "";
+    var str = "";
+    var i = 0;
+    for (const item of arr) {
+        if (i == 0) {
+            str += fn(item);
+        } else {
+            str += seperator + fn(item);
+        }
+    }
+    return str;
+}
+
 export function arrayFind<T>(arr: T[], fn: (item: T) => boolean): T | null {
+    if (!arr) return null;
     for (const item of arr) {
         if (fn(item)) {
             return item;
@@ -81,6 +102,7 @@ export function arrayFind<T>(arr: T[], fn: (item: T) => boolean): T | null {
 }
 
 export function getMapFromArrayMap(array: models.Tag[], map: Map<string, models.Tag[]>): Map<string, models.Tag[]> { 
+    if (!array) return new Map<string, models.Tag[]>();
     const newMap = new Map<string, models.Tag[]>();
     const newArray = mapToArray(map)
 
@@ -102,6 +124,7 @@ export function getMapFromArrayMap(array: models.Tag[], map: Map<string, models.
 
 export function tagMapForEach(map: Map<string, models.Tag[]>, fn: (key: string, 
     tags: models.Tag[]) => JSX.Element) : JSX.Element[] {
+        if (!map) return [];
         var result: JSX.Element[] = [];            
         const handle = (key: string) => {
             // console.log("tagMapForEach key: " + key + ",has: " + map.has(key))
@@ -129,6 +152,9 @@ export function tagMapForEach(map: Map<string, models.Tag[]>, fn: (key: string,
 
 export function workMapForEach(map: Map<enums.StaffRole, models.Work[]>, fn: (key: enums.StaffRole, 
     tags: models.Work[]) => JSX.Element) : JSX.Element[] {
+        if (!map) {
+            return [];
+        }
         var result: JSX.Element[] = [];            
         const handle = (role: enums.StaffRole) => {
             if (map.has(role)) {
@@ -150,6 +176,7 @@ export function workMapForEach(map: Map<enums.StaffRole, models.Work[]>, fn: (ke
 
 export function charactorsForEach(map: Map<enums.StaffRole, models.Work[]>, fn: ( 
     work: models.Work) => JSX.Element) : JSX.Element[] {
+        if (!map) return [];
         var result: JSX.Element[] = [];        
         var charactors: models.Work[] = []   
         const handle = (role: enums.StaffRole) => {

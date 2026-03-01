@@ -22,7 +22,7 @@ import { sortOptions, statusOptions } from "../consts/options";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { TaskPanel } from "../components/panel/TaskPanel";
-import { arrayFind, mapToArray } from "../components/utils/Utility";
+import { arrayFind, arrayMapString, joinString } from "../components/utils/Utility";
 import { formatLocalDate } from "../utils/time";
 
 import { enums, vo } from "../../wailsjs/go/models";
@@ -536,6 +536,7 @@ function LibraryPage() {
                     selectionMode={batchMode}
                     selected={selectedGameIds.includes(game.id)}
                     onSelectChange={selected => setGameSelection(game.id, selected)}
+                    filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
                   />
                 ))}
               </div>

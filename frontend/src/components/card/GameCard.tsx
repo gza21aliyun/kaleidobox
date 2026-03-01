@@ -35,6 +35,7 @@ interface GameCardProps {
   onSelectChange?: (selected: boolean) => void;
   /** 当前搜索词，用于高亮游戏名和开发商 */
   searchQuery?: string;
+  filteredGameIdsStr?: string[];
 }
 
 export function GameCard({
@@ -43,6 +44,7 @@ export function GameCard({
   selected = false,
   onSelectChange,
   searchQuery = "",
+  filteredGameIdsStr = [],
 }: GameCardProps) {
   const navigate = useNavigate();
   
@@ -72,7 +74,10 @@ export function GameCard({
   };
 
   const handleViewDetails = () => {
-    navigate({ to: `/game/${game.id}` });
+    navigate({ 
+      to: `/game/${game.id}`,
+      search: { filteredGameIdsStr },
+     });
   };
 
   const isCompleted = game.status === enums.GameStatus.COMPLETED;

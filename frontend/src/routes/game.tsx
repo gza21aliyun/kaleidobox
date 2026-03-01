@@ -1,5 +1,5 @@
 import { models, vo } from "../../wailsjs/go/models";
-import { createRoute, useNavigate } from "@tanstack/react-router";
+import { createRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { enums } from "../../wailsjs/go/models";
@@ -28,9 +28,16 @@ export const Route = createRoute({
   component: GameDetailPage,
 });
 
+export interface GameSearchParams {
+  filteredGameIdsStr?: string[]; // 可选参数
+}
+
 function GameDetailPage() {
   const navigate = useNavigate();
   const { gameId } = Route.useParams();
+  const [ currentGameId, setCurrentGameId ] = useState(gameId);
+  const search = useSearch({ strict: false }) as GameSearchParams; // 获取查询参数
+  const filteredGameIds = search.filteredGameIdsStr || [];
   const config = useAppStore(state => state.config);
   const [game, setGame] = useState<models.Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +50,8 @@ function GameDetailPage() {
   const isInitialMount = useRef(true);
   const originalGameData = useRef<models.Game | null>(null);
 
+  console.log("ids:", filteredGameIds)
+
   useEffect(() => {
         const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
           
@@ -50,7 +59,7 @@ function GameDetailPage() {
             const task : models.TaskNotice = new models.TaskNotice(data);
             
             // console.log("received taskid:" + task.id + " current taskid:" + taskId + ", item_id:" + task.item_id +  " item_status:" + task.item_status)
-            if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id == gameId) {
+            if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id == currentGameId) {
                     const newGame : models.Game = task.item_data as models.Game;
                     console.log("newGame:", newGame)
                     setGame(newGame)
@@ -71,7 +80,7 @@ function GameDetailPage() {
 
   const loadData = async () => {
       try {
-        const gameData = await GetGameByID(gameId);
+        const gameData = await GetGameByID(currentGameId);
         setGame(gameData);
         console.log("gameData", gameData);
         originalGameData.current = gameData;
@@ -89,7 +98,7 @@ function GameDetailPage() {
   useEffect(() => {
     
     loadData();
-  }, [gameId]);
+  }, [currentGameId]);
 
   
 
@@ -289,7 +298,7 @@ function GameDetailPage() {
     try {
       const [categories, gameCategories] = await Promise.all([
         GetCategories(),
-        GetCategoriesByGame(gameId),
+        GetCategoriesByGame(currentGameId),
       ]);
       setAllCategories(categories || []);
       setSelectedCategoryIds(gameCategories?.map(c => c.id) || []);
@@ -311,11 +320,11 @@ function GameDetailPage() {
     try {
       // 执行添加操作
       for (const categoryId of toAdd) {
-        await AddGameToCategory(gameId, categoryId);
+        await AddGameToCategory(currentGameId, categoryId);
       }
       // 执行移除操作
       for (const categoryId of toRemove) {
-        await RemoveGameFromCategory(gameId, categoryId);
+        await RemoveGameFromCategory(currentGameId, categoryId);
       }
 
       setSelectedCategoryIds(newSelectedIds);
@@ -359,16 +368,74 @@ function GameDetailPage() {
     }
   }
 
+  const currentIndex = filteredGameIds.indexOf(currentGameId);
+
+  // 计算是否可以向左/向右切换
+  const canGoPrev = currentIndex > 0;
+  const canGoNext = currentIndex < filteredGameIds.length - 1;
+  console.log("index:", currentIndex)
+
+  // 切换到上一个游戏
+  const goToPrevGame = () => {
+    if (canGoPrev) {
+      const prevGameId = filteredGameIds[currentIndex - 1];
+      // navigate({ to: `/game/${prevGameId}`, search });
+      setCurrentGameId(prevGameId);
+    }
+  };
+
+  // 切换到下一个游戏
+  const goToNextGame = () => {
+    if (canGoNext) {
+      const nextGameId = filteredGameIds[currentIndex + 1];
+      // navigate({ to: `/game/${nextGameId}`, search });
+      setCurrentGameId(nextGameId);
+    }
+  };
+
   return (
     <div className={`space-y-8 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       {/* Back Button */}
-      <button
-        onClick={() => window.history.back()}
-        className="flex rounded-md items-center text-brand-750 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
-      >
-        <div className="i-mdi-arrow-left text-2xl mr-1" />
-        <span>返回</span>
-      </button>
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => window.history.back()}
+          className="flex rounded-md items-center text-brand-750 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
+        >
+          <div className="i-mdi-arrow-left text-2xl mr-1" />
+          <span>返回</span>
+        </button>
+
+        {/* Navigation Arrows */}
+        {filteredGameIds.length > 0 && (
+          <div className="flex gap-2">
+            <button
+              onClick={goToPrevGame}
+              disabled={!canGoPrev}
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                canGoPrev
+                  ? "bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-700 dark:text-brand-200 dark:hover:bg-brand-600"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+              }`}
+              title="上一个"
+            >
+              <div className="i-mdi-arrow-left text-xl" />
+            </button>
+
+            <button
+              onClick={goToNextGame}
+              disabled={!canGoNext}
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                canGoNext
+                  ? "bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-700 dark:text-brand-200 dark:hover:bg-brand-600"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+              }`}
+              title="下一个"
+            >
+              <div className="i-mdi-arrow-right text-xl" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Header Section */}
       <div className="flex gap-6 items-center">
@@ -528,7 +595,7 @@ function GameDetailPage() {
 
       {/* Content */}
       {activeTab === "stats" && (
-        <GameStatsPanel gameId={gameId} />
+        <GameStatsPanel gameId={currentGameId} />
       )}
 
       {activeTab === "edit" && game && (
@@ -556,7 +623,7 @@ function GameDetailPage() {
 
 
       {activeTab === "backup" && (
-        <GameBackupPanel gameId={gameId} savePath={game?.save_path} />
+        <GameBackupPanel gameId={currentGameId} savePath={game?.save_path} />
       )}
 
       {activeTab === "info" && game && (

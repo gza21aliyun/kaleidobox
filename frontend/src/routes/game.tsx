@@ -139,6 +139,85 @@ function GameDetailPage() {
     return () => clearTimeout(timer);
   }, [game]);
 
+  const currentIndex = filteredGameIds.indexOf(currentGameId);
+
+  // 计算是否可以向左/向右切换
+  const canGoPrev = currentIndex > 0;
+  const canGoNext = currentIndex < filteredGameIds.length - 1;
+  console.log("index:", currentIndex)
+
+  // 切换到上一个游戏
+  const goToPrevGame = () => {
+    if (canGoPrev) {
+      const prevGameId = filteredGameIds[currentIndex - 1];
+      // navigate({ to: `/game/${prevGameId}`, search });
+      setCurrentGameId(prevGameId);
+    }
+  };
+
+  // 切换到下一个游戏
+  const goToNextGame = () => {
+    if (canGoNext) {
+      const nextGameId = filteredGameIds[currentIndex + 1];
+      // navigate({ to: `/game/${nextGameId}`, search });
+      setCurrentGameId(nextGameId);
+    }
+  };
+
+  useEffect(() => {
+    if (!filteredGameIds || filteredGameIds.length == 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!filteredGameIds || filteredGameIds.length == 0) return;
+
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement;
+
+      // 如果焦点在 input 上，不处理方向键
+      if (isInputFocused) {
+        return;
+      }
+      
+      
+      
+      // 获取按下的键
+      const key = e.key.toUpperCase();
+      let displayKey = key;
+      console.log("key:", e.code)
+      
+      // 特殊键处理
+      switch (e.code) {
+        case "ArrowLeft":
+          e.preventDefault();
+          goToPrevGame();
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          goToNextGame();
+          break;
+        
+      }
+      
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // if (!isListening || selectedDeviceType !== enums.DeviceType.KEYBOARD) return;
+      // 不处理keyup事件
+    };
+
+    if (true) {
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [filteredGameIds, currentGameId]);
+
   if (isLoading && !game) {
     if (!showSkeleton) {
       return null;
@@ -368,30 +447,7 @@ function GameDetailPage() {
     }
   }
 
-  const currentIndex = filteredGameIds.indexOf(currentGameId);
-
-  // 计算是否可以向左/向右切换
-  const canGoPrev = currentIndex > 0;
-  const canGoNext = currentIndex < filteredGameIds.length - 1;
-  console.log("index:", currentIndex)
-
-  // 切换到上一个游戏
-  const goToPrevGame = () => {
-    if (canGoPrev) {
-      const prevGameId = filteredGameIds[currentIndex - 1];
-      // navigate({ to: `/game/${prevGameId}`, search });
-      setCurrentGameId(prevGameId);
-    }
-  };
-
-  // 切换到下一个游戏
-  const goToNextGame = () => {
-    if (canGoNext) {
-      const nextGameId = filteredGameIds[currentIndex + 1];
-      // navigate({ to: `/game/${nextGameId}`, search });
-      setCurrentGameId(nextGameId);
-    }
-  };
+  
 
   return (
     <div className={`space-y-8 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>

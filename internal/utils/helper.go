@@ -215,7 +215,7 @@ func getMainTitle(searchName string) string {
 	return mainTitle
 }
 
-func searchByRegex[T1 any](slice1 []T1, pattern string, excludeWords []string, fn func(t1 T1) string) []T1 {
+func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, excludeWords []string, fn func(t1 T1) string) []T1 {
 	if len(slice1) == 0 {
 		return nil
 	}
@@ -223,6 +223,7 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, excludeWords []string, f
 	var result []T1 = []T1{}
 	for _, item := range slice1 {
 		target := fn(item)
+		fmt.Printf("searchByRegex 01 target:%s\n", target)
 		if re.MatchString(target) {
 			isExcluded := false
 			for _, word := range excludeWords {
@@ -231,17 +232,39 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, excludeWords []string, f
 					break
 				}
 			}
+			fmt.Printf("target:%s, isexcluded:%v\n", target, isExcluded)
+			if !isExcluded {
+				result = append(result, item)
+			}
+		} else if strings.Contains(target, strings.ReplaceAll(searchName, "？", "")) {
+			fmt.Printf("searchByRegex 02 target:%s\n", target)
+			isExcluded := false
+			for _, word := range excludeWords {
+				if strings.Contains(target, word) {
+					isExcluded = true
+					break
+				}
+			}
+			fmt.Printf("target:%s, 02 isexcluded:%v\n", target, isExcluded)
 			if !isExcluded {
 				result = append(result, item)
 			}
 		}
+	}
+	if len(result) == 0 {
+		sort.Slice(slice1, func(i, j int) bool {
+			return len(fn(slice1[i])) < len(fn(slice1[j]))
+		})
+		result = []T1{}
+		result = append(result, slice1[0])
+		return result
 	}
 	return result
 }
 
 func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
 	mainTitle := getMainTitle(searchName)
-	result := searchByRegex(slice1, generateSearchRegex(searchName), excludeWords, fn)
+	result := searchByRegex(slice1, generateSearchRegex(searchName), searchName, excludeWords, fn)
 
 	switch len(result) {
 	case 0:

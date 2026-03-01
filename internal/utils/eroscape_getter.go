@@ -10,7 +10,6 @@ import (
 	"lunabox/internal/vo"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -144,7 +143,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 	// 处理搜索结果页面中的游戏条目
 	c.OnHTML("tbody tr", func(e *colly.HTMLElement) {
 
-		title := e.ChildText("td a.tooltip")
+		title := e.DOM.Find("td").Eq(0).Text()
 		href := e.ChildAttr("td a.tooltip", "href")
 		idParts := strings.Split(strings.Split(href, "#")[0], "=")
 		gameId := idParts[len(idParts)-1]
@@ -172,35 +171,38 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
-		// gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4"}, func(t1 struct {
-		// 	Title string
-		// 	GameId string
-		// }) string {return t1.Title})
-		// if gameFound != nil {
-		// 	game.Name = gameFound.Title
-		// 	game.SourceID = gameFound.GameId
-		// 	game.SourceType = enums.Eroscape
-		// 	game.EroscapeId = gameFound.GameId
-		// }
-
-		sort.Slice(potentialGames, func(i, j int) bool {
-			return len(potentialGames[i].Title) < len(potentialGames[j].Title)
+		fmt.Printf("games found:%d\n", len(potentialGames))
+		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4"}, func(t1 struct {
+			Title  string
+			GameId string
+		}) string {
+			return t1.Title
 		})
-		for _, gameFound := range potentialGames {
-			// 应用过滤条件
-			if strings.Contains(gameFound.Title, "セット") || strings.Contains(gameFound.Title, "PSV") || strings.Contains(gameFound.Title, "PS4") {
-				continue
-			}
-			// if gameFound.Link == "" {
-			// 	continue
-			// }
+		if gameFound != nil {
 			game.Name = gameFound.Title
 			game.SourceID = gameFound.GameId
 			game.SourceType = enums.Eroscape
 			game.EroscapeId = gameFound.GameId
-			// c.Visit(gameFound.Link)
-			return
 		}
+
+		// sort.Slice(potentialGames, func(i, j int) bool {
+		// 	return len(potentialGames[i].Title) < len(potentialGames[j].Title)
+		// })
+		// for _, gameFound := range potentialGames {
+		// 	// 应用过滤条件
+		// 	if strings.Contains(gameFound.Title, "セット") || strings.Contains(gameFound.Title, "PSV") || strings.Contains(gameFound.Title, "PS4") {
+		// 		continue
+		// 	}
+		// 	// if gameFound.Link == "" {
+		// 	// 	continue
+		// 	// }
+		// 	game.Name = gameFound.Title
+		// 	game.SourceID = gameFound.GameId
+		// 	game.SourceType = enums.Eroscape
+		// 	game.EroscapeId = gameFound.GameId
+		// 	// c.Visit(gameFound.Link)
+		// 	return
+		// }
 	})
 
 	// 错误处理

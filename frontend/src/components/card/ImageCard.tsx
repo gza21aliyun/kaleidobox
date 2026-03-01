@@ -43,10 +43,22 @@ interface ImageBackupProps {
 export function ImageBackupCard({
     imageBackup
 }: ImageBackupProps) { 
+    const getLocalPath = () => {
+        console.log("local path 01:", imageBackup.local_path)
+        if (!imageBackup.local_path) {
+            return ""
+        }
+        const ar = imageBackup.local_path.split("\\")
+        if (ar.length <2) {
+            return ""
+        }
+        const path = `/local/${ar[ar.length - 2]}/${ar[ar.length - 1]}`
+        return path;
+    }
     return (
         <div className="image-card">
             { imageBackup.local_path !== "" ? 
-            (<img src={imageBackup.local_path} alt="Image" />) : 
+            (<img src={getLocalPath()} alt="Image" />) : 
             ( <img src={imageBackup.url} alt="Image" /> )}
             
         </div>

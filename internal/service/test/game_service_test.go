@@ -26,6 +26,7 @@ type Services struct {
 	WorkService      *service.WorkService
 	TagService       *service.TagService
 	ImportService    *service.ImportService
+	ImageService     *service.ImageService
 }
 
 func createServices(t *testing.T) *Services {
@@ -51,6 +52,9 @@ func createServices(t *testing.T) *Services {
 	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
 	importServie := service.NewImportService()
 	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
+	imageService := service.NewImageService()
+	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+
 	services := Services{
 		GameService:      gameService,
 		TaskService:      taskService,
@@ -59,6 +63,7 @@ func createServices(t *testing.T) *Services {
 		WorkService:      workService,
 		TagService:       tagService,
 		ImportService:    importServie,
+		ImageService:     imageService,
 	}
 	return &services
 }
@@ -860,5 +865,15 @@ func TestGameService_BGArray(t *testing.T) {
 			t.Fatalf("verify game failed: %v", err)
 		}
 
+	})
+}
+
+func TestSaveBitmapToFile(t *testing.T) {
+
+	t.Run("screenshot success", func(t *testing.T) {
+		time.Sleep(time.Second * 5)
+		applog.SetMode(applog.ModeCLI)
+		services := createServices(t)
+		services.ImageService.TakeScreenshot("0001")
 	})
 }

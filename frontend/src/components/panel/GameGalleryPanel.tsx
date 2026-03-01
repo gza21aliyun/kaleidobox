@@ -51,7 +51,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       // 这里应该调用获取游戏截图的API
       // 暂时使用空数组
       let rs = await FetchImages(game.id, 0, 3);
-      setScreenshots(rs);
+      setScreenshots(rs ?? []);
     } catch (error) {
       console.error("加载截图失败:", error);
     } finally {
@@ -66,6 +66,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
         await UpdateHotkey(new models.Hotkey({
           ...hotkey,
           id: screenshotHotkey.id,
+          // game_id: "global",
           updated_at: new Date().toISOString()
         }));
       } else {
@@ -89,14 +90,14 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
     : [];
 
   // 如果没有任何内容显示，不显示面板
-  if (!screenshotHotkey && galleryImages.length === 0) {
-    return null;
-  }
+  // if (!screenshotHotkey && galleryImages.length === 0) {
+  //   return null;
+  // }
 
   return (
     <div className="flex flex-col gap-4">
       {/* 截图板块 */}
-      {(screenshotHotkey || galleryImages.length > 0) && (
+      {true && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="font-semibold text-brand-900 dark:text-white">截图</div>
@@ -136,6 +137,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
                 // />
                 <ImageBackupCard
                   imageBackup={screenshot}
+                  key={screenshot.url}
                   />
               ))}
             </div>

@@ -142,7 +142,7 @@ func SchemaQueries() []string {
 			is_spoiler BOOLEAN DEFAULT FALSE,
 			block_modify BOOLEAN DEFAULT FALSE
 		)`,
-		`CREATE TABLE IF NOT EXISTS image_backup (
+		`CREATE TABLE IF NOT EXISTS image_backups (
 			url TEXT PRIMARY KEY,
 			local_path TEXT,
 			subject_id TEXT,

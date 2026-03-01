@@ -33,10 +33,30 @@ type StartService struct {
 	gameService       *GameService
 	sessionService    *SessionService
 	activeTimeTracker *timer.ActiveTimeTracker
+	mu                sync.Mutex
 
 	// 进程选择相关
 	pendingProcessSelect   map[string]chan string // gameID -> channel，用于接收用户选择的进程名
 	pendingProcessSelectMu sync.RWMutex
+	gamesLaunched          map[uint32]GameProcess
+}
+
+type GameProcess struct {
+	ProcessName string
+	ProcessID   uint32
+	Path        string
+	GameId      string
+}
+
+func (s *StartService) getSessionGames() []GameProcess {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rs := []GameProcess{}
+	for _, game := range s.gamesLaunched {
+		rs = append(rs, game)
+	}
+	return rs
+
 }
 
 func NewStartService() *StartService {
@@ -52,6 +72,7 @@ func (s *StartService) Init(ctx context.Context, db *sql.DB, config *appconf.App
 	s.config = config
 	// 初始化内部服务
 	s.activeTimeTracker = timer.NewActiveTimeTracker(ctx, db)
+	s.gamesLaunched = make(map[uint32]GameProcess)
 	// 确保 map 已初始化
 	if s.pendingProcessSelect == nil {
 		s.pendingProcessSelect = make(map[string]chan string)
@@ -348,6 +369,8 @@ func (s *StartService) promptUserToSelectProcess(sessionID string, gameID string
 
 // waitForGameExit 等待游戏进程退出并更新游玩记录
 func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID string, startTime time.Time, processID uint32) {
+	applog.LogInfof(s.ctx, "starting to monitor Waiting for game process to exit... gameId: %s", gameID)
+	s.gamesLaunched[processID] = GameProcess{GameId: gameID, ProcessID: processID}
 	// 使用独立 goroutine 等待进程，避免永久阻塞
 	exitChan := make(chan error, 1)
 	go func() {
@@ -358,6 +381,7 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 	var exitErr error
 	select {
 	case exitErr = <-exitChan:
+		delete(s.gamesLaunched, processID)
 		// 游戏正常退出
 		if exitErr != nil {
 			applog.LogDebugf(s.ctx, "Game %s exited with error: %v", gameID, exitErr)
@@ -375,6 +399,7 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 // 使用 WaitForSingleObject 事件驱动，避免轮询
 func (s *StartService) monitorProcessByPID(sessionID string, gameID string, startTime time.Time, processID uint32, processName string) {
 	applog.LogInfof(s.ctx, "Starting to monitor external process %s (PID %d) using WaitForSingleObject", processName, processID)
+	s.gamesLaunched[processID] = GameProcess{GameId: gameID, ProcessID: processID, ProcessName: processName}
 
 	// 创建进程监控器
 	pm, exitChan, err := utils.WaitForProcessExitAsync(processID)
@@ -390,6 +415,7 @@ func (s *StartService) monitorProcessByPID(sessionID string, gameID string, star
 	select {
 	case <-exitChan:
 		applog.LogInfof(s.ctx, "External process %s (PID %d) has exited", processName, processID)
+		delete(s.gamesLaunched, processID)
 	case <-time.After(24 * time.Hour):
 		applog.LogWarningf(s.ctx, "Game %s exceeded maximum runtime (24h), forcing cleanup", gameID)
 	}

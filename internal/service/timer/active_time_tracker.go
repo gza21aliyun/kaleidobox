@@ -44,8 +44,11 @@ func NewActiveTimeTracker(ctx context.Context, db *sql.DB) *ActiveTimeTracker {
 // processID: 游戏进程 ID
 // returns: 追踪会话 ID 和可能的错误
 func (s *ActiveTimeTracker) StartTracking(sessionID string, gameID string, processID uint32) (string, error) {
+	applog.LogInfof(s.ctx, "StartTracking 00")
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	applog.LogInfof(s.ctx, "StartTracking 01")
 
 	// 检查是否已有追踪中的会话
 	if _, exists := s.sessions[gameID]; exists {
@@ -55,6 +58,7 @@ func (s *ActiveTimeTracker) StartTracking(sessionID string, gameID string, proce
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	applog.LogInfof(s.ctx, "StartTracking 02")
 
 	session := &TrackingSession{
 		SessionID: sessionID,
@@ -64,6 +68,7 @@ func (s *ActiveTimeTracker) StartTracking(sessionID string, gameID string, proce
 		cancel:    cancel,
 	}
 	s.sessions[gameID] = session
+	applog.LogInfof(s.ctx, "StartTracking 03")
 
 	// 启动追踪 goroutine
 	go s.trackActiveTime(ctx, session)

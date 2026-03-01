@@ -117,6 +117,7 @@ func LogDebugf(ctx context.Context, format string, args ...interface{}) {
 
 	if mode == ModeGUI {
 		runtime.LogDebugf(ctx, format, args...)
+		fmt.Printf(format+"\n", args...)
 	} else {
 		logToCLI("DEBUG", format, args...)
 	}
@@ -130,7 +131,7 @@ func LogInfof(ctx context.Context, format string, args ...interface{}) {
 
 	if mode == ModeGUI {
 		runtime.LogInfof(ctx, format, args...)
-		fmt.Printf(format+"\n", args)
+		fmt.Printf(format+"\n", args...)
 	} else {
 		logToCLI("INFO", format, args...)
 	}

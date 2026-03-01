@@ -257,7 +257,7 @@ func main() {
 			startService.SetBackupService(backupService)
 			startService.SetGameService(gameService)
 			startService.SetSessionService(sessionService)
-			hotkeyService.SetImageService(imageService)
+			hotkeyService.SetServices(imageService, startService)
 
 			// 设置 ImportService 的 SessionService 依赖（用于导入游玩记录）
 			importService.SetSessionService(sessionService)

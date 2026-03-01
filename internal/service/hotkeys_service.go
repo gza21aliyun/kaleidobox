@@ -17,6 +17,8 @@ import (
 	"lunabox/internal/utils"
 	"syscall"
 
+	"lunabox/internal/service/timer"
+
 	"gobot.io/x/gobot/v2"
 	"gobot.io/x/gobot/v2/platforms/joystick"
 	"gobot.io/x/gobot/v2/platforms/keyboard"
@@ -47,10 +49,13 @@ type HotkeyService struct {
 	deviceInfoLock   sync.RWMutex
 
 	// 当前焦点进程信息
-	focusedProcessName string
+	// focusedProcessName string
 	processCheckTicker *time.Ticker
 
 	imageService *ImageService
+	startService *StartService
+
+	activeTimeTracker *timer.ActiveTimeTracker
 }
 
 // Windows API函数声明
@@ -76,14 +81,18 @@ var (
 	procDeleteDC               = gdi32.NewProc("DeleteDC")
 	procDeleteObject           = gdi32.NewProc("DeleteObject")
 	gdi32                      = syscall.NewLazyDLL("gdi32.dll")
+	procKeybdEvent             = user32.NewProc("keybd_event")
 )
 
 const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+	KEYEVENTF_KEYUP                   = 0x0002 // 释放按键的标志
 )
 
-func (s *HotkeyService) SetImageService(imageService *ImageService) {
+func (s *HotkeyService) SetServices(imageService *ImageService, startService *StartService) {
 	s.imageService = imageService
+	s.startService = startService
+	s.activeTimeTracker = startService.activeTimeTracker
 }
 
 func NewHotkeyService() *HotkeyService {
@@ -148,6 +157,7 @@ func (s *HotkeyService) work() {
 
 // loadHotkeyConfig 从数据库加载快捷键配置
 func (s *HotkeyService) loadHotkeyConfig() {
+	applog.LogInfof(s.ctx, "Loading hotkey configuration")
 	s.hotkeyLock.Lock()
 	defer s.hotkeyLock.Unlock()
 
@@ -183,6 +193,7 @@ func (s *HotkeyService) loadHotkeyConfig() {
 		}
 
 		s.hotkeys[hotkey.KeyCode] = &hotkey
+		applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
 	}
 
 	// 统计各类设备的快捷键数量
@@ -444,20 +455,21 @@ func (s *HotkeyService) startAlternativeKeyListener() {
 
 // handleKeyboardEvent 处理键盘事件
 func (s *HotkeyService) handleKeyboardEvent(event keyboard.KeyEvent) {
-	fmt.Printf("key press 01:%d\n", event.Key)
+	fmt.Printf("key press 01:%d, %v \n", event.Key, s.hotkeys)
 	s.hotkeyLock.RLock()
 	defer s.hotkeyLock.RUnlock()
 
-	keyCode := fmt.Sprintf("%d", event.Key)
+	keyCode := fmt.Sprintf("%c", event.Key)
 	hotkey, exists := s.hotkeys[keyCode]
-	if keyCode == "74" {
-		s.imageService.takeScreenshot(s.activeGameID)
-		return
-	}
+	fmt.Println("key press 011 :", exists)
+	// if keyCode == "74" {
+	// 	s.imageService.takeScreenshot(s.activeGameID)
+	// 	return
+	// }
 	if !exists {
 		return
 	}
-
+	fmt.Println("key press 012 :", hotkey)
 	// 只处理键盘类型的快捷键
 	if hotkey.DeviceType != enums.DeviceTypeKeyboard {
 		return
@@ -465,7 +477,7 @@ func (s *HotkeyService) handleKeyboardEvent(event keyboard.KeyEvent) {
 
 	// 检查是否应该执行此快捷键
 	if s.shouldExecuteHotkey(hotkey) {
-		fmt.Printf("key press:%s\n", hotkey.KeyCode)
+		fmt.Printf("key press 02:%s\n", hotkey.KeyCode)
 		s.executeHotkeyAction(hotkey.ActionType, hotkey.ActionParams)
 	}
 }
@@ -518,7 +530,7 @@ func (s *HotkeyService) executeHotkeyAction(actionType enums.HotkeyActionType, p
 	case enums.HotkeyActionTogglePause:
 		s.toggleGamePause()
 	case enums.HotkeyActionScreenshot:
-		s.imageService.takeScreenshot(s.activeGameID)
+		s.imageService.TakeScreenshot(s.activeGameID)
 	case enums.HotkeyActionCustom:
 		s.executeCustomAction(params)
 	default:
@@ -555,8 +567,8 @@ func (s *HotkeyService) detectConnectedDevices() {
 
 	// 清理长时间未活动的设备
 	now := time.Now()
-	for deviceID, device := range s.connectedDevices {
-		applog.LogDebugf(s.ctx, "Checking device %s: %+v", deviceID, device)
+	for _, device := range s.connectedDevices {
+		// applog.LogDebugf(s.ctx, "Checking device %s: %+v", deviceID, device)
 		if now.Sub(device.LastSeenAt) > 30*time.Second {
 			device.IsActive = false
 			// 更新数据库
@@ -688,6 +700,64 @@ func (s *HotkeyService) executeCustomAction(params models.ActionParams) {
 
 	applog.LogInfof(s.ctx, "Executing custom command: %s", command)
 	// 执行自定义命令逻辑
+	s.simulateKeyPress(command)
+}
+
+// simulateKeyPress 模拟标准键盘按键
+func (s *HotkeyService) simulateKeyPress(command string) {
+	switch command {
+	case "ctrl":
+		// 模拟按下并释放 Ctrl 键
+		s.pressAndReleaseKey(0x11) // VK_CONTROL 的虚拟键码是 0x11
+	case "alt":
+		// 模拟按下并释放 Alt 键
+		s.pressAndReleaseKey(0x12) // VK_MENU 的虚拟键码是 0x12
+	case "shift":
+		// 模拟按下并释放 Shift 键
+		s.pressAndReleaseKey(0x10) // VK_SHIFT 的虚拟键码是 0x10
+	case "enter":
+		// 模拟按下并释放 Enter 键
+		s.pressAndReleaseKey(0x0D) // VK_RETURN 的虚拟键码是 0x0D
+	case "space":
+		// 模拟按下并释放 Space 键
+		s.pressAndReleaseKey(0x20) // VK_SPACE 的虚拟键码是 0x20
+	default:
+		// 如果是普通字符，转换为对应的虚拟键码
+		if len(command) == 1 {
+			vk := s.charToVirtualKey(command[0])
+			s.pressAndReleaseKey(vk)
+		}
+	}
+}
+
+// pressAndReleaseKey 按下并释放指定的虚拟键码
+func (s *HotkeyService) pressAndReleaseKey(vk uint8) {
+	// 按下按键
+	procKeybdEvent.Call(
+		uintptr(vk), // vk: 虚拟键码
+		uintptr(0),  // scan: 扫描码（通常为 0）
+		uintptr(0),  // flags: 0 表示按下
+		uintptr(0),  // extraInfo: 额外信息（通常为 0）
+	)
+
+	// 释放按键
+	procKeybdEvent.Call(
+		uintptr(vk),              // vk: 虚拟键码
+		uintptr(0),               // scan: 扫描码
+		uintptr(KEYEVENTF_KEYUP), // flags: KEYEVENTF_KEYUP 表示释放
+		uintptr(0),               // extraInfo: 额外信息
+	)
+}
+
+// charToVirtualKey 将 ASCII 字符转换为对应的虚拟键码
+func (s *HotkeyService) charToVirtualKey(ch byte) uint8 {
+	if ch >= 'a' && ch <= 'z' {
+		return uint8(ch - 'a' + 0x41) // 小写字母映射到 A-Z
+	}
+	if ch >= '0' && ch <= '9' {
+		return uint8(ch - '0' + 0x30) // 数字映射到 0-9
+	}
+	return 0 // 无法识别的字符返回 0
 }
 
 // GetSupportedDevices 获取支持的设备类型
@@ -1092,78 +1162,96 @@ func (s *HotkeyService) hasMatchingHotkey(keyCode int, modifiers []int) bool {
 	return true
 }
 
-// getCurrentForegroundProcessName 获取当前前台窗口的进程名称
-func (s *HotkeyService) getCurrentForegroundProcessName() string {
+// getCurrentForegroundProcessId 获取当前前台窗口的进程名称
+func (s *HotkeyService) getCurrentForegroundProcessId() uint32 {
 	// 获取前台窗口句柄
 	hwnd, _, _ := procGetForegroundWindow.Call()
 	if hwnd == 0 {
-		return ""
+		return 0
 	}
 
 	// 获取窗口对应的进程ID
 	var processID uint32
 	procGetWindowThreadProcessId.Call(hwnd, uintptr(unsafe.Pointer(&processID)))
 	if processID == 0 {
-		return ""
+		return 0
 	}
+	return processID
 
-	// 打开进程句柄
-	handle, _, _ := procOpenProcess.Call(
-		PROCESS_QUERY_LIMITED_INFORMATION,
-		0,
-		uintptr(processID),
-	)
-	if handle == 0 {
-		return ""
-	}
-	defer procCloseHandle.Call(handle)
+	// // 打开进程句柄
+	// handle, _, _ := procOpenProcess.Call(
+	// 	PROCESS_QUERY_LIMITED_INFORMATION,
+	// 	0,
+	// 	uintptr(processID),
+	// )
+	// if handle == 0 {
+	// 	return ""
+	// }
+	// defer procCloseHandle.Call(handle)
 
-	// 获取进程名称
-	buffer := make([]uint16, 260)
-	bufferSize := uint32(len(buffer))
+	// // 获取进程名称
+	// buffer := make([]uint16, 260)
+	// bufferSize := uint32(len(buffer))
 
-	ret, _, _ := procQueryFullProcessImageNameW.Call(
-		handle,
-		0,
-		uintptr(unsafe.Pointer(&buffer[0])),
-		uintptr(unsafe.Pointer(&bufferSize)),
-	)
+	// ret, _, _ := procQueryFullProcessImageNameW.Call(
+	// 	handle,
+	// 	0,
+	// 	uintptr(unsafe.Pointer(&buffer[0])),
+	// 	uintptr(unsafe.Pointer(&bufferSize)),
+	// )
 
-	if ret == 0 {
-		return ""
-	}
+	// if ret == 0 {
+	// 	return ""
+	// }
 
-	// 转换为Go字符串并提取文件名
-	fullPath := syscall.UTF16ToString(buffer[:bufferSize])
+	// // 转换为Go字符串并提取文件名
+	// fullPath := syscall.UTF16ToString(buffer[:bufferSize])
 
-	// 从完整路径中提取可执行文件名
-	lastSlash := -1
-	for i := len(fullPath) - 1; i >= 0; i-- {
-		if fullPath[i] == '\\' || fullPath[i] == '/' {
-			lastSlash = i
-			break
-		}
-	}
+	// // 从完整路径中提取可执行文件名
+	// lastSlash := -1
+	// for i := len(fullPath) - 1; i >= 0; i-- {
+	// 	if fullPath[i] == '\\' || fullPath[i] == '/' {
+	// 		lastSlash = i
+	// 		break
+	// 	}
+	// }
 
-	if lastSlash >= 0 && lastSlash < len(fullPath)-1 {
-		return fullPath[lastSlash+1:]
-	}
+	// if lastSlash >= 0 && lastSlash < len(fullPath)-1 {
+	// 	return fullPath[lastSlash+1:]
+	// }
 
-	return fullPath
+	// return fullPath
 }
 
 // startProcessFocusMonitoring 启动进程焦点监控
 func (s *HotkeyService) startProcessFocusMonitoring() {
-	s.processCheckTicker = time.NewTicker(500 * time.Millisecond) // 每500ms检查一次
+	s.processCheckTicker = time.NewTicker(5000 * time.Millisecond) // 每500ms检查一次
+	applog.LogInfof(s.ctx, "startProcessFocusMonitoring 01")
 
 	go func() {
 		for {
 			select {
 			case <-s.processCheckTicker.C:
-				newProcessName := s.getCurrentForegroundProcessName()
-				if newProcessName != s.focusedProcessName {
-					s.focusedProcessName = newProcessName
-					applog.LogDebugf(s.ctx, "Focus changed to process: %s", newProcessName)
+				// sessions := s.activeTimeTracker.GetAllActiveSessions()
+				games := s.startService.getSessionGames()
+
+				newProcessId := s.getCurrentForegroundProcessId()
+				// applog.LogInfof(s.ctx, "startProcessFocusMonitoring 02, num of sessions:%s, pid:%d\n",
+				// 	utils.JoinString(games, ",", func(t1 GameProcess) string { return strconv.FormatUint(uint64(t1.ProcessID), 10) }), newProcessId)
+				checked := false
+				for _, game := range games {
+					if game.ProcessID == newProcessId {
+						if s.activeGameID != game.GameId {
+							s.activeGameID = game.GameId
+							applog.LogDebugf(s.ctx, "Focus changed to game: %s", game.GameId)
+						}
+						checked = true
+						break
+					}
+				}
+				if !checked && s.activeGameID != "" {
+					s.activeGameID = ""
+					applog.LogDebugf(s.ctx, "Focus changed to unknown process: %d", newProcessId)
 				}
 			case <-s.ctx.Done():
 				if s.processCheckTicker != nil {

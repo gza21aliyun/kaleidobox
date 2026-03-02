@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"sync"
 	"time"
 
@@ -111,8 +112,193 @@ func (s *HotkeyService) Init(ctx context.Context, db *sql.DB, config *appconf.Ap
 
 // loadConfigurations 加载所有配置
 func (s *HotkeyService) loadConfigurations() {
-	s.loadKeyMappings()
-	s.loadScreenshotHotkey()
+	applog.LogInfof(s.ctx, "Loading configurations from database...")
+	
+	// 加载按键映射配置（从hotkeys表）
+	s.loadKeyMappingsFromHotkeys()
+	
+	// 加载截图快捷键
+	s.loadScreenshotHotkeyFromDB()
+	
+	// 加载已连接设备
+	s.loadConnectedDevicesFromDB()
+}
+
+// loadKeyMappingsFromHotkeys 从hotkeys表加载按键映射配置
+func (s *HotkeyService) loadKeyMappingsFromHotkeys() {
+	applog.LogInfof(s.ctx, "Loading key mappings from hotkeys table...")
+	
+	s.mappingLock.Lock()
+	defer s.mappingLock.Unlock()
+	
+	// 查询启用的按键映射（action_type为KEY_MAPPING的记录）
+	query := `
+		SELECT key_code, action_params, is_enabled
+		FROM hotkeys 
+		WHERE action_type = ? AND is_enabled = TRUE AND game_id = ?
+	`
+	
+	rows, err := s.db.Query(query, enums.HotkeyActionKeyMapping, models.GlobalGameID)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "查询按键映射失败: %v", err)
+		return
+	}
+	defer rows.Close()
+	
+	count := 0
+	for rows.Next() {
+		var keyCode string
+		var actionParams models.ActionParams
+		var isEnabled bool
+		
+		err := rows.Scan(&keyCode, &actionParams, &isEnabled)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "扫描按键映射数据失败: %v", err)
+			continue
+		}
+		
+		// 从action_params中提取目标按键和映射类型
+		targetKey, _ := actionParams["target_key"].(string)
+		mappingTypeStr, _ := actionParams["mapping_type"].(string)
+		modifiersInterface, _ := actionParams["modifiers"].([]interface{})
+		
+		// 转换修饰键
+		var modifiers []enums.ModifierKey
+		for _, mod := range modifiersInterface {
+			if modStr, ok := mod.(string); ok {
+				modifiers = append(modifiers, enums.ModifierKey(modStr))
+			}
+		}
+		
+		// 转换映射类型
+		var mappingTypeEnum MappingType
+		switch mappingTypeStr {
+		case "direct":
+			mappingTypeEnum = MappingTypeDirect
+		case "release":
+			mappingTypeEnum = MappingTypeRelease
+		default:
+			mappingTypeEnum = MappingTypeDirect
+		}
+		
+		if targetKey != "" {
+			mapping := &KeyMapping{
+				SourceKey:   keyCode, // keyCode作为源按键
+				TargetKey:   targetKey,
+				MappingType: mappingTypeEnum,
+				Modifiers:   modifiers,
+				IsEnabled:   isEnabled,
+			}
+			
+			s.keyMappings[keyCode] = mapping
+			count++
+			applog.LogInfof(s.ctx, "Loaded mapping: %s -> %s (%s)", keyCode, targetKey, mappingTypeStr)
+		}
+	}
+	
+	applog.LogInfof(s.ctx, "Loaded %d key mappings from hotkeys table", count)
+}
+
+// loadScreenshotHotkeyFromDB 从数据库加载截图快捷键
+func (s *HotkeyService) loadScreenshotHotkeyFromDB() {
+	applog.LogInfof(s.ctx, "Loading screenshot hotkey from database...")
+	
+	s.hotkeyLock.Lock()
+	defer s.hotkeyLock.Unlock()
+	
+	// 查询截图快捷键配置
+	query := `
+		SELECT id, game_id, name, device_type, key_code, modifiers, 
+		       action_type, action_params, is_enabled, created_at, updated_at
+		FROM hotkeys 
+		WHERE action_type = ? AND is_enabled = TRUE AND game_id = ?
+		LIMIT 1
+	`
+	
+	row := s.db.QueryRow(query, enums.HotkeyActionScreenshot, models.GlobalGameID)
+	
+	var hotkey models.Hotkey
+	err := row.Scan(
+		&hotkey.ID,
+		&hotkey.GameID,
+		&hotkey.Name,
+		&hotkey.DeviceType,
+		&hotkey.KeyCode,
+		&hotkey.Modifiers,
+		&hotkey.ActionType,
+		&hotkey.ActionParams,
+		&hotkey.IsEnabled,
+		&hotkey.CreatedAt,
+		&hotkey.UpdatedAt,
+	)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			applog.LogInfof(s.ctx, "No screenshot hotkey found in database, using default")
+			// 使用默认配置
+			s.screenshotHotkey = &models.Hotkey{
+				ID:         "screenshot_default",
+				GameID:     models.GlobalGameID,
+				Name:       "默认截图快捷键",
+				DeviceType: enums.DeviceTypeKeyboard,
+				KeyCode:    "f12",
+				ActionType: enums.HotkeyActionScreenshot,
+				IsEnabled:  true,
+			}
+		} else {
+			applog.LogErrorf(s.ctx, "查询截图快捷键失败: %v", err)
+		}
+		return
+	}
+	
+	s.screenshotHotkey = &hotkey
+	applog.LogInfof(s.ctx, "Screenshot hotkey loaded from database: %s", hotkey.KeyCode)
+}
+
+// loadConnectedDevicesFromDB 从数据库加载已连接设备
+func (s *HotkeyService) loadConnectedDevicesFromDB() {
+	applog.LogInfof(s.ctx, "Loading connected devices from database...")
+	
+	s.deviceLock.Lock()
+	defer s.deviceLock.Unlock()
+	
+	query := `
+		SELECT id, device_type, device_name, device_id, is_active, connected_at, last_seen_at
+		FROM connected_devices 
+		WHERE is_active = TRUE
+		ORDER BY last_seen_at DESC
+	`
+	
+	rows, err := s.db.Query(query)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "查询连接设备失败: %v", err)
+		return
+	}
+	defer rows.Close()
+	
+	count := 0
+	for rows.Next() {
+		var device models.ConnectedDevice
+		err := rows.Scan(
+			&device.ID,
+			&device.DeviceType,
+			&device.DeviceName,
+			&device.DeviceID,
+			&device.IsActive,
+			&device.ConnectedAt,
+			&device.LastSeenAt,
+		)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "扫描设备数据失败: %v", err)
+			continue
+		}
+		
+		// 这里可以根据设备类型初始化相应的驱动
+		count++
+		applog.LogInfof(s.ctx, "Loaded connected device: %s (%s)", device.DeviceName, device.DeviceType)
+	}
+	
+	applog.LogInfof(s.ctx, "Loaded %d connected devices from database", count)
 }
 
 // loadKeyMappings 加载按键映射配置
@@ -522,17 +708,280 @@ func (s *HotkeyService) DisableKeyMapping(sourceKey string) {
 	}
 }
 
-// GetKeyMappings 获取所有按键映射
-func (s *HotkeyService) GetKeyMappings() map[string]*KeyMapping {
-	s.mappingLock.RLock()
-	defer s.mappingLock.RUnlock()
+// GetGlobalHotkeys 获取所有全局快捷键配置
+func (s *HotkeyService) GetGlobalHotkeys() ([]*models.Hotkey, error) {
+	query := `
+		SELECT id, game_id, name, device_type, key_code, modifiers, 
+		       action_type, action_params, is_enabled, created_at, updated_at
+		FROM hotkeys 
+		WHERE game_id = ? AND is_enabled = TRUE
+		ORDER BY created_at DESC
+	`
 	
-	// 返回副本以避免并发问题
-	result := make(map[string]*KeyMapping)
-	for k, v := range s.keyMappings {
-		result[k] = v
+	rows, err := s.db.Query(query, models.GlobalGameID)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "查询全局快捷键失败: %v", err)
+		return nil, err
 	}
-	return result
+	defer rows.Close()
+	
+	var hotkeys []*models.Hotkey
+	for rows.Next() {
+		var hotkey models.Hotkey
+		err := rows.Scan(
+			&hotkey.ID,
+			&hotkey.GameID,
+			&hotkey.Name,
+			&hotkey.DeviceType,
+			&hotkey.KeyCode,
+			&hotkey.Modifiers,
+			&hotkey.ActionType,
+			&hotkey.ActionParams,
+			&hotkey.IsEnabled,
+			&hotkey.CreatedAt,
+			&hotkey.UpdatedAt,
+		)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "扫描快捷键数据失败: %v", err)
+			continue
+		}
+		hotkeys = append(hotkeys, &hotkey)
+	}
+	
+	return hotkeys, nil
+}
+
+// UpdateHotkey 更新快捷键配置
+func (s *HotkeyService) UpdateHotkey(hotkey *models.Hotkey) error {
+	query := `
+		UPDATE hotkeys 
+		SET name = ?, device_type = ?, key_code = ?, modifiers = ?, 
+		    action_type = ?, action_params = ?, is_enabled = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`
+	
+	_, err := s.db.Exec(query,
+		hotkey.Name,
+		hotkey.DeviceType,
+		hotkey.KeyCode,
+		hotkey.Modifiers,
+		hotkey.ActionType,
+		hotkey.ActionParams,
+		hotkey.IsEnabled,
+		hotkey.ID,
+	)
+	
+	if err != nil {
+		applog.LogErrorf(s.ctx, "更新快捷键失败: %v", err)
+		return err
+	}
+	
+	applog.LogInfof(s.ctx, "快捷键更新成功: %s", hotkey.ID)
+	return nil
+}
+
+// AddHotkey 添加新的快捷键配置
+func (s *HotkeyService) AddHotkey(hotkey *models.Hotkey) error {
+	if hotkey.ID == "" {
+		hotkey.ID = generateHotkeyID()
+	}
+	
+	if hotkey.CreatedAt.IsZero() {
+		hotkey.CreatedAt = time.Now()
+	}
+	hotkey.UpdatedAt = time.Now()
+	
+	query := `
+		INSERT INTO hotkeys (
+			id, game_id, name, device_type, key_code, modifiers, 
+			action_type, action_params, is_enabled, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+	
+	_, err := s.db.Exec(query,
+		hotkey.ID,
+		hotkey.GameID,
+		hotkey.Name,
+		hotkey.DeviceType,
+		hotkey.KeyCode,
+		hotkey.Modifiers,
+		hotkey.ActionType,
+		hotkey.ActionParams,
+		hotkey.IsEnabled,
+		hotkey.CreatedAt,
+		hotkey.UpdatedAt,
+	)
+	
+	if err != nil {
+		applog.LogErrorf(s.ctx, "添加快捷键失败: %v", err)
+		return err
+	}
+	
+	applog.LogInfof(s.ctx, "快捷键添加成功: %s", hotkey.ID)
+	return nil
+}
+
+// GetHotkeysByGameID 根据游戏ID获取快捷键配置
+func (s *HotkeyService) GetHotkeysByGameID(gameID string) ([]*models.Hotkey, error) {
+	query := `
+		SELECT id, game_id, name, device_type, key_code, modifiers, 
+		       action_type, action_params, is_enabled, created_at, updated_at
+		FROM hotkeys 
+		WHERE game_id = ? AND is_enabled = TRUE
+		ORDER BY created_at DESC
+	`
+	
+	rows, err := s.db.Query(query, gameID)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "查询游戏快捷键失败: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var hotkeys []*models.Hotkey
+	for rows.Next() {
+		var hotkey models.Hotkey
+		err := rows.Scan(
+			&hotkey.ID,
+			&hotkey.GameID,
+			&hotkey.Name,
+			&hotkey.DeviceType,
+			&hotkey.KeyCode,
+			&hotkey.Modifiers,
+			&hotkey.ActionType,
+			&hotkey.ActionParams,
+			&hotkey.IsEnabled,
+			&hotkey.CreatedAt,
+			&hotkey.UpdatedAt,
+		)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "扫描快捷键数据失败: %v", err)
+			continue
+		}
+		hotkeys = append(hotkeys, &hotkey)
+	}
+	
+	return hotkeys, nil
+}
+
+// GetGameHotkeys GetHotkeysByGameID的别名方法，功能完全相同
+func (s *HotkeyService) GetGameHotkeys(gameID string) ([]*models.Hotkey, error) {
+	return s.GetHotkeysByGameID(gameID)
+}
+
+// DeleteHotkey 删除快捷键配置
+func (s *HotkeyService) DeleteHotkey(hotkeyID string) error {
+	query := `DELETE FROM hotkeys WHERE id = ?`
+	
+	_, err := s.db.Exec(query, hotkeyID)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "删除快捷键失败: %v", err)
+		return err
+	}
+	
+	applog.LogInfof(s.ctx, "快捷键删除成功: %s", hotkeyID)
+	return nil
+}
+
+// GetConnectedDevices 获取已连接的设备列表
+func (s *HotkeyService) GetConnectedDevices() ([]*models.ConnectedDevice, error) {
+	query := `
+		SELECT id, device_type, device_name, device_id, is_active, connected_at, last_seen_at
+		FROM connected_devices 
+		WHERE is_active = TRUE
+		ORDER BY last_seen_at DESC
+	`
+	
+	rows, err := s.db.Query(query)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "查询连接设备失败: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var devices []*models.ConnectedDevice
+	for rows.Next() {
+		var device models.ConnectedDevice
+		err := rows.Scan(
+			&device.ID,
+			&device.DeviceType,
+			&device.DeviceName,
+			&device.DeviceID,
+			&device.IsActive,
+			&device.ConnectedAt,
+			&device.LastSeenAt,
+		)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "扫描设备数据失败: %v", err)
+			continue
+		}
+		devices = append(devices, &device)
+	}
+	
+	return devices, nil
+}
+
+// AddConnectedDevice 添加已连接设备
+func (s *HotkeyService) AddConnectedDevice(device *models.ConnectedDevice) error {
+	if device.ID == "" {
+		device.ID = generateDeviceID()
+	}
+	
+	if device.ConnectedAt.IsZero() {
+		device.ConnectedAt = time.Now()
+	}
+	device.LastSeenAt = time.Now()
+	device.IsActive = true
+	
+	query := `
+		INSERT INTO connected_devices (
+			id, device_type, device_name, device_id, is_active, connected_at, last_seen_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(device_id) DO UPDATE SET
+			device_name = ?, is_active = TRUE, last_seen_at = CURRENT_TIMESTAMP
+	`
+	
+	_, err := s.db.Exec(query,
+		device.ID,
+		device.DeviceType,
+		device.DeviceName,
+		device.DeviceID,
+		device.IsActive,
+		device.ConnectedAt,
+		device.LastSeenAt,
+		device.DeviceName,
+	)
+	
+	if err != nil {
+		applog.LogErrorf(s.ctx, "添加连接设备失败: %v", err)
+		return err
+	}
+	
+	applog.LogInfof(s.ctx, "设备连接成功: %s (%s)", device.DeviceName, device.DeviceID)
+	return nil
+}
+
+// UpdateDeviceLastSeen 更新设备最后活跃时间
+func (s *HotkeyService) UpdateDeviceLastSeen(deviceID string) error {
+	query := `UPDATE connected_devices SET last_seen_at = CURRENT_TIMESTAMP WHERE device_id = ?`
+	
+	_, err := s.db.Exec(query, deviceID)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "更新设备活跃时间失败: %v", err)
+		return err
+	}
+	
+	return nil
+}
+
+// generateHotkeyID 生成快捷键ID
+func generateHotkeyID() string {
+	return fmt.Sprintf("hk_%d", time.Now().UnixNano())
+}
+
+// generateDeviceID 生成设备ID
+func generateDeviceID() string {
+	return fmt.Sprintf("dev_%d", time.Now().UnixNano())
 }
 
 // GetKeyMappingsInternal 获取内部按键映射（用于测试）

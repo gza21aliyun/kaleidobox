@@ -1,10 +1,15 @@
 package test
 
 import (
+	"context"
+	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
+	"lunabox/internal/models"
 	"lunabox/internal/service"
 	"testing"
 	"time"
+
+	_ "github.com/duckdb/duckdb-go/v2"
 )
 
 func TestHotkeyService_BasicInitialization(t *testing.T) {
@@ -16,7 +21,7 @@ func TestHotkeyService_BasicInitialization(t *testing.T) {
 	}
 	
 	// 验证初始状态
-	mappings := hotkeyService.GetKeyMappings()
+	mappings := hotkeyService.GetKeyMappingsInternal()
 	if len(mappings) != 0 {
 		t.Error("New service should have empty key mappings")
 	}
@@ -33,7 +38,7 @@ func TestHotkeyService_KeyMappingOperations(t *testing.T) {
 	hotkeyService.AddKeyMapping(sourceKey, targetKey, service.MappingTypeDirect, modifiers)
 	
 	// 验证映射已添加
-	mappings := hotkeyService.GetKeyMappings()
+	mappings := hotkeyService.GetKeyMappingsInternal()
 	if len(mappings) != 1 {
 		t.Fatalf("Expected 1 mapping, got %d", len(mappings))
 	}
@@ -65,21 +70,21 @@ func TestHotkeyService_KeyMappingOperations(t *testing.T) {
 	
 	// 测试禁用映射
 	hotkeyService.DisableKeyMapping(sourceKey)
-	mappings = hotkeyService.GetKeyMappings()
+	mappings = hotkeyService.GetKeyMappingsInternal()
 	if mappings[sourceKey].IsEnabled {
 		t.Error("Mapping should be disabled")
 	}
 	
 	// 测试启用映射
 	hotkeyService.EnableKeyMapping(sourceKey)
-	mappings = hotkeyService.GetKeyMappings()
+	mappings = hotkeyService.GetKeyMappingsInternal()
 	if !mappings[sourceKey].IsEnabled {
 		t.Error("Mapping should be enabled")
 	}
 	
 	// 测试移除映射
 	hotkeyService.RemoveKeyMapping(sourceKey)
-	mappings = hotkeyService.GetKeyMappings()
+	mappings = hotkeyService.GetKeyMappingsInternal()
 	if len(mappings) != 0 {
 		t.Error("Mapping should be removed")
 	}
@@ -105,7 +110,7 @@ func TestHotkeyService_MultipleMappings(t *testing.T) {
 	}
 	
 	// 验证所有映射都已添加
-	mappings := hotkeyService.GetKeyMappings()
+	mappings := hotkeyService.GetKeyMappingsInternal()
 	if len(mappings) != len(mappingsToAdd) {
 		t.Errorf("Expected %d mappings, got %d", len(mappingsToAdd), len(mappings))
 	}
@@ -134,7 +139,7 @@ func TestHotkeyService_MultipleMappings(t *testing.T) {
 		hotkeyService.DisableKeyMapping(m.sourceKey)
 	}
 	
-	mappings = hotkeyService.GetKeyMappings()
+	mappings = hotkeyService.GetKeyMappingsInternal()
 	for _, m := range mappingsToAdd {
 		if mappings[m.sourceKey].IsEnabled {
 			t.Errorf("Mapping %s should be disabled", m.sourceKey)
@@ -146,7 +151,7 @@ func TestHotkeyService_MultipleMappings(t *testing.T) {
 		hotkeyService.RemoveKeyMapping(m.sourceKey)
 	}
 	
-	mappings = hotkeyService.GetKeyMappings()
+	mappings = hotkeyService.GetKeyMappingsInternal()
 	if len(mappings) != 0 {
 		t.Error("All mappings should be removed")
 	}
@@ -155,17 +160,25 @@ func TestHotkeyService_MultipleMappings(t *testing.T) {
 func TestHotkeyService_GameContext(t *testing.T) {
 	hotkeyService := service.NewHotkeyService()
 	
-	// 注意：由于缺少SetServices方法，我们无法完全测试游戏上下文功能
-	// 这里主要是测试服务的基本结构
+	// 测试游戏ID设置和获取
+	testGameID := "game_123"
+	hotkeyService.SetActiveGameID(testGameID)
 	
-	// 验证服务可以正常创建和使用
-	if hotkeyService == nil {
-		t.Fatal("HotkeyService should be creatable")
+	if hotkeyService.GetActiveGameID() != testGameID {
+		t.Errorf("Expected game ID %s, got %s", testGameID, hotkeyService.GetActiveGameID())
 	}
 	
-	mappings := hotkeyService.GetKeyMappings()
-	if mappings == nil {
-		t.Error("GetKeyMappings should return a valid map")
+	// 测试空游戏ID
+	hotkeyService.SetActiveGameID("")
+	if hotkeyService.GetActiveGameID() != "" {
+		t.Error("Game ID should be empty")
+	}
+	
+	// 测试切换游戏ID
+	newGameID := "game_456"
+	hotkeyService.SetActiveGameID(newGameID)
+	if hotkeyService.GetActiveGameID() != newGameID {
+		t.Errorf("Expected game ID %s, got %s", newGameID, hotkeyService.GetActiveGameID())
 	}
 }
 
@@ -207,7 +220,7 @@ func TestHotkeyService_ModifierKeys(t *testing.T) {
 			
 			hotkeyService.AddKeyMapping(sourceKey, targetKey, service.MappingTypeDirect, tc.modifiers)
 			
-			mappings := hotkeyService.GetKeyMappings()
+			mappings := hotkeyService.GetKeyMappingsInternal()
 			mapping := mappings[sourceKey]
 			
 			if len(mapping.Modifiers) != len(tc.modifiers) {
@@ -256,7 +269,7 @@ func TestHotkeyService_MappingTypes(t *testing.T) {
 			
 			hotkeyService.AddKeyMapping(sourceKey, targetKey, tc.mappingType, nil)
 			
-			mappings := hotkeyService.GetKeyMappings()
+			mappings := hotkeyService.GetKeyMappingsInternal()
 			mapping := mappings[sourceKey]
 			
 			if mapping.MappingType != tc.mappingType {
@@ -285,7 +298,7 @@ func TestHotkeyService_ConcurrentOperations(t *testing.T) {
 			hotkeyService.AddKeyMapping(sourceKey, targetKey, service.MappingTypeDirect, nil)
 			
 			// 验证添加成功
-			mappings := hotkeyService.GetKeyMappings()
+			mappings := hotkeyService.GetKeyMappingsInternal()
 			if _, exists := mappings[sourceKey]; !exists {
 				errorChan <- "Mapping not found after concurrent addition"
 			}
@@ -306,7 +319,7 @@ func TestHotkeyService_ConcurrentOperations(t *testing.T) {
 	}
 	
 	// 验证所有映射都存在
-	mappings := hotkeyService.GetKeyMappings()
+	mappings := hotkeyService.GetKeyMappingsInternal()
 	expectedCount := 10
 	if len(mappings) != expectedCount {
 		t.Errorf("Expected %d mappings after concurrent operations, got %d", expectedCount, len(mappings))
@@ -317,7 +330,7 @@ func TestHotkeyService_ConcurrentOperations(t *testing.T) {
 		hotkeyService.RemoveKeyMapping(key)
 	}
 	
-	finalMappings := hotkeyService.GetKeyMappings()
+	finalMappings := hotkeyService.GetKeyMappingsInternal()
 	if len(finalMappings) != 0 {
 		t.Error("All mappings should be removed after cleanup")
 	}
@@ -332,7 +345,7 @@ func TestHotkeyService_StateTracking(t *testing.T) {
 	// 这里主要是测试状态跟踪的数据结构
 	
 	// 验证初始状态下没有按键被跟踪
-	mappings := hotkeyService.GetKeyMappings()
+	mappings := hotkeyService.GetKeyMappingsInternal()
 	if len(mappings) != 0 {
 		t.Error("Should start with no mappings")
 	}
@@ -340,7 +353,7 @@ func TestHotkeyService_StateTracking(t *testing.T) {
 	// 添加一个映射来测试状态跟踪
 	hotkeyService.AddKeyMapping("test_source", "test_target", service.MappingTypeDirect, nil)
 	
-	mappings = hotkeyService.GetKeyMappings()
+	mappings = hotkeyService.GetKeyMappingsInternal()
 	if len(mappings) != 1 {
 		t.Error("Should have one mapping after addition")
 	}
@@ -365,9 +378,143 @@ func TestHotkeyService_StateTracking(t *testing.T) {
 	
 	// 清理
 	hotkeyService.RemoveKeyMapping("test_source")
-	mappings = hotkeyService.GetKeyMappings()
+	mappings = hotkeyService.GetKeyMappingsInternal()
 	if len(mappings) != 0 {
 		t.Error("Mapping should be removed")
+	}
+}
+
+// === 数据库相关测试方法（需要在ucrt64环境下执行）===
+
+func TestHotkeyService_DatabaseOperations(t *testing.T) {
+	// 注意：此测试需要duckdb环境，在ucrt64环境下执行
+	t.Skip("需要在ucrt64环境下执行数据库测试")
+
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	hotkeyService := service.NewHotkeyService()
+	hotkeyService.Init(context.Background(), db, &appconf.AppConfig{})
+
+	// 测试添加快捷键
+	testHotkey := &models.Hotkey{
+		ID:         "test_001",
+		GameID:     models.GlobalGameID,
+		Name:       "测试快捷键",
+		DeviceType: enums.DeviceTypeKeyboard,
+		KeyCode:    "f12",
+		ActionType: enums.HotkeyActionScreenshot,
+		IsEnabled:  true,
+	}
+
+	err := hotkeyService.AddHotkey(testHotkey)
+	if err != nil {
+		t.Errorf("添加快捷键失败: %v", err)
+	}
+
+	// 测试获取全局快捷键
+	globalHotkeys, err := hotkeyService.GetGlobalHotkeys()
+	if err != nil {
+		t.Errorf("获取全局快捷键失败: %v", err)
+	}
+
+	if len(globalHotkeys) != 1 {
+		t.Errorf("期望1个全局快捷键，得到%d个", len(globalHotkeys))
+	}
+
+	// 测试更新快捷键
+	testHotkey.Name = "更新后的快捷键"
+	err = hotkeyService.UpdateHotkey(testHotkey)
+	if err != nil {
+		t.Errorf("更新快捷键失败: %v", err)
+	}
+
+	// 测试根据游戏ID获取快捷键
+	_, err = hotkeyService.GetGameHotkeys("test_game")
+	if err != nil {
+		t.Errorf("获取游戏快捷键失败: %v", err)
+	}
+	// 应该是空的，因为我们没有添加游戏特定的快捷键
+
+	// 测试删除快捷键
+	err = hotkeyService.DeleteHotkey(testHotkey.ID)
+	if err != nil {
+		t.Errorf("删除快捷键失败: %v", err)
+	}
+
+	// 验证删除后全局快捷键为空
+	globalHotkeys, err = hotkeyService.GetGlobalHotkeys()
+	if err != nil {
+		t.Errorf("获取全局快捷键失败: %v", err)
+	}
+
+	if len(globalHotkeys) != 0 {
+		t.Errorf("删除后应该没有全局快捷键，但得到了%d个", len(globalHotkeys))
+	}
+}
+
+func TestHotkeyService_GetHotkeysByGameID(t *testing.T) {
+	// 注意：此测试需要duckdb环境，在ucrt64环境下执行
+	t.Skip("需要在ucrt64环境下执行数据库测试")
+
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	hotkeyService := service.NewHotkeyService()
+	hotkeyService.Init(context.Background(), db, &appconf.AppConfig{})
+
+	// 测试GetHotkeysByGameID方法（与GetGameHotkeys功能相同）
+	gameID := "test_game_123"
+	
+	// 应该返回空切片，因为没有数据
+	hotkeys, err := hotkeyService.GetHotkeysByGameID(gameID)
+	if err != nil {
+		t.Errorf("GetHotkeysByGameID执行失败: %v", err)
+	}
+
+	if len(hotkeys) != 0 {
+		t.Errorf("期望空结果，得到%d个快捷键", len(hotkeys))
+	}
+}
+
+func TestHotkeyService_DeviceOperations(t *testing.T) {
+	// 注意：此测试需要duckdb环境，在ucrt64环境下执行
+	t.Skip("需要在ucrt64环境下执行数据库测试")
+
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	hotkeyService := service.NewHotkeyService()
+	hotkeyService.Init(context.Background(), db, &appconf.AppConfig{})
+
+	// 测试添加设备
+	testDevice := &models.ConnectedDevice{
+		ID:         "device_001",
+		DeviceType: enums.DeviceTypeDualSense,
+		DeviceName: "PlayStation 5 DualSense",
+		DeviceID:   "dualsense_test_001",
+		IsActive:   true,
+	}
+
+	err := hotkeyService.AddConnectedDevice(testDevice)
+	if err != nil {
+		t.Errorf("添加设备失败: %v", err)
+	}
+
+	// 测试获取连接设备
+	devices, err := hotkeyService.GetConnectedDevices()
+	if err != nil {
+		t.Errorf("获取连接设备失败: %v", err)
+	}
+
+	if len(devices) != 1 {
+		t.Errorf("期望1个连接设备，得到%d个", len(devices))
+	}
+
+	// 测试更新设备最后活跃时间
+	err = hotkeyService.UpdateDeviceLastSeen(testDevice.DeviceID)
+	if err != nil {
+		t.Errorf("更新设备活跃时间失败: %v", err)
 	}
 }
 
@@ -380,6 +527,33 @@ func TestHotkeyService_ServiceIntegration(t *testing.T) {
 	
 	if hotkeyService == nil {
 		t.Fatal("HotkeyService should be creatable")
+	}
+
+	// 测试支持的设备类型
+	devices := hotkeyService.GetSupportedDevices()
+	if len(devices) == 0 {
+		t.Error("应该返回支持的设备类型列表")
+	}
+
+	// 验证至少包含基本设备类型
+	expectedDevices := map[enums.DeviceType]bool{
+		enums.DeviceTypeKeyboard:   false,
+		enums.DeviceTypeDualSense:  false,
+		enums.DeviceTypeDualShock4: false,
+		enums.DeviceTypeJoyCon:     false,
+		enums.DeviceTypeXInput:     false,
+	}
+
+	for _, device := range devices {
+		if _, exists := expectedDevices[device.Type]; exists {
+			expectedDevices[device.Type] = true
+		}
+	}
+
+	for deviceType, found := range expectedDevices {
+		if !found {
+			t.Errorf("期望找到设备类型: %s", deviceType)
+		}
 	}
 }
 

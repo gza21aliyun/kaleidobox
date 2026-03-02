@@ -7,6 +7,7 @@ const (
 	HotkeyActionStopGame    HotkeyActionType = "stop_game"
 	HotkeyActionTogglePause HotkeyActionType = "toggle_pause"
 	HotkeyActionScreenshot  HotkeyActionType = "screenshot"
+	HotkeyActionKeyMapping  HotkeyActionType = "key_mapping" // 按键映射
 	HotkeyActionCustom      HotkeyActionType = "custom"
 )
 

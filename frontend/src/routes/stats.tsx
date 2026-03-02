@@ -24,6 +24,7 @@ import { useChartTheme } from "../hooks/useChartTheme";
 import { useAppStore } from "../store";
 import { formatDateToYYYYMMDD, formatDurationHours, formatDurationShort } from "../utils/time";
 import { Route as rootRoute } from "./__root";
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
   CategoryScale,
@@ -42,6 +43,7 @@ export const Route = createRoute({
 });
 
 function StatsPage() {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const { textColor, gridColor } = useChartTheme();
   const [dimension, setDimension] = useState<enums.Period>(enums.Period.WEEK);
@@ -84,7 +86,7 @@ function StatsPage() {
     catch (err) {
       console.error("AI summarize failed:", err);
       setAISummary(dimension, "");
-      toast.error("AI总结失败，请检查AI配置是否正确");
+      toast.error(t('stats.toasts.aiSummaryFailed'));
     }
     finally {
       setAiLoading(false);
@@ -104,7 +106,7 @@ function StatsPage() {
     }
     catch (error) {
       console.error("Failed to load stats:", error);
-      toast.error("加载统计数据失败");
+      toast.error(t('stats.toasts.loadStatsFailed'));
     }
     finally {
       setLoading(false);
@@ -113,11 +115,11 @@ function StatsPage() {
 
   const handleApplyDateRange = () => {
     if (!startDate || !endDate) {
-      toast.error("请选择开始和结束日期");
+      toast.error(t('stats.toasts.selectDateRange'));
       return;
     }
     if (new Date(startDate) >= new Date(endDate)) {
-      toast.error("开始日期必须早于结束日期");
+      toast.error(t('stats.toasts.dateRangeInvalid'));
       return;
     }
     // 自定义日期范围统一使用 DAY 维度（按日聚合）
@@ -162,7 +164,7 @@ function StatsPage() {
     labels: stats.timeline.map(p => p.label), // 后端已返回本地日期字符串，直接使用
     datasets: [
       {
-        label: "总游玩时长 (小时)",
+        label: t('stats.labels.totalPlayTimeHours'),
         data: stats.timeline.map(p => formatDurationHours(p.duration)),
         borderColor: "rgb(75, 192, 192)",
         backgroundColor: "rgba(75, 192, 192, 0.5)",
@@ -217,7 +219,7 @@ function StatsPage() {
         beginAtZero: true,
         title: {
           display: true,
-          text: "小时",
+          text: t('stats.labels.hours'),
           color: textColor,
         },
         grid: {
@@ -271,8 +273,8 @@ function StatsPage() {
           </button>
         </div>
         <div className="flex space-x-2 items-center">
-          <button onClick={() => setShowTemplateModal(true)} className="flex justify-end i-mdi-image-filter-hdr text-2xl text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-brand-200 transition-colors" title="美化导出" />
-          <button onClick={handleAISummarize} className="flex justify-end i-mdi-robot-happy text-2xl text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-brand-200 transition-colors" title="AI总结" />
+          <button onClick={() => setShowTemplateModal(true)} className="flex justify-end i-mdi-image-filter-hdr text-2xl text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-brand-200 transition-colors" title={t('stats.labels.beautifyExport')} />
+          <button onClick={handleAISummarize} className="flex justify-end i-mdi-robot-happy text-2xl text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-brand-200 transition-colors" title={t('stats.labels.aiSummary')} />
         </div>
       </div>
 
@@ -322,7 +324,7 @@ function StatsPage() {
 
       {/* Library Summary */}
       <CollapsibleSection
-        title="库概览"
+        title={t('stats.labels.libraryOverview')}
         icon="i-mdi-library-shelves"
         defaultOpen={false}
       >
@@ -398,7 +400,7 @@ function StatsPage() {
         <div className={`glass-card ${stats.play_time_leaderboard.length > 0 ? "md:col-span-1 lg:col-span-2" : "md:col-span-2 lg:col-span-3"} bg-white dark:bg-brand-800 rounded-xl shadow-sm border border-brand-200 dark:border-brand-700 overflow-hidden flex flex-col`}>
           <div className="p-6 border-b border-brand-200 dark:border-brand-700">
             <h3 className="text-lg font-semibold text-brand-900 dark:text-white">
-              {stats.play_time_leaderboard.length > 0 ? "排行榜" : "游玩时长排行榜"}
+              {stats.play_time_leaderboard.length > 0 ? t('stats.labels.leaderboard') : t('stats.labels.playTimeLeaderboard')}
             </h3>
           </div>
           <div className="overflow-x-auto flex-1">
@@ -438,7 +440,7 @@ function StatsPage() {
                 {stats.play_time_leaderboard.length <= 1 && (
                   <tr>
                     <td colSpan={3} className="px-6 py-12 text-center text-brand-500 dark:text-brand-400">
-                      {stats.play_time_leaderboard.length === 0 ? "暂无数据" : "暂无更多排行数据"}
+                      {stats.play_time_leaderboard.length === 0 ? t('stats.labels.noData') : t('stats.labels.noMoreData')}
                     </td>
                   </tr>
                 )}

@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -15,12 +16,18 @@ export function ConfirmModal({
   isOpen,
   title,
   message,
-  confirmText = "确定",
-  cancelText = "取消",
+  confirmText,
+  cancelText,
   type = "info",
   onClose,
   onConfirm,
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
+  
+  // 如果没有传入文本，则使用默认翻译
+  const finalConfirmText = confirmText || t('common.confirm');
+  const finalCancelText = cancelText || t('common.cancel');
+
   if (!isOpen)
     return null;
 
@@ -49,7 +56,7 @@ export function ConfirmModal({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 rounded-lg dark:text-brand-300 dark:hover:bg-brand-700 transition-colors"
           >
-            {cancelText}
+            {finalCancelText}
           </button>
           <button
             onClick={() => {
@@ -62,7 +69,7 @@ export function ConfirmModal({
                 : "bg-neutral-600 hover:bg-neutral-700 shadow-sm shadow-neutral-200 dark:shadow-none"
             }`}
           >
-            {confirmText}
+            {finalConfirmText}
           </button>
         </div>
       </div>

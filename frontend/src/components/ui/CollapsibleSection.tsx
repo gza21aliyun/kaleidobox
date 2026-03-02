@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -9,6 +10,7 @@ interface CollapsibleSectionProps {
 }
 
 export function CollapsibleSection({ title, icon, children, defaultOpen = true }: CollapsibleSectionProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (

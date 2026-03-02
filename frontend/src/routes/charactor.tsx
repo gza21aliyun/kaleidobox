@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { appconf, enums, models } from "../../wailsjs/go/models";
 import { createRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ export const Route = createRoute({
 });
 
 function CharactorPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { charactorId } = Route.useParams();
   const [charactor, setCharactor] = useState<models.Charactor | null>(null);
@@ -37,7 +39,7 @@ function CharactorPage() {
       setGames(loadedGames);
     } catch (err) {
       console.error("Failed to load charactor details:", err);
-      setError("无法加载角色信息");
+      setError(t('charactor.toasts.loadCharactorFailed'));
     } finally {
       setLoading(false);
     }
@@ -183,7 +185,7 @@ function CharactorPage() {
                 <div className="flex justify-between">
                   <span className="text-brand-600 dark:text-brand-400">性别:</span>
                   <span className="text-brand-900 dark:text-white font-medium">
-                    {charactor.gender === 1 ? '男' : charactor.gender === 2 ? '女' : '未知'}
+                    {charactor.gender === 1 ? t('common.male') : charactor.gender === 2 ? t('common.female') : t('common.unknown')}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -247,13 +249,13 @@ function CharactorPage() {
                             {work.game.cover_url && (
                               <img
                                 src={work.game.cover_url}
-                                alt={`${work.game.name?.trim() || '游戏'} 封面`}
+                                alt={`${work.game.name?.trim() || t('common.game')} ${t('common.cover')}`}
                                 className="w-16 h-24 object-cover rounded"
                               />
                             )}
                           </td>
                           <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-1/10">
-                            {work.game.name?.trim() || '未知游戏'}
+                            {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
                           </td>
                           
                           <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
@@ -261,14 +263,14 @@ function CharactorPage() {
                           </td>
                           <td className="py-3 px-3">
                             <span className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                              {work.work.source_type || '未知'}
+                              {work.work.source_type || t('common.unknown')}
                             </span>
                           </td>
                           <td className="py-3 px-3">
                             {work.work.images && (
                               <img
                                 src={work.work.images}
-                                alt="角色图片"
+                                alt={t('common.characterImage')}
                                 className="w-12 h-24 object-cover rounded"
                               />
                             )}

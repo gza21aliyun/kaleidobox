@@ -5,6 +5,7 @@ import { StartGameWithTracking } from "../../wailsjs/go/service/StartService";
 import { useAppStore } from "../store";
 import { formatDuration, formatLocalDateTime } from "../utils/time";
 import { Route as rootRoute } from "./__root";
+import { useTranslation } from 'react-i18next';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -16,6 +17,7 @@ function HomePage() {
   const navigate = useNavigate();
   const { homeData, fetchHomeData, isLoading, config } = useAppStore();
   const [isPlaying, setIsPlaying] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchHomeData();
@@ -35,12 +37,12 @@ function HomePage() {
       const success = await StartGameWithTracking(homeData.last_played.game.id);
       if (success) {
         setIsPlaying(true);
-        toast.success(`正在启动 ${homeData.last_played.game.name}`);
+        toast.success(t('home.startingGame', { name: homeData.last_played.game.name }));
       }
     }
     catch (err) {
       console.error("Failed to launch game:", err);
-      toast.error("启动游戏失败");
+      toast.error(t('home.startGameFailed'));
     }
   };
 
@@ -51,12 +53,12 @@ function HomePage() {
   if (!homeData) {
     return (
       <div className="flex h-full flex-col items-center justify-center space-y-4">
-        <p className="text-brand-500">暂无数据</p>
+        <p className="text-brand-500">{t('common.noData')}</p>
         <button
           onClick={() => fetchHomeData()}
           className="px-4 py-2 bg-neutral-500 text-white rounded hover:bg-neutral-600 transition-colors"
         >
-          重试
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -68,27 +70,27 @@ function HomePage() {
     return (
       <div className="h-full relative flex flex-col items-center justify-center">
         <div className="absolute top-6 left-8">
-          <h1 className="text-4xl font-bold text-brand-900 dark:text-white drop-shadow-lg">首页</h1>
-          <p className="mt-2 text-brand-600 dark:text-white/80 drop-shadow">欢迎回来!</p>
+          <h1 className="text-4xl font-bold text-brand-900 dark:text-white drop-shadow-lg">{t('nav.home')}</h1>
+          <p className="mt-2 text-brand-600 dark:text-white/80 drop-shadow">{t('home.welcomeBack')}</p>
         </div>
         <div className="glass-card absolute top-6 right-6 flex items-center gap-2 bg-white/80 dark:bg-brand-800/80 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg">
           <span className="i-mdi-clock-outline text-xl text-neutral-500" />
           <div>
-            <div className="text-xs text-brand-500 dark:text-brand-400">今日游玩时间</div>
+            <div className="text-xs text-brand-500 dark:text-brand-400">{t('home.todayPlayTime')}</div>
             <div className="text-lg font-bold text-neutral-600 dark:text-neutral-400">
               {formatDuration(homeData.today_play_time_sec)}
             </div>
           </div>
         </div>
         <span className="i-mdi-gamepad-variant-outline text-8xl text-brand-300 dark:text-brand-700 mb-4" />
-        <h2 className="text-2xl font-bold text-brand-700 dark:text-brand-300 mb-2 drop-shadow-lg">还没有游玩记录</h2>
-        <p className="text-brand-600 dark:text-white/70 mb-6 drop-shadow">去游戏库选择一款游戏开始吧</p>
+        <h2 className="text-2xl font-bold text-brand-700 dark:text-brand-300 mb-2 drop-shadow-lg">{t('home.noPlayRecords')}</h2>
+        <p className="text-brand-600 dark:text-white/70 mb-6 drop-shadow">{t('home.chooseGameToStart')}</p>
         <button
           onClick={() => navigate({ to: "/library" })}
           className="glass-btn-neutral flex items-center gap-2 px-6 py-3 bg-neutral-600 hover:bg-neutral-700 text-white rounded-xl shadow-lg transition-all hover:scale-105 font-medium"
         >
           <span className="i-mdi-gamepad-variant text-xl" />
-          浏览游戏库
+          {t('home.browseLibrary')}
         </button>
       </div>
     );
@@ -119,13 +121,13 @@ function HomePage() {
           </div>
         )}
         <div className="absolute top-6 left-8">
-          <h1 className="text-4xl font-bold text-brand-900 dark:text-white drop-shadow-lg">首页</h1>
-          <p className="mt-2 text-brand-600 dark:text-white/80 drop-shadow">欢迎回来</p>
+          <h1 className="text-4xl font-bold text-brand-900 dark:text-white drop-shadow-lg">{t('nav.home')}</h1>
+          <p className="mt-2 text-brand-600 dark:text-white/80 drop-shadow">{t('home.welcomeBack')}</p>
         </div>
         <div className="glass-card absolute top-6 right-6 flex items-center gap-2 bg-white/80 dark:bg-brand-800/80 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg">
           <span className="i-mdi-clock-outline text-xl text-neutral-500" />
           <div>
-            <div className="text-xs text-brand-500 dark:text-brand-400">今日游玩时间</div>
+            <div className="text-xs text-brand-500 dark:text-brand-400">{t('home.todayPlayTime')}</div>
             <div className="text-lg font-bold text-neutral-600 dark:text-neutral-400">
               {formatDuration(homeData.today_play_time_sec)}
             </div>
@@ -139,12 +141,14 @@ function HomePage() {
             {lastPlayed.game.name}
           </h1>
           <p className="text-brand-700 dark:text-white/80 text-sm drop-shadow">
-            {isPlaying ? "正在游玩中..." : `上次游玩：${formatLocalDateTime(lastPlayed.last_played_at, config?.time_zone)}`}
+            {isPlaying 
+              ? t('home.nowPlaying') 
+              : t('home.lastPlayedAt', { time: formatLocalDateTime(lastPlayed.last_played_at, config?.time_zone) })
+            }
           </p>
           {lastPlayed.total_played_dur > 0 && !isPlaying && (
             <p className="text-brand-600 dark:text-white/70 text-sm mt-1 drop-shadow">
-              总游玩时长：
-              {formatDuration(lastPlayed.total_played_dur)}
+              {t('home.totalPlayTime')} {formatDuration(lastPlayed.total_played_dur)}
             </p>
           )}
         </div>
@@ -152,7 +156,7 @@ function HomePage() {
           ? (
               <div className="absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 bg-success-600 text-white rounded-xl shadow-lg font-medium">
                 <span className="i-mdi-gamepad-variant text-xl animate-pulse" />
-                正在游戏
+                {t('home.nowPlaying')}
               </div>
             )
           : (
@@ -161,7 +165,7 @@ function HomePage() {
                 className="absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 bg-neutral-600 hover:bg-neutral-700 text-white rounded-xl shadow-lg transition-all hover:scale-105 font-medium"
               >
                 <span className="i-mdi-play text-xl" />
-                继续游戏
+                {t('home.continuePlaying')}
               </button>
             )}
       </div>

@@ -1,4 +1,5 @@
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
+import { useTranslation } from 'react-i18next';
 
 export interface BetterSelectOption {
   value: string;
@@ -19,12 +20,14 @@ export function BetterSelect({
   value,
   onChange,
   options,
-  placeholder = "请选择",
+  placeholder,
   disabled = false,
   className = "",
 }: BetterSelectProps) {
+  const { t } = useTranslation();
+  const finalPlaceholder = placeholder || t('common.pleaseSelect');
   const selectedOption = options.find(opt => opt.value === value);
-  const displayValue = selectedOption?.label || placeholder;
+  const displayValue = selectedOption?.label || finalPlaceholder;
 
   return (
     <Listbox value={value} onChange={onChange} disabled={disabled}>

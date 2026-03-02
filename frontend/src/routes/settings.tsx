@@ -10,11 +10,13 @@ import { CloudBackupSettingsPanel } from "../components/panel/CloudBackupSetting
 import { DBBackupPanel } from "../components/panel/DBBackupPanel";
 import { FullDataBackupPanel } from "../components/panel/FullDataBackupPanel";
 import { GameSettingsPanel } from "../components/panel/GameSettingsPanel";
+import { LanguageSettingsPanel } from "../components/panel/LanguageSettingsPanel";
 import { UpdateSettingsPanel } from "../components/panel/UpdateSettingsPanel";
 import { SettingsSkeleton } from "../components/skeleton/SettingsSkeleton";
 import { CollapsibleSection } from "../components/ui/CollapsibleSection";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
+import { useTranslation } from 'react-i18next';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -23,6 +25,7 @@ export const Route = createRoute({
 });
 
 function SettingsPage() {
+  const { t } = useTranslation();
   const { config, fetchConfig, updateConfig } = useAppStore();
   const [formData, setFormData] = useState<appconf.AppConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,39 +112,43 @@ function SettingsPage() {
         <h1 className="text-4xl font-bold text-brand-900 dark:text-white">设置</h1>
       </div>
 
-      <CollapsibleSection title="基础配置" icon="i-mdi-database-settings" defaultOpen={true}>
+      <CollapsibleSection title={t('settings.basicConfig')} icon="i-mdi-database-settings" defaultOpen={true}>
         <BasicSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="外观设置" icon="i-mdi-palette" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.languageSettings')} icon="i-mdi-translate" defaultOpen={true}>
+        <LanguageSettingsPanel formData={formData} onChange={handleFormChange} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title={t('settings.appearance')} icon="i-mdi-palette" defaultOpen={false}>
         <BackgroundSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="游玩配置" icon="i-mdi-timer-play-outline" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.gameplay')} icon="i-mdi-timer-play-outline" defaultOpen={false}>
         <GameSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="云备份配置" icon="i-mdi-cloud-upload" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.cloudBackup')} icon="i-mdi-cloud-upload" defaultOpen={false}>
         <CloudBackupSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="自动备份" icon="i-mdi-backup-restore" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.autoBackup')} icon="i-mdi-backup-restore" defaultOpen={false}>
         <AutoBackupSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="AI 配置" icon="i-mdi-robot-happy" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.aiConfig')} icon="i-mdi-robot-happy" defaultOpen={false}>
         <AISettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="数据库备份" icon="i-mdi-database-refresh" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.dbBackup')} icon="i-mdi-database-refresh" defaultOpen={false}>
         <DBBackupPanel />
       </CollapsibleSection>
 
-      <CollapsibleSection title="全量数据备份" icon="i-mdi-package-variant" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.fullDataBackup')} icon="i-mdi-package-variant" defaultOpen={false}>
         <FullDataBackupPanel />
       </CollapsibleSection>
 
-      <CollapsibleSection title="应用更新" icon="i-mdi-update" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.appUpdate')} icon="i-mdi-update" defaultOpen={false}>
         <UpdateSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 

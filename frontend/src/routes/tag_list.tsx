@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { tagMapForEach, arrayToMap } from "../components/utils/Utility";
+import { useTranslation } from 'react-i18next';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -17,6 +18,7 @@ export const Route = createRoute({
 });
 
 function TagListPage() {
+  const { t } = useTranslation();
   const [tags, setTags] = useState<models.Tag[]>([]);
   const [groups, setGroups] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ function TagListPage() {
       setGroups(groupsResult || []);
     } catch (err) {
       console.error("Failed to load data:", err);
-      setError("无法加载标签和分组数据");
+      setError(t('tagList.toasts.loadTagGroupsFailed'));
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,7 @@ function TagListPage() {
       setTags(result || []);
     } catch (err) {
       console.error("Failed to load tags:", err);
-      setError("无法加载标签列表");
+      setError(t('tagList.toasts.loadTagsFailed'));
     } finally {
       setLoading(false);
     }
@@ -75,7 +77,7 @@ function TagListPage() {
 
   // 按分组组织标签
   const tagsByGroup = tags.reduce((acc, tag) => {
-    const group = tag.group || "未分组";
+    const group = tag.group || t('tagList.messages.ungrouped');
     if (!acc[group]) {
       acc[group] = [];
     }
@@ -103,10 +105,10 @@ function TagListPage() {
     try {
       await DeleteTagGroup(groupName);
       await loadTagsAndGroups();
-      toast.success('分组删除成功');
+      toast.success(t('tagList.toasts.groupDeleteSuccess'));
     } catch (error) {
-      console.error('删除分组失败:', error);
-      toast.error('删除分组失败');
+      console.error(t('tagList.toasts.groupDeleteFailed') + ':', error);
+      toast.error(t('tagList.toasts.groupDeleteFailed'));
     }
   };
 
@@ -115,7 +117,7 @@ function TagListPage() {
       await UpdateTagsGroup(selectedTags, groupName);
       await loadTagsAndGroups();
     } catch (error) {
-      console.error('保存分组失败:', error);
+      console.error(t('tagList.toasts.saveGroupFailed') + ':', error);
       throw error;
     }
   };
@@ -144,10 +146,10 @@ function TagListPage() {
         return prevGroups;
         });
         
-        toast.success(`标签 "${tagName}" 已添加到分组 "${targetGroup}"`);
+        toast.success(t('tagList.toasts.tagAddedToGroup', { tagName, targetGroup }));
     } catch (error) {
-        console.error('拖拽添加标签失败:', error);
-        toast.error('添加标签到分组失败');
+        console.error(t('tagList.toasts.dragAddTagFailed') + ':', error);
+        toast.error(t('tagList.toasts.addTagToGroupFailed'));
     }
     };
 
@@ -211,7 +213,7 @@ function TagListPage() {
           <div className="relative max-w-md">
             <input
               type="text"
-              placeholder="搜索标签..."
+              placeholder={t('tagList.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-brand-200 dark:border-brand-700 rounded-lg bg-white dark:bg-brand-800 text-brand-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -228,10 +230,10 @@ function TagListPage() {
               <div className="i-mdi-information text-yellow-500 text-xl mr-3"></div>
               <div>
                 <h3 className="font-medium text-yellow-800 dark:text-yellow-200">
-                  {searchQuery ? '未找到匹配的标签' : '暂无标签'}
+                  {searchQuery ? t('tagList.messages.noMatchingTags') : t('tagList.messages.noTags')}
                 </h3>
                 <p className="text-yellow-600 dark:text-yellow-400 mt-1">
-                  {searchQuery ? '请尝试其他关键词' : '还没有添加任何标签'}
+                  {searchQuery ? t('tagList.messages.tryOtherKeywords') : t('tagList.messages.noTagsAdded')}
                 </p>
               </div>
             </div>

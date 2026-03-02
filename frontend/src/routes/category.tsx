@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { models, vo } from "../../wailsjs/go/models";
 import { createRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -24,6 +25,7 @@ export const Route = createRoute({
 });
 
 function CategoryDetailPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { categoryId } = Route.useParams();
   const [category, setCategory] = useState<vo.CategoryVO | null>(null);
@@ -60,7 +62,7 @@ function CategoryDetailPage() {
     }
     catch (error) {
       console.error("Failed to load category:", error);
-      toast.error("加载收藏夹失败");
+      toast.error(t('category.toasts.loadCategoriesFailed'));
     }
   };
 
@@ -71,7 +73,7 @@ function CategoryDetailPage() {
     }
     catch (error) {
       console.error("Failed to load games for category:", error);
-      toast.error("加载文件夹中游戏失败");
+      toast.error(t('category.toasts.loadFolderGamesFailed'));
     }
   };
 
@@ -89,7 +91,7 @@ function CategoryDetailPage() {
     }
     catch (error) {
       console.error("Failed to remove game from category:", error);
-      toast.error("从收藏夹中移除游戏失败");
+      toast.error(t('category.toasts.removeFromCategoryFailed'));
     }
   };
 
@@ -102,7 +104,7 @@ function CategoryDetailPage() {
     }
     catch (error) {
       console.error("Failed to load all games:", error);
-      toast.error("加载库中所有游戏失败");
+      toast.error(t('category.toasts.loadLibraryGamesFailed'));
     }
   };
 
@@ -117,7 +119,7 @@ function CategoryDetailPage() {
     }
     catch (error) {
       console.error("Failed to add game to category:", error);
-      toast.error("添加游戏到收藏夹失败");
+      toast.error(t('category.toasts.addGameToCategoryFailed'));
     }
   };
 
@@ -194,7 +196,7 @@ function CategoryDetailPage() {
     }
     catch (error) {
       console.error("Failed to batch remove games:", error);
-      toast.error("批量移除失败");
+      toast.error(t('category.toasts.batchRemoveFailed'));
     }
   };
 
@@ -222,7 +224,7 @@ function CategoryDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4 text-brand-500">
         <div className="i-mdi-alert-circle-outline text-6xl" />
-        <p className="text-xl">未找到该分类</p>
+        <p className="text-xl">{t('category.messages.categoryNotFound', { category: t('nav.categories') })}</p>
         <button onClick={onBack} className="text-neutral-600 hover:underline">返回列表</button>
       </div>
     );
@@ -259,7 +261,7 @@ function CategoryDetailPage() {
         <FilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="搜索游戏..."
+          searchPlaceholder={t('category.messages.searchPlaceholder')}
           sortBy={sortBy}
           onSortByChange={val => setSortBy(val as "name" | "created_at")}
           sortOptions={sortOptions}
@@ -294,7 +296,7 @@ function CategoryDetailPage() {
               className="glass-btn-neutral flex items-center rounded-lg bg-neutral-600 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 focus:outline-none focus:ring-4 focus:ring-neutral-300 dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:focus:ring-neutral-800"
             >
               <div className="i-mdi-plus mr-2 text-lg" />
-              添加游戏
+              {t('common.add')}游戏
             </button>
           )}
         />
@@ -322,7 +324,7 @@ function CategoryDetailPage() {
                                 handleRemoveGame(game.id);
                               }}
                               className="absolute top-2 right-2 p-1 bg-error-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-error-600"
-                              title="从收藏夹移除"
+                              title={t('category.messages.removeFromCategory')}
                             >
                               <div className="i-mdi-close text-sm" />
                             </button>
@@ -346,7 +348,7 @@ function CategoryDetailPage() {
                   onClick={openAddGameModal}
                   className="mt-4 text-neutral-600 hover:underline dark:text-neutral-400"
                 >
-                  添加游戏
+                  {t('common.add')}游戏
                 </button>
               </div>
             )}

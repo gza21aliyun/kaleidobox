@@ -1,0 +1,160 @@
+{
+  "common": {
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "add": "追加",
+    "close": "閉じる",
+    "loading": "読み込み中...",
+    "success": "成功",
+    "error": "エラー",
+    "warning": "警告",
+    "info": "情報",
+    "yes": "はい",
+    "no": "いいえ",
+    "ok": "OK",
+    "apply": "適用",
+    "language": "言語",
+    "noData": "データなし",
+    "retry": "再試行",
+    "details": "詳細",
+    "settings": "設定",
+    "pleaseSelect": "選択してください"
+  },
+  "nav": {
+    "home": "ホーム",
+    "library": "ライブラリ",
+    "stats": "統計",
+    "categories": "カテゴリ",
+    "settings": "設定"
+  },
+  "library": {
+    "title": "ライブラリ",
+    "searchPlaceholder": "ゲームを検索...",
+    "sortBy": "並び替え",
+    "filterByStatus": "ステータスで絞り込み",
+    "addGame": "ゲームを追加",
+    "batchImport": "一括インポート",
+    "batchUpdate": "一括更新",
+    "noGamesFound": "ゲームが見つかりません",
+    "gamesCount": "{{count}} ゲーム"
+  },
+  "stats": {
+    "title": "統計",
+    "playTimeStats": "プレイ時間統計",
+    "gameCount": "ゲーム数",
+    "totalPlayTime": "総プレイ時間",
+    "dailyAverage": "日平均プレイ時間"
+  },
+  "categories": {
+    "title": "カテゴリ",
+    "manageCategories": "カテゴリ管理",
+    "noCategories": "カテゴリなし",
+    "addCategory": "カテゴリを追加"
+  },
+  "game": {
+    "status": {
+      "not_started": "未開始",
+      "playing": "プレイ中", 
+      "completed": "クリア済み",
+      "on_hold": "一時停止"
+    },
+    "details": "ゲーム詳細",
+    "playTime": "プレイ時間",
+    "lastPlayed": "最終プレイ",
+    "releaseDate": "発売日"
+  },
+  "gameStatus": {
+    "not_started": "未開始",
+    "playing": "プレイ中",
+    "completed": "クリア済み",
+    "on_hold": "一時停止"
+  },
+  "period": {
+    "day": "日",
+    "week": "週",
+    "month": "月",
+    "all": "すべて"
+  },
+  "promptType": {
+    "DEFAULT_SYSTEM": "デフォルトシステムプロンプト",
+    "MEOW_ZAKO": "猫娘プロンプト",
+    "STRICT_TUTOR": "厳しいチュータープロンプト"
+  },
+  "sourceType": {
+    "local": "ローカル",
+    "bangumi": "Bangumi",
+    "vndb": "VNDB",
+    "ymgal": "YM Gal",
+    "dmm": "DMM",
+    "eroscape": "批評空間",
+    "dlsite": "Dlsite"
+  },
+  "staffRole": {
+    "STAFF": "スタッフ",
+    "CV": "声優",
+    "SCENEARIO": "シナリオ",
+    "DIRECTOR": "監督",
+    "COMPOSER": "音楽",
+    "CHARA_DESIGN": "キャラクターデザイン",
+    "CHARACTOR": "キャラクター",
+    "SINGER": "歌手",
+    "ART": "画家"
+  },
+  "taskStatus": {
+    "INITIAL": "初期",
+    "STARTED": "開始済み",
+    "PAUSED": "一時停止",
+    "COMPLETED": "完了",
+    "ERROR": "エラー",
+    "CANCELED": "キャンセル"
+  },
+  "taskType": {
+    "GAMES": "ゲーム",
+    "CHARACTORS": "キャラクター",
+    "STAFFS": "スタッフ",
+    "IMAGES": "画像",
+    "RELATIONS": "関係"
+  },
+  "hotkeyAction": {
+    "START_GAME": "ゲーム開始",
+    "STOP_GAME": "ゲーム停止",
+    "TOGGLE_PAUSE": "一時停止切り替え",
+    "SCREENSHOT": "スクリーンショット",
+    "CUSTOM": "カスタム"
+  },
+  "deviceType": {
+    "KEYBOARD": "キーボード",
+    "DUALSENSE": "PlayStation 5 DualSense",
+    "DUALSHOCK4": "PlayStation 4 DualShock 4",
+    "JOYCON": "Nintendo Switch Joy-Con",
+    "XINPUT": "Xboxコントローラーおよび互換機器"
+  },
+  "modifierKey": {
+    "CTRL": "Ctrl",
+    "SHIFT": "Shift",
+    "ALT": "Alt",
+    "WIN": "Win"
+  },
+  "joystickButton": {
+    "A": "Aボタン",
+    "B": "Bボタン",
+    "X": "Xボタン",
+    "Y": "Yボタン",
+    "LB": "左バンパー",
+    "RB": "右バンパー",
+    "LT": "左トリガー",
+    "RT": "右トリガー",
+    "BACK": "戻るボタン",
+    "START": "スタートボタン",
+    "LS": "左スティック押し込み",
+    "RS": "右スティック押し込み",
+    "DPAD_UP": "方向キー上",
+    "DPAD_DOWN": "方向キー下",
+    "DPAD_LEFT": "方向キー左",
+    "DPAD_RIGHT": "方向キー右",
+    "GUIDE": "ガイドボタン"
+  }
+}

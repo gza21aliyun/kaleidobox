@@ -21,6 +21,7 @@ import { GameInfoPanel } from "../components/panel/GameInfoPanel";
 import { GameGalleryPanel } from "../components/panel/GameGalleryPanel"; // 新增导入
 import { GameIntroPanel } from "../components/panel/GameIntroPanel";
 import { OpenBrowser } from "../../wailsjs/go/service/ImportService"; 
+import { useTranslation } from 'react-i18next';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -33,6 +34,7 @@ export interface GameSearchParams {
 }
 
 function GameDetailPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { gameId } = Route.useParams();
   const [ currentGameId, setCurrentGameId ] = useState(gameId);
@@ -88,7 +90,7 @@ function GameDetailPage() {
       }
       catch (error) {
         console.error("Failed to load game data:", error);
-        toast.error("加载游戏数据失败");
+        toast.error(t('game.toasts.loadGameFailed'));
       }
       finally {
         setIsLoading(false);
@@ -244,7 +246,7 @@ function GameDetailPage() {
     }
     catch (error) {
       console.error("Failed to select executable:", error);
-      toast.error("选择可执行文件失败");
+      toast.error(t('game.toasts.selectExecutableFailed'));
     }
   };
 
@@ -259,12 +261,12 @@ function GameDetailPage() {
       return;
     try {
       await DeleteGame(game.id);
-      toast.success("删除成功");
+      toast.success(t('common.deleteSuccess'));
       navigate({ to: "/library" });
     }
     catch (error) {
       console.error("Failed to delete game:", error);
-      toast.error("删除失败");
+      toast.error(t('common.deleteFailed'));
     }
   };
 
@@ -277,7 +279,7 @@ function GameDetailPage() {
     }
     catch (error) {
       console.error("Failed to select save directory:", error);
-      toast.error("选择存档路径失败");
+      toast.error(t('game.toasts.selectSavePathFailed'));
     }
   };
 
@@ -290,7 +292,7 @@ function GameDetailPage() {
     }
     catch (error) {
       console.error("Failed to select save file:", error);
-      toast.error("选择存档路径失败");
+      toast.error(t('game.toasts.selectSavePathFailed'));
     }
   };
 
@@ -305,7 +307,7 @@ function GameDetailPage() {
     }
     catch (error) {
       console.error("Failed to select cover image:", error);
-      toast.error("选择封面图片失败");
+      toast.error(t('game.toasts.selectCoverFailed'));
     }
   };
 
@@ -317,7 +319,7 @@ function GameDetailPage() {
       const updatedGame = await GetGameByID(game.id);
       setGame(updatedGame);
       originalGameData.current = updatedGame;
-      toast.success("从远程更新成功");
+      toast.success(t('game.toasts.remoteUpdateSuccess'));
     }
     catch (error) {
       console.error("Failed to update from remote:", error);
@@ -326,10 +328,10 @@ function GameDetailPage() {
   };
 
   const statusConfig = {
-    [enums.GameStatus.NOT_STARTED]: { label: "未开始", icon: "i-mdi-clock-outline", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
-    [enums.GameStatus.PLAYING]: { label: "游玩中", icon: "i-mdi-gamepad-variant", color: "bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300" },
-    [enums.GameStatus.COMPLETED]: { label: "已通关", icon: "i-mdi-trophy", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" },
-    [enums.GameStatus.ON_HOLD]: { label: "搁置", icon: "i-mdi-pause-circle-outline", color: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" },
+    [enums.GameStatus.NOT_STARTED]: { label: t('library.gameStatus.not_started'), icon: "i-mdi-clock-outline", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+    [enums.GameStatus.PLAYING]: { label: t('library.gameStatus.playing'), icon: "i-mdi-gamepad-variant", color: "bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300" },
+    [enums.GameStatus.COMPLETED]: { label: t('library.gameStatus.completed'), icon: "i-mdi-trophy", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" },
+    [enums.GameStatus.ON_HOLD]: { label: t('library.gameStatus.on_hold'), icon: "i-mdi-pause-circle-outline", color: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" },
   };
 
   const handleStartGame = async () => {
@@ -357,11 +359,11 @@ function GameDetailPage() {
     setGame(updatedGame);
     try {
       await UpdateGame(updatedGame);
-      toast.success("状态已更新");
+      toast.success(t('game.toasts.statusUpdated'));
     }
     catch (error) {
       console.error("Failed to update status:", error);
-      toast.error("状态更新失败");
+      toast.error(t('game.toasts.statusUpdateFailed'));
     }
   };
 
@@ -385,7 +387,7 @@ function GameDetailPage() {
     }
     catch (error) {
       console.error("Failed to load categories:", error);
-      toast.error("加载收藏夹失败");
+      toast.error(t('game.toasts.loadCategoriesFailed'));
     }
   };
 
@@ -413,12 +415,12 @@ function GameDetailPage() {
       setAllCategories(categories || []);
 
       if (toAdd.length > 0 || toRemove.length > 0) {
-        toast.success("收藏已更新");
+        toast.success(t('game.toasts.collectionUpdated'));
       }
     }
     catch (error) {
       console.error("Failed to update categories:", error);
-      toast.error("更新收藏失败");
+      toast.error(t('game.toasts.updateCollectionFailed'));
     }
   };
 
@@ -435,7 +437,7 @@ function GameDetailPage() {
     }
     catch (error) {
       console.error("Failed to select executable:", error);
-      toast.error("选择文件失败");
+      toast.error(t('game.toasts.selectFileFailed'));
     }
   };
 
@@ -472,7 +474,7 @@ function GameDetailPage() {
                   ? "bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-700 dark:text-brand-200 dark:hover:bg-brand-600"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
               }`}
-              title="上一个"
+              title={t('common.previous')}
             >
               <div className="i-mdi-arrow-left text-xl" />
             </button>
@@ -485,7 +487,7 @@ function GameDetailPage() {
                   ? "bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-700 dark:text-brand-200 dark:hover:bg-brand-600"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
               }`}
-              title="下一个"
+              title={t('common.next')}
             >
               <div className="i-mdi-arrow-right text-xl" />
             </button>
@@ -629,20 +631,20 @@ function GameDetailPage() {
                 : "border-transparent text-brand-700 hover:text-brand-750 hover:border-brand-300 dark:text-brand-400 dark:hover:text-brand-300"}
                 `}
               >
-                {tab === "stats" && "游戏统计"}
-                {tab === "edit" && "编辑"}
-                {tab === "launch" && "启动配置"}
-                {tab === "backup" && "备份"}
-                {tab === "info" && "游戏信息"}
-                {tab === "gallery" && "画廊"}
-                {tab === "intro" && "介绍"}
+                {tab === "stats" && t('common.gameStats')}
+                {tab === "edit" && t('common.edit')}
+                {tab === "launch" && t('common.launchConfig')}
+                {tab === "backup" && t('common.backup')}
+                {tab === "info" && t('common.gameInfo')}
+                {tab === "gallery" && t('common.gallery')}
+                {tab === "intro" && t('common.introduction')}
               </button>
             ))}
           </nav>
           <button
             onClick={openCategoryModal}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-100 text-brand-750 hover:text-brand-200 dark:bg-brand-900 dark:text-brand-400 dark:hover:text-brand-700 transition-colors"
-            title="添加到收藏"
+            title={t('game.buttons.addToCollection')}
           >
             <div className="i-mdi-folder-plus-outline text-lg" />
           </button>
@@ -705,9 +707,9 @@ function GameDetailPage() {
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        title="删除游戏"
+        title={t('common.deleteGame')}
         message={`确定要删除游戏 "${game.name}" 吗？此操作将从库中移除该游戏，但不会删除本地游戏文件。`}
-        confirmText="确认删除"
+        confirmText={t('common.confirmDelete')}
         type="danger"
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDeleteGame}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { appconf, enums, models } from "../../wailsjs/go/models";
 import { createRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ export const Route = createRoute({
 });
 
 function StaffPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { staffId } = Route.useParams();
   const [staff, setStaff] = useState<models.Staff | null>(null);
@@ -37,7 +39,7 @@ function StaffPage() {
       setGames(loadedGames)
     } catch (err) {
       console.error("Failed to load staff details:", err);
-      setError("无法加载工作人员信息");
+      setError(t('staff.toasts.loadStaffFailed'));
     } finally {
       setLoading(false);
     }
@@ -186,7 +188,7 @@ function StaffPage() {
                 <div className="flex justify-between">
                   <span className="text-brand-600 dark:text-brand-400">性别:</span>
                   <span className="text-brand-900 dark:text-white font-medium">
-                    {staff.gender === 1 ? '男' : staff.gender === 2 ? '女' : '未知'}
+                    {staff.gender === 1 ? t('common.male') : staff.gender === 2 ? t('common.female') : t('common.unknown')}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -277,13 +279,13 @@ function StaffPage() {
                                 {work.game.cover_url && (
                                 <img 
                                     src={work.game.cover_url} 
-                                    alt={`${work.game.name?.trim() || '游戏'} 封面`} 
+                                    alt={`${work.game.name?.trim() || t('common.game')} ${t('common.cover')}`} 
                                     className="w-16 h-24 object-cover rounded"
                                 />
                                 )}
                             </td>
                             <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-1/10">
-                                {work.game.name?.trim() || '未知游戏'}
+                                {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
                             </td>
                             <td className="py-3 px-3 w-1/20">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
@@ -296,7 +298,7 @@ function StaffPage() {
                             </td>
                             <td className="py-3 px-3">
                                 <span className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                                {work.work.source_type || '未知'}
+                                {work.work.source_type || t('common.unknown')}
                                 </span>
                             </td>
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (

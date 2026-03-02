@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ListCharactors } from "../../wailsjs/go/service/CharactorService";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from 'react-i18next';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -12,6 +13,7 @@ export const Route = createRoute({
 });
 
 function CharactorListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [charactors, setCharactors] = useState<models.Charactor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ function CharactorListPage() {
       setCharactors(result || []);
     } catch (err) {
       console.error("Failed to load charactors:", err);
-      setError("无法加载角色列表");
+      setError(t('charactorList.toasts.loadCharactorsFailed'));
     } finally {
       setLoading(false);
     }

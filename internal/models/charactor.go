@@ -53,4 +53,5 @@ type Work struct {
 	StaffImage        string           `json:"game_cover"`
 	Measurements      string           `json:"measurements"`
 	Height            string           `json:"height"`
+	CharactorImage    string           `json:"charactor_image"`
 }

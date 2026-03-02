@@ -32,8 +32,9 @@ func (s *CharactorService) Init(ctx context.Context, db *sql.DB, config *appconf
 // CreateCharactor 创建新的 Charactor 记录
 func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 	query := `
-		INSERT INTO charactors (id, name, other_names, image_path, images, source_charactor_id, source_type, game_ids, summary, gender)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO charactors (id, name, other_names, image_path, images, 
+		source_charactor_id, source_type, game_ids, summary, gender, measurements, height)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		charactor.Id,
@@ -46,6 +47,8 @@ func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 		charactor.GameIds,
 		charactor.Summary,
 		charactor.Gender,
+		charactor.Measurements,
+		charactor.Height,
 	)
 	return err
 }
@@ -53,7 +56,7 @@ func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 func (s *CharactorService) GetCharactorBySource(sourceType enums.SourceType, sourceCharactorId string) (models.Charactor, error) {
 	query := `
 		SELECT id, name, other_names, image_path, images, source_charactor_id, 
-		source_type, game_ids, summary, gender
+		source_type, game_ids, summary, gender, measurements, height
 		FROM charactors
 		WHERE source_charactor_id = ? AND source_type = `
 	if sourceType == enums.Bangumi {
@@ -66,6 +69,8 @@ func (s *CharactorService) GetCharactorBySource(sourceType enums.SourceType, sou
 		query += `'EROSCAPE'`
 	} else if sourceType == enums.Dmm {
 		query += `'DMM'`
+	} else if sourceType == enums.Dlsite {
+		query += `'DLSITE'`
 	} else {
 		return models.Charactor{}, errors.New("Invalid source type")
 	}
@@ -73,7 +78,8 @@ func (s *CharactorService) GetCharactorBySource(sourceType enums.SourceType, sou
 }
 
 func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId string, sourceId string,
-	sourceType enums.SourceType, sourceCharactorId string, images string, summary string) (models.Charactor, error) {
+	sourceType enums.SourceType, sourceCharactorId string, images string,
+	summary string, mearsurements string, height string) (models.Charactor, error) {
 	charactor, err := s.GetCharactorBySource(sourceType, sourceCharactorId)
 	if err != nil || charactor.Id == "" {
 		if err == sql.ErrNoRows || charactor.Id == "" {
@@ -115,7 +121,8 @@ func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId 
 // GetCharactorById 根据 ID 查询 Charactor 记录
 func (s *CharactorService) GetCharactorById(id string) (models.Charactor, error) {
 	query := `
-		SELECT id, name, other_names, image_path, images, source_charactor_id, source_type, game_ids, summary, gender
+		SELECT id, name, other_names, image_path, images, source_charactor_id, 
+		source_type, game_ids, summary, gender, measurements, height
 		FROM charactors
 		WHERE id = ?
 	`
@@ -124,7 +131,8 @@ func (s *CharactorService) GetCharactorById(id string) (models.Charactor, error)
 
 func (s *CharactorService) GetCharactorByGameIdAndName(gameId, name string) (models.Charactor, error) {
 	query := `
-		SELECT id, name, other_names, image_path, images, source_charactor_id, source_type, game_ids, summary, gender
+		SELECT id, name, other_names, image_path, images, source_charactor_id, 
+		source_type, game_ids, summary, gender, measurements, height
 		FROM charactors
 		WHERE list_contains(string_split(game_ids, ','), ?) AND name = ?
 	`
@@ -154,6 +162,8 @@ func (s *CharactorService) GetCharactorByQueryId(id1 string, id2, query string) 
 		&charactor.GameIds,
 		&charactor.Summary,
 		&charactor.Gender,
+		&charactor.Measurements,
+		&charactor.Height,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -169,7 +179,8 @@ func (s *CharactorService) GetCharactorByQueryId(id1 string, id2, query string) 
 func (s *CharactorService) UpdateCharactor(charactor models.Charactor) error {
 	query := `
 		UPDATE charactors
-		SET name = ?, other_names = ?, image_path = ?, images = ?, source_charactor_id = ?, source_type = ?, game_ids = ?, summary = ?, gender = ?
+		SET name = ?, other_names = ?, image_path = ?, images = ?, source_charactor_id = ?, 
+		source_type = ?, game_ids = ?, summary = ?, gender = ?, measurements = ?, height = ?
 		WHERE id = ?
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
@@ -182,6 +193,8 @@ func (s *CharactorService) UpdateCharactor(charactor models.Charactor) error {
 		charactor.GameIds,
 		charactor.Summary,
 		charactor.Gender,
+		charactor.Measurements,
+		charactor.Height,
 		charactor.Id,
 	)
 	return err
@@ -197,7 +210,8 @@ func (s *CharactorService) DeleteCharactor(id string) error {
 // ListCharactors 查询所有 Charactor 记录
 func (s *CharactorService) ListCharactors() ([]*models.Charactor, error) {
 	query := `
-		SELECT id, name, other_names, image_path, images, source_charactor_id, source_type, game_ids, summary, gender
+		SELECT id, name, other_names, image_path, images, source_charactor_id, source_type, 
+		game_ids, summary, gender, measurements, height
 		FROM charactors
 	`
 	rows, err := s.db.QueryContext(s.ctx, query)
@@ -221,6 +235,8 @@ func (s *CharactorService) ListCharactors() ([]*models.Charactor, error) {
 			&charactor.GameIds,
 			&charactor.Summary,
 			&charactor.Gender,
+			&charactor.Measurements,
+			&charactor.Height,
 		)
 		if err != nil {
 			return nil, err

@@ -86,7 +86,7 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 	// fmt.Println("11 CreateOrUpdateWorkStaffCharactor")
 	if work.CharactorName != "" {
 		charactor, err = s.charactorService.CreateOrUpdateCharactor(work.CharactorName, work.GameId, work.SourceGameId,
-			work.SourceType, work.SourceCharactorId, work.Images, work.WorkSummary)
+			work.SourceType, work.SourceCharactorId, work.Images, work.WorkSummary, work.Measurements, work.Height)
 		if err != nil {
 			fmt.Println("06 CreateOrUpdateWorkStaffCharactor %s, %v", charactor.Name, err)
 			return err

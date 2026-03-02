@@ -100,7 +100,9 @@ func SchemaQueries() []string {
             source_type TEXT,
 			game_ids TEXT,
 			summary TEXT,
-			gender INTEGER
+			gender INTEGER,
+			measurements TEXT,
+			height TEXT
 		)`,
 		// 新增 Staff 表
 		`CREATE TABLE IF NOT EXISTS staffs (

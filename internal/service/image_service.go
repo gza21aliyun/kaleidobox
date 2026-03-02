@@ -3,18 +3,16 @@ package service
 import (
 	"context"
 	"database/sql"
-	"encoding/binary"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
 	"strings"
+	"syscall"
 	"unsafe"
 
 	"lunabox/internal/applog"
 
-	"image"
-	"image/jpeg"
 	"os"
 
 	"github.com/go-vgo/robotgo"
@@ -23,7 +21,28 @@ import (
 )
 
 var (
-	procGetDIBits = gdi32.NewProc("GetDIBits")
+	user32                         = syscall.NewLazyDLL("user32.dll")
+	kernel32                       = syscall.NewLazyDLL("kernel32.dll")
+	procGetAsyncKeyState           = user32.NewProc("GetAsyncKeyState")
+	procGetForegroundWindow        = user32.NewProc("GetForegroundWindow")
+	procGetWindowRect              = user32.NewProc("GetWindowRect")
+	procGetWindowThreadProcessId   = user32.NewProc("GetWindowThreadProcessId")
+	procOpenProcess                = kernel32.NewProc("OpenProcess")
+	procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
+	procCloseHandle                = kernel32.NewProc("CloseHandle")
+
+	procGetDC                  = user32.NewProc("GetDC")
+	procReleaseDC              = user32.NewProc("ReleaseDC")
+	procGetClientRect          = user32.NewProc("GetClientRect")
+	procClientToScreen         = user32.NewProc("ClientToScreen")
+	procBitBlt                 = gdi32.NewProc("BitBlt")
+	procCreateCompatibleDC     = gdi32.NewProc("CreateCompatibleDC")
+	procCreateCompatibleBitmap = gdi32.NewProc("CreateCompatibleBitmap")
+	procSelectObject           = gdi32.NewProc("SelectObject")
+	procDeleteDC               = gdi32.NewProc("DeleteDC")
+	procDeleteObject           = gdi32.NewProc("DeleteObject")
+	gdi32                      = syscall.NewLazyDLL("gdi32.dll")
+	procKeybdEvent             = user32.NewProc("keybd_event")
 )
 
 const (
@@ -420,6 +439,7 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 	return
 }
 
+/*
 // 修正后的纯Windows API截图实现
 func (s *ImageService) TakeScreenshot(gameId string) {
 	if gameId == "" {
@@ -750,3 +770,4 @@ func (s *ImageService) saveAsBMPDirectly(hBitmap uintptr, width, height int, fil
 	applog.LogInfof(s.ctx, "BMP screenshot saved as %s (%dx%d)", filename, width, height)
 	return filename, nil
 }
+*/

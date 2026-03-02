@@ -868,6 +868,7 @@ func TestGameService_BGArray(t *testing.T) {
 	})
 }
 
+/*
 func TestSaveBitmapToFile(t *testing.T) {
 
 	t.Run("screenshot success", func(t *testing.T) {
@@ -877,3 +878,4 @@ func TestSaveBitmapToFile(t *testing.T) {
 		services.ImageService.TakeScreenshot("0001")
 	})
 }
+*/

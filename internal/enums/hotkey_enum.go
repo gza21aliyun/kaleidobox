@@ -61,3 +61,50 @@ var AllModifierKeys = []struct {
 	{ModifierAlt, "ALT"},
 	{ModifierWin, "WIN"},
 }
+
+// JoystickButton 手柄按钮枚举
+type JoystickButton string
+
+const (
+	JoystickButtonA      JoystickButton = "a"
+	JoystickButtonB      JoystickButton = "b"
+	JoystickButtonX      JoystickButton = "x"
+	JoystickButtonY      JoystickButton = "y"
+	JoystickButtonLB     JoystickButton = "lb"     // Left Bumper
+	JoystickButtonRB     JoystickButton = "rb"     // Right Bumper
+	JoystickButtonLT     JoystickButton = "lt"     // Left Trigger
+	JoystickButtonRT     JoystickButton = "rt"     // Right Trigger
+	JoystickButtonBack   JoystickButton = "back"   // Back/View button
+	JoystickButtonStart  JoystickButton = "start"  // Start/Menu button
+	JoystickButtonLS     JoystickButton = "ls"     // Left Stick click
+	JoystickButtonRS     JoystickButton = "rs"     // Right Stick click
+	JoystickButtonDPadUp JoystickButton = "dpad_up"
+	JoystickButtonDPadDown JoystickButton = "dpad_down"
+	JoystickButtonDPadLeft JoystickButton = "dpad_left"
+	JoystickButtonDPadRight JoystickButton = "dpad_right"
+	JoystickButtonGuide  JoystickButton = "guide"  // Xbox Guide/PS Home button
+)
+
+var AllJoystickButtons = []struct {
+	Value  JoystickButton
+	TSName string
+	Name   string
+}{
+	{JoystickButtonA, "A", "A键"},
+	{JoystickButtonB, "B", "B键"},
+	{JoystickButtonX, "X", "X键"},
+	{JoystickButtonY, "Y", "Y键"},
+	{JoystickButtonLB, "LB", "左肩键"},
+	{JoystickButtonRB, "RB", "右肩键"},
+	{JoystickButtonLT, "LT", "左扳机"},
+	{JoystickButtonRT, "RT", "右扳机"},
+	{JoystickButtonBack, "BACK", "返回键"},
+	{JoystickButtonStart, "START", "开始键"},
+	{JoystickButtonLS, "LS", "左摇杆按下"},
+	{JoystickButtonRS, "RS", "右摇杆按下"},
+	{JoystickButtonDPadUp, "DPAD_UP", "方向键上"},
+	{JoystickButtonDPadDown, "DPAD_DOWN", "方向键下"},
+	{JoystickButtonDPadLeft, "DPAD_LEFT", "方向键左"},
+	{JoystickButtonDPadRight, "DPAD_RIGHT", "方向键右"},
+	{JoystickButtonGuide, "GUIDE", "主页键"},
+}

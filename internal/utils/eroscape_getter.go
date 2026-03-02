@@ -292,11 +292,19 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			work.GameName = gameEntity.Game.Name
 			work.Role = enums.CV
 			work.Images = s.Find("div.character_image img").AttrOr("src", "")
+			work.CharactorImage = s.Find("div.character_image img").AttrOr("src", "")
 			work.CharactorName = strings.TrimSpace(s.Find("div.character_name").Text())
+			work.Height = s.Find("div.personal_data dl.contains('身長') dd").Eq(0).Text()
+			work.Measurements = s.Find("div.personal_data dl.contains('スリーサイズ') dd").Eq(0).Text()
 			work.WorkSummary, err = s.Find("div.formal_explanation").Html()
 			fmt.Println("角色经历 01: " + work.WorkSummary)
 			fmt.Println("角色图像 01: " + work.Images)
 			charHref := b.GetBaseUrl() + s.Find("div.character_name a").AttrOr("href", "")
+
+			s.Find("div.eventimage li > img").Each(func(i2 int, s2 *goquery.Selection) {
+				img := s2.AttrOr("src", "")
+				work.Images = MergeStrings(work.Images, img)
+			})
 
 			var err error = nil
 			if charHref != "" {

@@ -280,8 +280,18 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 			charactorName := strings.ReplaceAll(strings.Split(strings.TrimSpace(s.Find("span.detailGuide__lin-hgt").Text()), "(")[0], " ", "")
 			boxText := strings.TrimSpace(s.Find("p").Eq(0).Text())
 			fmt.Printf("boxtext 022:%s\n", boxText)
-			line1 := strings.Split(boxText, "\n")[0]
-			// line2 := strings.Split(boxText, "\n")[1] 身高三维
+			lines := strings.Split(boxText, "\n")
+			line1 := strings.TrimSpace(lines[0])
+			height := ""
+			measurements := ""
+			if len(lines) > 1 {
+				line2 := strings.TrimSpace(lines[1])
+				line2Parts := strings.Split(line2, "スリーサイズ：")
+				if len(line2Parts) > 1 {
+					height = strings.TrimSpace(strings.ReplaceAll(line2Parts[0], "身長：", ""))
+					measurements = strings.TrimSpace(line2Parts[1])
+				}
+			}
 			staffBox := strings.Split(line1, "CV：")
 			var staffName string = ""
 			if len(staffBox) > 1 {
@@ -315,6 +325,8 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 						Images:        image,
 						SourceType:    enums.Dmm,
 						GameName:      game.Name,
+						Measurements:  measurements,
+						Height:        height,
 					}
 					worksMap[work.Role] = append(worksMap[work.Role], work)
 				}

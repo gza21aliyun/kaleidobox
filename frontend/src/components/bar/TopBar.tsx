@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Quit, WindowIsMaximised, WindowMaximise, WindowMinimise, WindowUnmaximise } from "../../../wailsjs/runtime/runtime";
 
 export function TopBar() {
+  const { t } = useTranslation();
   const [isMaximised, setIsMaximised] = useState(false);
 
   // 检查窗口最大化状态
@@ -64,7 +66,7 @@ export function TopBar() {
         <button
           onClick={handleMinimise}
           className="flex h-7 w-11 items-center justify-center transition-colors hover:bg-brand-200 active:scale-98 dark:hover:bg-brand-700"
-          title="最小化"
+          title={t('topbar.minimize')}
         >
           <svg className="h-2.5 w-2.5 text-brand-600 dark:text-brand-400" viewBox="0 0 12 12" fill="none">
             <path d="M0 6h12" stroke="currentColor" strokeWidth="1.5" />
@@ -75,7 +77,7 @@ export function TopBar() {
         <button
           onClick={handleMaximise}
           className="flex h-7 w-11 items-center justify-center transition-colors hover:bg-brand-200 active:scale-98 dark:hover:bg-brand-700"
-          title={isMaximised ? "还原" : "最大化"}
+          title={isMaximised ? t('topbar.restore') : t('topbar.maximize')}
         >
           {isMaximised ? (
             <svg className="h-2.5 w-2.5 text-brand-600 dark:text-brand-400" viewBox="0 0 12 12" fill="none">
@@ -93,7 +95,7 @@ export function TopBar() {
         <button
           onClick={handleClose}
           className="flex h-7 w-11 items-center justify-center transition-colors hover:bg-red-500 active:scale-98"
-          title="关闭"
+          title={t('topbar.close')}
         >
           <svg className="h-2.5 w-2.5 text-brand-600 transition-colors group-hover:text-white dark:text-brand-400" viewBox="0 0 12 12" fill="none">
             <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" />

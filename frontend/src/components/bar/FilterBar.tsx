@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useTranslation } from 'react-i18next';
 import { BetterSelect } from "../ui/BetterSelect";
 import { models } from "../../../wailsjs/go/models";
 import { arrayContains, mapToArray, tagMapForEach } from "../utils/Utility";
@@ -79,6 +80,7 @@ export function FilterBar({
   releaseEndDate,
   onReleaseEndDateChange,
 }: FilterBarProps) {
+  const { t } = useTranslation();
   const [initialized, setInitialized] = useState(false);
   const [expanded, setExpanded] = useState(filterExpanded == undefined ? false : filterExpanded);
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
@@ -243,7 +245,7 @@ export function FilterBar({
                         rounded-lg
                         hover:bg-red-50 dark:hover:bg-red-900/20
                         transition-colors"
-              title="清除所有过滤器"
+              title={t('common.filter.clearFilters')}
             >
               <div className="i-mdi-filter-remove text-xl" />
             </button>
@@ -258,7 +260,7 @@ export function FilterBar({
                       ? "text-brand-900 dark:text-white bg-brand-100 dark:bg-brand-700 border-brand-300 dark:border-brand-600"
                       : "text-brand-500 dark:text-brand-400 bg-white dark:bg-brand-800 border-brand-200 dark:border-brand-700"}
                                 border rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700`}
-                      title={batchMode ? "退出批量选择" : "批量选择"}
+                      title={batchMode ? t('common.exitBatchMode') : t('common.batchMode')}
                     >
                       <div className={batchMode ? "i-mdi-close-circle-outline text-lg" : "i-mdi-checkbox-multiple-marked-outline text-lg"} />
                     </button>
@@ -292,7 +294,7 @@ export function FilterBar({
                       border border-brand-200 dark:border-brand-700
                       rounded-lg
                       hover:bg-brand-100 dark:hover:bg-brand-700"
-            title={sortOrder === "asc" ? "升序" : "降序"}
+            title={sortOrder === 'asc' ? t('common.filter.ascending') : t('common.filter.descending')}
           >
             <div className={sortOrder === "asc" ? "i-mdi-sort-ascending text-xl" : "i-mdi-sort-descending text-xl"} />
           </button>
@@ -314,7 +316,7 @@ export function FilterBar({
                            bg-white dark:bg-brand-700/60 border border-brand-200 dark:border-brand-600
                            rounded-md hover:bg-brand-50 dark:hover:bg-brand-700 transition-colors"
               >
-                全选
+                {t('common.selectAll')}
               </button>
             )}
             {onClearSelection && (
@@ -325,16 +327,14 @@ export function FilterBar({
                            bg-white dark:bg-brand-700/60 border border-brand-200 dark:border-brand-600
                            rounded-md hover:bg-brand-50 dark:hover:bg-brand-700 transition-colors"
               >
-                清空
+                {t('common.clear')}
               </button>
             )}
           </div>
 
           {typeof selectedCount === "number" && (
             <div className="px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-300 bg-white dark:bg-brand-700/60 border border-brand-200 dark:border-brand-600 rounded-md">
-              已选
-              {" "}
-              <span className="font-semibold ml-1">{selectedCount}</span>
+              {t('common.selected')} <span className="font-semibold ml-1">{selectedCount}</span>
             </div>
           )}
 
@@ -353,16 +353,16 @@ export function FilterBar({
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="font-semibold text-brand-900 dark:text-white">标签</div>
+                  <div className="font-semibold text-brand-900 dark:text-white">{t('common.filter.tags')}</div>
                   <div className="relative flex items-center gap-2">
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
-                      aria-label="添加标签"
+                      aria-label={t('common.filter.selectTags')}
                     >
                       <div className="i-mdi-plus text-base" />
                       <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
-                        选择标签
+                        {t('common.filter.selectTags')}
                       </span>
                     </button>
                     
@@ -381,11 +381,11 @@ export function FilterBar({
                     <button
                       onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-800 transition-colors"
-                      aria-label="选择标签分组"
+                      aria-label={t('common.filter.selectGroup')}
                     >
                       <div className="i-mdi-folder-multiple text-base" />
                       <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
-                        选择分组
+                        {t('common.filter.selectGroup')}
                       </span>
                     </button>
 
@@ -404,7 +404,7 @@ export function FilterBar({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-brand-700 dark:text-brand-300 whitespace-nowrap">
-                    发售日期:
+                    {t('common.filter.releaseDate')}:
                   </span>
                   
                   {/* 开始日期 */}
@@ -466,7 +466,7 @@ export function FilterBar({
                             onTagsFilterChange(newTagsFilter);
                           }}
                           className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
-                          title="删除分类"
+                          title={t('common.filter.deleteCategory')}
                         >
                           <div className="i-mdi-delete text-red-500 hover:text-red-700 dark:hover:text-red-400" />
                         </button>
@@ -494,7 +494,7 @@ export function FilterBar({
                         ))}
                         {tags.length === 0 && (
                           <p className="text-brand-500 dark:text-brand-400 text-sm italic">
-                            暂无标签
+                            {t('common.filter.noTags')}
                           </p>
                         )}
                       </div>
@@ -515,7 +515,7 @@ export function FilterBar({
                 className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-brand-100 dark:bg-brand-800 hover:bg-brand-200 dark:hover:bg-brand-700 focus:outline-none transition-colors"
               >
                 <span className="text-brand-700 dark:text-brand-300 font-medium">
-                  过滤器
+                  {t('common.filter.collapse')}
                 </span>
                 <div className={`i-mdi-chevron-down text-lg text-brand-500 dark:text-brand-400 transition-transform duration-200 ${!expanded ? 'rotate-180' : ''}`} />
               </button>
@@ -531,7 +531,7 @@ export function FilterBar({
               className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-brand-100 dark:bg-brand-800 hover:bg-brand-200 dark:hover:bg-brand-700 focus:outline-none transition-colors"
             >
               <span className="text-brand-700 dark:text-brand-300 font-medium">
-                过滤器
+                {t('common.filter.collapse')}
               </span>
               <div className={`i-mdi-chevron-down text-lg text-brand-500 dark:text-brand-400 transition-transform duration-200 ${!expanded ? 'rotate-180' : ''}`} />
             </button>

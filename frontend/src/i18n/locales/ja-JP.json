@@ -28,7 +28,15 @@
     "library": "ライブラリ",
     "stats": "統計",
     "categories": "カテゴリ",
-    "settings": "設定"
+    "settings": "設定",
+    "charactors": "キャラクター",
+    "tags": "タグ"
+  },
+  "topbar": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "元に戻す",
+    "close": "閉じる"
   },
   "library": {
     "title": "ライブラリ",
@@ -46,13 +54,127 @@
     "playTimeStats": "プレイ時間統計",
     "gameCount": "ゲーム数",
     "totalPlayTime": "総プレイ時間",
-    "dailyAverage": "日平均プレイ時間"
+    "dailyAverage": "日平均プレイ時間",
+    "toasts": {
+      "aiSummaryFailed": "AI まとめに失敗しました。AI 設定を確認してください",
+      "loadStatsFailed": "統計データの読み込みに失敗しました",
+      "selectDateRange": "開始日と終了日を選択してください",
+      "dateRangeInvalid": "開始日は終了日より前の日付である必要があります"
+    },
+    "labels": {
+      "totalPlayTimeHours": "総プレイ時間 (時間)",
+      "leaderboard": "リーダーボード",
+      "playTimeLeaderboard": "プレイ時間ランキング",
+      "noData": "データなし",
+      "noMoreData": "ランキングデータがありません",
+      "hours": "時間",
+      "beautifyExport": "綺麗にエクスポート",
+      "aiSummary": "AI まとめ",
+      "libraryOverview": "ライブラリ概要"
+    },
+    "periods": {
+      "week": "週",
+      "month": "月",
+      "custom": "カスタム"
+    },
+    "dateRange": {
+      "startDate": "開始日",
+      "endDate": "終了日",
+      "apply": "適用",
+      "reset": "リセット"
+    },
+    "libraryStats": {
+      "allGames": "ライブラリの全ゲーム",
+      "totalSessions": "総プレイ回数",
+      "totalDuration": "総プレイ時間",
+      "completedGames": "クリアしたゲーム"
+    },
+    "summaryCards": {
+      "totalPlayCount": "総プレイ回数",
+      "totalPlayDuration": "総プレイ時間",
+      "gamesPlayed": "プレイしたゲーム数",
+      "completedGames": "クリアしたゲーム"
+    },
+    "tableHeaders": {
+      "rank": "ランク",
+      "game": "ゲーム",
+      "duration": "時間"
+    },
+    "charts": {
+      "playTimeTrend": "プレイ時間トレンド",
+      "frequentlyPlayedTrend": "よくプレイするゲームのトレンド"
+    }
   },
   "categories": {
     "title": "カテゴリ",
     "manageCategories": "カテゴリ管理",
     "noCategories": "カテゴリなし",
     "addCategory": "カテゴリを追加"
+  },
+  "category": {
+    "toasts": {
+      "loadCategoriesFailed": "コレクションの読み込みに失敗しました",
+      "loadFolderGamesFailed": "フォルダ内のゲームの読み込みに失敗しました",
+      "removeFromCategoryFailed": "コレクションからゲームを削除できませんでした",
+      "loadLibraryGamesFailed": "ライブラリ内の全ゲームの読み込みに失敗しました",
+      "addGameToCategoryFailed": "ゲームをコレクションに追加できませんでした",
+      "batchRemoveFailed": "批量削除に失敗しました",
+      "batchRemoveSuccess": "{{count}} 個のゲームを削除しました"
+    },
+    "messages": {
+      "categoryNotFound": "{{category}} が見つかりません",
+      "searchPlaceholder": "ゲームを検索...",
+      "removeFromCategory": "コレクションから削除",
+      "noGamesFound": "一致するゲームが見つかりません",
+      "noGamesInCategory": "このコレクションにはまだゲームがありません"
+    },
+    "labels": {
+      "system": "システム",
+      "games": "個のゲーム",
+      "batchRemove": "批量削除",
+      "returnToList": "リストに戻る"
+    }
+  },
+  "tagList": {
+    "title": "タグリスト",
+    "searchPlaceholder": "タグを検索...",
+    "stats": {
+      "found": "{{tags}} 個のタグ、{{groups}} 個のグループが見つかりました"
+    },
+    "hints": {
+      "dragToAdd": "タグを右側のグループにドラッグして素早く追加"
+    },
+    "sections": {
+      "categories": "タグカテゴリ",
+      "groups": "タググループ"
+    },
+    "errors": {
+      "loadFailed": "読み込み失敗"
+    },
+    "emptyState": {
+      "noGroups": "グループなし",
+      "clickToCreate": "上のボタンをクリックして作成"
+    },
+    "modals": {
+      "deleteGroupMessage": "本当にグループ \"{{name}}\" を削除しますか？このグループ内のすべてのタグのグループ関連付けが解除されます。"
+    },
+    "toasts": {
+      "loadTagGroupsFailed": "タグとグループデータの読み込みに失敗しました",
+      "loadTagsFailed": "タグリストの読み込みに失敗しました",
+      "groupDeleteSuccess": "グループを削除しました",
+      "groupDeleteFailed": "グループの削除に失敗しました",
+      "saveGroupFailed": "グループの保存に失敗しました",
+      "tagAddedToGroup": "タグ「{{tagName}}」をグループ「{{targetGroup}}」に追加しました",
+      "dragAddTagFailed": "ドラッグによるタグ追加に失敗しました",
+      "addTagToGroupFailed": "タグをグループに追加できませんでした"
+    },
+    "messages": {
+      "noMatchingTags": "一致するタグが見つかりません",
+      "noTags": "タグなし",
+      "tryOtherKeywords": "他のキーワードをお試しください",
+      "noTagsAdded": "まだタグが追加されていません",
+      "ungrouped": "未グループ化"
+    }
   },
   "game": {
     "status": {
@@ -65,6 +187,150 @@
     "playTime": "プレイ時間",
     "lastPlayed": "最終プレイ",
     "releaseDate": "発売日"
+  },
+  "game": {
+    "status": {
+      "not_started": "未開始",
+      "playing": "プレイ中", 
+      "completed": "クリア済み",
+      "on_hold": "一時停止"
+    },
+    "details": "ゲーム詳細",
+    "playTime": "プレイ時間",
+    "lastPlayed": "最終プレイ",
+    "releaseDate": "発売日",
+    "toasts": {
+      "loadGameFailed": "ゲームデータの読み込みに失敗しました",
+      "selectExecutableFailed": "実行ファイルの選択に失敗しました",
+      "selectSavePathFailed": "保存パスの選択に失敗しました",
+      "selectCoverFailed": "カバー画像の選択に失敗しました",
+      "remoteUpdateSuccess": "リモートから正常に更新されました",
+      "statusUpdated": "ステータスが更新されました",
+      "statusUpdateFailed": "ステータスの更新に失敗しました",
+      "loadCategoriesFailed": "コレクションの読み込みに失敗しました",
+      "collectionUpdated": "コレクションが更新されました",
+      "updateCollectionFailed": "コレクションの更新に失敗しました",
+      "selectFileFailed": "ファイルの選択に失敗しました",
+      "saveFailed": "保存に失敗しました",
+      "remoteUpdateFailed": "リモート更新に失敗しました",
+      "gameLaunchSuccess": "{{name}}を起動しました",
+      "gameLaunchFailed": "{{name}}の起動に失敗しました（開始できません）",
+      "gameLaunchFailedCheckLog": "{{name}}の起動に失敗しました。ログを確認してください"
+    },
+    "buttons": {
+      "addToCollection": "コレクションに追加",
+      "launchGame": "ゲームを起動",
+      "returnToLibrary": "ライブラリに戻る",
+      "bangumi": "Bangumi",
+      "ymgal": "YMGal",
+      "dmm": "DMM",
+      "eroscape": "批評空間"
+    },
+    "labels": {
+      "source": "ソース",
+      "developer": "開発元",
+      "addedAt": "追加日時",
+      "releaseDate": "発売日"
+    },
+    "modals": {
+      "deleteMessage": "本当にゲーム「{{name}}」を削除しますか？この操作でゲームはライブラリから削除されますが、ローカルのゲームファイルは削除されません。"
+    },
+    "errors": {
+      "gameNotFound": "ゲームが見つかりません"
+    }
+  },
+  "staff": {
+    "toasts": {
+      "loadStaffFailed": "スタッフ情報の読み込みに失敗しました"
+    },
+    "titles": {
+      "staffDetails": "スタッフ詳細",
+      "viewDetails": "スタッフの詳細情報を表示"
+    },
+    "labels": {
+      "alias": "別名",
+      "basicInfo": "基本情報",
+      "gender": "性別",
+      "source": "ソース",
+      "sourceId": "ソース ID",
+      "careerInfo": "職業情報",
+      "summary": "プロフィール",
+      "participatedWorks": "参加作品"
+    },
+    "tableHeaders": {
+      "cover": "カバー",
+      "gameName": "ゲーム名",
+      "role": "役職",
+      "gameSummary": "ゲーム概要",
+      "sourceType": "ソースタイプ",
+      "characterImage": "キャラクター画像",
+      "characterName": "キャラクター名",
+      "characterSummary": "キャラクター概要"
+    },
+    "errors": {
+      "loadFailed": "読み込み失敗",
+      "notFound": "スタッフが見つかりません",
+      "notFoundMessage": "指定されたスタッフは存在しません"
+    },
+    "buttons": {
+      "back": "戻る"
+    }
+  },
+  "charactor": {
+    "toasts": {
+      "loadCharactorFailed": "キャラクター情報の読み込みに失敗しました"
+    },
+    "titles": {
+      "charactorDetails": "キャラクター詳細",
+      "viewDetails": "キャラクターの詳細情報を表示"
+    },
+    "labels": {
+      "alias": "別名",
+      "basicInfo": "基本情報",
+      "gender": "性別",
+      "source": "ソース",
+      "sourceId": "ソース ID",
+      "summary": "キャラクター概要",
+      "participatedWorks": "参加作品",
+      "characterImage": "キャラクター画像"
+    },
+    "tableHeaders": {
+      "cover": "カバー",
+      "gameName": "ゲーム名",
+      "gameSummary": "ゲーム概要",
+      "sourceType": "ソースタイプ",
+      "characterImage": "キャラクター画像",
+      "voiceActor": "声優",
+      "characterExperience": "キャラクター经历"
+    },
+    "errors": {
+      "loadFailed": "読み込み失敗",
+      "notFound": "キャラクターが見つかりません",
+      "notFoundMessage": "指定されたキャラクターは存在しません"
+    },
+    "buttons": {
+      "back": "戻る"
+    }
+  },
+  "charactorList": {
+    "title": "キャラクターリスト",
+    "stats": {
+      "found": "{{count}} 個のキャラクターが見つかりました"
+    },
+    "toasts": {
+      "loadCharactorsFailed": "キャラクターリストの読み込みに失敗しました"
+    },
+    "errors": {
+      "loadFailed": "読み込み失敗"
+    },
+    "emptyState": {
+      "noCharactors": "キャラクターなし",
+      "noCharactorsMessage": "まだキャラクター情報が追加されていません"
+    },
+    "labels": {
+      "alias": "別名",
+      "gameCount": "ゲーム数"
+    }
   },
   "gameStatus": {
     "not_started": "未開始",

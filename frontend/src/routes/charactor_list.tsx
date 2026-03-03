@@ -53,8 +53,8 @@ function CharactorListPage() {
     return (
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">角色列表</h1>
-          <p className="text-brand-600 dark:text-brand-400">加载中...</p>
+          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">{t('charactorList.title')}</h1>
+          <p className="text-brand-600 dark:text-brand-400">{t('common.loading')}</p>
         </div>
         <div className="animate-pulse">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -79,13 +79,13 @@ function CharactorListPage() {
     return (
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">角色列表</h1>
+          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">{t('charactorList.title')}</h1>
         </div>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
           <div className="flex items-center">
             <div className="i-mdi-alert-circle text-red-500 text-xl mr-3"></div>
             <div>
-              <h3 className="font-medium text-red-800 dark:text-red-200">加载失败</h3>
+              <h3 className="font-medium text-red-800 dark:text-red-200">{t('charactorList.errors.loadFailed')}</h3>
               <p className="text-red-600 dark:text-red-400 mt-1">{error}</p>
             </div>
           </div>
@@ -97,9 +97,9 @@ function CharactorListPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-brand-900 dark:text-white">角色列表</h1>
+        <h1 className="text-2xl font-bold text-brand-900 dark:text-white">{t('charactorList.title')}</h1>
         <p className="text-brand-600 dark:text-brand-400">
-          共找到 {charactors.length} 个角色
+          {t('charactorList.stats.found', { count: charactors.length })}
         </p>
       </div>
 
@@ -108,8 +108,8 @@ function CharactorListPage() {
           <div className="flex items-center">
             <div className="i-mdi-information text-yellow-500 text-xl mr-3"></div>
             <div>
-              <h3 className="font-medium text-yellow-800 dark:text-yellow-200">暂无角色</h3>
-              <p className="text-yellow-600 dark:text-yellow-400 mt-1">还没有添加任何角色信息</p>
+              <h3 className="font-medium text-yellow-800 dark:text-yellow-200">{t('charactorList.emptyState.noCharactors')}</h3>
+              <p className="text-yellow-600 dark:text-yellow-400 mt-1">{t('charactorList.emptyState.noCharactorsMessage')}</p>
             </div>
           </div>
         </div>
@@ -149,7 +149,7 @@ function CharactorListPage() {
                 
                 {charactor.other_names && (
                   <div className="mt-1">
-                    <span className="text-xs text-brand-600 dark:text-brand-400">别名：</span>
+                    <span className="text-xs text-brand-600 dark:text-brand-400">{t('charactorList.labels.alias')}:</span>
                     <span className="text-xs text-brand-700 dark:text-brand-300">
                       {charactor.other_names}
                     </span>
@@ -160,9 +160,9 @@ function CharactorListPage() {
                 
                 {charactor.game_ids && (
                   <div className="mt-1">
-                    <span className="text-xs text-brand-600 dark:text-brand-400">游戏数：</span>
+                    <span className="text-xs text-brand-600 dark:text-brand-400">{t('charactorList.labels.gameCount')}:</span>
                     <span className="text-xs text-brand-700 dark:text-brand-300">
-                      {charactor.game_ids.split(',').length} 个
+                      {charactor.game_ids.split(',').length}
                     </span>
                   </div>
                 )}

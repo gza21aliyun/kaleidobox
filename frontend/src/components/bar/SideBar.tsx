@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useTranslation } from 'react-i18next';
 import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
 import { useAppStore } from "../../store";
 
@@ -8,15 +9,16 @@ interface SideBarProps {
 }
 
 export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
+  const { t } = useTranslation();
   const { isSidebarOpen, toggleSidebar } = useAppStore();
 
   const navItems = [
-    { to: "/", label: "首页", icon: "i-mdi-home" },
-    { to: "/library", label: "游戏库", icon: "i-mdi-gamepad-variant" },
-    { to: "/charactor_list", label: "角色", icon: "i-mdi-account-group" },
-    { to: "/tag_list", label: "标签", icon: "i-mdi-tag-multiple" },
-    { to: "/stats", label: "统计", icon: "i-mdi-chart-bar" },
-    { to: "/categories", label: "收藏", icon: "i-mdi-format-list-bulleted" },
+    { to: "/", label: t('nav.home'), icon: "i-mdi-home" },
+    { to: "/library", label: t('nav.library'), icon: "i-mdi-gamepad-variant" },
+    { to: "/charactor_list", label: t('nav.charactors'), icon: "i-mdi-account-group" },
+    { to: "/tag_list", label: t('nav.tags'), icon: "i-mdi-tag-multiple" },
+    { to: "/stats", label: t('nav.stats'), icon: "i-mdi-chart-bar" },
+    { to: "/categories", label: t('nav.categories'), icon: "i-mdi-format-list-bulleted" },
   ];
 
   // 根据是否启用背景图来决定样式
@@ -83,7 +85,7 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
         <Link
           to="/settings"
           className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 no-underline [&.active]:bg-brand-200 [&.active]:text-brand-900 dark:[&.active]:bg-brand-700 dark:[&.active]:text-brand-100 select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10 data-glass:[&.active]:bg-white/20 data-glass:[&.active]:dark:bg:black/20"
-          title="设置"
+          title={t('nav.settings')}
           onDragStart={e => e.preventDefault()}
         >
           <div className="i-mdi-cog text-xl pointer-events-none" />

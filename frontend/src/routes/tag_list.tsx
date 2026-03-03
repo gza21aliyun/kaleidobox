@@ -98,7 +98,7 @@ function TagListPage() {
   };
 
   const handleDeleteGroup = async (groupName: string) => {
-    if (!confirm(`确定要删除分组 "${groupName}" 吗？这将取消该分组下所有标签的分组关联。`)) {
+    if (!confirm(t('tagList.modals.deleteGroupMessage', { name: groupName }))) {
       return;
     }
 
@@ -157,8 +157,8 @@ function TagListPage() {
     return (
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">标签列表</h1>
-          <p className="text-brand-600 dark:text-brand-400">加载中...</p>
+          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">{t('tagList.title')}</h1>
+          <p className="text-brand-600 dark:text-brand-400">{t('common.loading')}</p>
         </div>
         <div className="animate-pulse">
           <div className="space-y-4">
@@ -182,13 +182,13 @@ function TagListPage() {
     return (
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">标签列表</h1>
+          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">{t('tagList.title')}</h1>
         </div>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
           <div className="flex items-center">
             <div className="i-mdi-alert-circle text-red-500 text-xl mr-3"></div>
             <div>
-              <h3 className="font-medium text-red-800 dark:text-red-200">加载失败</h3>
+              <h3 className="font-medium text-red-800 dark:text-red-200">{t('tagList.errors.loadFailed')}</h3>
               <p className="text-red-600 dark:text-red-400 mt-1">{error}</p>
             </div>
           </div>
@@ -201,10 +201,10 @@ function TagListPage() {
     <DndProvider backend={HTML5Backend}>
       <div className="p-6 h-full">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">标签列表</h1>
+          <h1 className="text-2xl font-bold text-brand-900 dark:text-white">{t('tagList.title')}</h1>
           <p className="text-brand-600 dark:text-brand-400">
-            共找到 {filteredTags.length} 个标签，{groups.length} 个分组
-            <span className="ml-2 text-sm text-brand-500">拖拽标签到右侧分组可快速添加</span>
+            {t('tagList.stats.found', { tags: filteredTags.length, groups: groups.length })}
+            <span className="ml-2 text-sm text-brand-500">{t('tagList.hints.dragToAdd')}</span>
           </p>
         </div>
 
@@ -245,7 +245,7 @@ function TagListPage() {
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h2 className="text-xl font-bold text-brand-900 dark:text-white flex items-center">
                   <div className="i-mdi-tag-multiple mr-2 text-brand-600 dark:text-brand-400"></div>
-                  标签分类
+                  {t('tagList.sections.categories')}
                 </h2>
               </div>
               
@@ -273,7 +273,7 @@ function TagListPage() {
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h2 className="text-xl font-bold text-brand-900 dark:text-white flex items-center">
                   <div className="i-mdi-folder-multiple mr-2 text-brand-600 dark:text-brand-400"></div>
-                  标签分组
+                  {t('tagList.sections.groups')}
                 </h2>
                 <button
                   onClick={handleCreateGroup}
@@ -288,8 +288,8 @@ function TagListPage() {
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center h-full flex items-center justify-center">
                     <div>
                       <div className="i-mdi-folder-outline text-3xl text-yellow-500 mx-auto mb-2"></div>
-                      <h3 className="font-medium text-yellow-800 dark:text-yellow-200 text-sm mb-1">暂无分组</h3>
-                      <p className="text-yellow-600 dark:text-yellow-400 text-xs">点击上方按钮创建</p>
+                      <h3 className="font-medium text-yellow-800 dark:text-yellow-200 text-sm mb-1">{t('tagList.emptyState.noGroups')}</h3>
+                      <p className="text-yellow-600 dark:text-yellow-400 text-xs">{t('tagList.emptyState.clickToCreate')}</p>
                     </div>
                   </div>
                 ) : (

@@ -65,7 +65,7 @@ function CharactorPage() {
           className="flex rounded-md items-center text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
         >
           <div className="i-mdi-arrow-left text-2xl mr-1" />
-          <span>返回</span>
+          <span>{t('charactor.buttons.back')}</span>
         </button>
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -89,13 +89,13 @@ function CharactorPage() {
           className="flex rounded-md items-center text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
         >
           <div className="i-mdi-arrow-left text-2xl mr-1" />
-          <span>返回</span>
+          <span>{t('charactor.buttons.back')}</span>
         </button>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
           <div className="flex items-center">
             <div className="i-mdi-alert-circle text-red-500 text-xl mr-3"></div>
             <div>
-              <h3 className="font-medium text-red-800 dark:text-red-200">加载失败</h3>
+              <h3 className="font-medium text-red-800 dark:text-red-200">{t('charactor.errors.loadFailed')}</h3>
               <p className="text-red-600 dark:text-red-400 mt-1">{error}</p>
             </div>
           </div>
@@ -112,14 +112,14 @@ function CharactorPage() {
           className="flex rounded-md items-center text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
         >
           <div className="i-mdi-arrow-left text-2xl mr-1" />
-          <span>返回</span>
+          <span>{t('charactor.buttons.back')}</span>
         </button>
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
           <div className="flex items-center">
             <div className="i-mdi-information text-yellow-500 text-xl mr-3"></div>
             <div>
-              <h3 className="font-medium text-yellow-800 dark:text-yellow-200">未找到角色</h3>
-              <p className="text-yellow-600 dark:text-yellow-400 mt-1">指定的角色不存在</p>
+              <h3 className="font-medium text-yellow-800 dark:text-yellow-200">{t('charactor.errors.notFound')}</h3>
+              <p className="text-yellow-600 dark:text-yellow-400 mt-1">{t('charactor.errors.notFoundMessage')}</p>
             </div>
           </div>
         </div>
@@ -134,13 +134,13 @@ function CharactorPage() {
         className="flex rounded-md items-center text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
       >
         <div className="i-mdi-arrow-left text-2xl mr-1" />
-        <span>返回</span>
+        <span>{t('charactor.buttons.back')}</span>
       </button>
       <br />
       <br />
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-brand-900 dark:text-white mb-2">角色详情</h1>
-        <p className="text-brand-600 dark:text-brand-400">查看角色详细信息</p>
+        <h1 className="text-2xl font-bold text-brand-900 dark:text-white mb-2">{t('charactor.titles.charactorDetails')}</h1>
+        <p className="text-brand-600 dark:text-brand-400">{t('charactor.titles.viewDetails')}</p>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -153,7 +153,7 @@ function CharactorPage() {
               </h2>
               {charactor.other_names && (
                 <p className="text-brand-600 dark:text-brand-400 mt-2 text-lg">
-                  别名: {charactor.other_names}
+                  {t('charactor.labels.alias')}: {charactor.other_names}
                 </p>
               )}
             </div>
@@ -174,30 +174,30 @@ function CharactorPage() {
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
                 <img
                     src={charactor.image_path}
-                    alt={`${charactor.name} 图片`}
+                    alt={`${charactor.name} ${t('charactor.labels.characterImage')}`}
                     className="w-32 h-68 object-cover rounded mx-auto"
                 />
                 </div>
             )}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-              <h3 className="font-semibold text-brand-900 dark:text-white mb-3">基本信息</h3>
+              <h3 className="font-semibold text-brand-900 dark:text-white mb-3">{t('charactor.labels.basicInfo')}</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-brand-600 dark:text-brand-400">性别:</span>
+                  <span className="text-brand-600 dark:text-brand-400">{t('charactor.labels.gender')}:</span>
                   <span className="text-brand-900 dark:text-white font-medium">
                     {charactor.gender === 1 ? t('common.male') : charactor.gender === 2 ? t('common.female') : t('common.unknown')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-brand-600 dark:text-brand-400">来源:</span>
+                  <span className="text-brand-600 dark:text-brand-400">{t('charactor.labels.source')}:</span>
                   <span className="text-brand-900 dark:text-white font-mono text-sm">
                     {charactor.source_type}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-brand-600 dark:text-brand-400">来源ID:</span>
+                  <span className="text-brand-600 dark:text-brand-400">{t('charactor.labels.sourceId')}:</span>
                   <span className="text-brand-900 dark:text-white font-mono text-sm">
-                    {charactor.source_charactor_id || '无'}
+                    {charactor.source_charactor_id || t('common.none')}
                   </span>
                 </div>
               </div>
@@ -208,7 +208,7 @@ function CharactorPage() {
           {/* 简介部分 */}
           {charactor.summary && (
             <div className="mb-6">
-              <h3 className="font-semibold text-brand-900 dark:text-white mb-3 text-lg">角色简介</h3>
+              <h3 className="font-semibold text-brand-900 dark:text-white mb-3 text-lg">{t('charactor.labels.summary')}</h3>
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <p className="text-brand-700 dark:text-brand-300 whitespace-pre-wrap leading-relaxed">
                   {charactor.summary}
@@ -220,19 +220,19 @@ function CharactorPage() {
           {/* 参与游戏 */}
           {charactor.game_ids && (
             <div>
-              <h3 className="font-semibold text-brand-900 dark:text-white mb-3 text-lg">参与项目</h3>
+              <h3 className="font-semibold text-brand-900 dark:text-white mb-3 text-lg">{t('charactor.labels.participatedWorks')}</h3>
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-600">
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">封面</th>
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">游戏名称</th>
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">游戏介绍</th>
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">来源</th>
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">角色图</th>
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">声优</th>
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">角色经历</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.cover')}</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.gameName')}</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.gameSummary')}</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.sourceType')}</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.characterImage')}</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.voiceActor')}</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.characterExperience')}</th>
                       </tr>
                     </thead>
                     <tbody>

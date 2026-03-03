@@ -28,7 +28,15 @@
     "library": "Library",
     "stats": "Stats",
     "categories": "Categories",
-    "settings": "Settings"
+    "settings": "Settings",
+    "charactors": "Characters",
+    "tags": "Tags"
+  },
+  "topbar": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close"
   },
   "library": {
     "title": "Library",
@@ -46,13 +54,127 @@
     "playTimeStats": "Play Time Statistics",
     "gameCount": "Game Count",
     "totalPlayTime": "Total Play Time",
-    "dailyAverage": "Daily Average"
+    "dailyAverage": "Daily Average",
+    "toasts": {
+      "aiSummaryFailed": "AI summary failed, please check AI configuration",
+      "loadStatsFailed": "Failed to load statistics",
+      "selectDateRange": "Please select start and end date",
+      "dateRangeInvalid": "Start date must be earlier than end date"
+    },
+    "labels": {
+      "totalPlayTimeHours": "Total Play Time (hours)",
+      "leaderboard": "Leaderboard",
+      "playTimeLeaderboard": "Play Time Leaderboard",
+      "noData": "No data",
+      "noMoreData": "No more ranking data",
+      "hours": "hours",
+      "beautifyExport": "Beautify Export",
+      "aiSummary": "AI Summary",
+      "libraryOverview": "Library Overview"
+    },
+    "periods": {
+      "week": "Week",
+      "month": "Month",
+      "custom": "Custom"
+    },
+    "dateRange": {
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "libraryStats": {
+      "allGames": "All Games in Library",
+      "totalSessions": "Total Play Sessions",
+      "totalDuration": "Total Play Duration",
+      "completedGames": "Completed Games"
+    },
+    "summaryCards": {
+      "totalPlayCount": "Total Play Count",
+      "totalPlayDuration": "Total Play Duration",
+      "gamesPlayed": "Games Played",
+      "completedGames": "Completed Games"
+    },
+    "tableHeaders": {
+      "rank": "Rank",
+      "game": "Game",
+      "duration": "Duration"
+    },
+    "charts": {
+      "playTimeTrend": "Play Time Trend",
+      "frequentlyPlayedTrend": "Frequently Played Games Trend"
+    }
   },
   "categories": {
     "title": "Categories",
     "manageCategories": "Manage Categories",
     "noCategories": "No categories",
     "addCategory": "Add Category"
+  },
+  "category": {
+    "toasts": {
+      "loadCategoriesFailed": "Failed to load collections",
+      "loadFolderGamesFailed": "Failed to load games in folder",
+      "removeFromCategoryFailed": "Failed to remove game from collection",
+      "loadLibraryGamesFailed": "Failed to load all games in library",
+      "addGameToCategoryFailed": "Failed to add game to collection",
+      "batchRemoveFailed": "Batch remove failed",
+      "batchRemoveSuccess": "Removed {{count}} games"
+    },
+    "messages": {
+      "categoryNotFound": "{{category}} not found",
+      "searchPlaceholder": "Search games...",
+      "removeFromCategory": "Remove from collection",
+      "noGamesFound": "No matching games found",
+      "noGamesInCategory": "No games in this collection yet"
+    },
+    "labels": {
+      "system": "System",
+      "games": "games",
+      "batchRemove": "Batch Remove",
+      "returnToList": "Return to List"
+    }
+  },
+  "tagList": {
+    "title": "Tag List",
+    "searchPlaceholder": "Search tags...",
+    "stats": {
+      "found": "Found {{tags}} tags, {{groups}} groups"
+    },
+    "hints": {
+      "dragToAdd": "Drag tags to groups on the right to add quickly"
+    },
+    "sections": {
+      "categories": "Tag Categories",
+      "groups": "Tag Groups"
+    },
+    "errors": {
+      "loadFailed": "Load failed"
+    },
+    "emptyState": {
+      "noGroups": "No groups yet",
+      "clickToCreate": "Click the button above to create"
+    },
+    "modals": {
+      "deleteGroupMessage": "Are you sure you want to delete the group \"{{name}}\"? This will remove the group association from all tags in this group."
+    },
+    "toasts": {
+      "loadTagGroupsFailed": "Failed to load tag and group data",
+      "loadTagsFailed": "Failed to load tag list",
+      "groupDeleteSuccess": "Group deleted successfully",
+      "groupDeleteFailed": "Failed to delete group",
+      "saveGroupFailed": "Failed to save group",
+      "tagAddedToGroup": "Tag \"{{tagName}}\" added to group \"{{targetGroup}}\"",
+      "dragAddTagFailed": "Failed to add tag by dragging",
+      "addTagToGroupFailed": "Failed to add tag to group"
+    },
+    "messages": {
+      "noMatchingTags": "No matching tags found",
+      "noTags": "No tags",
+      "tryOtherKeywords": "Please try other keywords",
+      "noTagsAdded": "No tags added yet",
+      "ungrouped": "Ungrouped"
+    }
   },
   "game": {
     "status": {
@@ -65,6 +187,150 @@
     "playTime": "Play Time",
     "lastPlayed": "Last Played",
     "releaseDate": "Release Date"
+  },
+  "game": {
+    "status": {
+      "not_started": "Not Started",
+      "playing": "Playing", 
+      "completed": "Completed",
+      "on_hold": "On Hold"
+    },
+    "details": "Game Details",
+    "playTime": "Play Time",
+    "lastPlayed": "Last Played",
+    "releaseDate": "Release Date",
+    "toasts": {
+      "loadGameFailed": "Failed to load game data",
+      "selectExecutableFailed": "Failed to select executable file",
+      "selectSavePathFailed": "Failed to select save path",
+      "selectCoverFailed": "Failed to select cover image",
+      "remoteUpdateSuccess": "Successfully updated from remote",
+      "statusUpdated": "Status updated",
+      "statusUpdateFailed": "Failed to update status",
+      "loadCategoriesFailed": "Failed to load collections",
+      "collectionUpdated": "Collection updated",
+      "updateCollectionFailed": "Failed to update collection",
+      "selectFileFailed": "Failed to select file",
+      "saveFailed": "Save failed",
+      "remoteUpdateFailed": "Remote update failed",
+      "gameLaunchSuccess": "{{name}} launched successfully",
+      "gameLaunchFailed": "{{name}} failed to launch (unable to start)",
+      "gameLaunchFailedCheckLog": "{{name}} failed to launch, check logs for help"
+    },
+    "buttons": {
+      "addToCollection": "Add to Collection",
+      "launchGame": "Launch Game",
+      "returnToLibrary": "Return to Library",
+      "bangumi": "Bangumi",
+      "ymgal": "YMGal",
+      "dmm": "DMM",
+      "eroscape": "Eroscrape"
+    },
+    "labels": {
+      "source": "Source",
+      "developer": "Developer",
+      "addedAt": "Added At",
+      "releaseDate": "Release Date"
+    },
+    "modals": {
+      "deleteMessage": "Are you sure you want to delete the game \"{{name}}\"? This will remove the game from your library but will not delete local game files."
+    },
+    "errors": {
+      "gameNotFound": "Game not found"
+    }
+  },
+  "staff": {
+    "toasts": {
+      "loadStaffFailed": "Failed to load staff information"
+    },
+    "titles": {
+      "staffDetails": "Staff Details",
+      "viewDetails": "View staff detailed information"
+    },
+    "labels": {
+      "alias": "Alias",
+      "basicInfo": "Basic Information",
+      "gender": "Gender",
+      "source": "Source",
+      "sourceId": "Source ID",
+      "careerInfo": "Career Information",
+      "summary": "Summary",
+      "participatedWorks": "Participated Works"
+    },
+    "tableHeaders": {
+      "cover": "Cover",
+      "gameName": "Game Name",
+      "role": "Role",
+      "gameSummary": "Game Summary",
+      "sourceType": "Source Type",
+      "characterImage": "Character Image",
+      "characterName": "Character Name",
+      "characterSummary": "Character Summary"
+    },
+    "errors": {
+      "loadFailed": "Load Failed",
+      "notFound": "Staff Not Found",
+      "notFoundMessage": "The specified staff member does not exist"
+    },
+    "buttons": {
+      "back": "Back"
+    }
+  },
+  "charactor": {
+    "toasts": {
+      "loadCharactorFailed": "Failed to load character information"
+    },
+    "titles": {
+      "charactorDetails": "Character Details",
+      "viewDetails": "View character detailed information"
+    },
+    "labels": {
+      "alias": "Alias",
+      "basicInfo": "Basic Information",
+      "gender": "Gender",
+      "source": "Source",
+      "sourceId": "Source ID",
+      "summary": "Character Summary",
+      "participatedWorks": "Participated Works",
+      "characterImage": "Character Image"
+    },
+    "tableHeaders": {
+      "cover": "Cover",
+      "gameName": "Game Name",
+      "gameSummary": "Game Summary",
+      "sourceType": "Source Type",
+      "characterImage": "Character Image",
+      "voiceActor": "Voice Actor",
+      "characterExperience": "Character Experience"
+    },
+    "errors": {
+      "loadFailed": "Load Failed",
+      "notFound": "Character Not Found",
+      "notFoundMessage": "The specified character does not exist"
+    },
+    "buttons": {
+      "back": "Back"
+    }
+  },
+  "charactorList": {
+    "title": "Character List",
+    "stats": {
+      "found": "Found {{count}} characters"
+    },
+    "toasts": {
+      "loadCharactorsFailed": "Failed to load character list"
+    },
+    "errors": {
+      "loadFailed": "Load Failed"
+    },
+    "emptyState": {
+      "noCharactors": "No Characters",
+      "noCharactorsMessage": "No character information has been added yet"
+    },
+    "labels": {
+      "alias": "Alias",
+      "gameCount": "Games"
+    }
   },
   "gameStatus": {
     "not_started": "Not Started",

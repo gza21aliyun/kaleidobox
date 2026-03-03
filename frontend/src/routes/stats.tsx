@@ -239,14 +239,14 @@ function StatsPage() {
       className={`space-y-6 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}
     >
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-brand-900 dark:text-white">统计</h1>
+        <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('stats.title')}</h1>
       </div>
       <div className="flex justify-between items-center no-export">
         <div className="flex items-center space-x-4">
           <SlideButton
             options={[
-              { label: "周", value: enums.Period.WEEK },
-              { label: "月", value: enums.Period.MONTH },
+              { label: t('stats.periods.week'), value: enums.Period.WEEK },
+              { label: t('stats.periods.month'), value: enums.Period.MONTH },
             ]}
             value={customDateRange ? "" as enums.Period : dimension}
             onChange={(value) => {
@@ -269,7 +269,7 @@ function StatsPage() {
             }`}
           >
             <span className="i-mdi-calendar-range text-lg" />
-            自定义
+            {t('stats.periods.custom')}
           </button>
         </div>
         <div className="flex space-x-2 items-center">
@@ -282,7 +282,7 @@ function StatsPage() {
       {customDateRange && (
         <div className="glass-panel flex items-center gap-4 p-4 bg-white dark:bg-brand-800 rounded-xl shadow-sm border border-brand-200 dark:border-brand-700 no-export">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-brand-600 dark:text-brand-400">开始日期</label>
+            <label className="text-sm text-brand-600 dark:text-brand-400">{t('stats.dateRange.startDate')}</label>
             <input
               type="date"
               value={startDate}
@@ -291,7 +291,7 @@ function StatsPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-brand-600 dark:text-brand-400">结束日期</label>
+            <label className="text-sm text-brand-600 dark:text-brand-400">{t('stats.dateRange.endDate')}</label>
             <input
               type="date"
               value={endDate}
@@ -303,13 +303,13 @@ function StatsPage() {
             onClick={handleApplyDateRange}
             className="px-4 py-1.5 bg-neutral-600 hover:bg-neutral-700 text-white rounded-md text-sm font-medium transition-colors"
           >
-            应用
+            {t('stats.dateRange.apply')}
           </button>
           <button
             onClick={handleResetDateRange}
             className="px-4 py-1.5 bg-brand-200 dark:bg-brand-700 hover:bg-brand-300 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 rounded-md text-sm font-medium transition-colors"
           >
-            重置
+            {t('stats.dateRange.reset')}
           </button>
         </div>
       )}
@@ -331,19 +331,19 @@ function StatsPage() {
         <div className="flex items-center justify-between">
           <div className="text-center">
             <p className="text-2xl font-bold text-brand-900 dark:text-white">{stats.library_games_count}</p>
-            <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">库中所有游戏</p>
+            <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">{t('stats.libraryStats.allGames')}</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-brand-900 dark:text-white">{stats.all_sessions_count}</p>
-            <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">总游玩次数</p>
+            <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">{t('stats.libraryStats.totalSessions')}</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-brand-900 dark:text-white">{formatDurationShort(stats.all_sessions_duration)}</p>
-            <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">总游玩时长</p>
+            <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">{t('stats.libraryStats.totalDuration')}</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-brand-900 dark:text-white">{stats.all_completed_games_count}</p>
-            <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">通关游戏数</p>
+            <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">{t('stats.libraryStats.completedGames')}</p>
           </div>
         </div>
       </CollapsibleSection>
@@ -351,19 +351,19 @@ function StatsPage() {
       {/* Summary Cards */}
       <div className="flex flex-wrap gap-6">
         <div className="flex-1 min-w-[150px] glass-card bg-white dark:bg-brand-800 p-6 rounded-xl shadow-sm border border-brand-200 dark:border-brand-700">
-          <h3 className="text-sm font-medium text-brand-500 dark:text-brand-400 mb-2">总游玩次数</h3>
+          <h3 className="text-sm font-medium text-brand-500 dark:text-brand-400 mb-2">{t('stats.summaryCards.totalPlayCount')}</h3>
           <p className="text-3xl font-bold text-brand-900 dark:text-white">{stats.total_play_count}</p>
         </div>
         <div className="flex-1 min-w-[150px] glass-card bg-white dark:bg-brand-800 p-6 rounded-xl shadow-sm border border-brand-200 dark:border-brand-700">
-          <h3 className="text-sm font-medium text-brand-500 dark:text-brand-400 mb-2">总游玩时长</h3>
+          <h3 className="text-sm font-medium text-brand-500 dark:text-brand-400 mb-2">{t('stats.summaryCards.totalPlayDuration')}</h3>
           <p className="text-3xl font-bold text-brand-900 dark:text-white">{formatDurationShort(stats.total_play_duration)}</p>
         </div>
         <div className="flex-1 min-w-[150px] glass-card bg-white dark:bg-brand-800 p-6 rounded-xl shadow-sm border border-brand-200 dark:border-brand-700">
-          <h3 className="text-sm font-medium text-brand-500 dark:text-brand-400 mb-2">游玩游戏数量</h3>
+          <h3 className="text-sm font-medium text-brand-500 dark:text-brand-400 mb-2">{t('stats.summaryCards.gamesPlayed')}</h3>
           <p className="text-3xl font-bold text-brand-900 dark:text-white">{stats.total_games_count}</p>
         </div>
         <div className="flex-1 min-w-[150px] glass-card bg-white dark:bg-brand-800 p-6 rounded-xl shadow-sm border border-brand-200 dark:border-brand-700">
-          <h3 className="text-sm font-medium text-brand-500 dark:text-brand-400 mb-2">通关游戏</h3>
+          <h3 className="text-sm font-medium text-brand-500 dark:text-brand-400 mb-2">{t('stats.summaryCards.completedGames')}</h3>
           <p className="text-3xl font-bold text-brand-900 dark:text-white">{stats.completed_games_count}</p>
         </div>
       </div>
@@ -407,9 +407,9 @@ function StatsPage() {
             <table className="w-full text-left text-sm">
               <thead className="data-glass:bg-white/5 data-glass:dark:bg-black/5 bg-brand-50 dark:bg-brand-700/50">
                 <tr>
-                  <th className="px-6 py-3 font-medium text-brand-500 dark:text-brand-400 w-20">排名</th>
-                  <th className="px-6 py-3 font-medium text-brand-500 dark:text-brand-400">游戏</th>
-                  <th className="px-6 py-3 font-medium text-brand-500 dark:text-brand-400 text-right">时长</th>
+                  <th className="px-6 py-3 font-medium text-brand-500 dark:text-brand-400 w-20">{t('stats.tableHeaders.rank')}</th>
+                  <th className="px-6 py-3 font-medium text-brand-500 dark:text-brand-400">{t('stats.tableHeaders.game')}</th>
+                  <th className="px-6 py-3 font-medium text-brand-500 dark:text-brand-400 text-right">{t('stats.tableHeaders.duration')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-200 dark:divide-brand-700">
@@ -453,7 +453,7 @@ function StatsPage() {
       {/* Charts */}
       <div className="space-y-6">
         <div className="glass-card bg-white dark:bg-brand-800 p-6 rounded-xl shadow-sm border border-brand-200 dark:border-brand-700">
-          <h3 className="text-lg font-semibold text-brand-900 dark:text-white mb-4">游玩时长趋势</h3>
+          <h3 className="text-lg font-semibold text-brand-900 dark:text-white mb-4">{t('stats.charts.playTimeTrend')}</h3>
           <HorizontalScrollChart
             data={totalTrendData}
             options={chartOptions}
@@ -461,7 +461,7 @@ function StatsPage() {
           />
         </div>
         <div className="glass-card bg-white dark:bg-brand-800 p-6 rounded-xl shadow-sm border border-brand-200 dark:border-brand-700">
-          <h3 className="text-lg font-semibold text-brand-900 dark:text-white mb-4">常玩游戏趋势</h3>
+          <h3 className="text-lg font-semibold text-brand-900 dark:text-white mb-4">{t('stats.charts.frequentlyPlayedTrend')}</h3>
           <HorizontalScrollChart
             data={gameTrendData}
             options={chartOptions}

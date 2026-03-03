@@ -190,7 +190,7 @@ function CategoryDetailPage() {
     try {
       await RemoveGamesFromCategory(selectedGameIds, category.id);
       await Promise.all([loadGames(category.id), loadCategory(category.id)]);
-      toast.success(`已移除 ${selectedGameIds.length} 个游戏`);
+      toast.success(t('category.toasts.batchRemoveSuccess', { count: selectedGameIds.length }));
       setSelectedGameIds([]);
       setBatchMode(false);
     }
@@ -225,7 +225,7 @@ function CategoryDetailPage() {
       <div className="flex flex-col items-center justify-center h-full space-y-4 text-brand-500">
         <div className="i-mdi-alert-circle-outline text-6xl" />
         <p className="text-xl">{t('category.messages.categoryNotFound', { category: t('nav.categories') })}</p>
-        <button onClick={onBack} className="text-neutral-600 hover:underline">返回列表</button>
+        <button onClick={onBack} className="text-neutral-600 hover:underline">{t('category.labels.returnToList')}</button>
       </div>
     );
   }
@@ -238,7 +238,7 @@ function CategoryDetailPage() {
         className="flex rounded-md items-center text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors mb-6"
       >
         <div className="i-mdi-arrow-left text-2xl mr-1" />
-        <span>返回</span>
+        <span>{t('common.back')}</span>
       </button>
 
       <div className="flex flex-col gap-6">
@@ -246,14 +246,10 @@ function CategoryDetailPage() {
           <div>
             <h1 className="text-4xl font-bold text-brand-900 dark:text-white flex items-center gap-3">
               {category.name}
-              {category.is_system && <span className="text-sm bg-neutral-100 text-neutral-800 px-2 py-1 rounded-md dark:bg-neutral-900 dark:text-neutral-300 align-middle">系统</span>}
+              {category.is_system && <span className="text-sm bg-neutral-100 text-neutral-800 px-2 py-1 rounded-md dark:bg-neutral-900 dark:text-neutral-300 align-middle">{t('category.labels.system')}</span>}
             </h1>
             <p className="text-brand-500 dark:text-brand-400 mt-2">
-              共
-              {" "}
-              {games.length}
-              {" "}
-              个游戏
+              {games.length} {t('category.labels.games')}
             </p>
           </div>
         </div>
@@ -287,7 +283,7 @@ function CategoryDetailPage() {
                           ${selectedGameIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <div className="i-mdi-delete text-lg" />
-              批量移除
+              {t('category.labels.batchRemove')}
             </button>
           )}
           actionButton={(
@@ -296,7 +292,7 @@ function CategoryDetailPage() {
               className="glass-btn-neutral flex items-center rounded-lg bg-neutral-600 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 focus:outline-none focus:ring-4 focus:ring-neutral-300 dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:focus:ring-neutral-800"
             >
               <div className="i-mdi-plus mr-2 text-lg" />
-              {t('common.add')}游戏
+              {t('common.add')} {t('common.game')}
             </button>
           )}
         />
@@ -336,19 +332,19 @@ function CategoryDetailPage() {
                 : (
                     <div className="flex flex-col items-center justify-center h-64 text-brand-500 dark:text-brand-400">
                       <div className="i-mdi-magnify text-6xl mb-4" />
-                      <p className="text-lg">未找到匹配的游戏</p>
+                      <p className="text-lg">{t('category.messages.noGamesFound')}</p>
                     </div>
                   )
             )
           : (
               <div className="flex flex-col items-center justify-center h-64 text-brand-500 dark:text-brand-400">
                 <div className="i-mdi-gamepad-variant-outline text-6xl mb-4" />
-                <p className="text-lg">这个收藏夹还没有游戏</p>
+                <p className="text-lg">{t('category.messages.noGamesInCategory')}</p>
                 <button
                   onClick={openAddGameModal}
                   className="mt-4 text-neutral-600 hover:underline dark:text-neutral-400"
                 >
-                  {t('common.add')}游戏
+                  {t('common.add')} {t('common.game')}
                 </button>
               </div>
             )}

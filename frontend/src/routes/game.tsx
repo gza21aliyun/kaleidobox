@@ -134,7 +134,7 @@ function GameDetailPage() {
       }
       catch (error) {
         console.error("Failed to auto-save game:", error);
-        toast.error(`保存失败${(error as Error).message}`);
+        toast.error(t('game.toasts.saveFailed') + `: ${(error as Error).message}`);
       }
     }, 500);
 
@@ -231,8 +231,8 @@ function GameDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4 text-brand-500">
         <div className="i-mdi-gamepad-variant-outline text-6xl" />
-        <p className="text-xl">未找到该游戏</p>
-        <button onClick={() => navigate({ to: "/library" })} className="text-neutral-600 hover:underline">返回库</button>
+        <p className="text-xl">{t('game.errors.gameNotFound')}</p>
+        <button onClick={() => navigate({ to: "/library" })} className="text-neutral-600 hover:underline">{t('game.buttons.returnToLibrary')}</button>
       </div>
     );
   }
@@ -323,7 +323,7 @@ function GameDetailPage() {
     }
     catch (error) {
       console.error("Failed to update from remote:", error);
-      toast.error(`从远程更新失败: ${error}`);
+      toast.error(t('game.toasts.remoteUpdateFailed') + `: ${error}`);
     }
   };
 
@@ -340,15 +340,15 @@ function GameDetailPage() {
     try {
       const started = await StartGameWithTracking(game.id);
       if (started) {
-        toast.success(`${game.name}启动成功`);
+        toast.success(t('game.toasts.gameLaunchSuccess', { name: game.name }));
       }
       else {
-        toast.error(`${game.name}启动失败（未能启动）`);
+        toast.error(t('game.toasts.gameLaunchFailed', { name: game.name }));
       }
     }
     catch (error) {
       console.error("Failed to start game:", error);
-      toast.error(`${game.name} 启动失败, 查询日志获得帮助`);
+      toast.error(t('game.toasts.gameLaunchFailedCheckLog', { name: game.name }));
     }
   };
 
@@ -460,7 +460,7 @@ function GameDetailPage() {
           className="flex rounded-md items-center text-brand-750 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
         >
           <div className="i-mdi-arrow-left text-2xl mr-1" />
-          <span>返回</span>
+          <span>{t('common.back')}</span>
         </button>
 
         {/* Navigation Arrows */}
@@ -526,7 +526,7 @@ function GameDetailPage() {
                 className="flex items-center gap-1.5 rounded-lg bg-neutral-600 text-white shadow-md hover:bg-neutral-700 transition-all duration-300 px-4 py-1.5 text-sm font-medium dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
               >
                 <div className="i-mdi-play text-lg" />
-                启动游戏
+                {t('game.buttons.launchGame')}
               </button>
 
               <div className="h-6 w-px bg-brand-200 dark:bg-brand-700" />
@@ -557,19 +557,19 @@ function GameDetailPage() {
 
           <div className="grid grid-cols-4 gap-4 text-sm text-brand-750 dark:text-brand-400">
             <div>
-              <div className="font-semibold mb-1">数据来源</div>
+              <div className="font-semibold mb-1">{t('game.labels.source')}</div>
               <div>{game.source_type}</div>
             </div>
             <div>
-              <div className="font-semibold mb-1">开发</div>
+              <div className="font-semibold mb-1">{t('game.labels.developer')}</div>
               <div>{game.company || "-"}</div>
             </div>
             <div>
-              <div className="font-semibold mb-1">添加时间</div>
+              <div className="font-semibold mb-1">{t('game.labels.addedAt')}</div>
               <div>{formatLocalDate(game.created_at, config?.time_zone)}</div>
             </div>
             <div>
-              <div className="font-semibold mb-1">发售日期</div>
+              <div className="font-semibold mb-1">{t('game.labels.releaseDate')}</div>
               <div>{formatLocalDate(game.release_at, config?.time_zone)}</div>
             </div>
             {/* Placeholders for missing data */}
@@ -590,7 +590,7 @@ function GameDetailPage() {
                 onClick={() => window.open(`https://www.ymgal.games/co/${game.ymgal_id}`)}
                 className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
               >
-                夜幕Gal
+                {t('game.buttons.ymgal')}
               </button>
             )}
             {game.dmm_id && (
@@ -606,7 +606,7 @@ function GameDetailPage() {
                 onClick={() => OpenBrowser(getEroscapeUrl())}
                 className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
               >
-                批评空间
+                {t('game.buttons.eroscape')}
               </button>
             )}
           </div>
@@ -708,7 +708,7 @@ function GameDetailPage() {
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         title={t('common.deleteGame')}
-        message={`确定要删除游戏 "${game.name}" 吗？此操作将从库中移除该游戏，但不会删除本地游戏文件。`}
+        message={t('game.modals.deleteMessage', { name: game.name })}
         confirmText={t('common.confirmDelete')}
         type="danger"
         onClose={() => setIsDeleteModalOpen(false)}

@@ -332,6 +332,10 @@
       "gameCount": "ゲーム数"
     }
   },
+  "ai": {
+    "title": "AI 分析",
+    "thinking": "考え中..."
+  },
   "gameStatus": {
     "not_started": "未開始",
     "playing": "プレイ中",

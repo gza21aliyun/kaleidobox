@@ -215,7 +215,13 @@
       "remoteUpdateFailed": "Remote update failed",
       "gameLaunchSuccess": "{{name}} launched successfully",
       "gameLaunchFailed": "{{name}} failed to launch (unable to start)",
-      "gameLaunchFailedCheckLog": "{{name}} failed to launch, check logs for help"
+      "gameLaunchFailedCheckLog": "{{name}} failed to launch, check logs for help",
+      "openSystemSelectorFailed": "Failed to open system selector",
+      "fetchMetadataFailed": "Failed to fetch metadata, please check network or token validity",
+      "saveGameFailed": "Failed to save game",
+      "fetchMetadataByIdFailed": "Failed to fetch metadata by ID, please check network or token validity",
+      "selectCoverImageFailed": "Failed to select cover image",
+      "pleaseFillGameName": "Please fill in the game name"
     },
     "buttons": {
       "addToCollection": "Add to Collection",
@@ -233,7 +239,36 @@
       "releaseDate": "Release Date"
     },
     "modals": {
-      "deleteMessage": "Are you sure you want to delete the game \"{{name}}\"? This will remove the game from your library but will not delete local game files."
+      "deleteMessage": "Are you sure you want to delete the game \"{{name}}\"? This will remove the game from your library but will not delete local game files.",
+      "addGame": {
+        "title": "Add Game",
+        "selectExecutable": "Select Launcher",
+        "selectExecutablePlaceholder": "Please select an executable file",
+        "gameNameLabel": "Game Name *",
+        "manualAdd": "Manual Add",
+        "searchMetadata": "Search Metadata",
+        "searching": "Searching...",
+        "whichResultExpected": "Which result is expected?",
+        "from": "From",
+        "backToPreviousStep": "Back to Previous Step",
+        "noneOfThem": "None of them?",
+        "manualFill": "Manual Fill",
+        "inputIdSearch": "Search by ID",
+        "dataSource": "Data Source",
+        "gameId": "Game ID",
+        "gameIdPlaceholder": "Please enter game ID",
+        "back": "Back",
+        "confirm": "Confirm",
+        "manualFillInfo": "Fill in game information manually",
+        "coverImage": "Cover Image",
+        "coverImagePlaceholder": "Enter image URL or select local image",
+        "select": "Select",
+        "coverImageHint": "Supports remote URL and local image selection",
+        "developer": "Developer",
+        "summary": "Summary",
+        "saving": "Saving...",
+        "save": "Save"
+      }
     },
     "errors": {
       "gameNotFound": "Game not found"
@@ -331,6 +366,10 @@
       "alias": "Alias",
       "gameCount": "Games"
     }
+  },
+  "ai": {
+    "title": "AI Analysis",
+    "thinking": "Thinking..."
   },
   "gameStatus": {
     "not_started": "Not Started",

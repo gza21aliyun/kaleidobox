@@ -47,6 +47,9 @@
     "selected": "已选",
     "batchMode": "批量选择",
     "exitBatchMode": "退出批量选择",
+    "select": "选择",
+    "cancelSelection": "取消选择",
+    "viewDetails": "查看详情",
     "filter": {
       "tags": "标签",
       "selectTags": "选择标签",
@@ -290,7 +293,13 @@
       "loadCategoriesFailed": "加载收藏夹失败",
       "collectionUpdated": "收藏已更新",
       "updateCollectionFailed": "更新收藏失败",
-      "selectFileFailed": "选择文件失败"
+      "selectFileFailed": "选择文件失败",
+      "openSystemSelectorFailed": "打开系统选择器失败",
+      "fetchMetadataFailed": "获取元信息失败，请检查网络或 token 的有效性",
+      "saveGameFailed": "保存游戏失败",
+      "fetchMetadataByIdFailed": "通过id 获取元信息失败，请检查网络或 token 的有效性",
+      "selectCoverImageFailed": "选择封面图片失败",
+      "pleaseFillGameName": "请填写游戏名称"
     },
     "buttons": {
       "addToCollection": "添加到收藏"
@@ -317,7 +326,36 @@
       "gameLaunchFailedCheckLog": "{{name}} 启动失败，查询日志获得帮助"
     },
     "modals": {
-      "deleteMessage": "确定要删除游戏 \"{{name}}\" 吗？此操作将从库中移除该游戏，但不会删除本地游戏文件。"
+      "deleteMessage": "确定要删除游戏 \"{{name}}\" 吗？此操作将从库中移除该游戏，但不会删除本地游戏文件。",
+      "addGame": {
+        "title": "添加游戏",
+        "selectExecutable": "选择启动程序",
+        "selectExecutablePlaceholder": "请选择一个可执行程序",
+        "gameNameLabel": "游戏名称 *",
+        "manualAdd": "手动添加",
+        "searchMetadata": "搜索元信息",
+        "searching": "搜索中...",
+        "whichResultExpected": "哪个结果是您期望的？",
+        "from": "来自",
+        "backToPreviousStep": "返回上一步",
+        "noneOfThem": "都不是？",
+        "manualFill": "手动填写",
+        "inputIdSearch": "输入id 查找",
+        "dataSource": "数据源",
+        "gameId": "游戏 ID",
+        "gameIdPlaceholder": "请输入游戏 ID",
+        "back": "返回",
+        "confirm": "确认",
+        "manualFillInfo": "手动填写游戏信息",
+        "coverImage": "封面图片",
+        "coverImagePlaceholder": "输入图片 URL 或选择本地图片",
+        "select": "选择",
+        "coverImageHint": "支持远端 URL 和本地图片选取",
+        "developer": "开发商",
+        "summary": "简介",
+        "saving": "保存中...",
+        "save": "保存"
+      }
     },
     "errors": {
       "gameNotFound": "未找到该游戏"
@@ -456,6 +494,10 @@
       "alias": "别名",
       "gameCount": "游戏数"
     }
+  },
+  "ai": {
+    "title": "AI 分析",
+    "thinking": "思考中..."
   },
   "settings": {
     "basicConfig": "基础配置",

@@ -253,8 +253,8 @@ func main() {
 			hotkeyService.Init(ctx, db, config)
 			i18nService.Init(ctx)
 			workService.Init(ctx, db, config)
-			workService.SetStaffCharactorService(staffService, charactorService)
-			gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
+			workService.SetServices(staffService, charactorService, imageService)
+			gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 			// 设置 StartService 的 BackupService 依赖
 			startService.SetBackupService(backupService)
 			startService.SetGameService(gameService)

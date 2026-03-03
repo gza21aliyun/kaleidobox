@@ -33,8 +33,8 @@ func (s *CharactorService) Init(ctx context.Context, db *sql.DB, config *appconf
 func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 	query := `
 		INSERT INTO charactors (id, name, other_names, image_path, images, 
-		source_charactor_id, source_type, game_ids, summary, gender, measurements, height)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		source_charactor_id, source_type, game_ids, summary, gender, measurements, height, sort)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		charactor.Id,
@@ -49,6 +49,7 @@ func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 		charactor.Gender,
 		charactor.Measurements,
 		charactor.Height,
+		charactor.Sort,
 	)
 	return err
 }
@@ -56,7 +57,7 @@ func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 func (s *CharactorService) GetCharactorBySource(sourceType enums.SourceType, sourceCharactorId string) (models.Charactor, error) {
 	query := `
 		SELECT id, name, other_names, image_path, images, source_charactor_id, 
-		source_type, game_ids, summary, gender, measurements, height
+		source_type, game_ids, summary, gender, measurements, height, sort
 		FROM charactors
 		WHERE source_charactor_id = ? AND source_type = `
 	if sourceType == enums.Bangumi {
@@ -78,8 +79,8 @@ func (s *CharactorService) GetCharactorBySource(sourceType enums.SourceType, sou
 }
 
 func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId string, sourceId string,
-	sourceType enums.SourceType, sourceCharactorId string, images string,
-	summary string, mearsurements string, height string) (models.Charactor, error) {
+	sourceType enums.SourceType, sourceCharactorId string, charaImage string,
+	summary string, mearsurements string, height string, sort int) (models.Charactor, error) {
 	charactor, err := s.GetCharactorBySource(sourceType, sourceCharactorId)
 	if err != nil || charactor.Id == "" {
 		if err == sql.ErrNoRows || charactor.Id == "" {
@@ -92,9 +93,12 @@ func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId 
 					Id:                id,
 					SourceType:        sourceType,
 					SourceCharactorId: sourceCharactorId,
-					Images:            images,
-					ImagePath:         images,
+					Images:            charaImage,
+					ImagePath:         charaImage,
 					Summary:           summary,
+					Height:            height,
+					Measurements:      mearsurements,
+					Sort:              sort,
 				}
 				err = s.CreateCharactor(charactor)
 				return charactor, err
@@ -105,10 +109,11 @@ func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId 
 	}
 	if charactor.Id != "" {
 		charactor.GameIds = utils.MergeStrings(charactor.GameIds, gameId)
-		if images != "" {
-			charactor.ImagePath = images
+		if charaImage != "" {
+			charactor.ImagePath = charaImage
 		}
-		charactor.Images = utils.MergeStrings(charactor.Images, images)
+		charactor.Images = utils.MergeStrings(charactor.Images, charaImage)
+		charactor.OtherNames = utils.MergeStrings(charactor.OtherNames, charactorName)
 		if charactor.Summary == "" {
 			charactor.Summary = summary
 		}
@@ -122,7 +127,7 @@ func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId 
 func (s *CharactorService) GetCharactorById(id string) (models.Charactor, error) {
 	query := `
 		SELECT id, name, other_names, image_path, images, source_charactor_id, 
-		source_type, game_ids, summary, gender, measurements, height
+		source_type, game_ids, summary, gender, measurements, height, sort
 		FROM charactors
 		WHERE id = ?
 	`
@@ -130,11 +135,17 @@ func (s *CharactorService) GetCharactorById(id string) (models.Charactor, error)
 }
 
 func (s *CharactorService) GetCharactorByGameIdAndName(gameId, name string) (models.Charactor, error) {
+	// query := `
+	// 	SELECT id, name, other_names, image_path, images, source_charactor_id,
+	// 	source_type, game_ids, summary, gender, measurements, height, sort
+	// 	FROM charactors
+	// 	WHERE list_contains(string_split(game_ids, ','), ?) AND name = ?
+	// `
 	query := `
 		SELECT id, name, other_names, image_path, images, source_charactor_id, 
-		source_type, game_ids, summary, gender, measurements, height
+		source_type, game_ids, summary, gender, measurements, height, sort
 		FROM charactors
-		WHERE list_contains(string_split(game_ids, ','), ?) AND name = ?
+		WHERE list_contains(string_split(game_ids, ','), ?) AND list_contains(string_split(other_names, ','), ?)
 	`
 	return s.GetCharactorByQueryId(gameId, name, query)
 }
@@ -164,6 +175,7 @@ func (s *CharactorService) GetCharactorByQueryId(id1 string, id2, query string) 
 		&charactor.Gender,
 		&charactor.Measurements,
 		&charactor.Height,
+		&charactor.Sort,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -180,7 +192,7 @@ func (s *CharactorService) UpdateCharactor(charactor models.Charactor) error {
 	query := `
 		UPDATE charactors
 		SET name = ?, other_names = ?, image_path = ?, images = ?, source_charactor_id = ?, 
-		source_type = ?, game_ids = ?, summary = ?, gender = ?, measurements = ?, height = ?
+		source_type = ?, game_ids = ?, summary = ?, gender = ?, measurements = ?, height = ?, sort = ?
 		WHERE id = ?
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
@@ -195,6 +207,7 @@ func (s *CharactorService) UpdateCharactor(charactor models.Charactor) error {
 		charactor.Gender,
 		charactor.Measurements,
 		charactor.Height,
+		charactor.Sort,
 		charactor.Id,
 	)
 	return err
@@ -211,7 +224,7 @@ func (s *CharactorService) DeleteCharactor(id string) error {
 func (s *CharactorService) ListCharactors() ([]*models.Charactor, error) {
 	query := `
 		SELECT id, name, other_names, image_path, images, source_charactor_id, source_type, 
-		game_ids, summary, gender, measurements, height
+		game_ids, summary, gender, measurements, height, sort
 		FROM charactors
 	`
 	rows, err := s.db.QueryContext(s.ctx, query)
@@ -237,6 +250,7 @@ func (s *CharactorService) ListCharactors() ([]*models.Charactor, error) {
 			&charactor.Gender,
 			&charactor.Measurements,
 			&charactor.Height,
+			&charactor.Sort,
 		)
 		if err != nil {
 			return nil, err

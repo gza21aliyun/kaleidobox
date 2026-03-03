@@ -214,7 +214,7 @@ func (b BangumiInfoGetter) FetchWorks(request vo.MetadataRequest, gameEntity mod
 			// fmt.Println("BangumiInfoGetter FetchMetadata 05 error: %v", err)
 			return gameEntity, err
 		}
-		for _, charactor := range characters {
+		for i, charactor := range characters {
 			t := FindMatch(charactor.Actors, worksMap[enums.CV], func(t1 bangumiStaff, t2 models.Work) bool { return strconv.Itoa(t1.ID) == t2.SourceStaffId })
 			sourceStaffId := ""
 			staffName := ""
@@ -229,7 +229,8 @@ func (b BangumiInfoGetter) FetchWorks(request vo.MetadataRequest, gameEntity mod
 			work := models.Work{
 				CharactorName:     charactor.Name,
 				GameId:            gameEntity.Game.ID,
-				Images:            charactor.Images.GetImage(),
+				CharactorImage:    charactor.Images.GetImage(),
+				Sort:              i,
 				Role:              enums.Charactor,
 				SourceCharactorId: strconv.Itoa(charactor.ID),
 				SourceType:        enums.Bangumi,

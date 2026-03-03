@@ -291,14 +291,14 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			work.SourceGameId = request.ID
 			work.GameName = gameEntity.Game.Name
 			work.Role = enums.CV
-			work.Images = s.Find("div.character_image img").AttrOr("src", "")
 			work.CharactorImage = s.Find("div.character_image img").AttrOr("src", "")
 			work.CharactorName = strings.TrimSpace(s.Find("div.character_name").Text())
 			work.Height = s.Find("div.personal_data dl.contains('身長') dd").Eq(0).Text()
 			work.Measurements = s.Find("div.personal_data dl.contains('スリーサイズ') dd").Eq(0).Text()
 			work.WorkSummary, err = s.Find("div.formal_explanation").Html()
+			work.Sort = i
 			fmt.Println("角色经历 01: " + work.WorkSummary)
-			fmt.Println("角色图像 01: " + work.Images)
+			fmt.Println("角色图像 01: " + work.CharactorImage)
 			charHref := b.GetBaseUrl() + s.Find("div.character_name a").AttrOr("href", "")
 
 			s.Find("div.eventimage li > img").Each(func(i2 int, s2 *goquery.Selection) {
@@ -344,41 +344,42 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 				work.SourceStaffId = queryParams.Get("creater")
 				fmt.Println("角色声优id : " + work.SourceStaffId + ",角色：" + work.CharactorName)
 			}
-			if work.SourceStaffId == "" {
-				characters = append(characters, work)
-				fmt.Println("角色图片 03: 无法获得声优id" + work.Images)
-			} else {
-				newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool { return it.SourceStaffId == work.SourceStaffId })
-				if newWork != nil {
-					if work.WorkSummary != "" {
-						newWork.WorkSummary = work.WorkSummary
-					}
-					if work.CharactorId != "" {
-						newWork.CharactorId = work.CharactorId
-					}
-					if work.CharactorName != "" {
-						newWork.CharactorName = work.CharactorName
-					}
-					if work.SourceCharactorId != "" {
-						newWork.SourceCharactorId = work.SourceCharactorId
-					}
-					if work.SourceGameId != "" {
-						newWork.SourceGameId = work.SourceGameId
-					}
+			characters = append(characters, work)
+			// if work.SourceStaffId == "" {
+			// 	characters = append(characters, work)
+			// 	fmt.Println("角色图片 03: 无法获得声优id" + work.CharactorImage)
+			// } else {
+			// 	newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool { return it.SourceStaffId == work.SourceStaffId })
+			// 	if newWork != nil {
+			// 		if work.WorkSummary != "" {
+			// 			newWork.WorkSummary = work.WorkSummary
+			// 		}
+			// 		if work.CharactorId != "" {
+			// 			newWork.CharactorId = work.CharactorId
+			// 		}
+			// 		if work.CharactorName != "" {
+			// 			newWork.CharactorName = work.CharactorName
+			// 		}
+			// 		if work.SourceCharactorId != "" {
+			// 			newWork.SourceCharactorId = work.SourceCharactorId
+			// 		}
+			// 		if work.SourceGameId != "" {
+			// 			newWork.SourceGameId = work.SourceGameId
+			// 		}
 
-					fmt.Println("角色图片 01: " + work.Images)
-					// fmt.p
-					if work.Images != "" {
-						newWork.Images = work.Images
-					}
-					fmt.Println("角色图片 02: " + newWork.Images)
-					cvs = append(cvs, *newWork)
-				} else {
-					fmt.Println("角色图片 04: " + work.Images)
-					cvs = append(cvs, work)
-					gameEntity.WorksMap[enums.CV] = append(gameEntity.WorksMap[enums.CV], work)
-				}
-			}
+			// 		fmt.Println("角色图片 01: " + work.CharactorImage)
+			// 		// fmt.p
+			// 		if work.Images != "" {
+			// 			newWork.Images = work.Images
+			// 		}
+			// 		fmt.Println("角色图片 02: " + newWork.Images)
+			// 		cvs = append(cvs, *newWork)
+			// 	} else {
+			// 		fmt.Println("角色图片 04: " + work.Images)
+			// 		cvs = append(cvs, work)
+			// 		gameEntity.WorksMap[enums.CV] = append(gameEntity.WorksMap[enums.CV], work)
+			// 	}
+			// }
 
 		})
 	})
@@ -396,10 +397,12 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 
 	// 等待收集完成
 	c.Wait()
+
+	gameEntity.WorksMap[enums.CV] = cvs
 	if len(characters) > 0 {
 		gameEntity.WorksMap[enums.Charactor] = characters
+		combineCharacters(gameEntity)
 	}
-	gameEntity.WorksMap[enums.CV] = cvs
 
 	jstr, _ := json.Marshal(gameEntity.WorksMap[enums.CV])
 	log.Printf("worksMap:" + string(jstr))
@@ -672,20 +675,6 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		worksMap[enums.CV] = cvWorks
 		gameEntity.WorksMap = worksMap
 
-		// jstr2, _ := json.Marshal(worksMap)
-		// log.Printf("worksMap: " + string(jstr2))
-
-		// e.DOM.Find("div#dlsite_sample_cg_main a").Each(func(i int, s *goquery.Selection) {
-		// 	imgUrl := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
-		// 	game.Images = MergeStrings(game.Images, imgUrl)
-
-		// })
-
-		// e.DOM.Find("div#dmm_sample_cg_main a").Each(func(i int, s *goquery.Selection) {
-		// 	imgUrl := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
-		// 	game.Images = MergeStrings(game.Images, imgUrl)
-
-		// })
 	})
 
 	// 错误处理

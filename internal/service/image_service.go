@@ -3,10 +3,13 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"io"
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -21,28 +24,28 @@ import (
 )
 
 var (
-	user32                         = syscall.NewLazyDLL("user32.dll")
-	kernel32                       = syscall.NewLazyDLL("kernel32.dll")
-	procGetAsyncKeyState           = user32.NewProc("GetAsyncKeyState")
-	procGetForegroundWindow        = user32.NewProc("GetForegroundWindow")
-	procGetWindowRect              = user32.NewProc("GetWindowRect")
-	procGetWindowThreadProcessId   = user32.NewProc("GetWindowThreadProcessId")
-	procOpenProcess                = kernel32.NewProc("OpenProcess")
-	procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
-	procCloseHandle                = kernel32.NewProc("CloseHandle")
+	user32 = syscall.NewLazyDLL("user32.dll")
+	// kernel32                       = syscall.NewLazyDLL("kernel32.dll")
+	// procGetAsyncKeyState           = user32.NewProc("GetAsyncKeyState")
+	procGetForegroundWindow = user32.NewProc("GetForegroundWindow")
+	procGetWindowRect       = user32.NewProc("GetWindowRect")
+	// procGetWindowThreadProcessId   = user32.NewProc("GetWindowThreadProcessId")
+	// procOpenProcess                = kernel32.NewProc("OpenProcess")
+	// procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
+	// procCloseHandle                = kernel32.NewProc("CloseHandle")
 
-	procGetDC                  = user32.NewProc("GetDC")
-	procReleaseDC              = user32.NewProc("ReleaseDC")
-	procGetClientRect          = user32.NewProc("GetClientRect")
-	procClientToScreen         = user32.NewProc("ClientToScreen")
-	procBitBlt                 = gdi32.NewProc("BitBlt")
-	procCreateCompatibleDC     = gdi32.NewProc("CreateCompatibleDC")
-	procCreateCompatibleBitmap = gdi32.NewProc("CreateCompatibleBitmap")
-	procSelectObject           = gdi32.NewProc("SelectObject")
-	procDeleteDC               = gdi32.NewProc("DeleteDC")
-	procDeleteObject           = gdi32.NewProc("DeleteObject")
-	gdi32                      = syscall.NewLazyDLL("gdi32.dll")
-	procKeybdEvent             = user32.NewProc("keybd_event")
+	// procGetDC                  = user32.NewProc("GetDC")
+	// procReleaseDC              = user32.NewProc("ReleaseDC")
+	// procGetClientRect          = user32.NewProc("GetClientRect")
+	// procClientToScreen         = user32.NewProc("ClientToScreen")
+	// procBitBlt                 = gdi32.NewProc("BitBlt")
+	// procCreateCompatibleDC     = gdi32.NewProc("CreateCompatibleDC")
+	// procCreateCompatibleBitmap = gdi32.NewProc("CreateCompatibleBitmap")
+	// procSelectObject           = gdi32.NewProc("SelectObject")
+	// procDeleteDC               = gdi32.NewProc("DeleteDC")
+	// procDeleteObject           = gdi32.NewProc("DeleteObject")
+	// gdi32                      = syscall.NewLazyDLL("gdi32.dll")
+	// procKeybdEvent             = user32.NewProc("keybd_event")
 )
 
 const (
@@ -250,6 +253,17 @@ func (s *ImageService) FetchImages(id string, subjectType int, imageType int) ([
 	return rs, err
 }
 
+func (s *ImageService) FetchImage(id string, subjectType int, imageType int) (models.ImageBackup, error) {
+	list, err := s.FetchImages(id, subjectType, imageType)
+	if err != nil {
+		return models.ImageBackup{}, err
+	}
+	if len(list) == 0 {
+		return models.ImageBackup{}, errors.New("not found")
+	}
+	return list[0], nil
+}
+
 // ListImageBackups 查询所有 ImageBackup 记录
 func (s *ImageService) ListImageBackups() ([]models.ImageBackup, error) {
 	query := `
@@ -345,6 +359,64 @@ func (s *ImageService) GetImageBackupsByUrls(urls []string) ([]*models.ImageBack
 	return imageBackups, nil
 }
 
+func (s *ImageService) DownloadImages() error {
+	var count = 0
+	query := `
+		SELECT url, local_path, subject_id, subject_type, image_type
+		FROM image_backups
+		WHERE local_path = '' OR local_path IS NULL
+	`
+	list, err := s.FetchImageBackups(query, "", 0, 0)
+	if err != nil {
+		return err
+	}
+
+	for _, imageBackup := range list {
+		path, err := utils.GetDataDir()
+		if err != nil {
+			continue
+		}
+		path = fmt.Sprintf(`%s\images`, path)
+		_, err = os.Stat(path)
+		if err != nil {
+			err := os.MkdirAll(path, os.ModePerm)
+			if err != nil {
+				continue
+			}
+		}
+		path = fmt.Sprintf(`%s\%s`, path, imageBackup.SubjectId)
+		_, err = os.Stat(path)
+		if err != nil {
+			err := os.MkdirAll(path, os.ModePerm)
+			if err != nil {
+				continue
+			}
+		}
+		ext := filepath.Ext(imageBackup.Url)
+		fileName := fmt.Sprintf(`%s\%s.%s`, path, uuid.New().String(), ext)
+		err = DownloadImage(imageBackup.Url, fileName)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "下载图片 %s 失败：%v", imageBackup.Url, err)
+			// 清理下载失败的文件
+			os.Remove(fileName)
+			continue
+		}
+		err = s.UpdateImageBackup(&models.ImageBackup{
+			Url:         imageBackup.Url,
+			LocalPath:   fileName,
+			SubjectId:   imageBackup.SubjectId,
+			SubjectType: imageBackup.SubjectType,
+			ImageType:   imageBackup.ImageType,
+		})
+		count++
+	}
+
+	if count == 0 && len(list) > 0 {
+		return errors.New("no images to download")
+	}
+	return nil
+}
+
 // 辅助函数：连接字符串切片
 func joinStrings(strs []string, sep string) string {
 	if len(strs) == 0 {
@@ -436,4 +508,67 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 		ImageType:   3,
 	})
 
+}
+
+func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
+	//game images
+	var err error = nil
+	for _, image := range strings.Split(gameEntity.Game.Images, ",") {
+		backup, _ := s.GetImageBackupByUrl(image)
+		if backup.Url != "" {
+			continue
+		}
+		backup = &models.ImageBackup{
+			Url:         image,
+			LocalPath:   "",
+			SubjectId:   gameEntity.Game.ID,
+			SubjectType: 0,
+			ImageType:   2,
+		}
+		err = s.CreateImageBackup(*backup)
+	}
+	cover, _ := s.GetImageBackupByUrl(gameEntity.Game.CoverURL)
+	if cover.Url == "" {
+		cover = &models.ImageBackup{
+			Url:         gameEntity.Game.CoverURL,
+			LocalPath:   "",
+			SubjectId:   gameEntity.Game.ID,
+			SubjectType: 0,
+			ImageType:   0,
+		}
+		err = s.CreateImageBackup(*cover)
+	}
+	//works
+	// for _, work := range utils.MapToArray(gameEntity.WorksMap) {
+	// 	staffImage, _ := s.GetImageBackupByUrl(work.StaffImage)
+	// 	if staffImage.Url == "" {
+	// 		staffImage = &models.ImageBackup{
+	// 			Url:         work.StaffImage,
+	// 			LocalPath:   "",
+	// 			SubjectId:   work.ID,
+	// 			SubjectType: 2,
+	// 			ImageType:   0,
+	// 		}
+	// 		err = s.CreateImageBackup(*staffImage)
+	// 	}
+	// }
+	return err
+}
+
+func DownloadImage(url, fileName string) error {
+	srcFile, err := os.Open(url)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+	destFile, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	if _, err := io.Copy(destFile, srcFile); err != nil {
+		return err
+	}
+	return nil
 }

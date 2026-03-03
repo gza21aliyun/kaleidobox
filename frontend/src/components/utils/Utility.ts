@@ -189,8 +189,9 @@ export function charactorsForEach(map: Map<enums.StaffRole, models.Work[]>, fn: 
             }
         };
         handle(enums.StaffRole.CV);
+        charactors = charactors.sort((a, b) => a.sort - b.sort);
         handle(enums.StaffRole.CHARACTOR);
-        charactors = charactors.sort((a, b) => -a.images.localeCompare(b.images));
+        // charactors = charactors.sort((a, b) => -a.images.localeCompare(b.images));
         charactors.forEach((charactor) => {
             result.push(fn(charactor)); 
         })

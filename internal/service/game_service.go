@@ -31,6 +31,19 @@ type GameService struct {
 	charactorService *CharactorService
 	workService      *WorkService
 	tagService       *TagService
+	imageService     *ImageService
+}
+
+// 设置任务服务引用
+func (s *GameService) SetServices(taskService *TaskService, charactorService *CharactorService,
+	staffService *StaffService, workService *WorkService, tagService *TagService, imageService *ImageService) {
+	s.taskService = taskService
+	// 注册游戏更新任务函数
+	s.charactorService = charactorService
+	s.staffService = staffService
+	s.workService = workService
+	s.tagService = tagService
+	s.imageService = imageService
 }
 
 func NewGameService() *GameService {
@@ -976,17 +989,6 @@ func (s *GameService) UpdateGamesBackground(games []models.Game, req vo.Metadata
 	}
 	return s.taskService.StartTask("game_updates", uuid, 1000, enums.Games, len(games), taskData)
 	// return nil
-}
-
-// 设置任务服务引用
-func (s *GameService) SetServices(taskService *TaskService, charactorService *CharactorService,
-	staffService *StaffService, workService *WorkService, tagService *TagService) {
-	s.taskService = taskService
-	// 注册游戏更新任务函数
-	s.charactorService = charactorService
-	s.staffService = staffService
-	s.workService = workService
-	s.tagService = tagService
 }
 
 func (s *GameService) ExecueteGamesUpdate(games []models.Game, req vo.MetadataRequest) {

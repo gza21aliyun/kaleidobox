@@ -38,6 +38,8 @@ func createServices(t *testing.T) *Services {
 
 	gameService := service.NewGameService()
 	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	imageService := service.NewImageService()
+	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	taskService := service.NewTaskService()
 	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	charactorService := service.NewCharactorService()
@@ -46,14 +48,12 @@ func createServices(t *testing.T) *Services {
 	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	workService := service.NewWorkService()
 	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	workService.SetStaffCharactorService(staffService, charactorService)
+	workService.SetServices(staffService, charactorService, imageService)
 	tagService := service.NewTagService()
 	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 	importServie := service.NewImportService()
 	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
-	imageService := service.NewImageService()
-	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 
 	services := Services{
 		GameService:      gameService,
@@ -507,6 +507,8 @@ func TestGameService_UGB(t *testing.T) {
 	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
 	config.EroscapeUseMirror = false
 
+	imageService := service.NewImageService()
+	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	gameService := service.NewGameService()
 	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	taskService := service.NewTaskService()
@@ -517,10 +519,10 @@ func TestGameService_UGB(t *testing.T) {
 	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	workService := service.NewWorkService()
 	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	workService.SetStaffCharactorService(staffService, charactorService)
+	workService.SetServices(staffService, charactorService, imageService)
 	tagService := service.NewTagService()
 	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 
 	t.Run("add game success", func(t *testing.T) {
 		game := createBangumiGame()
@@ -625,6 +627,8 @@ func TestGameService_Search(t *testing.T) {
 
 	gameService := service.NewGameService()
 	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	imageService := service.NewImageService()
+	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	taskService := service.NewTaskService()
 	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	charactorService := service.NewCharactorService()
@@ -633,10 +637,10 @@ func TestGameService_Search(t *testing.T) {
 	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	workService := service.NewWorkService()
 	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	workService.SetStaffCharactorService(staffService, charactorService)
+	workService.SetServices(staffService, charactorService, imageService)
 	tagService := service.NewTagService()
 	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 
 	t.Run("add game success", func(t *testing.T) {
 		// gameName := "オトメ世界の歩き方"
@@ -665,6 +669,8 @@ func TestGameService_ImportLnk(t *testing.T) {
 
 	gameService := service.NewGameService()
 	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	imageService := service.NewImageService()
+	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	taskService := service.NewTaskService()
 	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	charactorService := service.NewCharactorService()
@@ -673,10 +679,10 @@ func TestGameService_ImportLnk(t *testing.T) {
 	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	workService := service.NewWorkService()
 	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	workService.SetStaffCharactorService(staffService, charactorService)
+	workService.SetServices(staffService, charactorService, imageService)
 	tagService := service.NewTagService()
 	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 	importServie := service.NewImportService()
 	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
 
@@ -694,6 +700,9 @@ func TestGameService_DownloadSave(t *testing.T) {
 
 	gameService := service.NewGameService()
 	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	imageService := service.NewImageService()
+	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+
 	taskService := service.NewTaskService()
 	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	charactorService := service.NewCharactorService()
@@ -702,10 +711,10 @@ func TestGameService_DownloadSave(t *testing.T) {
 	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	workService := service.NewWorkService()
 	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	workService.SetStaffCharactorService(staffService, charactorService)
+	workService.SetServices(staffService, charactorService, imageService)
 	tagService := service.NewTagService()
 	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	gameService.SetServices(taskService, charactorService, staffService, workService, tagService)
+	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 	importServie := service.NewImportService()
 	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
 
@@ -741,7 +750,7 @@ func createEroscapeGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 			if err != nil || chara1.Id == "" {
 				return fmt.Errorf("读取角色错误 err:%v\n", err)
 			}
-			if chara1.Images == "" {
+			if chara1.CharactorImage == "" {
 				return fmt.Errorf("月詠 角色图片为空")
 
 			}

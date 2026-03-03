@@ -15,6 +15,7 @@ type Charactor struct {
 	Gender            int              `json:"gender"`
 	Measurements      string           `json:"measurements"`
 	Height            string           `json:"height"`
+	Sort              int              `json:"sort"`
 }
 
 type WorkGame struct {
@@ -54,4 +55,5 @@ type Work struct {
 	Measurements      string           `json:"measurements"`
 	Height            string           `json:"height"`
 	CharactorImage    string           `json:"charactor_image"`
+	Sort              int              `json:"sort"`
 }

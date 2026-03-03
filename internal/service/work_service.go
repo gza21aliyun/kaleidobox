@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"lunabox/internal/appconf"
+	"lunabox/internal/applog"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -19,11 +21,13 @@ type WorkService struct {
 	config           *appconf.AppConfig
 	staffService     *StaffService
 	charactorService *CharactorService
+	imageService     *ImageService
 }
 
-func (s *WorkService) SetStaffCharactorService(staffService *StaffService, charactorService *CharactorService) {
+func (s *WorkService) SetServices(staffService *StaffService, charactorService *CharactorService, imageService *ImageService) {
 	s.staffService = staffService
 	s.charactorService = charactorService
+	s.imageService = imageService
 }
 
 func NewWorkService() *WorkService {
@@ -39,8 +43,9 @@ func (s *WorkService) Init(ctx context.Context, db *sql.DB, config *appconf.AppC
 // CreateWork 创建新的 Work 记录
 func (s *WorkService) CreateWork(work models.Work) error {
 	query := `
-		INSERT INTO works (id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO works (id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, 
+		source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		work.Id,
@@ -57,7 +62,8 @@ func (s *WorkService) CreateWork(work models.Work) error {
 		work.SourceGameId,
 		work.Images,
 		work.GameName,
-		work.StaffImage,
+		work.CharactorImage,
+		work.Sort,
 	)
 	if err != nil {
 		fmt.Printf("创建工作失败 gameId:%s, staffName: %s, charactorName: %s, err:%v\n",
@@ -82,16 +88,18 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 			return err
 		}
 		work.StaffId = staff.Id
+		err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.StaffImage, SubjectId: staff.Id, SubjectType: 2})
 	}
 	// fmt.Println("11 CreateOrUpdateWorkStaffCharactor")
 	if work.CharactorName != "" {
 		charactor, err = s.charactorService.CreateOrUpdateCharactor(work.CharactorName, work.GameId, work.SourceGameId,
-			work.SourceType, work.SourceCharactorId, work.Images, work.WorkSummary, work.Measurements, work.Height)
+			work.SourceType, work.SourceCharactorId, work.CharactorImage, work.WorkSummary, work.Measurements, work.Height, work.Sort)
 		if err != nil {
 			fmt.Println("06 CreateOrUpdateWorkStaffCharactor %s, %v", charactor.Name, err)
 			return err
 		}
 		work.CharactorId = charactor.Id
+		err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.CharactorImage, SubjectId: charactor.Id, SubjectType: 1})
 	}
 	// fmt.Println("12 CreateOrUpdateWorkStaffCharactor")
 	newWork := models.Work{}
@@ -114,7 +122,18 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 		// fmt.Println("15 CreateOrUpdateWorkStaffCharactor", err)
 		if err == sql.ErrNoRows || newWork.Id == "" {
 			work.Id = uuid.New().String()
-			return s.CreateWork(work)
+			err = s.CreateWork(work)
+			if err != nil {
+				applog.LogErrorf(s.ctx, "创建工作出错 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)
+			} else {
+				err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{
+					Url: work.CharactorImage, SubjectId: work.Id, SubjectType: 3, ImageType: 0})
+				for _, image := range strings.Split(work.Images, ",") {
+					err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{
+						Url: image, SubjectId: work.Id, SubjectType: 3, ImageType: 1})
+				}
+			}
+			return err
 		} else {
 			return err
 		}
@@ -141,7 +160,8 @@ func (s *WorkService) CreateOrUpdateListWorkStaffCharactor(works []models.Work) 
 
 func (s *WorkService) GetWorkByStaff(gameId, staffName string) (models.Work, error) {
 	query := `
-		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, 
+		source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort
 		FROM works
 		WHERE game_id = ? AND staff_name = ?
 	`
@@ -150,7 +170,8 @@ func (s *WorkService) GetWorkByStaff(gameId, staffName string) (models.Work, err
 
 func (s *WorkService) GetWorkByStaffId(staffId string) (models.Work, error) {
 	query := `
-		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, 
+		source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort
 		FROM works
 		WHERE staff_id = ?
 	`
@@ -159,7 +180,8 @@ func (s *WorkService) GetWorkByStaffId(staffId string) (models.Work, error) {
 
 func (s *WorkService) GetWorkByCharactor(gameId, charactorName string) (models.Work, error) {
 	query := `
-		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type,
+		 source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort
 		FROM works
 		WHERE game_id = ? AND charactor_name = ?
 	`
@@ -194,7 +216,8 @@ func (s *WorkService) GetWorkByQueryIds(query string, id1 string, id2 string) (m
 		&work.SourceGameId,
 		&work.Images,
 		&work.GameName,
-		&work.StaffImage,
+		&work.CharactorImage,
+		&work.Sort,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -209,7 +232,8 @@ func (s *WorkService) GetWorkByQueryIds(query string, id1 string, id2 string) (m
 
 func (s *WorkService) GetWorksByGameId(gameId string) ([]models.Work, error) {
 	query := `
-		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover 
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, 
+		source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort 
 		FROM works
 		WHERE game_id = ?
 
@@ -220,7 +244,8 @@ func (s *WorkService) GetWorksByGameId(gameId string) ([]models.Work, error) {
 
 func (s *WorkService) GetWorksByStaffId(staffId string) ([]models.Work, error) {
 	query := `
-		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover 
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, 
+		source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort 
 		FROM works
 		WHERE staff_id = ?
 
@@ -231,7 +256,8 @@ func (s *WorkService) GetWorksByStaffId(staffId string) ([]models.Work, error) {
 
 func (s *WorkService) GetWorkGamesByCharactorId(charactorId string) ([]models.Work, error) {
 	query := `
-		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover 
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, 
+		source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort 
 		FROM works
 		WHERE charactor_id = ?
 
@@ -242,7 +268,8 @@ func (s *WorkService) GetWorkGamesByCharactorId(charactorId string) ([]models.Wo
 
 func (s *WorkService) GetWorkGamesById(id string) (models.Work, error) {
 	query := `
-		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover 
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, 
+		source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort 
 		FROM works
 		WHERE id = ?
 
@@ -278,7 +305,8 @@ func (s *WorkService) GetWorksByQueryId(query, id1 string) ([]models.Work, error
 			&work.SourceGameId,
 			&work.Images,
 			&work.GameName,
-			&work.StaffImage,
+			&work.CharactorImage,
+			&work.Sort,
 		)
 		if err != nil {
 			return nil, err
@@ -311,7 +339,7 @@ func (s *WorkService) UpdateWork(work models.Work) error {
 	query := `
 		UPDATE works
 		SET role = ?, charactor_name = ?, staff_name = ?, work_summary = ?, source_type = ?, source_staff_id = ?, source_charactor_id = ?, source_game_id = ?, images = ?, game_name = ?, game_cover = ?,
-		game_id = ?, staff_id = ?, charactor_id = ? 
+		game_id = ?, staff_id = ?, charactor_id = ?, sort = ? 
 		WHERE id = ?
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
@@ -325,10 +353,11 @@ func (s *WorkService) UpdateWork(work models.Work) error {
 		work.SourceGameId,
 		work.Images,
 		work.GameName,
-		work.StaffImage,
+		work.CharactorImage,
 		work.GameId,
 		work.StaffId,
 		work.CharactorId,
+		work.Sort,
 		work.Id,
 	)
 	if err != nil {
@@ -345,7 +374,8 @@ func (s *WorkService) UpdateWork(work models.Work) error {
 // ListWorks 查询所有 Work 记录
 func (s *WorkService) ListWorks() ([]*models.Work, error) {
 	query := `
-		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, 
+		source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort
 		FROM works
 	`
 	rows, err := s.db.QueryContext(s.ctx, query)
@@ -374,7 +404,8 @@ func (s *WorkService) ListWorks() ([]*models.Work, error) {
 			&work.SourceGameId,
 			&work.Images,
 			&work.GameName,
-			&work.StaffImage,
+			&work.CharactorImage,
+			&work.Sort,
 		)
 		if err != nil {
 			return nil, err

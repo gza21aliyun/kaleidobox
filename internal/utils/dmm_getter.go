@@ -312,21 +312,22 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 					fmt.Printf("boxtext 01:%s\n", staffName)
 					newWork.CharactorName = charactorName
 					newWork.WorkSummary = summary
-					newWork.Images = image
+					newWork.CharactorImage = image
 
 				} else {
 					fmt.Printf("boxtext 02:%s\n", staffName)
 					work := models.Work{
-						GameId:        game.ID,
-						Role:          enums.Charactor,
-						CharactorName: charactorName,
-						StaffName:     staffName,
-						WorkSummary:   summary,
-						Images:        image,
-						SourceType:    enums.Dmm,
-						GameName:      game.Name,
-						Measurements:  measurements,
-						Height:        height,
+						GameId:         game.ID,
+						Role:           enums.Charactor,
+						CharactorName:  charactorName,
+						StaffName:      staffName,
+						WorkSummary:    summary,
+						CharactorImage: image,
+						SourceType:     enums.Dmm,
+						Sort:           i,
+						GameName:       game.Name,
+						Measurements:   measurements,
+						Height:         height,
 					}
 					worksMap[work.Role] = append(worksMap[work.Role], work)
 				}
@@ -390,6 +391,8 @@ func combineCharacters(gameEntity models.GameEntity) models.GameEntity {
 			newWork.CharactorName = c.CharactorName
 			newWork.WorkSummary = c.WorkSummary
 			newWork.Images = c.Images
+			newWork.CharactorImage = c.CharactorImage
+
 			newCvs = append(newCvs, *newWork)
 		} else {
 			newCharactors = append(newCharactors, c)

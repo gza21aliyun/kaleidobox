@@ -102,7 +102,8 @@ func SchemaQueries() []string {
 			summary TEXT,
 			gender INTEGER,
 			measurements TEXT,
-			height TEXT
+			height TEXT,
+			sort INTEGER
 		)`,
 		// 新增 Staff 表
 		`CREATE TABLE IF NOT EXISTS staffs (
@@ -133,7 +134,8 @@ func SchemaQueries() []string {
 			source_game_id TEXT,
 			images TEXT,
 			game_name TEXT,
-			game_cover TEXT
+			game_cover TEXT,
+			sort INTEGER
 		)`,
 		// 新增 Tag 表
 		`CREATE TABLE IF NOT EXISTS tags (

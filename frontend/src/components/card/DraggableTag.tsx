@@ -1,4 +1,5 @@
 import { models } from "../../../wailsjs/go/models";
+import { useTranslation } from 'react-i18next';
 import { useDrag, useDrop } from 'react-dnd';
 
 // 拖拽类型定义
@@ -9,6 +10,7 @@ interface DragItem {
 
 // 可拖拽的标签组件
 export function DraggableTag({ tag }: { tag: models.Tag }) {
+  const { t } = useTranslation();
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'tag',
     item: { type: 'tag', tagName: tag.name },
@@ -35,17 +37,17 @@ export function DraggableTag({ tag }: { tag: models.Tag }) {
     >
       {tag.name}
       {tag.is_h && (
-        <div className="ml-1 text-xs" title="成人内容">
+        <div className="ml-1 text-xs" title={t('tag.tags.adultContent')}>
           <div className="i-mdi-alert-circle-outline"></div>
         </div>
       )}
       {tag.is_spoiler && (
-        <div className="ml-1 text-xs" title="剧透警告">
+        <div className="ml-1 text-xs" title={t('tag.tags.spoiler')}>
           <div className="i-mdi-eye-off-outline"></div>
         </div>
       )}
       {tag.block_modify && (
-        <div className="ml-1 text-xs" title="禁止修改">
+        <div className="ml-1 text-xs" title={t('tag.tags.blockModify')}>
           <div className="i-mdi-lock-outline"></div>
         </div>
       )}
@@ -73,6 +75,7 @@ export function DroppableGroup({
   onEdit: (groupName: string) => void;
   onDelete: (groupName: string) => void;
 }) {
+  const { t } = useTranslation();
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: 'tag',
     drop: (item: DragItem) => onDrop(item.tagName, groupName),
@@ -104,23 +107,23 @@ export function DroppableGroup({
           <button
             onClick={() => onEdit(groupName)}
             className="p-1 text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-200"
-            title="编辑分组"
+            title={t('tag.actions.editGroup')}
           >
             <div className="i-mdi-pencil text-sm"></div>
           </button>
           <button
             onClick={() => onDelete(groupName)}
             className="p-1 text-red-600 hover:text-red-800"
-            title="删除分组"
+            title={t('tag.actions.deleteGroup')}
           >
             <div className="i-mdi-delete text-sm"></div>
           </button>
         </div>
       </div>
       <div className="text-sm text-brand-600 dark:text-brand-400 mb-2">
-        包含 {tagCount} 个标签
+        {t('tag.labels.containsCount', { count: tagCount })}
         {isOver && canDrop && (
-          <span className="ml-2 text-brand-500 font-medium">松开鼠标以添加标签</span>
+          <span className="ml-2 text-brand-500 font-medium">{t('tag.hints.releaseToAdd')}</span>
         )}
       </div>
       <div className="flex flex-wrap gap-1">

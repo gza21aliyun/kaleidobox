@@ -1,4 +1,5 @@
 import type { vo } from "../../../wailsjs/go/models";
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
 
 interface CategoryCardProps {
@@ -21,6 +22,7 @@ export function CategoryCard({
   onSelectChange,
 }: CategoryCardProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleViewDetails = () => {
     navigate({ to: `/categories/${category.id}` });
@@ -63,7 +65,7 @@ export function CategoryCard({
         <p className="text-sm text-brand-500 dark:text-brand-400">
           {category.game_count}
           {" "}
-          个游戏
+          {t('category.labels.games')}
         </p>
       </div>
 
@@ -72,7 +74,7 @@ export function CategoryCard({
           type="button"
           onClick={handleToggleSelect}
           className="absolute right-3 top-1/2 -translate-y-1/2"
-          title={selectionDisabled ? "系统收藏夹不可批量删除" : (selected ? "取消选择" : "选择")}
+          title={selectionDisabled ? t('category.messages.systemCategoryCannotBatchDelete') : (selected ? t('common.cancelSelection') : t('common.select'))}
         >
           {selectionDisabled
             ? (
@@ -100,7 +102,7 @@ export function CategoryCard({
                 onEdit(e);
               }}
               className="p-2 text-brand-400 hover:text-neutral-500"
-              title="编辑收藏夹"
+              title={t('category.actions.editCategory')}
             >
               <div className="i-mdi-pencil text-lg" />
             </button>
@@ -114,7 +116,7 @@ export function CategoryCard({
                 onDelete(e);
               }}
               className="p-2 text-brand-400 hover:text-error-500"
-              title="删除收藏夹"
+              title={t('category.actions.deleteCategory')}
             >
               <div className="i-mdi-delete text-lg" />
             </button>

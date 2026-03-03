@@ -1,6 +1,7 @@
 import type { models } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 import { enums } from "../../../wailsjs/go/models";
 import { formatLocalDate } from "../../utils/time";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
@@ -46,6 +47,7 @@ export function GameCard({
   searchQuery = "",
   filteredGameIdsStr = [],
 }: GameCardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   
 
@@ -60,15 +62,15 @@ export function GameCard({
       try {
         const started = await StartGameWithTracking(game.id);
         if (started) {
-          toast.success(`${game.name} 启动成功`);
+          toast.success(t('game.toasts.gameLaunchSuccess', { name: game.name }));
         }
         else {
-          toast.error(`${game.name} 启动失败（未能启动）`);
+          toast.error(t('game.toasts.gameLaunchFailed', { name: game.name }));
         }
       }
       catch (error) {
         console.error("Failed to start game:", error);
-        toast.error(`${game.name} 启动失败, 查询日志获得帮助`);
+        toast.error(t('game.toasts.gameLaunchFailedCheckLog', { name: game.name }));
       }
     }
   };
@@ -97,7 +99,7 @@ export function GameCard({
           ? "bg-neutral-600 text-white border-neutral-600"
           : "bg-white/90 text-transparent border-brand-300 dark:bg-brand-800/90 dark:border-brand-600"}
                       shadow-sm`}
-          title={selected ? "取消选择" : "选择"}
+          title={selected ? t('common.cancelSelection') : t('common.select')}
         >
           <div className="i-mdi-check text-sm" />
         </button>
@@ -132,14 +134,14 @@ export function GameCard({
             <button
               onClick={handleStartGame}
               className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-600 text-white shadow-lg transition-transform hover:scale-110 hover:bg-neutral-500 active:scale-95"
-              title="启动游戏"
+              title={t('game.buttons.launchGame')}
             >
               <div className="i-mdi-play text-lg" />
             </button>
             <button
               onClick={handleViewDetails}
               className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
-              title="查看详情"
+              title={t('common.viewDetails')}
             >
               <div className="i-mdi-information-variant text-lg" />
             </button>

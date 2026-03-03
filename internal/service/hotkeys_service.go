@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"math"
 	"sync"
 	"time"
+	"unsafe"
 
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
@@ -70,6 +70,8 @@ type HotkeyService struct {
 
 	imageService *ImageService
 	startService *StartService
+
+	processCheckTicker *time.Ticker
 }
 
 func (s *HotkeyService) SetServices(imageService *ImageService, startService *StartService) {
@@ -709,15 +711,36 @@ func (s *HotkeyService) handleJoystickEvents() {
 	// 监听摇杆轴 (模拟量)
 	stick.On(joystick.LeftX, func(data interface{}) {
 		// data 包含摇杆位置值 -32768 到 32767
-		if math.Abs(float64(data.(int))) > 2000 {
-			applog.LogDebugf(s.ctx, "Left X axis: %v", data)
+		var l3LeftIsRelease = true
+		var l3RightIsRelease = true
+		applog.LogDebugf(s.ctx, "Left X axis: %v", data)
+		if data.(int) > 5000 {
+
+			if l3RightIsRelease {
+				l3RightIsRelease = false
+				s.handleKeyPress("l3right")
+			}
+		} else if data.(int) < 5000 && data.(int) > -5000 {
+			if !l3RightIsRelease {
+				l3RightIsRelease = true
+				s.handleKeyRelease("l3right")
+			}
+			if !l3LeftIsRelease {
+				l3LeftIsRelease = true
+				s.handleKeyRelease("l3left")
+			}
+		} else {
+			if l3LeftIsRelease {
+				l3LeftIsRelease = false
+				s.handleKeyPress("l3left")
+			}
 		}
 
 	})
 
 	stick.On(joystick.LeftY, func(data interface{}) {
 
-		if math.Abs(float64(data.(int))) > 2000 {
+		if data.(int) > 5000 {
 			applog.LogDebugf(s.ctx, "Left Y axis: %v", data)
 		}
 	})
@@ -726,17 +749,18 @@ func (s *HotkeyService) handleJoystickEvents() {
 // 启动相关方法
 func (s *HotkeyService) startJoystickListener() {
 	applog.LogInfof(s.ctx, "Starting joystick listener...")
+	devicetype := enums.DeviceTypeDualShock4
 	// 启动手柄机器人
 	// 创建 joystick 适配器
 
 	joystickAdaptor := joystick.NewAdaptor("0")
 
 	// 创建手柄驱动
-	stick := joystick.NewDriver(joystickAdaptor, "dualshock4")
+	stick := joystick.NewDriver(joystickAdaptor, string(devicetype))
 
-	s.joysticks["dualshock4"] = stick
+	s.joysticks[string(devicetype)] = stick
 
-	s.robot = gobot.NewRobot("ds4Robot",
+	s.robot = gobot.NewRobot(string(devicetype)+"Robot",
 		[]gobot.Connection{joystickAdaptor},
 		[]gobot.Device{stick},
 		s.handleJoystickEvents,
@@ -1122,4 +1146,61 @@ func (s *HotkeyService) SetActiveGameID(gameID string) {
 	if s.ctx != nil && s.ctx.Err() == nil {
 		applog.LogInfof(s.ctx, "Active game ID set to: %s", gameID)
 	}
+}
+
+// startProcessFocusMonitoring 启动进程焦点监控
+func (s *HotkeyService) startProcessFocusMonitoring() {
+	s.processCheckTicker = time.NewTicker(5000 * time.Millisecond) // 每500ms检查一次
+	applog.LogInfof(s.ctx, "startProcessFocusMonitoring 01")
+
+	go func() {
+		for {
+			select {
+			case <-s.processCheckTicker.C:
+				// sessions := s.activeTimeTracker.GetAllActiveSessions()
+				games := s.startService.getSessionGames()
+
+				newProcessId := getCurrentForegroundProcessId()
+				// applog.LogInfof(s.ctx, "startProcessFocusMonitoring 02, num of sessions:%s, pid:%d\n",
+				// 	utils.JoinString(games, ",", func(t1 GameProcess) string { return strconv.FormatUint(uint64(t1.ProcessID), 10) }), newProcessId)
+				checked := false
+				for _, game := range games {
+					if game.ProcessID == newProcessId {
+						if s.activeGameID != game.GameId {
+							s.activeGameID = game.GameId
+							applog.LogDebugf(s.ctx, "Focus changed to game: %s", game.GameId)
+						}
+						checked = true
+						break
+					}
+				}
+				if !checked && s.activeGameID != "" {
+					s.activeGameID = ""
+					applog.LogDebugf(s.ctx, "Focus changed to unknown process: %d", newProcessId)
+				}
+			case <-s.ctx.Done():
+				if s.processCheckTicker != nil {
+					s.processCheckTicker.Stop()
+				}
+				return
+			}
+		}
+	}()
+}
+
+// getCurrentForegroundProcessId 获取当前前台窗口的进程名称
+func getCurrentForegroundProcessId() uint32 {
+	// 获取前台窗口句柄
+	hwnd, _, _ := procGetForegroundWindow.Call()
+	if hwnd == 0 {
+		return 0
+	}
+
+	// 获取窗口对应的进程ID
+	var processID uint32
+	procGetWindowThreadProcessId.Call(hwnd, uintptr(unsafe.Pointer(&processID)))
+	if processID == 0 {
+		return 0
+	}
+	return processID
 }

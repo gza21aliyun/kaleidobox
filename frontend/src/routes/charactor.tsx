@@ -4,6 +4,7 @@ import { createRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { GetCharactorById } from "../../wailsjs/go/service/CharactorService";
 import { GetWorkGamesByCharactorId } from "../../wailsjs/go/service/GameService";
+import { FetchImage } from "../../wailsjs/go/service/ImageService";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -237,58 +238,61 @@ function CharactorPage() {
                     </thead>
                     <tbody>
                       {games.map((work, index) => (
-                        <tr
-                          key={index}
-                          className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600/50 cursor-pointer"
-                          onClick={() => {
-                            console.log(`跳转到游戏: ${work.game.name?.trim()}`);
-                            handleGameClick(work.game.id);
-                          }}
-                        >
-                          <td className="py-3 px-3">
-                            {work.game.cover_url && (
-                              <img
-                                src={work.game.cover_url}
-                                alt={`${work.game.name?.trim() || t('common.game')} ${t('common.cover')}`}
-                                className="w-16 h-24 object-cover rounded"
-                              />
-                            )}
-                          </td>
-                          <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-1/10">
-                            {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
-                          </td>
-                          
-                          <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
-                            {work.game.summary || '-'}
-                          </td>
-                          <td className="py-3 px-3">
-                            <span className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                              {work.work.source_type || t('common.unknown')}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3">
-                            {work.work.images && (
-                              <img
-                                src={work.work.images}
-                                alt={t('common.characterImage')}
-                                className="w-12 h-24 object-cover rounded"
-                              />
-                            )}
-                          </td>
-                          <td className="py-3 px-3 w-1/15">
-                            <span 
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleStaffClick(work.work.staff_id)
-                                }}
-                                className="inline-flex items-center px-3 py-3 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
-                              {work.work.staff_name || '-'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
-                            {work.work.work_summary || '-'}
-                          </td>
-                        </tr>
+                        <>
+                          <tr
+                            key={index}
+                            className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600/50 cursor-pointer"
+                            onClick={() => {
+                              console.log(`跳转到游戏: ${work.game.name?.trim()}`);
+                              handleGameClick(work.game.id);
+                            }}
+                          >
+                            <td className="py-3 px-3">
+                              {work.game.cover_url && (
+                                <img
+                                  src={work.game.cover_url}
+                                  alt={`${work.game.name?.trim() || t('common.game')} ${t('common.cover')}`}
+                                  className="w-16 h-24 object-cover rounded"
+                                />
+                              )}
+                            </td>
+                            <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-1/10">
+                              {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
+                            </td>
+                            
+                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
+                              {work.game.summary || '-'}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                {work.work.source_type || t('common.unknown')}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              {work.work.images && (
+                                <img
+                                  src={work.work.images}
+                                  alt={t('common.characterImage')}
+                                  className="w-12 h-24 object-cover rounded"
+                                />
+                              )}
+                            </td>
+                            <td className="py-3 px-3 w-1/15">
+                              <span 
+                                  onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleStaffClick(work.work.staff_id)
+                                  }}
+                                  className="inline-flex items-center px-3 py-3 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                                {work.work.staff_name || '-'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
+                              {work.work.work_summary || '-'}
+                            </td>
+                          </tr>
+                          <tr></tr>
+                        </>
                       ))}
                     </tbody>
                   </table>

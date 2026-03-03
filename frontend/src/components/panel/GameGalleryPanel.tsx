@@ -23,6 +23,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
   const [screenshotHotkey, setScreenshotHotkey] = useState<models.Hotkey | null>(null);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
   const [screenshots, setScreenshots] = useState<models.ImageBackup[]>([]);
+  const [images, setImages] = useState<models.ImageBackup[]>([]);
   const [loading, setLoading] = useState(true);
 
   // 检查是否有图片且过滤条件满足
@@ -52,6 +53,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       // 暂时使用空数组
       let rs = await FetchImages(game.id, 0, 3);
       setScreenshots(rs ?? []);
+      let imgs = await FetchImages(game.id, 0, 2);
+      setImages(imgs ?? []);
     } catch (error) {
       console.error("加载截图失败:", error);
     } finally {
@@ -67,7 +70,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
           ...hotkey,
           id: screenshotHotkey.id,
           // game_id: "global",
-          updated_at: new Date().toISOString()
+          updated_at: new Date()
         }));
       } else {
         // 创建新快捷键
@@ -159,7 +162,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
         <div className="flex flex-col gap-2">
           <div className="font-semibold mb-2 text-brand-900 dark:text-white">画廊</div>
           <div className="grid grid-cols-3 gap-2">
-            {galleryImages.map((image, index) => (
+            {/* {galleryImages.map((image, index) => (
               <img
                 key={`gallery-${index}`}
                 src={image}
@@ -170,7 +173,23 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
                   target.style.display = 'none';
                 }}
               />
-            ))}
+            ))} */}
+            {images.map((image, index) => (
+                // <img
+                //   key={`screenshot-${index}`}
+                //   src={screenshot}
+                //   alt={`Screenshot ${index + 1}`}
+                //   className="w-full h-auto object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                //   onError={(e) => {
+                //     const target = e.target as HTMLImageElement;
+                //     target.style.display = 'none';
+                //   }}
+                // />
+                <ImageBackupCard
+                  imageBackup={image}
+                  key={image.url}
+                  />
+              ))}
           </div>
         </div>
       )}

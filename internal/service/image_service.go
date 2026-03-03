@@ -515,7 +515,7 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 	var err error = nil
 	for _, image := range strings.Split(gameEntity.Game.Images, ",") {
 		backup, _ := s.GetImageBackupByUrl(image)
-		if backup.Url != "" {
+		if backup != nil && backup.Url != "" {
 			continue
 		}
 		backup = &models.ImageBackup{
@@ -528,7 +528,7 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 		err = s.CreateImageBackup(*backup)
 	}
 	cover, _ := s.GetImageBackupByUrl(gameEntity.Game.CoverURL)
-	if cover.Url == "" {
+	if cover == nil || cover.Url == "" {
 		cover = &models.ImageBackup{
 			Url:         gameEntity.Game.CoverURL,
 			LocalPath:   "",

@@ -102,7 +102,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
         // 更新现有映射
         const updatedHotkey = new models.Hotkey({
           ...existingHotkey,
-          action_params: { ...existingHotkey.action_params, target_key: targetKey },
+          action_params: targetKey,
           updated_at: new Date()
         });
         await UpdateHotkey(updatedHotkey);
@@ -208,9 +208,9 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
             <button
               className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transform"
               onClick={() => handleButtonClick(mapping.button)}
-              title={hotkey ? `${mapping.label} → ${hotkey.action_params?.target_key || '未设置'}` : mapping.label}
+              title={hotkey ? `${mapping.label} → ${hotkey.action_params || '未设置'}` : mapping.label}
             >
-              {hotkey ? hotkey.action_params?.target_key?.toUpperCase() || mapping.label : mapping.label}
+              {hotkey ? hotkey.action_params?.toUpperCase() || mapping.label : mapping.label}
             </button>
             
             {/* 删除按钮 */}

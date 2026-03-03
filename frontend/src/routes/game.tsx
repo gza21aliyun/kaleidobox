@@ -12,6 +12,7 @@ import { ConfirmModal } from "../components/modal/ConfirmModal";
 import { GameBackupPanel } from "../components/panel/GameBackupPanel";
 import { GameEditPanel } from "../components/panel/GameEditPanel";
 import { GameLaunchPanel } from "../components/panel/GameLaunchPanel";
+import { Ps4Panel } from "../components/panel/Ps4Panel";
 import { GameStatsPanel } from "../components/panel/GameStatsPanel";
 import { GameDetailSkeleton } from "../components/skeleton/GameDetailSkeleton";
 import { useAppStore } from "../store";
@@ -620,7 +621,7 @@ function GameDetailPage() {
       <div className="border-b border-brand-200 dark:border-brand-700">
         <div className="flex justify-between items-center">
           <nav className="-mb-px flex space-x-8">
-            {["intro","stats", "edit", "launch", "backup", "info", "gallery"].map(tab => (
+            {["intro","stats", "edit", "launch", "backup", "info", "gallery", "joystick"].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -638,6 +639,7 @@ function GameDetailPage() {
                 {tab === "info" && t('common.gameInfo')}
                 {tab === "gallery" && t('common.gallery')}
                 {tab === "intro" && t('common.introduction')}
+                {tab === "joystick" && t('common.joystick')}
               </button>
             ))}
           </nav>
@@ -705,6 +707,12 @@ function GameDetailPage() {
         />
       )}
 
+      {activeTab === "joystick" && game && (
+        <Ps4Panel
+          gameId={game.id}
+        />
+      )}
+
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         title={t('common.deleteGame')}
@@ -722,6 +730,8 @@ function GameDetailPage() {
         onClose={() => setIsCategoryModalOpen(false)}
         onSave={handleSaveCategories}
       />
+
+
     </div>
   );
 }

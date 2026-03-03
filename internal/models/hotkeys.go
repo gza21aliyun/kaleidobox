@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"time"
-	
+
 	"lunabox/internal/enums"
 )
 
@@ -40,44 +40,44 @@ const (
 type JoystickButton string
 
 const (
-	JoystickButtonA      JoystickButton = "a"
-	JoystickButtonB      JoystickButton = "b"
-	JoystickButtonX      JoystickButton = "x"
-	JoystickButtonY      JoystickButton = "y"
-	JoystickButtonLB     JoystickButton = "lb"     // Left Bumper
-	JoystickButtonRB     JoystickButton = "rb"     // Right Bumper
-	JoystickButtonLT     JoystickButton = "lt"     // Left Trigger
-	JoystickButtonRT     JoystickButton = "rt"     // Right Trigger
-	JoystickButtonBack   JoystickButton = "back"   // Back/View button
-	JoystickButtonStart  JoystickButton = "start"  // Start/Menu button
-	JoystickButtonLS     JoystickButton = "ls"     // Left Stick click
-	JoystickButtonRS     JoystickButton = "rs"     // Right Stick click
-	JoystickButtonDPadUp JoystickButton = "dpad_up"
-	JoystickButtonDPadDown JoystickButton = "dpad_down"
-	JoystickButtonDPadLeft JoystickButton = "dpad_left"
+	JoystickButtonA         JoystickButton = "a"
+	JoystickButtonB         JoystickButton = "b"
+	JoystickButtonX         JoystickButton = "x"
+	JoystickButtonY         JoystickButton = "y"
+	JoystickButtonLB        JoystickButton = "lb"    // Left Bumper
+	JoystickButtonRB        JoystickButton = "rb"    // Right Bumper
+	JoystickButtonLT        JoystickButton = "lt"    // Left Trigger
+	JoystickButtonRT        JoystickButton = "rt"    // Right Trigger
+	JoystickButtonBack      JoystickButton = "back"  // Back/View button
+	JoystickButtonStart     JoystickButton = "start" // Start/Menu button
+	JoystickButtonLS        JoystickButton = "ls"    // Left Stick click
+	JoystickButtonRS        JoystickButton = "rs"    // Right Stick click
+	JoystickButtonDPadUp    JoystickButton = "dpad_up"
+	JoystickButtonDPadDown  JoystickButton = "dpad_down"
+	JoystickButtonDPadLeft  JoystickButton = "dpad_left"
 	JoystickButtonDPadRight JoystickButton = "dpad_right"
-	JoystickButtonGuide  JoystickButton = "guide"  // Xbox Guide/PS Home button
+	JoystickButtonGuide     JoystickButton = "guide" // Xbox Guide/PS Home button
 )
 
 // JoystickMapping 手柄按键映射配置
 type JoystickMapping struct {
-	ID           string              `json:"id" db:"id"`
-	DeviceType   enums.DeviceType    `json:"device_type" db:"device_type"`     // 手柄设备类型
-	Button       JoystickButton      `json:"button" db:"button"`               // 手柄按钮
-	TargetKey    string              `json:"target_key" db:"target_key"`       // 目标键盘按键
-	IsLongPress  bool                `json:"is_long_press" db:"is_long_press"` // 是否为长按映射
-	LongPressDuration int           `json:"long_press_duration" db:"long_press_duration"` // 长按持续时间(ms)
-	Modifiers    []enums.ModifierKey `json:"modifiers" db:"modifiers"`         // 修饰键
-	IsEnabled    bool                `json:"is_enabled" db:"is_enabled"`
-	CreatedAt    time.Time           `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time           `json:"updated_at" db:"updated_at"`
+	ID                string              `json:"id" db:"id"`
+	DeviceType        enums.DeviceType    `json:"device_type" db:"device_type"`                 // 手柄设备类型
+	Button            JoystickButton      `json:"button" db:"button"`                           // 手柄按钮
+	TargetKey         string              `json:"target_key" db:"target_key"`                   // 目标键盘按键
+	IsLongPress       bool                `json:"is_long_press" db:"is_long_press"`             // 是否为长按映射
+	LongPressDuration int                 `json:"long_press_duration" db:"long_press_duration"` // 长按持续时间(ms)
+	Modifiers         []enums.ModifierKey `json:"modifiers" db:"modifiers"`                     // 修饰键
+	IsEnabled         bool                `json:"is_enabled" db:"is_enabled"`
+	CreatedAt         time.Time           `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time           `json:"updated_at" db:"updated_at"`
 }
 
 // JoystickButtonState 手柄按钮状态跟踪
 type JoystickButtonState struct {
-	Button       JoystickButton
-	IsPressed    bool
-	PressStartTime time.Time
+	Button               JoystickButton
+	IsPressed            bool
+	PressStartTime       time.Time
 	IsLongPressTriggered bool
 }
 
@@ -90,7 +90,7 @@ type Hotkey struct {
 	KeyCode      string                 `json:"key_code" db:"key_code"`
 	Modifiers    []enums.ModifierKey    `json:"modifiers" db:"modifiers"`
 	ActionType   enums.HotkeyActionType `json:"action_type" db:"action_type"`
-	ActionParams ActionParams           `json:"action_params" db:"action_params"`
+	ActionParams string                 `json:"action_params" db:"action_params"`
 	IsEnabled    bool                   `json:"is_enabled" db:"is_enabled"`
 	CreatedAt    time.Time              `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time              `json:"updated_at" db:"updated_at"`

@@ -20,11 +20,14 @@ export function AddToCategoryModal({
   onClose,
   onSave,
   selectionMode = "multiple",
-  title = t('category.modals.addToCategory.title'),
-  confirmText = t('common.confirm'),
+  title,
+  confirmText,
 }: AddToCategoryModalProps) {
   const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
+
+  title = title || t('category.modals.addToCategory.title'),
+  confirmText = confirmText || t('common.confirm'),
 
   useEffect(() => {
     setSelectedIds(selectionMode === "single" ? initialSelectedIds.slice(0, 1) : initialSelectedIds);

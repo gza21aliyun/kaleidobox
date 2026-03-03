@@ -128,7 +128,7 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.UpdatedAt,
 		game.Tags,
 		game.Arguments,
-		game.Images,
+		"", //game.Images,
 		game.BangumiId,
 		game.DmmId,
 		game.EroscapeId,
@@ -583,7 +583,7 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		game.CachedAt,
 		game.SourceID,
 		game.Tags,
-		game.Images,
+		"", //game.Images,
 		game.BangumiId,
 		game.DmmId,
 		game.EroscapeId,
@@ -788,13 +788,13 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		bgmGetter := utils.NewBangumiInfoGetter()
 		gameEntity, e = bgmGetter.FetchMetadataReq(req, s.config.BangumiAccessToken)
 		gameEntity, e = bgmGetter.FetchWorks(req, gameEntity, s.config.BangumiAccessToken)
-		game = gameEntity.Game
-		if req.IsOverwrite && req.ShouldFetchTags {
-			s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		}
-		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
-			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		}
+		// game = gameEntity.Game
+		// if req.IsOverwrite && req.ShouldFetchTags {
+		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		// }
+		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+		// 	s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		// }
 
 	case enums.VNDB:
 		fmt.Println("Fetching metadata from VNDB")
@@ -811,40 +811,48 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = escGetter.FetchMetadataById(req)
 		gameEntity, e = escGetter.FetchCharactors(req, gameEntity)
 		gameEntity, e = escGetter.FetchImages(req, gameEntity)
-		game = gameEntity.Game
-		fmt.Println("发售日3：", game.ReleaseAt)
-		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
-			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		}
-		if req.IsOverwrite && req.ShouldFetchTags {
-			s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		}
+		// game = gameEntity.Game
+		// fmt.Println("发售日3：", game.ReleaseAt)
+		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+		// 	s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		// }
+		// if req.IsOverwrite && req.ShouldFetchTags {
+		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		// }
 	case enums.Dmm:
 		fmt.Println("Fetching metadata from DMM")
 		dmmGetter := utils.NewDmmInfoGetter()
 		game.DmmId = req.ID
 		gameEntity, e = dmmGetter.FetchMetadataById(req)
-		game = gameEntity.Game
-		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
-			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		}
-		if req.IsOverwrite && req.ShouldFetchTags {
-			s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		}
+		// game = gameEntity.Game
+		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+		// 	s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		// }
+		// if req.IsOverwrite && req.ShouldFetchTags {
+		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		// }
 
 	case enums.Dlsite:
 		fmt.Println("Fetching metadata from dlsite")
 		dlsiteGetter := utils.NewDlsiteInfoGetter()
 		game.DlsiteId = req.ID
 		gameEntity, e = dlsiteGetter.FetchMetadataById2(req)
-		game = gameEntity.Game
-		if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
-			s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		}
-		if req.IsOverwrite && req.ShouldFetchTags {
-			s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		}
+		// game = gameEntity.Game
+		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+		// 	s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+		// }
+		// if req.IsOverwrite && req.ShouldFetchTags {
+		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		// }
 	}
+	game = gameEntity.Game
+	if req.IsOverwrite && req.ShouldFetchTags {
+		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+	}
+	if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
+	}
+	s.imageService.SaveGameImages(gameEntity)
 	return game, e
 }
 
@@ -1130,6 +1138,9 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			if updatedGame.SourceID == "" {
 				updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
 					ngame.ID, enums.Error, nil)
+				continue
+			}
+			if updatedGame.Name == "" {
 				continue
 			}
 

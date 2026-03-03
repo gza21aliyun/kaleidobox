@@ -83,10 +83,10 @@ export function GameIntroPanel({
                                 <div key={`${charactor.charactor_name}-${charactor.staff_name}`} 
                                     className="flex items-center gap-3 bg-white dark:bg-brand-800/30 rounded-lg p-3 border border-brand-200 dark:border-brand-700 min-w-[280px] hover:shadow-md transition-shadow">
                                     {/* 角色图片 */}
-                                    {charactor.images && (
+                                    {charactor.charactor_image && (
                                         <div className="flex-shrink-0">
                                             <img 
-                                                src={charactor.images} 
+                                                src={charactor.charactor_image} 
                                                 alt={charactor.charactor_name}
                                                 className="w-26 h-40 object-cover rounded-lg"
                                                 style={{ objectFit: 'cover', objectPosition: 'center top' }}

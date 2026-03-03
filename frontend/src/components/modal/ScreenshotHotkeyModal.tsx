@@ -2,6 +2,7 @@ import { createPortal } from "react-dom";
 import { useState, useEffect, useRef } from "react";
 import { arrayMapString } from "../utils/Utility";
 import { enums, models, vo } from "../../../wailsjs/go/models";
+import { formatLocalDate } from "../../utils/time";
 // import { 
 //   DeviceType, 
 //   HotkeyActionType, 
@@ -147,7 +148,7 @@ export function ScreenshotHotkeyModal({
         key_code: keyCode,
         modifiers: selectedDeviceType === enums.DeviceType.KEYBOARD ? modifiers : [],
         action_type: enums.HotkeyActionType.SCREENSHOT,
-        action_params: {},
+        action_params: "",
         is_enabled: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

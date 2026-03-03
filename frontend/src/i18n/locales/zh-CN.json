@@ -39,14 +39,42 @@
     "gallery": "画廊",
     "introduction": "介绍",
     "deleteGame": "删除游戏",
-    "confirmDelete": "确认删除"
+    "confirmDelete": "确认删除",
+    "back": "返回",
+    "none": "无",
+    "selectAll": "全选",
+    "clear": "清空",
+    "selected": "已选",
+    "batchMode": "批量选择",
+    "exitBatchMode": "退出批量选择",
+    "filter": {
+      "tags": "标签",
+      "selectTags": "选择标签",
+      "selectGroup": "选择分组",
+      "releaseDate": "发售日期",
+      "clearFilters": "清除所有过滤器",
+      "ascending": "升序",
+      "descending": "降序",
+      "noTags": "暂无标签",
+      "deleteCategory": "删除分类",
+      "collapse": "收起过滤器",
+      "expand": "展开过滤器"
+    }
+  },
+  "topbar": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "还原",
+    "close": "关闭"
   },
   "nav": {
     "home": "首页",
     "library": "游戏库",
     "stats": "统计",
     "categories": "分类",
-    "settings": "设置"
+    "settings": "设置",
+    "charactors": "角色",
+    "tags": "标签"
   },
   "home": {
     "welcomeBack": "欢迎回来!",
@@ -73,7 +101,7 @@
     "gamesCount": "{{count}} 个游戏",
     "emptyState": {
       "noGames": "暂无游戏",
-      "addSomeGames": "添加一些GAL游戏开始吧",
+      "addSomeGames": "添加一些 GAL 游戏开始吧",
       "noMatchingGames": "未找到匹配的游戏"
     },
     "toasts": {
@@ -134,7 +162,7 @@
     "totalPlayTime": "总游玩时间",
     "dailyAverage": "日均游玩时间",
     "toasts": {
-      "aiSummaryFailed": "AI总结失败，请检查AI配置是否正确",
+      "aiSummaryFailed": "AI 总结失败，请检查 AI 配置是否正确",
       "loadStatsFailed": "加载统计数据失败",
       "selectDateRange": "请选择开始和结束日期",
       "dateRangeInvalid": "开始日期必须早于结束日期"
@@ -147,8 +175,40 @@
       "noMoreData": "暂无更多排行数据",
       "hours": "小时",
       "beautifyExport": "美化导出",
-      "aiSummary": "AI总结",
+      "aiSummary": "AI 总结",
       "libraryOverview": "库概览"
+    },
+    "periods": {
+      "week": "周",
+      "month": "月",
+      "custom": "自定义"
+    },
+    "dateRange": {
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "apply": "应用",
+      "reset": "重置"
+    },
+    "libraryStats": {
+      "allGames": "库中所有游戏",
+      "totalSessions": "总游玩次数",
+      "totalDuration": "总游玩时长",
+      "completedGames": "通关游戏数"
+    },
+    "summaryCards": {
+      "totalPlayCount": "总游玩次数",
+      "totalPlayDuration": "总游玩时长",
+      "gamesPlayed": "游玩游戏数量",
+      "completedGames": "通关游戏"
+    },
+    "tableHeaders": {
+      "rank": "排名",
+      "game": "游戏",
+      "duration": "时长"
+    },
+    "charts": {
+      "playTimeTrend": "游玩时长趋势",
+      "frequentlyPlayedTrend": "常玩游戏趋势"
     }
   },
   "categories": {
@@ -191,12 +251,21 @@
       "removeFromCategoryFailed": "从收藏夹中移除游戏失败",
       "loadLibraryGamesFailed": "加载库中所有游戏失败",
       "addGameToCategoryFailed": "添加游戏到收藏夹失败",
-      "batchRemoveFailed": "批量移除失败"
+      "batchRemoveFailed": "批量移除失败",
+      "batchRemoveSuccess": "已移除 {{count}} 个游戏"
     },
     "messages": {
       "categoryNotFound": "未找到该{{category}}",
       "searchPlaceholder": "搜索游戏...",
-      "removeFromCategory": "从收藏夹移除"
+      "removeFromCategory": "从收藏夹移除",
+      "noGamesFound": "未找到匹配的游戏",
+      "noGamesInCategory": "这个收藏夹还没有游戏"
+    },
+    "labels": {
+      "system": "系统",
+      "games": "个游戏",
+      "batchRemove": "批量移除",
+      "returnToList": "返回列表"
     }
   },
   "game": {
@@ -225,10 +294,48 @@
     },
     "buttons": {
       "addToCollection": "添加到收藏"
+    },
+    "labels": {
+      "source": "数据来源",
+      "developer": "开发",
+      "addedAt": "添加时间",
+      "releaseDate": "发售日期"
+    },
+    "buttons": {
+      "launchGame": "启动游戏",
+      "returnToLibrary": "返回库",
+      "bangumi": "Bangumi",
+      "ymgal": "夜幕Gal",
+      "dmm": "DMM",
+      "eroscape": "批评空间"
+    },
+    "toasts": {
+      "saveFailed": "保存失败",
+      "remoteUpdateFailed": "从远程更新失败",
+      "gameLaunchSuccess": "{{name}}启动成功",
+      "gameLaunchFailed": "{{name}}启动失败（未能启动）",
+      "gameLaunchFailedCheckLog": "{{name}} 启动失败，查询日志获得帮助"
+    },
+    "modals": {
+      "deleteMessage": "确定要删除游戏 \"{{name}}\" 吗？此操作将从库中移除该游戏，但不会删除本地游戏文件。"
+    },
+    "errors": {
+      "gameNotFound": "未找到该游戏"
     }
   },
   "tagList": {
+    "title": "标签列表",
     "searchPlaceholder": "搜索标签...",
+    "stats": {
+      "found": "共找到 {{tags}} 个标签，{{groups}} 个分组"
+    },
+    "hints": {
+      "dragToAdd": "拖拽标签到右侧分组可快速添加"
+    },
+    "sections": {
+      "categories": "标签分类",
+      "groups": "标签分组"
+    },
     "toasts": {
       "loadTagGroupsFailed": "无法加载标签和分组数据",
       "loadTagsFailed": "无法加载标签列表",
@@ -245,21 +352,109 @@
       "tryOtherKeywords": "请尝试其他关键词",
       "noTagsAdded": "还没有添加任何标签",
       "ungrouped": "未分组"
+    },
+    "errors": {
+      "loadFailed": "加载失败"
+    },
+    "emptyState": {
+      "noGroups": "暂无分组",
+      "clickToCreate": "点击上方按钮创建"
+    },
+    "modals": {
+      "deleteGroupMessage": "确定要删除分组 \"{{name}}\" 吗？这将取消该分组下所有标签的分组关联。"
     }
   },
   "staff": {
     "toasts": {
       "loadStaffFailed": "无法加载工作人员信息"
+    },
+    "titles": {
+      "staffDetails": "工作人员详情",
+      "viewDetails": "查看工作人员详细信息"
+    },
+    "labels": {
+      "alias": "别名",
+      "basicInfo": "基本信息",
+      "gender": "性别",
+      "source": "来源",
+      "sourceId": "来源 ID",
+      "careerInfo": "职业信息",
+      "summary": "个人简介",
+      "participatedWorks": "参与项目"
+    },
+    "tableHeaders": {
+      "cover": "封面",
+      "gameName": "游戏名称",
+      "role": "职业",
+      "gameSummary": "游戏介绍",
+      "sourceType": "来源",
+      "characterImage": "角色图",
+      "characterName": "角色名称",
+      "characterSummary": "角色介绍"
+    },
+    "errors": {
+      "loadFailed": "加载失败",
+      "notFound": "未找到工作人员",
+      "notFoundMessage": "指定的工作人员不存在"
+    },
+    "buttons": {
+      "back": "返回"
     }
   },
   "charactor": {
     "toasts": {
       "loadCharactorFailed": "无法加载角色信息"
+    },
+    "titles": {
+      "charactorDetails": "角色详情",
+      "viewDetails": "查看角色详细信息"
+    },
+    "labels": {
+      "alias": "别名",
+      "basicInfo": "基本信息",
+      "gender": "性别",
+      "source": "来源",
+      "sourceId": "来源 ID",
+      "summary": "角色简介",
+      "participatedWorks": "参与项目",
+      "characterImage": "角色图片"
+    },
+    "tableHeaders": {
+      "cover": "封面",
+      "gameName": "游戏名称",
+      "gameSummary": "游戏介绍",
+      "sourceType": "来源",
+      "characterImage": "角色图",
+      "voiceActor": "声优",
+      "characterExperience": "角色经历"
+    },
+    "errors": {
+      "loadFailed": "加载失败",
+      "notFound": "未找到角色",
+      "notFoundMessage": "指定的角色不存在"
+    },
+    "buttons": {
+      "back": "返回"
     }
   },
   "charactorList": {
+    "title": "角色列表",
+    "stats": {
+      "found": "共找到 {{count}} 个角色"
+    },
     "toasts": {
       "loadCharactorsFailed": "无法加载角色列表"
+    },
+    "errors": {
+      "loadFailed": "加载失败"
+    },
+    "emptyState": {
+      "noCharactors": "暂无角色",
+      "noCharactorsMessage": "还没有添加任何角色信息"
+    },
+    "labels": {
+      "alias": "别名",
+      "gameCount": "游戏数"
     }
   },
   "settings": {
@@ -338,7 +533,7 @@
     "DUALSENSE": "PlayStation 5 DualSense",
     "DUALSHOCK4": "PlayStation 4 DualShock 4",
     "JOYCON": "Nintendo Switch Joy-Con",
-    "XINPUT": "Xbox控制器及兼容设备"
+    "XINPUT": "Xbox 控制器及兼容设备"
   },
   "modifierKey": {
     "CTRL": "Ctrl",
@@ -347,10 +542,10 @@
     "WIN": "Win"
   },
   "joystickButton": {
-    "A": "A键",
-    "B": "B键",
-    "X": "X键",
-    "Y": "Y键",
+    "A": "A 键",
+    "B": "B 键",
+    "X": "X 键",
+    "Y": "Y 键",
     "LB": "左肩键",
     "RB": "右肩键",
     "LT": "左扳机",

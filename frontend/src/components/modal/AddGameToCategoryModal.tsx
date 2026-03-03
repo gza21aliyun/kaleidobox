@@ -1,4 +1,5 @@
 import type { models } from "../../../wailsjs/go/models";
+import { useTranslation } from 'react-i18next';
 
 interface AddGameToCategoryModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ export function AddGameToCategoryModal({
   onClose,
   onAddGame,
 }: AddGameToCategoryModalProps) {
+  const { t } = useTranslation();
   if (!isOpen)
     return null;
 
@@ -20,7 +22,7 @@ export function AddGameToCategoryModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl h-[80vh] rounded-xl bg-white flex flex-col shadow-xl dark:bg-brand-800">
         <div className="p-6 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-brand-900 dark:text-white">添加游戏到收藏夹</h3>
+          <h3 className="text-xl font-bold text-brand-900 dark:text-white">{t('library.modals.batchAddToCollectionTitle')}</h3>
           <button
             onClick={onClose}
             className="text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-white"
@@ -62,7 +64,7 @@ export function AddGameToCategoryModal({
               )
             : (
                 <div className="flex flex-col items-center justify-center h-full text-brand-500">
-                  <p>没有可添加的游戏</p>
+                  <p>{t('category.messages.noGamesToAdd')}</p>
                 </div>
               )}
         </div>

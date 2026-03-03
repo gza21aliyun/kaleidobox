@@ -499,6 +499,26 @@
     "title": "AI 分析",
     "thinking": "思考中..."
   },
+  "session": {
+    "toasts": {
+      "endTimeMustBeAfterStartTime": "结束时间必须晚于开始时间",
+      "playDurationMustBeGreaterThanZero": "游玩时长必须大于 0",
+      "endTimeCannotBeInFuture": "结束时间不能晚于当前时间",
+      "playSessionAddedSuccessfully": "游玩记录添加成功",
+      "failedToAddPlaySession": "添加游玩记录失败"
+    },
+    "modals": {
+      "addPlaySession": {
+        "title": "添加游玩记录",
+        "description": "您可以对过去的游玩时间进行补充记录，以更准确地统计总游玩时长。",
+        "startTime": "开始时间",
+        "endTime": "结束时间",
+        "playDuration": "游玩时长",
+        "adding": "添加中...",
+        "add": "添加"
+      }
+    }
+  },
   "settings": {
     "basicConfig": "基础配置",
     "languageSettings": "语言设置",

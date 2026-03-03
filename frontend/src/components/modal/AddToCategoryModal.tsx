@@ -1,5 +1,6 @@
 import type { vo } from "../../../wailsjs/go/models";
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 interface AddToCategoryModalProps {
   isOpen: boolean;
@@ -19,9 +20,10 @@ export function AddToCategoryModal({
   onClose,
   onSave,
   selectionMode = "multiple",
-  title = "添加到收藏",
-  confirmText = "确定",
+  title = t('category.modals.addToCategory.title'),
+  confirmText = t('common.confirm'),
 }: AddToCategoryModalProps) {
+  const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
 
   useEffect(() => {
@@ -84,8 +86,7 @@ export function AddToCategoryModal({
                           <span>
                             {category.game_count || 0}
                             {" "}
-                            个游戏
-                          </span>
+                            {t('category.labels.games')}\n                          </span>
                           {isSelected
                             ? (
                                 <div className="i-mdi-check-circle text-neutral-600 dark:text-neutral-400 text-xl" />
@@ -102,7 +103,7 @@ export function AddToCategoryModal({
             : (
                 <div className="flex flex-col items-center justify-center h-full text-brand-500">
                   <div className="i-mdi-folder-outline text-4xl mb-2" />
-                  <p>暂无收藏夹</p>
+                  <p>{t('category.messages.noCategories')}</p>
                 </div>
               )}
         </div>
@@ -113,8 +114,7 @@ export function AddToCategoryModal({
             onClick={onClose}
             className="flex-1 py-2 border border-brand-300 text-brand-600 rounded-lg hover:bg-brand-50 dark:border-brand-600 dark:text-brand-400 dark:hover:bg-brand-700 font-medium"
           >
-            取消
-          </button>
+            {t('common.cancel')}\n          </button>
           <button
             type="button"
             onClick={handleSave}

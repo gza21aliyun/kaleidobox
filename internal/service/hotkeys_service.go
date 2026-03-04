@@ -206,18 +206,6 @@ func (s *HotkeyService) loadHotkeyConfig() {
 	rows, _ := s.fetchHotkeys(query)
 
 	for _, hotkey := range rows {
-		// var hotkey models.Hotkey
-		// var modifiersBytes []byte
-
-		// 解析修饰键
-		// if len(modifiersBytes) > 0 {
-		// 	json.Unmarshal(modifiersBytes, &hotkey.Modifiers)
-		// }
-
-		// 解析动作参数
-		// if len(paramsBytes) > 0 {
-		// 	json.Unmarshal(paramsBytes, &hotkey.ActionParams)
-		// }
 		if hotkey.ActionType != enums.HotkeyActionKeyMapping {
 			s.actionKeys[hotkey.KeyCode] = hotkey
 		} else {
@@ -240,137 +228,6 @@ func (s *HotkeyService) loadHotkeyConfig() {
 
 	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s)", len(s.keyMappings), statsStr)
 }
-
-// loadKeyMappingsFromHotkeys 从hotkeys表加载按键映射配置
-// func (s *HotkeyService) loadKeyMappingsFromHotkeys() {
-// 	applog.LogInfof(s.ctx, "Loading key mappings from hotkeys table...")
-
-// 	s.mappingLock.Lock()
-// 	defer s.mappingLock.Unlock()
-
-// 	// 查询启用的按键映射（action_type为KEY_MAPPING的记录）
-// 	query := `
-// 		SELECT key_code, action_params, is_enabled
-// 		FROM hotkeys
-// 		WHERE action_type = ? AND is_enabled = TRUE AND game_id = ?
-// 	`
-
-// 	rows, err := s.db.Query(query, enums.HotkeyActionKeyMapping, models.GlobalGameID)
-// 	if err != nil {
-// 		applog.LogErrorf(s.ctx, "查询按键映射失败: %v", err)
-// 		return
-// 	}
-// 	defer rows.Close()
-
-// 	count := 0
-// 	for rows.Next() {
-// 		var keyCode string
-// 		var actionParams models.ActionParams
-// 		var isEnabled bool
-
-// 		err := rows.Scan(&keyCode, &actionParams, &isEnabled)
-// 		if err != nil {
-// 			applog.LogErrorf(s.ctx, "扫描按键映射数据失败: %v", err)
-// 			continue
-// 		}
-
-// 		// 从action_params中提取目标按键和映射类型
-// 		targetKey, _ := actionParams["target_key"].(string)
-// 		mappingTypeStr, _ := actionParams["mapping_type"].(string)
-// 		modifiersInterface, _ := actionParams["modifiers"].([]interface{})
-
-// 		// 转换修饰键
-// 		var modifiers []enums.ModifierKey
-// 		for _, mod := range modifiersInterface {
-// 			if modStr, ok := mod.(string); ok {
-// 				modifiers = append(modifiers, enums.ModifierKey(modStr))
-// 			}
-// 		}
-
-// 		// 转换映射类型
-// 		var mappingTypeEnum MappingType
-// 		switch mappingTypeStr {
-// 		case "direct":
-// 			mappingTypeEnum = MappingTypeDirect
-// 		case "release":
-// 			mappingTypeEnum = MappingTypeRelease
-// 		default:
-// 			mappingTypeEnum = MappingTypeDirect
-// 		}
-
-// 		if targetKey != "" {
-// 			mapping := &KeyMapping{
-// 				SourceKey:   keyCode, // keyCode作为源按键
-// 				TargetKey:   targetKey,
-// 				MappingType: mappingTypeEnum,
-// 				Modifiers:   modifiers,
-// 				IsEnabled:   isEnabled,
-// 			}
-
-// 			s.keyMappings[keyCode] = mapping
-// 			count++
-// 			applog.LogInfof(s.ctx, "Loaded mapping: %s -> %s (%s)", keyCode, targetKey, mappingTypeStr)
-// 		}
-// 	}
-
-// 	applog.LogInfof(s.ctx, "Loaded %d key mappings from hotkeys table", count)
-// }
-
-// loadScreenshotHotkeyFromDB 从数据库加载截图快捷键
-// func (s *HotkeyService) loadScreenshotHotkeyFromDB() {
-// 	applog.LogInfof(s.ctx, "Loading screenshot hotkey from database...")
-
-// 	s.hotkeyLock.Lock()
-// 	defer s.hotkeyLock.Unlock()
-
-// 	// 查询截图快捷键配置
-// 	query := `
-// 		SELECT id, game_id, name, device_type, key_code, modifiers,
-// 		       action_type, action_params, is_enabled, created_at, updated_at
-// 		FROM hotkeys
-// 		WHERE action_type = ? AND is_enabled = TRUE AND game_id = ?
-// 		LIMIT 1
-// 	`
-
-// 	row := s.db.QueryRow(query, enums.HotkeyActionScreenshot, models.GlobalGameID)
-
-// 	var hotkey models.Hotkey
-// 	err := row.Scan(
-// 		&hotkey.ID,
-// 		&hotkey.GameID,
-// 		&hotkey.Name,
-// 		&hotkey.DeviceType,
-// 		&hotkey.KeyCode,
-// 		&hotkey.Modifiers,
-// 		&hotkey.ActionType,
-// 		&hotkey.ActionParams,
-// 		&hotkey.IsEnabled,
-// 		&hotkey.CreatedAt,
-// 		&hotkey.UpdatedAt,
-// 	)
-
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			applog.LogInfof(s.ctx, "No screenshot hotkey found in database, using default")
-// 			// 使用默认配置
-// 			s.screenshotHotkey = &models.Hotkey{
-// 				ID:         "screenshot_default",
-// 				GameID:     models.GlobalGameID,
-// 				Name:       "默认截图快捷键",
-// 				DeviceType: enums.DeviceTypeKeyboard,
-// 				KeyCode:    "f12",
-// 				ActionType: enums.HotkeyActionScreenshot,
-// 				IsEnabled:  true,
-// 			}
-// 		} else {
-// 			applog.LogErrorf(s.ctx, "查询截图快捷键失败: %v", err)
-// 		}
-// 		return
-// 	}
-
-// 	s.screenshotHotkey = &hotkey
-// 	applog.LogInfof(s.ctx, "Screenshot hotkey loaded from database: %s", hotkey.KeyCode)
-// }
 
 // loadConnectedDevicesFromDB 从数据库加载已连接设备
 func (s *HotkeyService) loadConnectedDevicesFromDB() {
@@ -418,70 +275,9 @@ func (s *HotkeyService) loadConnectedDevicesFromDB() {
 	applog.LogInfof(s.ctx, "Loaded %d connected devices from database", count)
 }
 
-// loadKeyMappings 加载按键映射配置
-// func (s *HotkeyService) loadKeyMappings() {
-// 	applog.LogInfof(s.ctx, "Loading key mappings...")
-
-// 	s.mappingLock.Lock()
-// 	defer s.mappingLock.Unlock()
-
-// 	// 示例配置 - 实际应从数据库加载
-// 	sampleMappings := []*KeyMapping{
-// 		// 手柄圆圈键 -> 键盘A键（直接映射）
-// 		{
-// 			SourceKey:   "circle",
-// 			TargetKey:   "a",
-// 			MappingType: MappingTypeDirect,
-// 			IsEnabled:   true,
-// 		},
-// 		// 手柄三角键 -> 键盘B键（直接映射）
-// 		{
-// 			SourceKey:   "triangle",
-// 			TargetKey:   "b",
-// 			MappingType: MappingTypeDirect,
-// 			IsEnabled:   true,
-// 		},
-// 	}
-
-// 	for _, mapping := range sampleMappings {
-// 		s.keyMappings[mapping.SourceKey] = mapping
-// 		applog.LogInfof(s.ctx, "Loaded mapping: %s -> %s (%s)",
-// 			mapping.SourceKey, mapping.TargetKey, mapping.MappingType)
-// 	}
-// }
-
-// loadScreenshotHotkey 加载截图快捷键
-// func (s *HotkeyService) loadScreenshotHotkey() {
-// 	applog.LogInfof(s.ctx, "Loading screenshot hotkey...")
-
-// 	s.hotkeyLock.Lock()
-// 	defer s.hotkeyLock.Unlock()
-
-// 	// 示例配置 - 实际应从数据库加载
-// 	s.screenshotHotkey = &models.Hotkey{
-// 		ID:         "screenshot_001",
-// 		GameID:     models.GlobalGameID,
-// 		Name:       "截图快捷键",
-// 		DeviceType: enums.DeviceTypeKeyboard,
-// 		KeyCode:    "f12", // 假设F12是截图键
-// 		ActionType: enums.HotkeyActionScreenshot,
-// 		IsEnabled:  true,
-// 	}
-
-// 	applog.LogInfof(s.ctx, "Screenshot hotkey loaded: %s", s.screenshotHotkey.KeyCode)
-// }
-
 // startKeyboardListener 启动键盘监听
 func (s *HotkeyService) startKeyboardListener() {
 	applog.LogInfof(s.ctx, "Starting keyboard listener...")
-
-	// s.hookMutex.Lock()
-	// if s.hookStarted {
-	// 	s.hookMutex.Unlock()
-	// 	return
-	// }
-	// s.hookStarted = true
-	// s.hookMutex.Unlock()
 
 	// go s.keyboardEventHandler()
 	applog.LogInfof(s.ctx, "Keyboard listener started")
@@ -497,103 +293,6 @@ func (s *HotkeyService) startKeyboardListener() {
 		}
 	}()
 }
-
-// keyboardEventHandler 键盘事件处理器
-// func (s *HotkeyService) keyboardEventHandler() {
-// 	monitorKeys := s.getActiveMonitorKeys()
-// 	if len(monitorKeys) == 0 {
-// 		applog.LogInfof(s.ctx, "No keys to monitor")
-// 		return
-// 	}
-
-// 	applog.LogInfof(s.ctx, "Monitoring keys: %v", monitorKeys)
-
-// 	// 为每个按键启动监听
-// 	for _, key := range monitorKeys {
-// 		go s.monitorKey(key)
-// 	}
-
-// 	<-s.ctx.Done()
-
-// 	s.hookMutex.Lock()
-// 	s.hookStarted = false
-// 	s.hookMutex.Unlock()
-// 	applog.LogInfof(s.ctx, "Keyboard listener stopped")
-// }
-
-// getActiveMonitorKeys 获取当前需要监控的按键
-// func (s *HotkeyService) getActiveMonitorKeys() []string {
-// 	s.mappingLock.RLock()
-// 	defer s.mappingLock.RUnlock()
-
-// 	keys := make(map[string]bool)
-
-// 	// 添加直接映射的源按键
-// 	for sourceKey, mapping := range s.keyMappings {
-// 		if mapping.IsEnabled && mapping.MappingType == MappingTypeDirect {
-// 			keys[sourceKey] = true
-// 		}
-// 	}
-
-// 	// 添加截图快捷键
-// 	s.hotkeyLock.RLock()
-// 	if s.screenshotHotkey != nil && s.screenshotHotkey.IsEnabled {
-// 		keys[s.screenshotHotkey.KeyCode] = true
-// 	}
-// 	s.hotkeyLock.RUnlock()
-
-// 	// 转换为切片
-// 	result := make([]string, 0, len(keys))
-// 	for key := range keys {
-// 		result = append(result, key)
-// 	}
-
-// 	return result
-// }
-
-// monitorKey 监控单个按键（基础轮询版本）
-// func (s *HotkeyService) monitorKey(key string) {
-// 	var lastState bool
-
-// 	ticker := time.NewTicker(15 * time.Millisecond) // 进一步降低频率
-// 	defer ticker.Stop()
-
-// 	for {
-// 		select {
-// 		case <-s.ctx.Done():
-// 			return
-// 		case <-ticker.C:
-// 			// 使用最基本的按键检测方法
-// 			currentState := s.checkKeyState(key)
-
-// 			if currentState != lastState {
-// 				if currentState {
-// 					s.handleKeyPress(key)
-// 				} else {
-// 					s.handleKeyRelease(key)
-// 				}
-// 				lastState = currentState
-// 			}
-// 		}
-// 	}
-// }
-
-// checkKeyState 检查按键状态的基础实现
-// func (s *HotkeyService) checkKeyState(key string) bool {
-// 	// 简单的实现：尝试按下按键看是否有反应
-// 	// 这不是最好的方法，但在没有更好API的情况下可以工作
-// 	err := robotgo.KeyTap(key)
-// 	return err == nil
-// }
-
-// isKeyPressed 检查按键状态
-// func (s *HotkeyService) isKeyPressed(key string) bool {
-// 	// 使用与monitorKey相同的基础检测方法
-// 	return s.checkKeyState(key)
-// }
-
-// func (s *HotkeyService) isActonKey(key string) bool {
-// }
 
 func (s *HotkeyService) GetActiveGameID() string {
 	if v := s.activeGameID.Load(); v != nil {
@@ -657,41 +356,6 @@ func (s *HotkeyService) handleKeyRelease(key string) {
 		return
 	}
 }
-
-// getDirectMapping 获取直接映射配置
-// func (s *HotkeyService) getDirectMapping(sourceKey string) *KeyMapping {
-// 	s.mappingLock.RLock()
-// 	defer s.mappingLock.RUnlock()
-
-// 	mapping, exists := s.keyMappings[sourceKey]
-// 	if exists && mapping.IsEnabled && mapping.MappingType == MappingTypeDirect {
-// 		return mapping
-// 	}
-// 	return nil
-// }
-
-// // isScreenshotHotkey 判断是否为截图快捷键
-// func (s *HotkeyService) isScreenshotHotkey(key string) bool {
-// 	s.hotkeyLock.RLock()
-// 	defer s.hotkeyLock.RUnlock()
-
-// 	return s.screenshotHotkey != nil &&
-// 		s.screenshotHotkey.IsEnabled &&
-// 		s.screenshotHotkey.KeyCode == key
-// }
-
-// triggerScreenshot 触发截图
-// func (s *HotkeyService) triggerScreenshot() {
-// 	applog.LogInfof(s.ctx, "Screenshot hotkey triggered")
-
-// 	s.activeLock.RLock()
-// 	gameID := s.activeGameID
-// 	s.activeLock.RUnlock()
-
-// 	if s.imageService != nil {
-// 		go s.imageService.TakeScreenshotOfFocusedWindow(gameID)
-// 	}
-// }
 
 // simulateKeyPress 模拟按键按下
 func (s *HotkeyService) simulateKeyPress(key string, modifiers []enums.ModifierKey) {

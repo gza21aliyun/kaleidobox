@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import { OpenLocalPath } from "../../../wailsjs/go/service/GameService";
 import { BetterButton } from "../ui/BetterButton";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { OpenFolder } from "../../../wailsjs/go/service/BackupService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
@@ -32,7 +33,7 @@ export function GameEditPanel({
   onUpdateFromRemote,
   onLoadGame,
 }: GameEditFormProps) {
-  
+  const { t } = useTranslation();
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
 
 
@@ -41,7 +42,7 @@ export function GameEditPanel({
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            游戏名称
+            {t('gameEdit.name')}
           </label>
           <input
             type="text"
@@ -53,7 +54,7 @@ export function GameEditPanel({
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            搜索名称
+            {t('gameEdit.searchName')}
           </label>
           <input
             type="text"
@@ -65,24 +66,24 @@ export function GameEditPanel({
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            封面图片
+            {t('gameEdit.coverImage')}
           </label>
           <div className="flex gap-2">
             <input
               type="text"
               value={game.cover_url}
               onChange={e => onGameChange({ ...game, cover_url: e.target.value } as models.Game)}
-              placeholder="输入图片 URL 或选择本地图片"
+              placeholder={t('gameEdit.coverImagePlaceholder')}
               className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
             />
-            <BetterButton onClick={onSelectCoverImage} icon="i-mdi-image" title="选择图片" />
+            <BetterButton onClick={onSelectCoverImage} icon="i-mdi-image" title={t('gameEdit.selectImage')} />
           </div>
-          <p className="mt-1 text-xs text-brand-500">支持远端url获取和本地图片选取</p>
+          <p className="mt-1 text-xs text-brand-500">{t('gameEdit.coverImageHint')}</p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            开发商
+            {t('gameEdit.developer')}
           </label>
           <input
             type="text"
@@ -94,7 +95,7 @@ export function GameEditPanel({
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            游戏路径
+            {t('gameEdit.gamePath')}
           </label>
           <div className="flex gap-2">
             <input
@@ -104,31 +105,24 @@ export function GameEditPanel({
               className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
             />
             <div className="flex items-center gap-1">
-              <BetterButton onClick={onSelectExecutable} icon="i-mdi-file" title="选择文件" />
+              <BetterButton onClick={onSelectExecutable} icon="i-mdi-file" title={t('gameEdit.selectFile')} />
               <BetterButton
                 onClick={async () => {
                   try {
                     await OpenLocalPath(game.path);
                   }
                   catch {
-                    toast.error("打开路径失败，文件/目录可能不存在");
+                    toast.error(t('gameEdit.openPathError'));
                   }
                 }}
                 disabled={!game.path}
                 icon="i-mdi-folder-open"
-                title="在文件管理器中打开位置"
+                title={t('gameEdit.openLocation')}
               />
             </div>
-            {/* <button
-              type="button"
-              onClick={() => OpenFolder(getFolderPath(game.path))}
-              className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
-            >
-              打开路径
-            </button> */}
           </div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            游戏参数
+            {t('gameEdit.arguments')}
           </label>
           <div className="flex gap-2">
             <input
@@ -142,14 +136,14 @@ export function GameEditPanel({
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            存档路径
+            {t('gameEdit.savePath')}
           </label>
           <div className="flex gap-2">
             <input
               type="text"
               value={game.save_path || ""}
               onChange={e => onGameChange({ ...game, save_path: e.target.value } as models.Game)}
-              placeholder="选择游戏存档路径（文件或文件夹）"
+              placeholder={t('gameEdit.savePathPlaceholder')}
               className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
             />
             <button
@@ -157,15 +151,15 @@ export function GameEditPanel({
               onClick={onSelectSaveDirectory}
               className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
             >
-              选择
+              {t('gameEdit.select')}
             </button>
           </div>
-          <p className="mt-1 text-xs text-brand-500">设置存档路径（文件或文件夹）后可使用备份功能</p>
+          <p className="mt-1 text-xs text-brand-500">{t('gameEdit.savePathHint')}</p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            简介
+            {t('gameEdit.summary')}
           </label>
           <textarea
             value={game.summary}
@@ -178,33 +172,32 @@ export function GameEditPanel({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-              数据源类型
+              {t('gameEdit.sourceType')}
             </label>
             <BetterSelect
               value={game.source_type || ""}
               onChange={value => onGameChange({ ...game, source_type: value } as models.Game)}
               options={[
-                { value: "", label: "无" },
-                { value: "local", label: "本地" },
-                { value: "bangumi", label: "Bangumi" },
-                { value: "vndb", label: "VNDB" },
-                { value: "ymgal", label: "月幕Galgame" },
-                { value: "dmm", label: "DMM" },
-                { value: "eroscape", label: "批评空间" },
-                { value: "dlsite", label: "DlSite" }
-
+                { value: "", label: t('gameEdit.none') },
+                { value: "local", label: t('sourceType.local') },
+                { value: "bangumi", label: t('sourceType.bangumi') },
+                { value: "vndb", label: t('sourceType.vndb') },
+                { value: "ymgal", label: t('sourceType.ymgal') },
+                { value: "dmm", label: t('sourceType.dmm') },
+                { value: "eroscape", label: t('sourceType.eroscape') },
+                { value: "dlsite", label: t('sourceType.dlsite') }
               ]}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-              数据源ID
+              {t('gameEdit.sourceId')}
             </label>
             <input
               type="text"
               value={game.source_id || ""}
               onChange={e => onGameChange({ ...game, source_id: e.target.value } as models.Game)}
-              placeholder="远程数据源的ID"
+              placeholder={t('gameEdit.sourceIdPlaceholder')}
               className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
             />
           </div>
@@ -218,7 +211,7 @@ export function GameEditPanel({
                 onClick={onUpdateFromRemote}
                 icon="i-mdi-cloud-sync"
               >
-                从远程更新
+                {t('gameEdit.updateFromRemote')}
               </BetterButton>
             )}
             {onLoadGame && (
@@ -227,7 +220,7 @@ export function GameEditPanel({
                 onClick={() => setIsBatchUpdateOpen(true)}
                 className="glass-btn-neutral px-6 py-2 bg-accent-500 text-white rounded-md hover:bg-accent-700 transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-accent-500"
               >
-                选择源更新
+                {t('gameEdit.updateFromSource')}
               </button>
             )}
             <BetterButton
@@ -235,7 +228,7 @@ export function GameEditPanel({
               onClick={onDelete}
               icon="i-mdi-trash-can-outline"
             >
-              删除
+              {t('gameEdit.delete')}
             </BetterButton>
           </div>
         </div>

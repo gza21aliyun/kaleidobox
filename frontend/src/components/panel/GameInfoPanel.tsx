@@ -4,6 +4,7 @@ import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wail
 import { tagMapForEach, workMapForEach, charactorsForEach } from "../utils/Utility";
 import { GetTagListByString } from "../../../wailsjs/go/service/TagService";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface GameEditFormProps {
   game: models.Game;
@@ -14,6 +15,7 @@ interface GameEditFormProps {
 export function GameInfoPanel({ 
     game, config, onTagTaps }: GameEditFormProps) { 
         const navigate = useNavigate();
+        const { t } = useTranslation();
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const [tagsMap, setTagsMap] = useState<Map<string, models.Tag[]>>(new Map())
 
@@ -65,13 +67,13 @@ export function GameInfoPanel({
             <div> 
                 {/* 在这里插入worksMap展示内容 */}
                 <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-3 text-brand-900 dark:text-white">工作人员信息</h3>
+                    <h3 className="text-lg font-semibold mb-3 text-brand-900 dark:text-white">{t('gameInfo.staffInfo')}</h3>
                     {worksMap && worksMap.size > 0 ? (
                         <div className="space-y-4">
                             {workMapForEach(worksMap,(role, works) => (
                                 <div key={role} className="border-l-4 border-brand-500 pl-4">
                                     <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
-                                        {role.replace(/([A-Z])/g, ' $1').trim()} {/* 将驼峰命名转换为可读格式 */}
+                                        {t(`staffRole.${role}`) || role.replace(/([A-Z])/g, ' $1').trim()}
                                     </h4>
                                     {works && works.length > 0 ? (
                                         <ul className="mt-2 flex flex-wrap gap-2">
@@ -80,29 +82,28 @@ export function GameInfoPanel({
                                                 onClick={() => handleStaffClick(work)}
                                                 className="text-sm text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/50 px-2 py-1 rounded">
                                                     {work.role === enums.StaffRole.CV 
-                                                        ? `${work.staff_name || ''} (${work.charactor_name || '未知角色'})`
-                                                        : work.staff_name || `工作人员 ${index + 1}`
+                                                        ? `${work.staff_name || ''} (${work.charactor_name || t('gameInfo.unknownCharacter')})`
+                                                        : work.staff_name || t('gameInfo.staff', { index: index + 1 })
                                                     }
                                                 </li>
                                             ))}
                                         </ul>
                                     ) : (
-                                        <p className="text-sm text-brand-500 dark:text-brand-400 italic mt-1">暂无数据</p>
+                                        <p className="text-sm text-brand-500 dark:text-brand-400 italic mt-1">{t('gameInfo.noData')}</p>
                                     )}
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <p className="text-brand-600 dark:text-brand-400 text-sm">暂无工作人员信息</p>
+                        <p className="text-brand-600 dark:text-brand-400 text-sm">{t('gameInfo.noStaffInfo')}</p>
                     )}
                 </div>
 
 
 
 
-
                 <div className="mt-4">
-                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">分类标签</div>
+                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">{t('gameInfo.categoryTags')}</div>
                     <div className="space-y-4">
                         {tagsMap && tagsMap.size > 0 ? (
                             
@@ -119,7 +120,6 @@ export function GameInfoPanel({
                                                 onClick={() => {
                                                     console.log(`Clicked tag: ${tag.name}`);
                                                     handleTagClick(tag.name);
-                                                    // 可以在这里添加点击事件处理逻辑
                                                 }}
                                             >
                                                 {tag.name}
@@ -129,7 +129,7 @@ export function GameInfoPanel({
                                 </div>
                             ))
                         ) : (
-                            <p className="text-brand-600 dark:text-brand-400 text-sm">暂无分类标签</p>
+                            <p className="text-brand-600 dark:text-brand-400 text-sm">{t('gameInfo.noCategoryTags')}</p>
                         )}
                     </div>
                 </div>

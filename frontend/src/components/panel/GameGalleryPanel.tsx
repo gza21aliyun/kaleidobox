@@ -110,7 +110,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       {true && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <div className="font-semibold text-brand-900 dark:text-white">截图</div>
+            <div className="font-semibold text-brand-900 dark:text-white">{t('gameGallery.screenshots')}</div>
             <div className="flex items-center gap-2">
               {screenshotHotkey && (
                 <span className="px-2 py-1 bg-brand-100 text-brand-700 text-sm rounded dark:bg-brand-900/30 dark:text-brand-300">
@@ -125,26 +125,16 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
                 className="flex items-center gap-1 px-3 py-1 text-sm font-medium text-brand-700 bg-brand-100 hover:bg-brand-200 rounded-lg dark:text-brand-300 dark:bg-brand-900/30 dark:hover:bg-brand-800 transition-colors"
               >
                 <div className="i-mdi-keyboard-settings text-base" />
-                {screenshotHotkey ? "修改快捷键" : "设置快捷键"}
+                {screenshotHotkey ? t('gameGallery.editHotkey') : t('gameGallery.setHotkey')}
               </button>
             </div>
           </div>
           
           {loading ? (
-            <div className="text-brand-600 dark:text-brand-400 text-sm">加载中...</div>
+            <div className="text-brand-600 dark:text-brand-400 text-sm">{t('gameGallery.loading')}</div>
           ) : screenshots.length > 0 ? (
             <div className="grid grid-cols-3 gap-2">
               {screenshots.map((screenshot, index) => (
-                // <img
-                //   key={`screenshot-${index}`}
-                //   src={screenshot}
-                //   alt={`Screenshot ${index + 1}`}
-                //   className="w-full h-auto object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                //   onError={(e) => {
-                //     const target = e.target as HTMLImageElement;
-                //     target.style.display = 'none';
-                //   }}
-                // />
                 <ImageBackupCard
                   imageBackup={screenshot}
                   key={screenshot.url}
@@ -154,11 +144,12 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
           ) : (
             <div className="text-brand-600 dark:text-brand-400 text-sm italic">
               {screenshotHotkey 
-                ? `使用快捷键 ${screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers?.length > 0
-                    ? `${screenshotHotkey.modifiers.join(" + ")} + ${screenshotHotkey.key_code}`
-                    : screenshotHotkey.key_code
-                  } 进行截图`
-                : "暂无截图"}
+                ? t('gameGallery.useHotkey', { 
+                    hotkey: screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers?.length > 0
+                      ? `${screenshotHotkey.modifiers.join(" + ")} + ${screenshotHotkey.key_code}`
+                      : screenshotHotkey.key_code
+                  })
+                : t('gameGallery.noScreenshots')}
             </div>
           )}
         </div>
@@ -167,7 +158,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       {/* 画廊板块 */}
       {galleryImages.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="font-semibold mb-2 text-brand-900 dark:text-white">画廊{`(${images.length})`}</div>
+          <div className="font-semibold mb-2 text-brand-900 dark:text-white">{t('gameGallery.gallery')}{`(${images.length})`}</div>
           <div className="flex items-center gap-2">
                 <span className="text-lg font-bold">{t('gallery.title')}</span>
                 {images.length > 0 && (
@@ -177,12 +168,12 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
                           await OpenLocalPath(imagesPath);
                         }
                         catch {
-                          toast.error("打开路径失败，文件/目录可能不存在");
+                          toast.error(t('gameGallery.openPathError'));
                         }
                       }}
                       disabled={!game.path}
                       icon="i-mdi-folder-open"
-                      title="在文件管理器中打开位置"
+                      title={t('gameGallery.openLocation')}
                     />
                 )}
             </div>

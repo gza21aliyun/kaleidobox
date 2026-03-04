@@ -15,6 +15,8 @@ import { useAppStore } from "../../store";
 import { formatFileSize } from "../../utils/size";
 import { formatLocalDateTime } from "../../utils/time";
 import { ConfirmModal } from "../modal/ConfirmModal";
+import i18next from "../../i18n/i18n";
+const t = i18next.t;
 
 export function DBBackupPanel() {
   const { config } = useAppStore();
@@ -97,16 +99,16 @@ export function DBBackupPanel() {
       await loadDBBackups();
       if (cloudEnabled)
         await loadCloudDBBackups();
-      toast.success(cloudEnabled && config?.auto_upload_db_to_cloud ? "数据库备份成功并已上传云端" : "数据库备份成功");
+      toast.success(cloudEnabled && config?.auto_upload_db_to_cloud ? t("dbBackup.backupSuccessAndUploaded" ) : t("dbBackup.backupSuccess"));
     }
     catch (err: any) {
       if (err.toString().includes("本地备份成功")) {
         await loadDBBackups();
-        toast.success("本地备份成功");
+        toast.success(t("dbBackup.localBackupSuccess"));
         toast.error(err.toString());
       }
       else {
-        toast.error(`备份失败: ${err}`);
+        toast.error(t("dbBackup.backupFailed", { error: err }));
       }
     }
     finally {
@@ -117,18 +119,18 @@ export function DBBackupPanel() {
   const handleRestoreDB = async (backupPath: string) => {
     setConfirmConfig({
       isOpen: true,
-      title: "恢复数据库",
-      message: "确定要恢复到此备份吗？程序将退出并在下次启动时完成恢复。",
+      title: t("dbBackup.restoreDatabase"),
+      message: t("dbBackup.confirmRestore"),
       type: "info",
       onConfirm: async () => {
         setRestoringBackup(backupPath);
         try {
           await ScheduleDBRestore(backupPath);
-          toast.success("已安排恢复，程序即将退出...");
+          toast.success(t("dbBackup.restoreScheduled"));
           setTimeout(() => SafeQuit(), 1500);
         }
         catch (err: any) {
-          toast.error(`安排恢复失败: ${err}`);
+          toast.error(t("dbBackup.scheduleRestoreFailed", { error: err }));
           setRestoringBackup(null);
         }
       },
@@ -138,17 +140,17 @@ export function DBBackupPanel() {
   const handleDeleteDBBackup = async (backupPath: string) => {
     setConfirmConfig({
       isOpen: true,
-      title: "删除备份",
-      message: "确定要删除此本地备份吗？此操作无法撤销。",
+      title: t("dbBackup.deleteBackup"),
+      message: t("dbBackup.confirmDelete"),
       type: "danger",
       onConfirm: async () => {
         try {
           await DeleteDBBackup(backupPath);
           await loadDBBackups();
-          toast.success("备份已删除");
+          toast.success(t("dbBackup.backupDeleted"));
         }
         catch (err: any) {
-          toast.error(`删除失败: ${err}`);
+          toast.error(t("dbBackup.deleteFailed", { error: err }));
         }
       },
     });
@@ -159,10 +161,10 @@ export function DBBackupPanel() {
     try {
       await UploadDBBackupToCloud(backupPath);
       await loadCloudDBBackups();
-      toast.success("已上传到云端");
+      toast.success(t("dbBackup.uploadedToCloud"));
     }
     catch (err: any) {
-      toast.error(`上传失败: ${err}`);
+      toast.error(t("dbBackup.uploadFailed", { error: err }));
     }
     finally {
       setUploadingBackup(null);
@@ -172,18 +174,18 @@ export function DBBackupPanel() {
   const handleRestoreFromCloud = async (cloudKey: string) => {
     setConfirmConfig({
       isOpen: true,
-      title: "从云端恢复",
-      message: "确定要从云端恢复此备份吗？程序将退出并在下次启动时完成恢复。",
+      title: t("dbBackup.restoreFromCloud"),
+      message: t("dbBackup.confirmRestoreFromCloud"),
       type: "info",
       onConfirm: async () => {
         setRestoringBackup(cloudKey);
         try {
           await ScheduleDBRestoreFromCloud(cloudKey);
-          toast.success("已安排恢复，程序即将退出...");
+          toast.success(t("dbBackup.restoreScheduled"));
           setTimeout(() => SafeQuit(), 1500);
         }
         catch (err: any) {
-          toast.error(`安排恢复失败: ${err}`);
+          toast.error(t("dbBackup.scheduleRestoreFailed", { error: err }));
           setRestoringBackup(null);
         }
       },
@@ -212,9 +214,9 @@ export function DBBackupPanel() {
       <div className="glass-card bg-white dark:bg-brand-800 p-6 rounded-lg shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-brand-900 dark:text-white">数据库备份</h3>
+            <h3 className="text-lg font-semibold text-brand-900 dark:text-white">{t("dbBackup.databaseBackup")}</h3>
             <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
-              备份游戏库元数据、分类、游玩记录等应用数据
+              {t("dbBackup.backupDescription")}
             </p>
           </div>
           <button
@@ -223,12 +225,12 @@ export function DBBackupPanel() {
             className="glass-btn-neutral px-4 py-2 bg-neutral-600 text-white rounded-md hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isBackingUp && <div className="i-mdi-loading animate-spin" />}
-            {isBackingUp ? "备份中..." : "立即备份"}
+            {isBackingUp ? t("dbBackup.backingUp") : t("dbBackup.backupNow")}
           </button>
         </div>
         {dbBackups?.last_backup_time && (
           <p className="text-xs text-brand-500 dark:text-brand-400">
-            上次备份:
+            {t("dbBackup.lastBackup")}:
             {" "}
             {formatLocalDateTime(dbBackups.last_backup_time, config?.time_zone)}
           </p>
@@ -238,11 +240,11 @@ export function DBBackupPanel() {
       {/* 本地备份列表 */}
       <div className="glass-card bg-white dark:bg-brand-800 p-6 rounded-lg shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">本地备份</h3>
+          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">{t("dbBackup.localBackups")}</h3>
           {config?.auto_backup_db && (
             <span className="px-2 py-0.5 text-xs font-medium bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400 rounded-full flex items-center gap-1">
               <div className="i-mdi-shield-check text-sm" />
-              自动备份已启用
+              {t("dbBackup.autoBackupEnabled")}
             </span>
           )}
         </div>
@@ -267,7 +269,7 @@ export function DBBackupPanel() {
                             {formatLocalDateTime(backup.created_at, config?.time_zone)}
                           </div>
                           <div className="text-sm text-brand-500">
-                            大小:
+                            {t("dbBackup.size")}:
                             {formatFileSize(backup.size)}
                           </div>
                         </div>
@@ -277,7 +279,7 @@ export function DBBackupPanel() {
                           <button
                             onClick={() => handleUploadDBBackup(backup.path)}
                             disabled={isDisabled}
-                            title="上传到云端"
+                            title={t("dbBackup.uploadToCloud")}
                             className="p-2 text-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded transition-colors disabled:opacity-50"
                           >
                             {uploadingBackup === backup.path
@@ -292,7 +294,7 @@ export function DBBackupPanel() {
                         <button
                           onClick={() => handleRestoreDB(backup.path)}
                           disabled={isDisabled}
-                          title="恢复此备份"
+                          title={t("dbBackup.restoreThisBackup")}
                           className="p-2 text-success-600 hover:bg-success-100 dark:hover:bg-success-900 rounded transition-colors disabled:opacity-50"
                         >
                           {restoringBackup === backup.path
@@ -306,7 +308,7 @@ export function DBBackupPanel() {
                         <button
                           onClick={() => handleDeleteDBBackup(backup.path)}
                           disabled={isDisabled}
-                          title="删除备份"
+                          title={t("dbBackup.deleteBackup")}
                           className="p-2 text-error-600 hover:bg-error-100 dark:hover:bg-error-900 rounded transition-colors disabled:opacity-50"
                         >
                           <div className="i-mdi-delete text-xl" />
@@ -317,7 +319,7 @@ export function DBBackupPanel() {
                 </div>
               )
             : (
-                <div className="text-center py-8 text-brand-500">暂无本地备份记录</div>
+                <div className="text-center py-8 text-brand-500">{t("dbBackup.noLocalBackups")}</div>
               )}
       </div>
 
@@ -327,12 +329,12 @@ export function DBBackupPanel() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-brand-900 dark:text-white flex items-center gap-2">
               <div className="i-mdi-cloud text-xl text-neutral-500" />
-              云端备份
+              {t("dbBackup.cloudBackups")}
             </h3>
             <button
               onClick={loadCloudDBBackups}
               disabled={loadingCloud || isDisabled}
-              title="刷新云端备份列表"
+              title={t("dbBackup.refreshCloudBackups")}
               className="p-2 text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-700 rounded transition-colors disabled:opacity-50"
             >
               <div className={`i-mdi-refresh text-xl ${loadingCloud ? "animate-spin" : ""}`} />
@@ -367,7 +369,7 @@ export function DBBackupPanel() {
                           <button
                             onClick={() => handleRestoreFromCloud(backup.key)}
                             disabled={isDisabled}
-                            title="从云端恢复"
+                            title={t("dbBackup.restoreFromCloud")}
                             className="p-2 text-success-600 hover:bg-success-100 dark:hover:bg-success-900 rounded transition-colors disabled:opacity-50"
                           >
                             {restoringBackup === backup.key
@@ -384,7 +386,7 @@ export function DBBackupPanel() {
                   </div>
                 )
               : (
-                  <div className="text-center py-8 text-brand-500">暂无云端备份记录</div>
+                  <div className="text-center py-8 text-brand-500">{t("dbBackup.noCloudBackups")}</div>
                 )}
         </div>
       )}
@@ -395,8 +397,8 @@ export function DBBackupPanel() {
           <div className="flex items-center gap-3">
             <div className="i-mdi-cloud-off-outline text-2xl text-brand-400" />
             <div>
-              <div className="font-medium text-brand-700 dark:text-brand-300">云备份未启用</div>
-              <div className="text-sm text-brand-500">在上方配置云备份后，可将数据库同步到云端</div>
+              <div className="font-medium text-brand-700 dark:text-brand-300">{t("dbBackup.cloudBackupNotEnabled")}</div>
+              <div className="text-sm text-brand-500">{t("dbBackup.cloudBackupHint")}</div>
             </div>
           </div>
         </div>

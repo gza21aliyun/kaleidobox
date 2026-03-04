@@ -5,6 +5,8 @@ import { SaveCroppedBackgroundImage, SelectAndCropBackgroundImage } from "../../
 import { detectImageBrightness } from "../../utils/detectImageBrightness";
 import { ImageCropperModal } from "../modal/ImageCropperModal";
 import { BetterSwitch } from "../ui/BetterSwitch";
+import i18next from "../../i18n/i18n";
+const t = i18next.t;
 
 interface BackgroundSettingsProps {
   formData: appconf.AppConfig;
@@ -25,7 +27,7 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
       }
     }
     catch (err) {
-      toast.error(`选择背景图片失败: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(t("background.selectImageFailed", { error: err instanceof Error ? err.message : String(err) }));
       console.error("Failed to select background image:", err);
     }
   };
@@ -57,7 +59,7 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
     }
     catch (err) {
       console.error("Failed to crop and save background image:", err);
-      toast.error(`裁剪保存失败: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(t("background.cropSaveFailed", { error: err instanceof Error ? err.message : String(err) }));
     }
   };
 
@@ -109,10 +111,10 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
       <div className="flex items-center justify-between p-2">
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-            启用自定义背景
+            {t("background.enableCustomBackground")}
           </label>
           <p className="text-xs text-brand-500 dark:text-brand-400 mt-1">
-            开启后将使用自定义图片作为应用背景，并自动调整主题配色
+            {t("background.enableCustomBackgroundDescription")}
           </p>
         </div>
         <BetterSwitch
@@ -138,10 +140,10 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
       <div className="flex items-center justify-between p-2">
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-            隐藏首页游戏封面
+            {t("background.hideHomeGameCover")}
           </label>
           <p className="text-xs text-brand-500 dark:text-brand-400 mt-1">
-            启用自定义背景时，隐藏首页上一次游玩游戏的封面图片
+            {t("background.hideHomeGameCoverDescription")}
           </p>
         </div>
         <BetterSwitch
@@ -155,18 +157,18 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
       {/* 背景图片选择 */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          背景图片
+          {t("background.backgroundImage")}
         </label>
         <div className="flex gap-2">
           <div className="flex-1 flex items-center px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-brand-50 dark:bg-brand-800 text-sm text-brand-600 dark:text-brand-400 truncate">
-            {formData.background_image ? getFileName(formData.background_image) : "未选择图片"}
+            {formData.background_image ? getFileName(formData.background_image) : t("background.noImageSelected")}
           </div>
           <button
             type="button"
             onClick={handleSelectImage}
             className="glass-btn-neutral px-4 py-2 bg-neutral-600 text-white rounded-md hover:bg-neutral-700 transition-colors text-sm font-medium"
           >
-            选择
+            {t("common.select")}
           </button>
           {formData.background_image && (
             <button
@@ -174,12 +176,12 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
               onClick={handleClearImage}
               className="glass-btn-error px-4 py-2 bg-error-500 text-white rounded-md hover:bg-error-600 transition-colors text-sm font-medium"
             >
-              清除
+              {t("common.clear")}
             </button>
           )}
         </div>
         <p className="text-xs text-brand-500 dark:text-brand-400">
-          支持 PNG、JPG、JPEG、GIF、WebP、BMP 格式，选择后可裁剪所需区域
+          {t("background.imageFormats")}
         </p>
       </div>
 
@@ -187,12 +189,12 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
       {formData.background_image && (
         <div className="space-y-2">
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-            预览
+            {t("background.preview")}
           </label>
           <div className="relative w-full h-40 rounded-lg overflow-hidden border border-brand-300 dark:border-brand-600">
             <img
               src={formData.background_image}
-              alt="背景预览"
+              alt={t("background.backgroundPreview")}
               className="w-full h-full object-cover"
               style={{
                 filter: `blur(${(formData.background_blur ?? 10) / 2}px)`,
@@ -208,7 +210,7 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-brand-700 dark:text-brand-300 text-sm font-medium">
-                效果预览
+                {t("background.effectPreview")}
               </span>
             </div>
           </div>
@@ -219,7 +221,7 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-            背景模糊度
+            {t("background.backgroundBlur")}
           </label>
           <span className="text-sm text-brand-500 dark:text-brand-400">
             {formData.background_blur ?? 10}
@@ -237,8 +239,8 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
           disabled={!formData.background_image}
         />
         <div className="flex justify-between text-xs text-brand-400 dark:text-brand-500">
-          <span>清晰</span>
-          <span>模糊</span>
+          <span>{t("background.clear")}</span>
+          <span>{t("background.blur")}</span>
         </div>
       </div>
 
@@ -246,7 +248,7 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-            遮罩不透明度
+            {t("background.maskOpacity")}
           </label>
           <span className="text-sm text-brand-500 dark:text-brand-400">
             {Math.round((formData.background_opacity ?? 0.85) * 100)}
@@ -264,11 +266,11 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
           disabled={!formData.background_image}
         />
         <div className="flex justify-between text-xs text-brand-400 dark:text-brand-500">
-          <span>透明</span>
-          <span>不透明</span>
+          <span>{t("background.transparent")}</span>
+          <span>{t("background.opaque")}</span>
         </div>
         <p className="text-xs text-brand-500 dark:text-brand-400">
-          调节内容区域的遮罩层不透明度，数值越低背景图越明显
+          {t("background.maskOpacityDescription")}
         </p>
       </div>
     </>

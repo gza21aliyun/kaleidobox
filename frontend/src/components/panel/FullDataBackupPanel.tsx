@@ -1,5 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import {
   CreateFullDataBackup,
   ScheduleFullDataRestore,
@@ -13,6 +14,7 @@ import { ConfirmModal } from "../modal/ConfirmModal";
 
 export function FullDataBackupPanel() {
   const { config } = useAppStore();
+  const { t } = useTranslation();
   const [isFullBackingUp, setIsFullBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
@@ -45,10 +47,10 @@ export function FullDataBackupPanel() {
 
       setIsFullBackingUp(true);
       await CreateFullDataBackup(savePath);
-      toast.success(`全量数据备份成功: ${savePath}`);
+      toast.success(t('fullDataBackup.success', { path: savePath }));
     }
     catch (err: any) {
-      toast.error(`全量备份失败: ${err}`);
+      toast.error(t('fullDataBackup.error', { error: err }));
     }
     finally {
       setIsFullBackingUp(false);
@@ -69,25 +71,25 @@ export function FullDataBackupPanel() {
 
       setConfirmConfig({
         isOpen: true,
-        title: "恢复全量数据",
-        message: `确定要恢复全量数据吗？\n\n备份文件: ${backupPath}\n\n将覆盖应用配置、数据库和资源目录，程序会退出并在下次启动时恢复。`,
+        title: t('fullDataBackup.restoreTitle'),
+        message: t('fullDataBackup.restoreMessage', { path: backupPath }),
         type: "danger",
         onConfirm: async () => {
           setIsRestoring(true);
           try {
             await ScheduleFullDataRestore(backupPath);
-            toast.success("已安排全量恢复，程序即将退出...");
+            toast.success(t('fullDataBackup.scheduleSuccess'));
             setTimeout(() => SafeQuit(), 1500);
           }
           catch (err: any) {
-            toast.error(`安排全量恢复失败: ${err}`);
+            toast.error(t('fullDataBackup.scheduleError', { error: err }));
             setIsRestoring(false);
           }
         },
       });
     }
     catch (err: any) {
-      toast.error(`选择文件失败: ${err}`);
+      toast.error(t('fullDataBackup.fileError', { error: err }));
     }
   };
 
@@ -100,11 +102,11 @@ export function FullDataBackupPanel() {
         <div className="mb-6">
           <div className="space-y-2 text-sm">
             <p className="text-brand-600 dark:text-brand-300">
-              备份应用配置、数据库、封面与背景、图片缓存、日志及本地备份目录
+              {t('fullDataBackup.description')}
             </p>
             <p className="text-error-600 dark:text-error-400">
-              <span className="font-medium">注意：</span>
-              适合在进行重大更改前备份，或在不同设备间迁移数据使用。恢复后会覆盖现有数据，请谨慎操作。
+              <span className="font-medium">{t('fullDataBackup.note')}：</span>
+              {t('fullDataBackup.warning')}
             </p>
           </div>
         </div>
@@ -117,7 +119,7 @@ export function FullDataBackupPanel() {
           >
             {isFullBackingUp && <div className="i-mdi-loading animate-spin" />}
             <div className="i-mdi-export text-xl" />
-            {isFullBackingUp ? "正在打包..." : "导出备份"}
+            {isFullBackingUp ? t('fullDataBackup.backingUp') : t('fullDataBackup.export')}
           </button>
 
           <button
@@ -127,13 +129,13 @@ export function FullDataBackupPanel() {
           >
             {isRestoring && <div className="i-mdi-loading animate-spin" />}
             <div className="i-mdi-import text-xl" />
-            {isRestoring ? "正在准备..." : "导入恢复"}
+            {isRestoring ? t('fullDataBackup.preparing') : t('fullDataBackup.import')}
           </button>
         </div>
 
         {config?.last_full_backup_time && (
           <p className="text-xs text-brand-500 dark:text-brand-400 mt-4">
-            上次备份时间：
+            {t('fullDataBackup.lastBackup')}：
             {formatLocalDateTime(config.last_full_backup_time, config?.time_zone)}
           </p>
         )}

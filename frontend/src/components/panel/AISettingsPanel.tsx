@@ -1,11 +1,13 @@
 import type { appconf } from "../../../wailsjs/go/models";
 import { enums } from "../../../wailsjs/go/models";
 import { BetterSelect } from "../ui/BetterSelect";
+import i18next from "../../i18n/i18n";
+const t = i18next.t;
 
 const PROMPT_LABELS: Record<string, string> = {
-  DEFAULT_SYSTEM: "幽默评论员",
-  MEOW_ZAKO: "雌小鬼猫娘",
-  STRICT_TUTOR: "严厉导师",
+  DEFAULT_SYSTEM: t("promptType.DEFAULT_SYSTEM"),
+  MEOW_ZAKO: t("promptType.MEOW_ZAKO"),
+  STRICT_TUTOR: t("promptType.STRICT_TUTOR"),
 };
 
 interface AISettingsProps {
@@ -22,33 +24,33 @@ export function AISettingsPanel({ formData, onChange }: AISettingsProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">AI 服务商</label>
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("ai.aiProvider")}</label>
         <BetterSelect
           name="ai_provider"
           value={formData.ai_provider || ""}
           onChange={value => onChange({ ...formData, ai_provider: value } as appconf.AppConfig)}
           options={[
-            { value: "", label: "请选择" },
+            { value: "", label: t("common.pleaseSelect") },
             { value: "openai", label: "OpenAI" },
             { value: "deepseek", label: "DeepSeek" },
-            { value: "custom", label: "自定义 (OpenAI兼容)" },
+            { value: "custom", label: t("ai.customOpenAI") },
           ]}
         />
       </div>
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">API Base URL</label>
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("ai.apiBaseUrl")}</label>
         <input type="text" name="ai_base_url" value={formData.ai_base_url || ""} onChange={handleChange} placeholder="https://api.openai.com/v1" className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white" />
       </div>
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">API Key</label>
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("ai.apiKey")}</label>
         <input type="password" name="ai_api_key" value={formData.ai_api_key || ""} onChange={handleChange} placeholder="sk-..." className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white" />
       </div>
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">模型名称</label>
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("ai.modelName")}</label>
         <input type="text" name="ai_model" value={formData.ai_model || ""} onChange={handleChange} placeholder="gpt-3.5-turbo" className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white" />
       </div>
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">系统提示语 (System Prompt)</label>
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("ai.systemPrompt")}</label>
         <div className="flex gap-2 mb-2">
           {Object.entries(enums.PromptType).map(([name, prompt]) => (
             <button
@@ -65,10 +67,10 @@ export function AISettingsPanel({ formData, onChange }: AISettingsProps) {
           value={formData.ai_system_prompt || ""}
           onChange={e => onChange({ ...formData, ai_system_prompt: e.target.value } as appconf.AppConfig)}
           rows={4}
-          placeholder="输入自定义的 AI 系统提示语..."
+          placeholder={t("ai.systemPromptPlaceholder")}
           className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white text-sm"
         />
-        <p className="text-xs text-brand-500 dark:text-brand-400">AI 将根据此提示语来生成统计总结。你可以点击上方预设快速填充。</p>
+        <p className="text-xs text-brand-500 dark:text-brand-400">{t("ai.systemPromptDescription")}</p>
       </div>
     </div>
   );

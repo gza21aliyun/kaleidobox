@@ -5,6 +5,7 @@ import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wail
 import { tagMapForEach, workMapForEach, charactorsForEach } from "../utils/Utility";
 import { GetTagListByString } from "../../../wailsjs/go/service/TagService";
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 interface GameEditFormProps {
   game: models.Game;
@@ -15,6 +16,7 @@ interface GameEditFormProps {
 export function GameIntroPanel({ 
     game, config, onTagTaps }: GameEditFormProps) { 
         const navigate = useNavigate();
+        const { t } = useTranslation();
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -58,10 +60,10 @@ export function GameIntroPanel({
             <div> 
 
                 <div className="mt-4">
-                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">简介</div>
+                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">{t('gameIntro.summary')}</div>
                     <textarea
                         ref={textareaRef}
-                        value={game.summary || "暂无简介"}
+                        value={game.summary || t('gameIntro.noSummary')}
                         disabled={true}
                         className="w-full bg-transparent border-0 outline-none text-brand-600 dark:text-brand-400 text-sm leading-relaxed resize-none"
                         style={{
@@ -75,7 +77,7 @@ export function GameIntroPanel({
                 </div>
 
                 <div className="mt-4">
-                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">角色</div>
+                    <div className="font-semibold mb-2 text-brand-900 dark:text-white">{t('gameIntro.characters')}</div>
                     <div className="flex flex-wrap gap-3">
                         {true ? (
                             
@@ -112,7 +114,7 @@ export function GameIntroPanel({
                                         
                                         {charactor.staff_name && (
                                             <div className="mt-1">
-                                                <span className="text-xs text-brand-600 dark:text-brand-400">CV：</span>
+                                                <span className="text-xs text-brand-600 dark:text-brand-400">{t('gameIntro.cv')}：</span>
                                                 <button
                                                     onClick={() => {
                                                         if (charactor.staff_id) {
@@ -131,7 +133,7 @@ export function GameIntroPanel({
                                 
                             ))
                         ) : (
-                            <p className="text-brand-600 dark:text-brand-400 text-sm">暂无分类标签</p>
+                            <p className="text-brand-600 dark:text-brand-400 text-sm">{t('gameIntro.noCategories')}</p>
                         )}
                     </div>
                 </div>

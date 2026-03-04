@@ -2,11 +2,15 @@ import { models, enums } from "../../../wailsjs/go/models";
 import { 
   GetGlobalHotkeys, UpdateHotkey, 
   AddHotkey } from "../../../wailsjs/go/service/HotkeyService";
+import { OpenLocalPath } from "../../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useState, useEffect } from "react";
 import { ScreenshotHotkeyModal } from "../modal/ScreenshotHotkeyModal";
 import { ImageBackupCard } from "../card/ImageCard";
 import { arrayMapString } from "../utils/Utility";
+import { useTranslation } from 'react-i18next';
+import { BetterButton } from "../ui/BetterButton";
+import { toast } from "react-hot-toast";
 // import { 
 //   DeviceType, 
 //   HotkeyActionType, 
@@ -19,6 +23,7 @@ interface GameGalleryPanelProps {
 }
 
 export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
+  const { t } = useTranslation();
   // 截图相关状态
   const [screenshotHotkey, setScreenshotHotkey] = useState<models.Hotkey | null>(null);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
@@ -92,6 +97,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
         .filter(img => img.trim() !== "") // 过滤空字符串
     : [];
 
+    const imagesPath = `images/${game.id}/`;
+
   // 如果没有任何内容显示，不显示面板
   // if (!screenshotHotkey && galleryImages.length === 0) {
   //   return null;
@@ -160,31 +167,27 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       {/* 画廊板块 */}
       {galleryImages.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="font-semibold mb-2 text-brand-900 dark:text-white">画廊</div>
+          <div className="font-semibold mb-2 text-brand-900 dark:text-white">画廊{`(${images.length})`}</div>
+          <div className="flex items-center gap-2">
+                <span className="text-lg font-bold">{t('gallery.title')}</span>
+                {images.length > 0 && (
+                    <BetterButton
+                      onClick={async () => {
+                        try {
+                          await OpenLocalPath(imagesPath);
+                        }
+                        catch {
+                          toast.error("打开路径失败，文件/目录可能不存在");
+                        }
+                      }}
+                      disabled={!game.path}
+                      icon="i-mdi-folder-open"
+                      title="在文件管理器中打开位置"
+                    />
+                )}
+            </div>
           <div className="grid grid-cols-3 gap-2">
-            {/* {galleryImages.map((image, index) => (
-              <img
-                key={`gallery-${index}`}
-                src={image}
-                alt={`Gallery image ${index + 1}`}
-                className="w-full h-auto object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
-            ))} */}
             {images.map((image, index) => (
-                // <img
-                //   key={`screenshot-${index}`}
-                //   src={screenshot}
-                //   alt={`Screenshot ${index + 1}`}
-                //   className="w-full h-auto object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                //   onError={(e) => {
-                //     const target = e.target as HTMLImageElement;
-                //     target.style.display = 'none';
-                //   }}
-                // />
                 <ImageBackupCard
                   imageBackup={image}
                   key={image.url}

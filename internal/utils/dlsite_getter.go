@@ -473,7 +473,7 @@ func (b DlsiteInfoGetter) FetchByNameImpl(searchName string, fn IdFunction) (mod
 	// if !dmmIsEnabled {
 	// 	return models.Game{}, fmt.Errorf("DMM is not enabled")
 	// }
-	mainTitle := getMainTitle(searchName)
+	mainTitle, _, _ := getTitles(searchName)
 	var url string = fmt.Sprintf(searchBaseUrl, mainTitle)
 	var game = models.Game{}
 	// c := CreateCollector2("*dlsite.com")

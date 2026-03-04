@@ -644,11 +644,15 @@ func TestGameService_Search(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
 		// gameName := "オトメ世界の歩き方"
-		gameName := "ものべの -happy end-"
+		// gameName := "ものべの -happy end-"
+		// gameName := "1/2 summer"
+		// gameName := "1／2 summer"
 		// gameName := "ものべの"
+		// gameName := "Timepiece Ensemble -タイムピース アンサンブル-"
+		gameName := "お兄ちゃん、右手の使用を禁止します２"
 
-		bgmGetter := utils.NewDlsiteInfoGetter()
-		bgm, err := bgmGetter.FetchMetadataByName(gameName)
+		bgmGetter := utils.NewEroscapeInfoGetter(false)
+		bgm, err := bgmGetter.FetchMetadataByName(gameName, true)
 
 		// dmmGetter := utils.NewDmmInfoGetter()
 		// dmm, _ := dmmGetter.FetchMetadataByName(name, s.config.DmmIsEnabled)
@@ -754,7 +758,11 @@ func createEroscapeGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 				return fmt.Errorf("月詠 角色图片为空")
 
 			}
+			imgs, err := services.ImageService.FetchImages(game.ID, 0, 2)
+			if len(imgs) == 0 {
+				return fmt.Errorf("图片为空,length:%d\n", len(imgs))
 
+			}
 			return nil
 		}, vo.MetadataRequest{
 			ID:                    game.SourceID,
@@ -851,7 +859,7 @@ func TestGameService_BGArray(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
 		applog.SetMode(applog.ModeCLI)
-		game, checkFn, req := createDmmGameCheck()
+		game, checkFn, req := createEroscapeGameCheck()
 		services := createServices(t)
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)

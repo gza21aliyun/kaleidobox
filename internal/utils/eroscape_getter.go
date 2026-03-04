@@ -83,11 +83,29 @@ func CreateCollector(domain string) *colly.Collector {
 }
 
 func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool) (models.Game, error) {
+	fmt.Printf("FetchMetadataByNameFunc 00\n")
+	// mainTitle, num := getTitles(name)
 	game, err := b.FetchMetadataByNameFunc(name, isEnabled,
 		func(request vo.MetadataRequest) (models.Game, error) {
+			// fmt.Printf("FetchMetadataByNameFunc 01")
 			gameEntity, err := b.FetchMetadataById(request)
+
 			return gameEntity.Game, err
 		})
+	if err != nil || game.SourceID == "" {
+		alternativeName := getGameNameAlternative(name)
+		if alternativeName != "" {
+			game, err = b.FetchMetadataByNameFunc(alternativeName, isEnabled,
+				func(request vo.MetadataRequest) (models.Game, error) {
+					// fmt.Printf("FetchMetadataByNameFunc 01")
+					gameEntity, err := b.FetchMetadataById(request)
+
+					return gameEntity.Game, err
+				})
+		}
+		// fmt.Printf("FetchMetadataByNameFunc Error fetching metadata:%v\n", err)
+		return game, err
+	}
 	return game, err
 }
 
@@ -127,10 +145,10 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 	var url string = b.GetBaseUrl() + searchPart
 	// var gameUrl = baseUrl + gamePart
 
-	// mainTitle := getMainTitle(name)
+	mainTitle, _, _ := getTitles(name)
 	// url += mainTitle
 
-	url += name
+	url += mainTitle
 	var game = models.Game{}
 	c := CreateCollector(b.GetDomain())
 
@@ -172,7 +190,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
 		fmt.Printf("games found:%d\n", len(potentialGames))
-		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4"}, func(t1 struct {
+		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP"}, func(t1 struct {
 			Title  string
 			GameId string
 		}) string {

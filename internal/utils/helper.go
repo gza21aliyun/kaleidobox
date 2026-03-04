@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/dlclark/regexp2"
 )
 
 func MergeStrings(tagStr1, tagStr2 string) string {
@@ -184,14 +186,54 @@ func generateSearchRegex(searchName string) string {
 	return fmt.Sprintf(`^.*?%s.*$`, mainTitle)
 }
 
-func getMainTitle(searchName string) string {
+/**
+ * 截取最后一个数字字符，包括全角
+ */
+func extractLastNumberFromString(title string) (t string, n string) {
+	var rsTitle string = ""
+	var rsStr = ""
+
+	if len(title) == 0 {
+		return title, ""
+	}
+
+	// 将字符串转换为 rune 数组以正确处理多字节字符
+	runes := []rune(title)
+	lastChar := runes[len(runes)-1]
+	lastCharStr := string(lastChar)
+
+	fmt.Printf("extractLastNumberFromString title:%s char:%c\n", title, lastChar)
+
+	// 使用 regexp2 支持 \u 转义
+	digitPattern := regexp2.MustCompile(`^[\u0030-\u0039\uFF10-\uFF19]$`, 0)
+
+	match, _ := digitPattern.MatchString(lastCharStr)
+	if match {
+		rsStr = lastCharStr
+	}
+
+	if rsStr == "" {
+		return title, "" // 没有找到数字
+	}
+
+	// 截取最后一个字符之前的部分
+	rsTitle = string(runes[:len(runes)-1])
+
+	fmt.Printf("extractLastNumberFromString 02 title:%s char:%c\n", rsTitle, lastChar)
+	return rsTitle, rsStr
+}
+
+func getTitles(searchName string) (mainT string, subT string, number string) {
 	// 检查是否包含有效的分隔符（除了纯空格）
+	// num := -1
+	// numStr := ""
 	hasValidSeparator := regexp.MustCompile(`[－\-~～]`).MatchString(searchName)
 
 	if !hasValidSeparator {
 		// 没有有效分隔符，整个字符串作为主标题处理
 		mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
-		return mainTitle
+		mainTitle, numStr := extractLastNumberFromString(mainTitle)
+		return mainTitle, "", numStr
 	}
 
 	// 有有效分隔符，尝试分离主标题和副标题
@@ -206,13 +248,23 @@ func getMainTitle(searchName string) string {
 
 		if mainTitle != "" && subTitle != "" {
 			// 都不为空，构建成对匹配
-			return mainTitle
+			mainTitle, numStr := extractLastNumberFromString(mainTitle)
+			if numStr != "" {
+				return mainTitle, subTitle, numStr
+			}
+			subTitle, numStr = extractLastNumberFromString(subTitle)
+			if numStr != "" {
+				return mainTitle, subTitle, numStr
+			}
+			return mainTitle, subTitle, ""
 		}
 	}
 
 	// 默认情况：整个字符串作为主标题
 	mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
-	return mainTitle
+	mainTitle, numStr := extractLastNumberFromString(mainTitle)
+
+	return mainTitle, "", numStr
 }
 
 func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, excludeWords []string, fn func(t1 T1) string) []T1 {
@@ -223,7 +275,7 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, exclu
 	var result []T1 = []T1{}
 	for _, item := range slice1 {
 		target := fn(item)
-		fmt.Printf("searchByRegex 01 target:%s\n", target)
+		fmt.Printf("searchByRegex 01 target:%s, data:%v\n", target, item)
 		if re.MatchString(target) {
 			isExcluded := false
 			for _, word := range excludeWords {
@@ -232,7 +284,7 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, exclu
 					break
 				}
 			}
-			fmt.Printf("target:%s, isexcluded:%v\n", target, isExcluded)
+			fmt.Printf("target:%s, isexcluded:%v, data:%v\n", target, isExcluded, item)
 			if !isExcluded {
 				result = append(result, item)
 			}
@@ -252,18 +304,57 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, exclu
 		}
 	}
 	if len(result) == 0 {
-		sort.Slice(slice1, func(i, j int) bool {
-			return len(fn(slice1[i])) < len(fn(slice1[j]))
-		})
-		result = []T1{}
-		result = append(result, slice1[0])
-		return result
+		// sort.Slice(slice1, func(i, j int) bool {
+		// 	return len(fn(slice1[i])) < len(fn(slice1[j]))
+		// })
+		// result = []T1{}
+		// result = append(result, slice1[0])
+		return slice1
 	}
 	return result
 }
 
+func getGameNameAlternative(searchName string) string {
+	var name = ""
+	if strings.Contains(searchName, "／") {
+		name = strings.ReplaceAll(searchName, "／", "/")
+	}
+	if strings.Contains(searchName, "１") {
+		name = strings.ReplaceAll(searchName, "１", "1")
+	}
+	if strings.Contains(searchName, "２") {
+		name = strings.ReplaceAll(searchName, "２", "2")
+	}
+	if strings.Contains(searchName, "３") {
+		name = strings.ReplaceAll(searchName, "３", "3")
+	}
+	if strings.Contains(searchName, "４") {
+		name = strings.ReplaceAll(searchName, "４", "4")
+	}
+	if strings.Contains(searchName, "５") {
+		name = strings.ReplaceAll(searchName, "５", "5")
+	}
+	if strings.Contains(searchName, "６") {
+		name = strings.ReplaceAll(searchName, "６", "6")
+	}
+	if strings.Contains(searchName, "７") {
+		name = strings.ReplaceAll(searchName, "７", "7")
+	}
+	if strings.Contains(searchName, "８") {
+		name = strings.ReplaceAll(searchName, "８", "8")
+	}
+	if strings.Contains(searchName, "９") {
+		name = strings.ReplaceAll(searchName, "９", "9")
+	}
+	if strings.Contains(searchName, "０") {
+		name = strings.ReplaceAll(searchName, "０", "0")
+	}
+	return name
+}
+
 func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
-	mainTitle := getMainTitle(searchName)
+	mainTitle, _, num := getTitles(searchName)
+	fmt.Printf("searchName:%s, mainTitle:%s\n", searchName, mainTitle)
 	result := searchByRegex(slice1, generateSearchRegex(searchName), searchName, excludeWords, fn)
 
 	switch len(result) {
@@ -276,7 +367,10 @@ func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []st
 			return len(fn(result[i])) < len(fn(result[j]))
 		})
 		for _, item := range result {
-			if strings.Contains(fn(item), mainTitle) {
+			name := fn(item)
+			fmt.Printf("searchNameByRegex 03 name:%s, mainTitle:%s, num:%s\n", name, mainTitle, getGameNameAlternative(num))
+			if strings.Contains(name, mainTitle) && (num == "" || strings.Contains(name, num) ||
+				strings.Contains(name, getGameNameAlternative(num))) {
 				return &item
 			}
 		}

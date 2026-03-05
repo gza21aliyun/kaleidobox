@@ -11,6 +11,7 @@ import { arrayMapString } from "../utils/Utility";
 import { useTranslation } from 'react-i18next';
 import { BetterButton } from "../ui/BetterButton";
 import { toast } from "react-hot-toast";
+import { arrayContains } from "../utils/Utility";
 // import { 
 //   DeviceType, 
 //   HotkeyActionType, 
@@ -32,7 +33,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
   const [loading, setLoading] = useState(true);
 
   // 检查是否有图片且过滤条件满足
-  const hasImages = game.images && game.images.length > 0;
+  const hasImages = images && images.length > 0;
   
   // 加载截图快捷键配置
   useEffect(() => {
@@ -91,13 +92,15 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
 
   // 处理图片数组，过滤封面图和特定后缀的图片
   const galleryImages = hasImages
-    ? game.images
-        .split(",")
-        .filter(img => img !== game.cover_url && !img.endsWith("pl.jpg"))
-        .filter(img => img.trim() !== "") // 过滤空字符串
+    ? images
+        .filter(img => !img.url.endsWith("pl.jpg"))
+        .filter(img => img.url.trim() !== "") // 过滤空字符串
     : [];
 
     const imagesPath = `images/${game.id}/`;
+    console.log("galleryImages:", galleryImages)
+
+    const hasFolder = arrayContains(images, (img) => img.local_path !== "")
 
   // 如果没有任何内容显示，不显示面板
   // if (!screenshotHotkey && galleryImages.length === 0) {
@@ -158,10 +161,9 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       {/* 画廊板块 */}
       {galleryImages.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="font-semibold mb-2 text-brand-900 dark:text-white">{t('gameGallery.gallery')}{`(${images.length})`}</div>
           <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">{t('gallery.title')}</span>
-                {images.length > 0 && (
+                <span className="text-lg font-bold">{t('gameGallery.gallery')}{`(${images.length})`}</span>
+                {hasFolder && (
                     <BetterButton
                       onClick={async () => {
                         try {
@@ -178,7 +180,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
                 )}
             </div>
           <div className="grid grid-cols-3 gap-2">
-            {images.map((image, index) => (
+            {galleryImages.map((image, index) => (
                 <ImageBackupCard
                   imageBackup={image}
                   key={image.url}

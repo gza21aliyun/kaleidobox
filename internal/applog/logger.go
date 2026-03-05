@@ -2,9 +2,12 @@ package applog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,6 +27,9 @@ var (
 	currentMode  RunMode
 	modeMu       sync.RWMutex
 	colorEnabled = true // CLI 模式下是否启用彩色输出
+
+	logFilePath string
+	logFileMu   sync.RWMutex
 )
 
 // ANSI 颜色代码
@@ -223,4 +229,116 @@ func LogError(ctx context.Context, message string) {
 // LogFatal 致命错误级别日志（兼容 runtime.LogFatal）
 func LogFatal(ctx context.Context, message string) {
 	LogFatalf(ctx, "%s", message)
+}
+
+// ... existing code ...
+
+/**
+ * ErrorLogSaveAppLog 无依赖的错误日志保存，能输出到控制台的同时写入 app.log
+ * 不依赖 context 和 runtime，可直接在任何地方调用
+ */
+func ErrorLogSaveAppLog(format string, err error, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...) + fmt.Sprintf(", error:\n %v\n", err)
+
+	// 输出到控制台
+	fmt.Print(msg)
+
+	// 直接写入 app.log 文件
+	saveLogToFile("ERROR", msg)
+}
+
+func ErrorLogSaveAppOutput(format string, err error, args ...interface{}) error {
+	msg := fmt.Sprintf(format, args...) + fmt.Sprintf(", error:\n %v\n", err)
+
+	// 输出到控制台
+	fmt.Print(msg)
+
+	// 直接写入 app.log 文件
+	saveLogToFile("ERROR", msg)
+	return errors.New(msg)
+}
+
+func ErrorLogSaveTextOutput(format string, args ...interface{}) error {
+	msg := fmt.Sprintf(format, args...)
+
+	// 输出到控制台
+	fmt.Print(msg)
+
+	// 直接写入 app.log 文件
+	saveLogToFile("ERROR", msg)
+	return errors.New(msg)
+}
+
+/**
+ * InfoLogSaveAppLog 无依赖的信息日志保存，能输出到控制台的同时写入 app.log
+ * 不依赖 context 和 runtime，可直接在任何地方调用
+ */
+func InfoLogSaveAppLog(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+
+	// 输出到控制台
+	fmt.Print(msg + "\n")
+
+	// 直接写入 app.log 文件
+	saveLogToFile("INFO", msg)
+}
+
+/**
+ * WarningLogSaveAppLog 无依赖的警告日志保存，能输出到控制台的同时写入 app.log
+ * 不依赖 context 和 runtime，可直接在任何地方调用
+ */
+func WarningLogSaveAppLog(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+
+	// 输出到控制台
+	fmt.Print(msg + "\n")
+
+	// 直接写入 app.log 文件
+	saveLogToFile("WARNING", msg)
+}
+
+/**
+ * saveLogToFile 直接将日志写入 app.log 文件
+ * 使用追加模式打开文件，如果文件不存在则创建
+ */
+func saveLogToFile(level, message string) {
+	msg := strings.ReplaceAll(message, "\n", " \\n ")
+	logFile := getLogFilePath()
+	if logFile == "" {
+		return // 如果未设置日志路径，静默失败
+	}
+
+	// 确保日志目录存在
+	logDir := filepath.Dir(logFile)
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return
+	}
+
+	// 以追加模式打开文件，如果不存在则创建
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return // 如果无法打开文件，静默失败
+	}
+	defer file.Close()
+
+	// 格式化日志行：LEVEL | timestamp | message
+	// timestamp := time.Now().Format("2006-01-02 15:04:05")
+	// logLine := fmt.Sprintf("%-8s| %s | %s\n", level, timestamp, msg)
+	logLine := fmt.Sprintf("%-6s| %s\n", level, msg)
+
+	file.WriteString(logLine)
+}
+
+// SetLogFilePath 设置日志文件路径（在应用启动时调用一次）
+func SetLogFilePath(path string) {
+	logFileMu.Lock()
+	defer logFileMu.Unlock()
+	logFilePath = path
+}
+
+// getLogFilePath 获取日志文件路径
+func getLogFilePath() string {
+	logFileMu.RLock()
+	defer logFileMu.RUnlock()
+	return logFilePath
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"lunabox/internal/applog"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"lunabox/internal/vo"
@@ -56,7 +57,7 @@ func CreateCollector(domain string) *colly.Collector {
 	// 首先，设置请求前的处理
 	c.OnRequest(func(r *colly.Request) {
 
-		fmt.Println("Visiting", r.URL.String()) // 打印正在访问的 URL
+		applog.InfoLogSaveAppLog("Visiting %s", r.URL.String()) // 打印正在访问的 URL
 		cookie3 := &http.Cookie{Name: "age_check_done", Value: "1"}
 		cookie4 := &http.Cookie{Name: "adultchecked", Value: "1"}
 		cookie5 := &http.Cookie{Name: "locale", Value: "ja-jp"}
@@ -83,7 +84,7 @@ func CreateCollector(domain string) *colly.Collector {
 }
 
 func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool) (models.Game, error) {
-	fmt.Printf("FetchMetadataByNameFunc 00\n")
+	applog.InfoLogSaveAppLog("FetchMetadataByNameFunc 00\n")
 	// mainTitle, num := getTitles(name)
 	game, err := b.FetchMetadataByNameFunc(name, isEnabled,
 		func(request vo.MetadataRequest) (models.Game, error) {
@@ -169,7 +170,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 		// link := gameUrl + gameId
 
 		if title != "" {
-			fmt.Println("title:", title)
+			applog.InfoLogSaveAppLog("title:", title)
 			// fmt.Println("href", href)
 			// fmt.Println("idParts:", idParts)
 			// fmt.Println("gameId:", gameId)
@@ -189,7 +190,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
-		fmt.Printf("games found:%d\n", len(potentialGames))
+		applog.InfoLogSaveAppLog("games found:%d\n", len(potentialGames))
 		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP"}, func(t1 struct {
 			Title  string
 			GameId string
@@ -225,7 +226,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 
 	// 错误处理
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+		applog.ErrorLogSaveAppLog("Request error, \n", err)
 	})
 
 	// 访问构建的 URL
@@ -237,7 +238,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool,
 	// 等待收集完成
 	c.Wait()
 	if game.SourceID == "" {
-		fmt.Printf("id is empty for game %s", game.Name)
+		applog.InfoLogSaveAppLog("id is empty for game %s", game.Name)
 		err = errors.New("id is empty")
 		return game, err
 	}
@@ -258,7 +259,7 @@ func (b EroscapeInfoGetter) FetchImages(request vo.MetadataRequest, gameEntity m
 	game.Images = ""
 
 	c.OnHTML("div#images div", func(e *colly.HTMLElement) {
-		fmt.Println("图库：", game.Images)
+		applog.InfoLogSaveAppLog("图库：", game.Images)
 		src := e.ChildAttr("img", "src")
 		if src != "" {
 			game.Images = MergeStrings(game.Images, src)
@@ -267,7 +268,7 @@ func (b EroscapeInfoGetter) FetchImages(request vo.MetadataRequest, gameEntity m
 
 	// 错误处理
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+		applog.ErrorLogSaveAppLog("Request error\n", err)
 	})
 
 	// 访问构建的 URL
@@ -315,8 +316,8 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			work.Measurements = s.Find("div.personal_data dl.contains('スリーサイズ') dd").Eq(0).Text()
 			work.WorkSummary, err = s.Find("div.formal_explanation").Html()
 			work.Sort = i
-			fmt.Println("角色经历 01: " + work.WorkSummary)
-			fmt.Println("角色图像 01: " + work.CharactorImage)
+			applog.InfoLogSaveAppLog("角色经历 01: " + work.WorkSummary)
+			applog.InfoLogSaveAppLog("角色图像 01: " + work.CharactorImage)
 			charHref := b.GetBaseUrl() + s.Find("div.character_name a").AttrOr("href", "")
 
 			s.Find("div.eventimage li > img").Each(func(i2 int, s2 *goquery.Selection) {
@@ -328,7 +329,7 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			if charHref != "" {
 				parsedURL, err := url.Parse(charHref)
 				if err != nil {
-					fmt.Println("URL 解析失败:", err)
+					applog.ErrorLogSaveAppLog("URL 解析失败:", err)
 					return
 				}
 				// 获取查询参数
@@ -336,23 +337,23 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 
 				// 提取 character 参数的值
 				work.SourceCharactorId = queryParams.Get("character")
-				fmt.Println("角色url: " + work.SourceCharactorId)
+				applog.InfoLogSaveAppLog("角色url: " + work.SourceCharactorId)
 			}
 			work.WorkSummary, err = s.Find("div.formal_explanation").Html()
 
-			fmt.Println("角色经历 02: " + work.WorkSummary)
+			applog.InfoLogSaveAppLog("角色经历 02: " + work.WorkSummary)
 			if err != nil {
-				fmt.Printf("FetchCharactors error: %v\n", err)
+				applog.ErrorLogSaveAppLog("FetchCharactors error \n", err)
 			}
 			work.StaffName = s.Find("div.character_name").Text()
 
 			staffHref := b.GetBaseUrl() + s.Find("div.cv a").AttrOr("href", "")
 			work.StaffName = s.Find("div.cv a").Text()
-			fmt.Println("角色声优url : " + staffHref)
+			applog.InfoLogSaveAppLog("角色声优url : " + staffHref)
 			if charHref != "" {
 				parsedURL, err := url.Parse(staffHref)
 				if err != nil {
-					fmt.Println("URL 解析失败:", err)
+					applog.ErrorLogSaveAppLog("URL 解析失败:", err)
 					return
 				}
 				// 获取查询参数
@@ -360,51 +361,16 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 
 				// 提取 character 参数的值
 				work.SourceStaffId = queryParams.Get("creater")
-				fmt.Println("角色声优id : " + work.SourceStaffId + ",角色：" + work.CharactorName)
+				applog.InfoLogSaveAppLog("角色声优id : " + work.SourceStaffId + ",角色：" + work.CharactorName)
 			}
 			characters = append(characters, work)
-			// if work.SourceStaffId == "" {
-			// 	characters = append(characters, work)
-			// 	fmt.Println("角色图片 03: 无法获得声优id" + work.CharactorImage)
-			// } else {
-			// 	newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool { return it.SourceStaffId == work.SourceStaffId })
-			// 	if newWork != nil {
-			// 		if work.WorkSummary != "" {
-			// 			newWork.WorkSummary = work.WorkSummary
-			// 		}
-			// 		if work.CharactorId != "" {
-			// 			newWork.CharactorId = work.CharactorId
-			// 		}
-			// 		if work.CharactorName != "" {
-			// 			newWork.CharactorName = work.CharactorName
-			// 		}
-			// 		if work.SourceCharactorId != "" {
-			// 			newWork.SourceCharactorId = work.SourceCharactorId
-			// 		}
-			// 		if work.SourceGameId != "" {
-			// 			newWork.SourceGameId = work.SourceGameId
-			// 		}
-
-			// 		fmt.Println("角色图片 01: " + work.CharactorImage)
-			// 		// fmt.p
-			// 		if work.Images != "" {
-			// 			newWork.Images = work.Images
-			// 		}
-			// 		fmt.Println("角色图片 02: " + newWork.Images)
-			// 		cvs = append(cvs, *newWork)
-			// 	} else {
-			// 		fmt.Println("角色图片 04: " + work.Images)
-			// 		cvs = append(cvs, work)
-			// 		gameEntity.WorksMap[enums.CV] = append(gameEntity.WorksMap[enums.CV], work)
-			// 	}
-			// }
 
 		})
 	})
 
 	// 错误处理
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+		applog.ErrorLogSaveAppLog("Request error", err)
 	})
 
 	// 访问构建的 URL
@@ -518,10 +484,10 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 				tagList = append(tagList, tag)
 			}
 		}
-		fmt.Println("标签01 ", len(tagList))
+		// fmt.Println("标签01 ", len(tagList))
 
 		game.Tags = JoinString(tagList, ",", func(tag models.Tag) string { return tag.Name })
-		fmt.Println("标签011 ", game.Tags)
+		// fmt.Println("标签011 ", game.Tags)
 		// jstr, _ := json.Marshal(tagsMap)
 		// log.Printf("tagsMap:" + string(jstr))
 		// game.Tags = strings.Join(tags, ",")
@@ -533,7 +499,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			if staffName != "" && StaffUrl != "" {
 				parsedURL, err := url.Parse(StaffUrl)
 				if err != nil {
-					fmt.Println("URL 解析失败:", err)
+					applog.ErrorLogSaveAppLog("URL 解析失败:", err)
 					return
 				}
 				// 获取查询参数
@@ -557,7 +523,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			if staffName != "" && StaffUrl != "" {
 				parsedURL, err := url.Parse(StaffUrl)
 				if err != nil {
-					fmt.Println("URL 解析失败:", err)
+					applog.ErrorLogSaveAppLog("URL 解析失败:", err)
 					return
 				}
 				// 获取查询参数
@@ -582,7 +548,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			if staffName != "" && StaffUrl != "" {
 				parsedURL, err := url.Parse(StaffUrl)
 				if err != nil {
-					fmt.Println("URL 解析失败:", err)
+					applog.ErrorLogSaveAppLog("URL 解析失败:", err)
 					return
 				}
 				// 获取查询参数
@@ -607,7 +573,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			if staffName != "" && StaffUrl != "" {
 				parsedURL, err := url.Parse(StaffUrl)
 				if err != nil {
-					fmt.Println("URL 解析失败:", err)
+					applog.ErrorLogSaveAppLog("URL 解析失败:", err)
 					return
 				}
 				// 获取查询参数
@@ -632,7 +598,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			if staffName != "" && StaffUrl != "" {
 				parsedURL, err := url.Parse(StaffUrl)
 				if err != nil {
-					fmt.Println("URL 解析失败:", err)
+					applog.ErrorLogSaveAppLog("URL 解析失败:", err)
 					return
 				}
 				// 获取查询参数
@@ -659,7 +625,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			if staffName != "" && StaffUrl != "" {
 				parsedURL, err := url.Parse(StaffUrl)
 				if err != nil {
-					fmt.Println("URL 解析失败:", err)
+					applog.ErrorLogSaveAppLog("URL 解析失败:", err)
 					return
 				}
 				// 获取查询参数
@@ -697,7 +663,8 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 
 	// 错误处理
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request error 36: %s with error: %s\n", r.Request.URL, err)
+		//错误的话err已包含url 和错误信息
+		applog.ErrorLogSaveAppLog("Request error 36 \n", err)
 	})
 
 	// 访问构建的 URL
@@ -711,8 +678,8 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 
 	// 检查是否成功获取了数据
 	if game.Name == "" {
-		fmt.Println("游戏未找到 37: " + game.Name)
-		return gameEntity, fmt.Errorf("game not found: %s", game.Name)
+		// fmt.Println("游戏未找到 37: " + game.Name)
+		return gameEntity, applog.ErrorLogSaveTextOutput("game not found: %s", game.Name)
 	}
 
 	// 设置其他必要字段
@@ -720,6 +687,6 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 	game.CachedAt = time.Now()
 	// gameEntity.WorksMap = worksMap
 	gameEntity.Game = game
-	fmt.Println("开始获取Eroscape游戏信息 38 ", gameEntity.Game.Images)
+	applog.InfoLogSaveAppLog("开始获取Eroscape游戏信息 38 ", gameEntity.Game.Images)
 	return gameEntity, nil
 }

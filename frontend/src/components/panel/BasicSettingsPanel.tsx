@@ -37,7 +37,7 @@ interface BasicSettingsProps {
 }
 
 export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const newValue = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
@@ -122,10 +122,15 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
         <BetterSelect
           name="language"
           value={formData.language}
-          onChange={value => onChange({ ...formData, language: value } as appconf.AppConfig)}
+          onChange={value => {
+            onChange({ ...formData, language: value } as appconf.AppConfig)
+            i18n.changeLanguage(value);
+          }}
           options={[
             { value: "zh-CN", label: "简体中文" },
             { value: "en-US", label: "English" },
+            { value: "ja-JP", label: "日本語" },
+
           ]}
         />
       </div>
@@ -149,6 +154,17 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
         <BetterSwitch
           id="close_to_tray"
           checked={formData.close_to_tray || false}
+          onCheckedChange={checked => onChange({ ...formData, close_to_tray: checked } as appconf.AppConfig)}
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+          新式文件、文件夹选择器（美观但WIN11不能选网络映射盘）
+        </label>
+        <BetterSwitch
+          id="new_folder_chooser"
+          checked={formData.new_folder_chooser || false}
           onCheckedChange={checked => onChange({ ...formData, close_to_tray: checked } as appconf.AppConfig)}
         />
       </div>

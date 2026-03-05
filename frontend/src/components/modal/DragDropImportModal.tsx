@@ -2,6 +2,7 @@ import type { models, service } from "../../../wailsjs/go/models";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
+import { useTranslation } from 'react-i18next';
 
 import { FetchMetadata, FetchMetadataByName } from "../../../wailsjs/go/service/GameService";
 import {
@@ -33,6 +34,7 @@ interface LocalCandidate {
 }
 
 export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportComplete }: DragDropImportModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("processing");
   const [candidates, setCandidates] = useState<LocalCandidate[]>([]);
   const [importResult, setImportResult] = useState<service.ImportResult | null>(null);
@@ -63,7 +65,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
     try {
       const processed = await ProcessDroppedPaths(droppedPaths);
       if (!processed || processed.length === 0) {
-        toast.error("未检测到有效的游戏文件");
+        toast.error(t('import.toasts.noValidGamesDetected'));
         onClose();
         return;
       }
@@ -84,7 +86,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
     }
     catch (error) {
       console.error("Failed to process dropped paths:", error);
-      toast.error("处理拖入的文件失败");
+      toast.error(t('import.toasts.processDroppedFilesFailed'));
       onClose();
     }
     finally {
@@ -217,13 +219,13 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
       setStep("result");
 
       if (result.success > 0) {
-        toast.success(`成功导入 ${result.success} 个游戏`);
+        toast.success(t('import.toasts.importSuccess', { count: result.success }));
         onImportComplete();
       }
     }
     catch (error) {
       console.error("Failed to import:", error);
-      toast.error("导入失败");
+      toast.error(t('import.toasts.importFailed'));
       setStep("preview");
     }
     finally {
@@ -339,7 +341,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
           <div className="flex items-center gap-3">
             <div className="i-mdi-drag-variant text-3xl text-primary-500" />
             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
-              拖拽导入游戏
+              {t('import.modals.dragDrop.title')}
             </h2>
           </div>
           <button
@@ -358,13 +360,10 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
             <div className="py-12 text-center">
               <div className="i-mdi-loading animate-spin text-5xl mx-auto mb-4 text-primary-500" />
               <p className="text-lg text-brand-600 dark:text-brand-300">
-                正在处理拖入的文件...
+                {t('import.modals.dragDrop.processingFiles')}
               </p>
               <p className="text-sm text-brand-400 dark:text-brand-500 mt-2">
-                共
-                {droppedPaths.length}
-                {" "}
-                个文件/文件夹
+                {t('import.modals.dragDrop.fileCount', { count: droppedPaths.length })}
               </p>
             </div>
           )}
@@ -379,7 +378,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                     {candidates.length}
                   </div>
                   <div className="text-sm text-primary-700 dark:text-primary-300">
-                    检测到
+                    {t('import.modals.dragDrop.detected')}
                   </div>
                 </div>
                 <div className="flex-1 rounded-lg bg-success-50 dark:bg-success-900/20 p-4 text-center">
@@ -387,7 +386,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                     {matchedCount}
                   </div>
                   <div className="text-sm text-success-700 dark:text-success-300">
-                    已匹配
+                    {t('import.modals.dragDrop.matched')}
                   </div>
                 </div>
                 {notFoundCount > 0 && (
@@ -396,7 +395,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                       {notFoundCount}
                     </div>
                     <div className="text-sm text-orange-700 dark:text-orange-300">
-                      未匹配
+                      {t('import.modals.dragDrop.notFound')}
                     </div>
                   </div>
                 )}
@@ -406,7 +405,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                       {pendingCount}
                     </div>
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                      待匹配
+                      {t('import.modals.dragDrop.pending')}
                     </div>
                   </div>
                 )}
@@ -438,16 +437,16 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                               />
                             </th>
                             <th className="px-3 py-2 text-left text-sm font-medium text-brand-600 dark:text-brand-300">
-                              搜索名称
+                              {t('import.modals.dragDrop.searchName')}
                             </th>
                             <th className="px-3 py-2 text-left text-sm font-medium text-brand-600 dark:text-brand-300">
-                              启动程序
+                              {t('import.modals.dragDrop.executable')}
                             </th>
                             <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-32">
-                              匹配状态
+                              {t('import.modals.dragDrop.matchStatus')}
                             </th>
                             <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-20">
-                              操作
+                              {t('import.modals.dragDrop.action')}
                             </th>
                           </tr>
                         </thead>
@@ -510,25 +509,25 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                                 {candidate.matchStatus === "pending" && (
                                   <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-900/30 dark:text-gray-400">
                                     <div className="i-mdi-clock-outline mr-1" />
-                                    待匹配
+                                    {t('import.modals.dragDrop.pending')}
                                   </span>
                                 )}
                                 {(candidate.matchStatus === "matched" || candidate.matchStatus === "manual") && (
                                   <span className="inline-flex items-center rounded-full bg-success-100 px-2 py-1 text-xs text-success-700 dark:bg-success-900/30 dark:text-success-400">
                                     <div className="i-mdi-check-circle mr-1" />
-                                    已匹配
+                                    {t('import.modals.dragDrop.matched')}
                                   </span>
                                 )}
                                 {candidate.matchStatus === "not_found" && (
                                   <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                                     <div className="i-mdi-alert-circle mr-1" />
-                                    未找到
+                                    {t('import.modals.dragDrop.notFound')}
                                   </span>
                                 )}
                                 {candidate.matchStatus === "error" && (
                                   <span className="inline-flex items-center rounded-full bg-error-100 px-2 py-1 text-xs text-error-700 dark:bg-error-900/30 dark:text-error-400">
                                     <div className="i-mdi-close-circle mr-1" />
-                                    错误
+                                    {t('import.modals.dragDrop.error')}
                                   </span>
                                 )}
                               </td>
@@ -556,7 +555,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                   onClick={resetAndClose}
                   className="rounded-lg border border-brand-300 px-5 py-2.5 text-sm font-medium text-brand-700 hover:bg-brand-100 dark:border-brand-600 dark:text-brand-300 dark:hover:bg-brand-700"
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
                 <div className="flex gap-3">
                   {pendingCount > 0 && (
@@ -565,7 +564,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                       onClick={handleStartMatch}
                       className="rounded-lg px-5 py-2.5 text-sm font-medium text-white bg-neutral-600 hover:bg-neutral-700"
                     >
-                      匹配元数据
+                      {t('import.modals.dragDrop.matchMetadata')}
                     </button>
                   )}
                   <button
@@ -574,11 +573,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                     disabled={selectedCount === 0}
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-primary-600 hover:bg-primary-700"
                   >
-                    导入
-                    {" "}
-                    {selectedCount}
-                    {" "}
-                    个游戏
+                    {t('import.modals.dragDrop.import', { count: selectedCount })}
                   </button>
                 </div>
               </div>
@@ -590,7 +585,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
             <div className="py-12 text-center">
               <div className="i-mdi-loading animate-spin text-5xl mx-auto mb-4 text-neutral-500" />
               <p className="text-lg text-brand-600 dark:text-brand-300">
-                正在匹配元数据...
+                {t('import.modals.dragDrop.matchingMetadata')}
               </p>
               <p className="text-sm text-brand-400 dark:text-brand-500 mt-2">
                 {matchProgress.current}
@@ -608,7 +603,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                 />
               </div>
               <p className="text-xs text-brand-400 mt-4">
-                为避免触发限流，匹配速度可能较慢，请耐心等待
+                {t('import.modals.dragDrop.matchingNote')}
               </p>
               <button
                 type="button"
@@ -618,7 +613,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
                 }}
                 className="mt-4 text-sm text-brand-500 hover:text-brand-700 dark:text-brand-400"
               >
-                停止匹配
+                {t('import.modals.dragDrop.stopMatching')}
               </button>
             </div>
           )}

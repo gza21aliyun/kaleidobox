@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { BetterSelect } from "../ui/BetterSelect";
 
 interface TimezoneSelectModalProps {
@@ -29,6 +30,7 @@ const COMMON_TIMEZONES = [
 ];
 
 export function TimezoneSelectModal({ isOpen, onConfirm }: TimezoneSelectModalProps) {
+  const { t } = useTranslation();
   // 尝试从浏览器获取当前时区
   const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [selectedTimezone, setSelectedTimezone] = useState(browserTimezone || "Asia/Shanghai");
@@ -48,9 +50,9 @@ export function TimezoneSelectModal({ isOpen, onConfirm }: TimezoneSelectModalPr
             <div className="i-mdi-earth text-2xl" />
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-bold text-brand-900 dark:text-white mb-2">选择时区</h3>
+            <h3 className="text-xl font-bold text-brand-900 dark:text-white mb-2">{t('timezone.modals.selectTimezone.title')}</h3>
             <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed">
-              检测到您尚未配置时区。为了正确显示并记录游戏时长，请选择您所在的时区。
+              {t('timezone.modals.selectTimezone.description')}
             </p>
           </div>
         </div>

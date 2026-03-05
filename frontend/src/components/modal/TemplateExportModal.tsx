@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import toast from "react-hot-toast";
 import { vo } from "../../../wailsjs/go/models";
 import {
@@ -22,6 +23,7 @@ export function TemplateExportModal({
   stats,
   aiSummary,
 }: TemplateExportModalProps) {
+  const { t } = useTranslation();
   const [templates, setTemplates] = useState<vo.TemplateInfo[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [previewHtml, setPreviewHtml] = useState<string>("");
@@ -36,10 +38,9 @@ export function TemplateExportModal({
       if (list.length > 0 && !selectedTemplateId) {
         setSelectedTemplateId(list[0].id);
       }
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Failed to load templates:", err);
-      toast.error("加载模板列表失败");
+      toast.error(t('template.toasts.failedToLoadTemplates'));
     }
   };
 
@@ -59,10 +60,9 @@ export function TemplateExportModal({
       });
       const resp = await RenderTemplate(req);
       setPreviewHtml(resp.html);
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Failed to render template:", err);
-      toast.error("渲染模板失败");
+      toast.error(t('template.toasts.failedToRenderTemplate'));
     }
     finally {
       setLoading(false);
@@ -162,10 +162,9 @@ export function TemplateExportModal({
       // 保存图片
       await ExportRenderedHTML(dataUrl);
       onClose();
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Failed to export image:", err);
-      toast.error(`导出图片失败: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(`${t('template.toasts.failedToExportImage')}: ${err instanceof Error ? err.message : String(err)}`);
     }
     finally {
       setExporting(false);
@@ -175,10 +174,9 @@ export function TemplateExportModal({
   const handleOpenTemplatesDir = async () => {
     try {
       await OpenTemplatesDir();
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Failed to open templates dir:", err);
-      toast.error("打开模板目录失败");
+      toast.error(t('template.toasts.failedToOpenTemplatesDir'));
     }
   };
 
@@ -208,7 +206,7 @@ export function TemplateExportModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-brand-200 dark:border-brand-700">
           <div className="flex items-center gap-3">
             <span className="i-mdi-image-filter-hdr text-2xl text-neutral-600 dark:text-neutral-400" />
-            <h2 className="text-xl font-bold text-brand-900 dark:text-white">美化导出</h2>
+            <h2 className="text-xl font-bold text-brand-900 dark:text-white">{t('template.modals.export.title')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -223,9 +221,9 @@ export function TemplateExportModal({
           {/* 左侧：模板选择 */}
           <div className="w-64 border-r border-brand-200 dark:border-brand-700 flex flex-col">
             <div className="p-4 border-b border-brand-200 dark:border-brand-700">
-              <h3 className="text-sm font-semibold text-brand-900 dark:text-white mb-1">选择模板</h3>
+              <h3 className="text-sm font-semibold text-brand-900 dark:text-white mb-1">{t('template.labels.selectTemplate')}</h3>
               <p className="text-xs text-brand-500 dark:text-brand-400">
-                选择一个模板来美化你的统计数据
+                {t('template.labels.selectTemplateDescription')}
               </p>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -263,7 +261,7 @@ export function TemplateExportModal({
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-700/50 rounded-lg transition-colors"
               >
                 <span className="i-mdi-folder-open" />
-                打开模板目录
+                {t('template.buttons.openTemplatesDir')}
               </button>
             </div>
           </div>
@@ -279,11 +277,11 @@ export function TemplateExportModal({
                       {selectedTemplate.name}
                     </h4>
                     <p className="text-xs text-brand-500 dark:text-brand-400">
-                      {selectedTemplate.author && `作者: ${selectedTemplate.author} · `}
-                      版本
+                      {selectedTemplate.author && `${t('template.labels.author')}: ${selectedTemplate.author} · `}
+                      {t('template.labels.version')}
                       {" "}
                       {selectedTemplate.version}
-                      {selectedTemplate.is_builtin && " · 内置模板"}
+                      {selectedTemplate.is_builtin && ` · ${t('template.labels.builtin')}`}
                     </p>
                   </div>
                 </div>
@@ -297,7 +295,7 @@ export function TemplateExportModal({
                     <div className="flex items-center justify-center h-full">
                       <div className="flex items-center gap-3 text-brand-500 dark:text-brand-400">
                         <span className="i-mdi-loading animate-spin text-2xl" />
-                        <span>正在渲染预览...</span>
+                        <span>{t('template.messages.renderingPreview')}</span>
                       </div>
                     </div>
                   )
@@ -312,7 +310,7 @@ export function TemplateExportModal({
                     )
                   : (
                       <div className="flex items-center justify-center h-full text-brand-500 dark:text-brand-400">
-                        选择模板以预览效果
+                        {t('template.messages.selectTemplateToPreview')}
                       </div>
                     )}
             </div>
@@ -323,15 +321,15 @@ export function TemplateExportModal({
         <div className="flex items-center justify-between px-6 py-4 border-t border-brand-200 dark:border-brand-700 bg-brand-50 dark:bg-brand-900/30">
           <p className="text-xs text-brand-500 dark:text-brand-400">
             <span className="i-mdi-information-outline mr-1" />
-            提示：你可以在模板目录中创建自定义 HTML 模板
+            {t('template.messages.customTemplatesHint')}
           </p>
           <div className="flex gap-3">
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 rounded-lg dark:text-brand-300 dark:hover:bg-brand-700 transition-colors"
             >
-              取消
-            </button>
+            {t('common.cancel')}
+          </button>
             <button
               onClick={handleExport}
               disabled={!previewHtml || exporting}
@@ -341,13 +339,13 @@ export function TemplateExportModal({
                 ? (
                     <>
                       <span className="i-mdi-loading animate-spin" />
-                      导出中...
+                      {t('template.messages.exporting')}
                     </>
                   )
                 : (
                     <>
                       <span className="i-mdi-download" />
-                      导出图片
+                      {t('template.buttons.exportImage')}
                     </>
                   )}
             </button>

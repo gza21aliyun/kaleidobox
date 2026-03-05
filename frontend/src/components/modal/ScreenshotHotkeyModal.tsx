@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from 'react-i18next';
 import { arrayMapString } from "../utils/Utility";
 import { enums, models, vo } from "../../../wailsjs/go/models";
 import { MonitorKeySetting, CancelMonitorKeySetting } from "../../../wailsjs/go/service/HotkeyService";
@@ -24,6 +25,7 @@ export function ScreenshotHotkeyModal({
   onSave,
   currentHotkey
 }: ScreenshotHotkeyModalProps) {
+  const { t } = useTranslation();
   const [selectedDeviceType, setSelectedDeviceType] = useState<enums.DeviceType>(enums.DeviceType.KEYBOARD);
   const [keyCode, setKeyCode] = useState("");
   const [modifiers, setModifiers] = useState<string[]>([]);
@@ -150,7 +152,7 @@ export function ScreenshotHotkeyModal({
 
   const handleSave = async () => {
     if (!keyCode.trim()) {
-      setError("请输入按键");
+      setError(t('hotkey.errors.pleaseEnterKey'));
       return;
     }
 
@@ -161,7 +163,7 @@ export function ScreenshotHotkeyModal({
       const hotkey: models.Hotkey = new models.Hotkey({
         id: currentHotkey?.id || `screenshot_${Date.now()}`,
         game_id: "global",
-        name: "截图快捷键",
+        name: t('hotkey.names.screenshot'),
         device_type: selectedDeviceType,
         key_code: keyCode,
         modifiers: selectedDeviceType === enums.DeviceType.KEYBOARD ? modifiers : [],
@@ -201,10 +203,10 @@ export function ScreenshotHotkeyModal({
           </div>
           <div className="flex-1">
             <h3 className="text-xl font-bold text-brand-900 dark:text-white mb-2">
-              设置截图快捷键
+              {t('hotkey.modals.screenshot.title')}
             </h3>
             <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed">
-              为截图功能设置全局快捷键
+              {t('hotkey.modals.screenshot.description')}
             </p>
           </div>
         </div>
@@ -212,7 +214,7 @@ export function ScreenshotHotkeyModal({
         {/* 设备类型选择 */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-            设备类型
+            {t('hotkey.labels.deviceType')}
           </label>
           <div className="grid grid-cols-2 gap-2">
             {deviceTypes.map(device => (
@@ -236,7 +238,7 @@ export function ScreenshotHotkeyModal({
         {selectedDeviceType === enums.DeviceType.KEYBOARD && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-              修饰键（可选）
+              {t('hotkey.labels.modifiers')}（可选）
             </label>
             <div className="flex flex-wrap gap-2">
               {modifierOptions.map(modifier => (
@@ -259,9 +261,9 @@ export function ScreenshotHotkeyModal({
         {/* 按键输入 */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-            按键
-            {selectedDeviceType === enums.DeviceType.KEYBOARD && "（支持组合键）"}
-            {selectedDeviceType !== enums.DeviceType.KEYBOARD && "（仅支持单键）"}
+            {t('hotkey.labels.key')}
+            {selectedDeviceType === enums.DeviceType.KEYBOARD && `（${t('hotkey.labels.combinationSupported')}）`}
+            {selectedDeviceType !== enums.DeviceType.KEYBOARD && `（${t('hotkey.labels.singleKeyOnly')}）`}
           </label>
           <div className="relative">
             <input
@@ -271,10 +273,10 @@ export function ScreenshotHotkeyModal({
               readOnly
               placeholder={
                 isListening 
-                  ? "请按下按键..." 
+                  ? t('hotkey.placeholders.pressKey') 
                   : (selectedDeviceType === enums.DeviceType.KEYBOARD
-                      ? "点击设置按键或直接输入" 
-                      : "请连接手柄后点击设置")
+                      ? t('hotkey.placeholders.clickToSetOrType') 
+                      : t('hotkey.placeholders.connectControllerFirst'))
               }
               className="w-full px-4 py-3 bg-brand-50 border border-brand-200 rounded-lg text-brand-900 dark:bg-brand-900/50 dark:border-brand-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
@@ -288,14 +290,14 @@ export function ScreenshotHotkeyModal({
                   : "bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-700 dark:text-brand-300 dark:hover:bg-brand-600"
               }`}
             >
-              {isListening ? "停止监听" : "设置按键"}
+              {isListening ? t('hotkey.buttons.stopListening') : t('hotkey.buttons.setKey')}
             </button>
           </div>
           
           {/* 显示当前组合键 */}
           {selectedDeviceType === enums.DeviceType.KEYBOARD && modifiers.length > 0 && keyCode && (
             <div className="mt-2 text-sm text-brand-600 dark:text-brand-400">
-              当前组合键: {modifiers.join(" + ")} + {keyCode}
+              {t('hotkey.labels.currentCombination')}: {modifiers.join(" + ")} + {keyCode}
             </div>
           )}
         </div>
@@ -313,13 +315,13 @@ export function ScreenshotHotkeyModal({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 rounded-lg dark:text-brand-300 dark:hover:bg-brand-700 transition-colors"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSave}
             className="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors shadow-sm shadow-brand-200 dark:shadow-none"
           >
-            保存
+            {t('common.save')}
           </button>
         </div>
       </div>

@@ -49,7 +49,7 @@ export function AddPlaySessionModal({ isOpen, gameId, onClose, onSuccess }: AddP
 
     const totalSeconds = calculateDuration();
     if (totalSeconds <= 0) {
-      toast.error("游玩时长必须大于0");
+      toast.error(t('session.toasts.playDurationMustBeGreaterThanZero'));
       return;
     }
 

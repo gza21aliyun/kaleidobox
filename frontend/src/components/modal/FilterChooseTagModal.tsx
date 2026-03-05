@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { models } from "../../../wailsjs/go/models";
+import { useTranslation } from 'react-i18next';
 import { mapToArray, tagMapForEach } from "../utils/Utility";
 
 interface FilterChooseTagModalProps {
@@ -17,6 +18,7 @@ export function FilterChooseTagModal({
   tagsFilter,
   onTagsFilterChange
 }: FilterChooseTagModalProps) {
+  const { t } = useTranslation();
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [selectedTagsInCategory, setSelectedTagsInCategory] = useState<Record<string, string[]>>({});
 
@@ -91,7 +93,7 @@ export function FilterChooseTagModal({
       <div className="bg-white dark:bg-brand-900 rounded-lg shadow-xl w-[1200px] max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
           <div className="flex items-center">
-            <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签</h3>
+            <h3 className="text-lg font-semibold text-brand-900 dark:text-white">{t('filter.modals.chooseTag.title')}</h3>
             {/* 折叠按钮 */}
             <button
               onClick={() => toggleAllCategory(isAllCategoriesClosed())}
@@ -145,7 +147,7 @@ export function FilterChooseTagModal({
                         `}
                         disabled={tags.length === 0}
                       >
-                        {isFullySelected ? '取消全选' : '全选'}
+                        {isFullySelected ? t('filter.buttons.deselectAll') : t('filter.buttons.selectAll')}
                       </button>
                       
                       {/* 折叠按钮 */}
@@ -183,7 +185,7 @@ export function FilterChooseTagModal({
                       ))}
                       {tags.length === 0 && (
                         <p className="text-brand-500 dark:text-brand-400 text-sm italic">
-                          暂无标签
+                          {t('filter.messages.noTags')}
                         </p>
                       )}
                     </div>
@@ -196,7 +198,7 @@ export function FilterChooseTagModal({
               <div className="text-center py-8">
                 <div className="i-mdi-tag-off text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
                 <p className="text-brand-600 dark:text-brand-400">
-                  没有可用的标签分类
+                  {t('filter.messages.noAvailableTagCategories')}
                 </p>
               </div>
             )}
@@ -223,6 +225,7 @@ export function FilterChooseGroupModal({
   availableTags: availableTags,
   tagsFilter,
 }: FilterChooseGroupModalProps) {
+  const { t } = useTranslation();
   // 获取标签分组数据
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const getTagGroups = () => {
@@ -268,7 +271,7 @@ export function FilterChooseGroupModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white dark:bg-brand-900 rounded-lg shadow-xl w-[600px] max-w-[90vw] max-h-[80vh] overflow-y-auto">
         <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">选择标签分组</h3>
+          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">{t('filter.modals.chooseTagGroup.title')}</h3>
           <button 
             onClick={onClose}
             className="text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-200"
@@ -300,7 +303,7 @@ export function FilterChooseGroupModal({
                             {groupName}
                           </span>
                           <div className="text-xs text-brand-600 dark:text-brand-400 mt-1">
-                            包含 {tags.length} 个标签
+                            {t('filter.labels.containsTags', { count: tags.length })}
                           </div>
                         </div>
                       </div>
@@ -316,7 +319,7 @@ export function FilterChooseGroupModal({
                           }}
                           className="px-3 py-1 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors text-sm font-medium"
                         >
-                          全选
+                          {t('filter.buttons.selectAll')}
                         </button>
                         
                         {/* 展开/收起按钮 */}
@@ -363,10 +366,10 @@ export function FilterChooseGroupModal({
             <div className="text-center py-8">
               <div className="i-mdi-folder-outline text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
               <p className="text-brand-600 dark:text-brand-400">
-                暂无标签分组
+                {t('filter.messages.noTagGroups')}
               </p>
               <p className="text-brand-500 dark:text-brand-400 text-sm mt-2">
-                可以先为标签创建分组
+                {t('filter.messages.canCreateTagGroupsFirst')}
               </p>
             </div>
           )}

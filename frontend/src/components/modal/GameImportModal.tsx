@@ -1,5 +1,6 @@
 import type { service } from "../../../wailsjs/go/models";
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import toast from "react-hot-toast";
 import {
   ImportFromPlaynite,
@@ -38,12 +39,12 @@ interface ImportConfig {
 
 const importConfigs: Record<ImportSource, ImportConfig> = {
   playnite: {
-    title: "从 Playnite 导入",
+    title: "import.modals.gameImport.playnite.title",
     icon: "i-mdi-application-import",
     fileType: "JSON",
-    fileDescription: "选择 Playnite 导出的 JSON 文件",
-    fileHint: "支持通过 Playnite 导出脚本生成的游戏数据文件",
-    buttonText: "选择 JSON 文件",
+    fileDescription: "import.modals.gameImport.playnite.fileDescription",
+    fileHint: "import.modals.gameImport.playnite.fileHint",
+    buttonText: "import.modals.gameImport.playnite.buttonText",
     primaryColor: "bg-purple-500",
     hoverColor: "hover:bg-purple-600",
     selectFile: SelectJSONFile,
@@ -51,12 +52,12 @@ const importConfigs: Record<ImportSource, ImportConfig> = {
     doImport: ImportFromPlaynite,
   },
   potatovn: {
-    title: "从 PotatoVN 导入",
+    title: "import.modals.gameImport.potatovn.title",
     icon: "i-mdi-database-import",
     fileType: "ZIP",
-    fileDescription: "选择 PotatoVN 导出的 ZIP 文件",
-    fileHint: "支持包含 data.galgames.json 的 PotatoVN 备份文件",
-    buttonText: "选择 ZIP 文件",
+    fileDescription: "import.modals.gameImport.potatovn.fileDescription",
+    fileHint: "import.modals.gameImport.potatovn.fileHint",
+    buttonText: "import.modals.gameImport.potatovn.buttonText",
     primaryColor: "bg-neutral-500",
     hoverColor: "hover:bg-neutral-600",
     selectFile: SelectZipFile,
@@ -66,6 +67,7 @@ const importConfigs: Record<ImportSource, ImportConfig> = {
 };
 
 export function GameImportModal({ isOpen, source, onClose, onImportComplete }: GameImportModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("select");
   const [filePath, setFilePath] = useState("");
   const [previewGames, setPreviewGames] = useState<service.PreviewGame[]>([]);
@@ -88,19 +90,17 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
           const games = await config.previewImport(path);
           setPreviewGames(games || []);
           setStep("preview");
-        }
-        catch (error) {
-          console.error("Failed to preview import:", error);
-          toast.error("预览导入内容失败");
-        }
+        } catch (error) {
+              console.error("Failed to preview import:", error);
+              toast.error(t('import.toasts.previewImportFailed'));
+            }
         finally {
           setIsLoading(false);
         }
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Failed to select file:", error);
-      toast.error("选择文件失败");
+      toast.error(t('import.toasts.fileSelectionFailed'));
     }
   };
 
@@ -117,13 +117,13 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
       setStep("result");
 
       if (result.success > 0) {
-        toast.success(`成功导入 ${result.success} 个游戏`);
+        toast.success(t('import.toasts.importSuccess', { count: result.success }));
         onImportComplete();
       }
     }
     catch (error) {
       console.error("Failed to import:", error);
-      toast.error("导入失败");
+      toast.error(t('import.toasts.importFailed'));
       setStep("preview");
     }
     finally {
@@ -163,7 +163,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
           <div className="flex items-center gap-3">
             <div className={`${config.icon} text-3xl ${iconColorClass}`} />
             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
-              {config.title}
+              {t(config.title)}
             </h2>
           </div>
           <button
@@ -182,10 +182,10 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
               <div className="text-center py-8">
                 <div className={`${source === "playnite" ? "i-mdi-file-document" : "i-mdi-folder-zip"} text-6xl text-brand-400 mx-auto mb-4`} />
                 <p className="text-brand-600 dark:text-brand-300 mb-2">
-                  {config.fileDescription}
+                  {t(config.fileDescription)}
                 </p>
                 <p className="text-sm text-brand-400 dark:text-brand-500">
-                  {config.fileHint}
+                  {t(config.fileHint)}
                 </p>
               </div>
 
@@ -196,15 +196,14 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
               >
                 {isLoading
                   ? (
-                      <>
-                        <div className="i-mdi-loading animate-spin mr-2 text-xl" />
-                        加载中...
+                      <>                <div className="i-mdi-loading animate-spin mr-2 text-xl" />
+                        {t('common.loading')}
                       </>
                     )
                   : (
                       <>
                         <div className="i-mdi-file-find mr-2 text-xl" />
-                        {config.buttonText}
+                        {t(config.buttonText)}
                       </>
                     )}
               </button>
@@ -221,7 +220,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                     {newGamesCount}
                   </div>
                   <div className="text-sm text-success-700 dark:text-success-300">
-                    将导入
+                    {t('import.labels.willImport')}
                   </div>
                 </div>
                 <div className="flex-1 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 text-center">
@@ -229,7 +228,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                     {existingGamesCount}
                   </div>
                   <div className="text-sm text-yellow-700 dark:text-yellow-300">
-                    已存在
+                    {t('import.labels.alreadyExists')}
                   </div>
                 </div>
                 {noPathGamesCount > 0 && (
@@ -238,8 +237,8 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                       {noPathGamesCount}
                     </div>
                     <div className="text-sm text-orange-700 dark:text-orange-300">
-                      无路径
-                    </div>
+                    {t('import.labels.noPath')}
+                  </div>
                   </div>
                 )}
               </div>
@@ -256,17 +255,13 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                     />
                     <div>
                       <div className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                        跳过无路径的游戏
+                        {t('import.labels.skipNoPathGames')}
                       </div>
                       <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                        有
-                        {" "}
-                        {noPathGamesCount}
-                        {" "}
-                        个游戏没有本地路径，这些可能是网络游戏或已删除的游戏。
+                        {t('import.messages.noPathGamesInfo', { count: noPathGamesCount })}
                         {skipNoPath
-                          ? "取消勾选以导入这些游戏（不含启动路径）。"
-                          : "勾选此项将跳过这些游戏。"}
+                          ? t('import.messages.uncheckToImportNoPathGames')
+                          : t('import.messages.checkToSkipNoPathGames')}
                       </div>
                     </div>
                   </label>
@@ -278,7 +273,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                 {previewGames.length === 0
                   ? (
                       <div className="p-8 text-center text-brand-400">
-                        未找到游戏数据
+                        {t('import.messages.noGameDataFound')}
                       </div>
                     )
                   : (
@@ -286,13 +281,13 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                         <thead className="top-0 bg-brand-50 dark:bg-brand-700">
                           <tr>
                             <th className="px-4 py-2 text-left text-sm font-medium text-brand-600 dark:text-brand-300">
-                              游戏名称
+                              {t('import.labels.gameName')}
                             </th>
                             <th className="px-4 py-2 text-left text-sm font-medium text-brand-600 dark:text-brand-300">
-                              开发商
+                              {t('import.labels.developer')}
                             </th>
                             <th className="px-4 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300">
-                              状态
+                              {t('import.labels.status')}
                             </th>
                           </tr>
                         </thead>
@@ -311,7 +306,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                                   {game.name}
                                   {!game.has_path && (
                                     <span className="ml-2 text-xs text-orange-500">
-                                      (无路径)
+                                      ({t('import.labels.noPath')})
                                     </span>
                                   )}
                                 </td>
@@ -323,20 +318,20 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                                     ? (
                                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
                                           <div className="i-mdi-check-circle mr-1" />
-                                          已存在
+                                          {t('import.labels.alreadyExists')}
                                         </span>
                                       )
                                     : !game.has_path && skipNoPath
                                         ? (
                                             <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                                               <div className="i-mdi-close-circle mr-1" />
-                                              将跳过
+                                              {t('import.labels.willSkip')}
                                             </span>
                                           )
                                         : (
                                             <span className="inline-flex items-center rounded-full bg-success-100 px-2 py-1 text-xs text-success-700 dark:bg-success-900/30 dark:text-success-400">
                                               <div className="i-mdi-plus-circle mr-1" />
-                                              新增
+                                              {t('import.labels.new')}
                                             </span>
                                           )}
                                 </td>
@@ -354,18 +349,14 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                   onClick={() => setStep("select")}
                   className="rounded-lg border border-brand-300 px-5 py-2.5 text-sm font-medium text-brand-700 hover:bg-brand-100 dark:border-brand-600 dark:text-brand-300 dark:hover:bg-brand-700"
                 >
-                  ← 重新选择
+                  ← {t('import.buttons.reselect')}
                 </button>
                 <button
                   onClick={handleImport}
                   disabled={newGamesCount === 0}
                   className={`rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 ${importButtonClass}`}
                 >
-                  导入
-                  {" "}
-                  {newGamesCount}
-                  {" "}
-                  个游戏
+                  {t('import.buttons.import', { count: newGamesCount })}
                 </button>
               </div>
             </div>
@@ -376,10 +367,10 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
             <div className="py-12 text-center">
               <div className={`i-mdi-loading animate-spin text-5xl mx-auto mb-4 ${spinnerColorClass}`} />
               <p className="text-lg text-brand-600 dark:text-brand-300">
-                正在导入游戏...
+                {t('import.messages.importingGames')}
               </p>
               <p className="text-sm text-brand-400 dark:text-brand-500 mt-2">
-                这可能需要一些时间，请勿关闭窗口
+                {t('import.messages.importMayTakeTime')}
               </p>
             </div>
           )}
@@ -394,7 +385,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                   <div className="text-2xl font-bold text-success-600 dark:text-success-400">
                     {importResult.success}
                   </div>
-                  <div className="text-sm text-success-700 dark:text-success-300">成功导入</div>
+                  <div className="text-sm text-success-700 dark:text-success-300">{t('import.labels.importedSuccessfully')}</div>
                 </div>
                 {importResult.skipped > 0 && (
                   <div className="flex-1 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 text-center">
@@ -402,7 +393,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                     <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                       {importResult.skipped}
                     </div>
-                    <div className="text-sm text-yellow-700 dark:text-yellow-300">已跳过</div>
+                    <div className="text-sm text-yellow-700 dark:text-yellow-300">{t('import.labels.skipped')}</div>
                   </div>
                 )}
                 {importResult.failed > 0 && (
@@ -411,7 +402,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                     <div className="text-2xl font-bold text-error-600 dark:text-error-400">
                       {importResult.failed}
                     </div>
-                    <div className="text-sm text-error-700 dark:text-error-300">导入失败</div>
+                    <div className="text-sm text-error-700 dark:text-error-300">{t('import.labels.importFailed')}</div>
                   </div>
                 )}
               </div>
@@ -420,7 +411,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
               {importResult.skipped_names && importResult.skipped_names.length > 0 && (
                 <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 p-4">
                   <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
-                    跳过的游戏:
+                    {t('import.labels.skippedGames')}:
                   </h4>
                   <div className="max-h-[150px] overflow-y-auto">
                     <ul className="text-sm text-yellow-600 dark:text-yellow-300 space-y-1">
@@ -439,7 +430,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
               {importResult.failed_names && importResult.failed_names.length > 0 && (
                 <div className="rounded-lg border border-error-200 dark:border-error-800 p-4">
                   <h4 className="font-medium text-error-700 dark:text-error-400 mb-2">
-                    导入失败的游戏:
+                    {t('import.labels.failedGames')}:
                   </h4>
                   <ul className="text-sm text-error-600 dark:text-error-300 space-y-1">
                     {importResult.failed_names.map((name, i) => (
@@ -458,7 +449,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                   onClick={resetAndClose}
                   className={`rounded-lg px-8 py-2.5 text-sm font-medium text-white ${resultButtonClass}`}
                 >
-                  完成
+                  {t('common.complete')}
                 </button>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import toast from "react-hot-toast";
 import { GetRunningProcesses } from "../../../wailsjs/go/service/GameService";
 import { CancelProcessSelection, NotifyProcessSelected } from "../../../wailsjs/go/service/StartService";
@@ -23,6 +24,7 @@ export function ProcessSelectModal({
   onClose,
   onSelected,
 }: ProcessSelectModalProps) {
+  const { t } = useTranslation();
   const [processes, setProcesses] = useState<ProcessInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,10 +36,9 @@ export function ProcessSelectModal({
     try {
       const result = await GetRunningProcesses();
       setProcesses(result || []);
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Failed to load processes:", error);
-      toast.error("获取进程列表失败");
+      toast.error(t('process.toasts.failedToLoadProcesses'));
     }
     finally {
       setLoading(false);
@@ -74,20 +75,19 @@ export function ProcessSelectModal({
   // 确认选择
   const handleConfirm = async () => {
     if (!selectedProcess) {
-      toast.error("请选择一个进程");
+      toast.error(t('process.toasts.pleaseSelectProcess'));
       return;
     }
 
     try {
       // 调用 StartService 的 NotifyProcessSelected，通过 channel 通知等待的 goroutine
       await NotifyProcessSelected(gameID, selectedProcess);
-      toast.success(`已设置监控进程: ${selectedProcess}`);
+      toast.success(t('process.toasts.processMonitoringSet', { process: selectedProcess }));
       onSelected(selectedProcess);
       onClose();
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Failed to update process name:", error);
-      toast.error("保存失败，请重试");
+      toast.error(t('process.toasts.saveFailed'));
     }
   };
 
@@ -104,14 +104,10 @@ export function ProcessSelectModal({
           </div>
           <div className="flex-1">
             <h3 className="text-xl font-bold text-brand-900 dark:text-white mb-1">
-              选择游戏进程
+              {t('process.modals.selectProcess.title')}
             </h3>
             <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed">
-              检测到
-              {" "}
-              <span className="font-mono text-primary-600 dark:text-primary-400">{launcherExeName}</span>
-              {" "}
-              已退出，如果你没有手动退出，代表你导入游戏的不是实际的运行进程，请选择实际运行的游戏进程
+              {t('process.modals.selectProcess.description', { exeName: launcherExeName })}
             </p>
           </div>
         </div>
@@ -124,7 +120,7 @@ export function ProcessSelectModal({
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              placeholder="搜索进程..."
+              placeholder={t('process.placeholders.searchProcess')}
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-brand-200 dark:border-brand-600 bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -136,13 +132,13 @@ export function ProcessSelectModal({
             ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="i-mdi-loading animate-spin text-2xl text-primary-500" />
-                  <span className="ml-2 text-brand-600 dark:text-brand-400">加载中...</span>
+                  <span className="ml-2 text-brand-600 dark:text-brand-400">{t('common.loading')}</span>
                 </div>
               )
             : filteredProcesses.length === 0
               ? (
                   <div className="flex items-center justify-center h-full text-brand-500 dark:text-brand-400">
-                    {searchTerm ? "未找到匹配的进程" : "无可用进程"}
+                    {searchTerm ? t('process.messages.noMatchingProcesses') : t('process.messages.noAvailableProcesses')}
                   </div>
                 )
               : (
@@ -190,7 +186,7 @@ export function ProcessSelectModal({
             className="flex items-center gap-1 text-sm text-brand-600 hover:text-primary-600 dark:text-brand-400 dark:hover:text-primary-400 transition-colors disabled:opacity-50"
           >
             <div className={`i-mdi-refresh ${loading ? "animate-spin" : ""}`} />
-            刷新列表
+            {t('process.buttons.refreshList')}
           </button>
         </div>
 
@@ -201,7 +197,7 @@ export function ProcessSelectModal({
             onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 rounded-lg dark:text-brand-300 dark:hover:bg-brand-700 transition-colors"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -209,7 +205,7 @@ export function ProcessSelectModal({
             disabled={!selectedProcess}
             className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-sm shadow-primary-200 dark:shadow-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            确认选择
+            {t('process.buttons.confirmSelection')}
           </button>
         </div>
       </div>

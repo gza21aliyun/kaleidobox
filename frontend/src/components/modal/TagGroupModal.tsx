@@ -1,5 +1,6 @@
 import { models } from "../../../wailsjs/go/models";
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { tagMapForEach, workMapForEach, charactorsForEach, arrayToMap } from "../utils/Utility";
 import { ListTags, ListGroups, UpdateTagsGroup, DeleteTagGroup } from "../../../wailsjs/go/service/TagService";
 
@@ -17,6 +18,7 @@ interface GroupModalProps {
 }
 
 export function TagGroupModal({ isOpen, onClose, mode, groupName, allTags, existingGroups, onSave }: GroupModalProps) {
+  const { t } = useTranslation();
   const [newGroupName, setNewGroupName] = useState(groupName || '');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -40,28 +42,28 @@ export function TagGroupModal({ isOpen, onClose, mode, groupName, allTags, exist
 
   const handleSave = async () => {
     if (!newGroupName.trim()) {
-      toast.error('请输入分组名称');
+      toast.error(t('tagGroup.errors.pleaseEnterGroupName'));
       return;
     }
 
     if (mode === 'create' && existingGroups.includes(newGroupName)) {
-      toast.error('分组名称已存在');
+      toast.error(t('tagGroup.errors.groupNameExists'));
       return;
     }
 
     if (selectedTags.length === 0) {
-      toast.error('请选择至少一个标签');
+      toast.error(t('tagGroup.errors.pleaseSelectAtLeastOneTag'));
       return;
     }
 
     try {
       setIsSaving(true);
       await onSave(newGroupName, selectedTags);
-      toast.success(mode === 'create' ? '分组创建成功' : '分组更新成功');
+      toast.success(mode === 'create' ? t('tagGroup.toasts.groupCreatedSuccessfully') : t('tagGroup.toasts.groupUpdatedSuccessfully'));
       onClose();
     } catch (error) {
       console.error('保存分组失败:', error);
-      toast.error('保存分组失败');
+      toast.error(t('tagGroup.toasts.failedToSaveGroup'));
     } finally {
       setIsSaving(false);
     }
@@ -110,27 +112,27 @@ export function TagGroupModal({ isOpen, onClose, mode, groupName, allTags, exist
       <div className="bg-white dark:bg-brand-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden">
         <div className="p-6 border-b border-brand-200 dark:border-brand-700">
           <h2 className="text-xl font-bold text-brand-900 dark:text-white">
-            {mode === 'create' ? '创建标签分组' : '编辑标签分组'}
+            {mode === 'create' ? t('tagGroup.modals.createGroup.title') : t('tagGroup.modals.editGroup.title')}
           </h2>
         </div>
         
         <div className="p-6 overflow-y-auto max-h-[70vh]">
           <div className="mb-4">
             <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-              分组名称
+              {t('tagGroup.labels.groupName')}
             </label>
             <input
               type="text"
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               className="w-full px-3 py-2 border border-brand-200 dark:border-brand-700 rounded-lg bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-              placeholder="输入分组名称"
+              placeholder={t('tagGroup.placeholders.enterGroupName')}
             />
           </div>
           
           <div className="mb-4">
             <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-              选择标签 ({selectedTags.length} 个已选择)
+              {t('tagGroup.labels.selectTags', { count: selectedTags.length })}
             </label>
             
             <div className="border border-brand-200 dark:border-brand-700 rounded-lg bg-brand-50 dark:bg-brand-900/20 overflow-hidden">
@@ -165,7 +167,7 @@ export function TagGroupModal({ isOpen, onClose, mode, groupName, allTags, exist
                           }
                         `}
                       >
-                        {areAllCategoryTagsSelected(category) ? '取消全选' : '全选'}
+                        {areAllCategoryTagsSelected(category) ? t('tagGroup.buttons.deselectAll') : t('tagGroup.buttons.selectAll')}
                       </button>
                       
                       {/* 展开/收起图标 */}
@@ -237,7 +239,7 @@ export function TagGroupModal({ isOpen, onClose, mode, groupName, allTags, exist
             className="px-4 py-2 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-700 rounded-lg transition-colors"
             disabled={isSaving}
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSave}
@@ -247,9 +249,9 @@ export function TagGroupModal({ isOpen, onClose, mode, groupName, allTags, exist
             {isSaving ? (
               <>
                 <div className="i-mdi-loading animate-spin mr-2"></div>
-                保存中...
+                {t('common.saving')}
               </>
-            ) : '保存'}
+            ) : t('common.save')}
           </button>
         </div>
       </div>

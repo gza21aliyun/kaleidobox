@@ -79,6 +79,7 @@ type AppConfig struct {
 	EroscapeIsEnabled bool   `json:"eroscape_is_enabled"`
 	EroscapeUseMirror bool   `json:"eroscape_use_mirror"`
 	NewFolderChooser  bool   `json:"new_folder_chooser"`
+	JoystickType      string `json:"joystick_type,omitempty"`
 }
 
 // getConfigPath 获取配置文件路径
@@ -145,6 +146,8 @@ func LoadConfig() (*AppConfig, error) {
 		DmmIsEnabled:            true,
 		EroscapeIsEnabled:       true,
 		EroscapeUseMirror:       false,
+		NewFolderChooser:        true,
+		JoystickType:            "",
 	}
 
 	// 获取配置文件路径

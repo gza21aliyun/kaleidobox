@@ -772,5 +772,48 @@
     "deletePlaySession": "Delete Play Session",
     "confirmDeleteMessage": "Are you sure you want to delete this play session? This action cannot be undone.",
     "confirmDelete": "Confirm Delete"
+  },
+  "language": {
+    "selectApplicationLanguage": "Select the language for the application interface",
+    "switchingInstructions": "Language switching instructions",
+    "settingAutoSaved": "Language settings are automatically saved and will take effect on next startup",
+    "supportedLanguages": "Supports three languages: Chinese, English, and Japanese",
+    "someDataMayRemain": "Some game data may still display in its original language"
+  },
+  "ps4": {
+    "loadHotkeysFailed": "Failed to load hotkey configuration",
+    "mappingSaved": "Mapped {{button}} to {{targetKey}}",
+    "saveMappingFailed": "Failed to save mapping configuration",
+    "setButtonMapping": "Set {{button}} button mapping",
+    "pressKeyToMap": "Please press the keyboard key you want to map to {{button}}",
+    "waitingForKeyInput": "Waiting for key input...",
+    "enterKeyCode": "Or manually enter key code",
+    "startKeyCapture": "Click to start key capture",
+    "confirmMapping": "Confirm mapping"
+  },
+  "task": {
+    "noRunningTasks": "No running tasks",
+    "actions": {
+      "pause": "Pause task",
+      "resume": "Resume task",
+      "cancel": "Cancel task",
+      "delete": "Delete task"
+    },
+    "status": {
+      "completed": "Completed",
+      "error": "Error",
+      "canceled": "Canceled",
+      "paused": "Paused",
+      "started": "Started"
+    }
+  },
+  "update": {
+    "checkOnStartup": "Check for updates on startup",
+    "checkOnStartupDescription": "Automatically check for new versions when the application starts (maximum once per day)",
+    "checkManually": "Check for updates manually",
+    "checking": "Checking...",
+    "checkFailed": "Failed to check for updates",
+    "newVersionFound": "New version found",
+    "latestVersion": "Already the latest version"
   }
 }

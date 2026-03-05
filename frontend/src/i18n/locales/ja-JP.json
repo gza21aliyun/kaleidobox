@@ -737,5 +737,48 @@
     "deletePlaySession": "プレイセッションを削除",
     "confirmDeleteMessage": "このプレイセッションを削除しますか？この操作は元に戻すことができません。",
     "confirmDelete": "削除を確認"
+  },
+  "language": {
+    "selectApplicationLanguage": "アプリケーションインターフェースの言語を選択",
+    "switchingInstructions": "言語切り替えの説明",
+    "settingAutoSaved": "言語設定は自動的に保存され、次回起動時に有効になります",
+    "supportedLanguages": "中国語、英語、日本語の3つの言語をサポートしています",
+    "someDataMayRemain": "一部のゲームデータは元の言語のまま表示される場合があります"
+  },
+  "ps4": {
+    "loadHotkeysFailed": "ホットキー設定の読み込みに失敗しました",
+    "mappingSaved": "{{button}} を {{targetKey}} にマッピングしました",
+    "saveMappingFailed": "マッピング設定の保存に失敗しました",
+    "setButtonMapping": "{{button}} ボタンのマッピングを設定",
+    "pressKeyToMap": "{{button}} にマップしたいキーボードのキーを押してください",
+    "waitingForKeyInput": "キー入力を待っています...",
+    "enterKeyCode": "またはキーコードを手動で入力",
+    "startKeyCapture": "キーキャプチャを開始",
+    "confirmMapping": "マッピングを確認"
+  },
+  "task": {
+    "noRunningTasks": "実行中のタスクはありません",
+    "actions": {
+      "pause": "タスクを一時停止",
+      "resume": "タスクを再開",
+      "cancel": "タスクをキャンセル",
+      "delete": "タスクを削除"
+    },
+    "status": {
+      "completed": "完了",
+      "error": "エラー",
+      "canceled": "キャンセル",
+      "paused": "一時停止",
+      "started": "開始"
+    }
+  },
+  "update": {
+    "checkOnStartup": "起動時に自動的に更新を確認",
+    "checkOnStartupDescription": "アプリケーション起動時に自動的に新バージョンを確認します（1日に最大1回）",
+    "checkManually": "手動で更新を確認",
+    "checking": "確認中...",
+    "checkFailed": "更新の確認に失敗しました",
+    "newVersionFound": "新しいバージョンが見つかりました",
+    "latestVersion": "すでに最新バージョンです"
   }
 }

@@ -4,6 +4,8 @@ import { toast } from "react-hot-toast";
 import { PauseTask, CancelTask, ResumeTask} from "../../../wailsjs/go/service/TaskService";
 
 import { useEffect, useRef, useState } from "react";
+import i18next from "../../i18n/i18n";
+const t = i18next.t;
 
 export function TaskPanel() {
 
@@ -94,7 +96,7 @@ export function TaskPanel() {
                                         <button
                                             onClick={() => PauseTask(task.id)}
                                             className="p-2 rounded-md bg-yellow-100 hover:bg-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:hover:bg-yellow-800/50 dark:text-yellow-400 transition-colors"
-                                            title="暂停任务"
+                                            title={t('task.actions.pause')}
                                         >
                                             <div className="i-mdi-pause text-lg"></div>
                                         </button>
@@ -104,7 +106,7 @@ export function TaskPanel() {
                                         <button
                                             onClick={() => ResumeTask(task.id)}
                                             className="p-2 rounded-md bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:hover:bg-green-800/50 dark:text-green-400 transition-colors"
-                                            title="恢复任务"
+                                            title={t('task.actions.resume')}
                                         >
                                             <div className="i-mdi-play text-lg"></div>
                                         </button>
@@ -114,7 +116,7 @@ export function TaskPanel() {
                                         <button
                                             onClick={() => CancelTask(task.id)}
                                             className="p-2 rounded-md bg-red-100 hover:bg-red-200 text-red-800 dark:bg-red-900/30 dark:hover:bg-red-800/50 dark:text-red-400 transition-colors"
-                                            title="取消任务"
+                                            title={t('task.actions.cancel')}
                                         >
                                             <div className="i-mdi-cancel text-lg"></div>
                                         </button>
@@ -123,7 +125,7 @@ export function TaskPanel() {
                                         <button
                                             onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}
                                             className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 transition-colors"
-                                            title="删除任务"
+                                            title={t('task.actions.delete')}
                                         >
                                             <div className="i-mdi-delete text-lg"></div>
                                         </button>
@@ -134,7 +136,7 @@ export function TaskPanel() {
                     ))}
                 </div>
             ) : (
-                <div className="text-center py-4 text-brand-500 dark:text-brand-400 text-sm">无运行中的任务</div>
+                <div className="text-center py-4 text-brand-500 dark:text-brand-400 text-sm">{t('task.noRunningTasks')}</div>
             )
         }
     </div>

@@ -933,5 +933,48 @@
     "deletePlaySession": "删除游玩记录",
     "confirmDeleteMessage": "确定要删除这条游玩记录吗？此操作不可撤销。",
     "confirmDelete": "确认删除"
+  },
+  "language": {
+    "selectApplicationLanguage": "选择应用界面显示的语言",
+    "switchingInstructions": "语言切换说明",
+    "settingAutoSaved": "语言设置会自动保存并在下次启动时生效",
+    "supportedLanguages": "支持中文、英文、日文三种语言",
+    "someDataMayRemain": "部分游戏数据可能仍显示原始语言"
+  },
+  "ps4": {
+    "loadHotkeysFailed": "加载快捷键配置失败",
+    "mappingSaved": "已将 {{button}} 映射到 {{targetKey}}",
+    "saveMappingFailed": "保存映射配置失败",
+    "setButtonMapping": "设置 {{button}} 按键映射",
+    "pressKeyToMap": "请按下您想要映射到 {{button}} 的键盘按键",
+    "waitingForKeyInput": "正在等待按键输入...",
+    "enterKeyCode": "或手动输入按键代码",
+    "startKeyCapture": "点击开始按键捕获",
+    "confirmMapping": "确认映射"
+  },
+  "task": {
+    "noRunningTasks": "无运行中的任务",
+    "actions": {
+      "pause": "暂停任务",
+      "resume": "恢复任务",
+      "cancel": "取消任务",
+      "delete": "删除任务"
+    },
+    "status": {
+      "completed": "完成",
+      "error": "错误",
+      "canceled": "取消",
+      "paused": "暂停",
+      "started": "已开始"
+    }
+  },
+  "update": {
+    "checkOnStartup": "启动时自动检查更新",
+    "checkOnStartupDescription": "应用启动时自动检查是否有新版本（每天最多检查一次）",
+    "checkManually": "手动检查更新",
+    "checking": "检查中...",
+    "checkFailed": "检查更新失败",
+    "newVersionFound": "发现新版本",
+    "latestVersion": "已是最新版本"
   }
 }

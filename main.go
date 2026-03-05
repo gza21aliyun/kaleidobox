@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"lunabox/internal/applog"
 	"lunabox/internal/cli"
 	"lunabox/internal/cli/ipc"
 	"lunabox/internal/utils"
@@ -53,7 +54,10 @@ var forceQuit bool
 
 func main() {
 	logDir, _ := utils.GetSubDir("logs")
-	appLogger := logger.NewFileLogger(filepath.Join(logDir, "app.log"))
+	logFilePath := filepath.Join(logDir, "app.log")
+	appLogger := logger.NewFileLogger(logFilePath)
+	// 设置 applog 包的日志文件路径
+	applog.SetLogFilePath(logFilePath)
 
 	var loadErr error
 	config, loadErr = appconf.LoadConfig()

@@ -92,6 +92,7 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 	}
 	// fmt.Println("11 CreateOrUpdateWorkStaffCharactor")
 	if work.CharactorName != "" {
+		fmt.Printf("三围022：%s\n", work.Measurements)
 		charactor, err = s.charactorService.CreateOrUpdateCharactor(work.CharactorName, work.GameId, work.SourceGameId,
 			work.SourceType, work.SourceCharactorId, work.CharactorImage, work.WorkSummary, work.Measurements, work.Height, work.Sort)
 		if err != nil {

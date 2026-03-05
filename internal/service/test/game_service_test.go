@@ -751,6 +751,7 @@ func createEroscapeGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 				return fmt.Errorf("读取游戏错误 err:%v\n", err)
 			}
 			chara1, err := services.WorkService.GetWorkByCharactor(game.ID, "月詠")
+			fmt.Printf("角色: %v\n", chara1)
 			if err != nil || chara1.Id == "" {
 				return fmt.Errorf("读取角色错误 err:%v\n", err)
 			}

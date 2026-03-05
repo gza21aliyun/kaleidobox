@@ -93,7 +93,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool) (mo
 
 			return gameEntity.Game, err
 		})
-	if err != nil || game.SourceID == "" {
+	if game.SourceID == "" {
 		alternativeName := getGameNameAlternative(name)
 		if alternativeName != "" {
 			game, err = b.FetchMetadataByNameFunc(alternativeName, isEnabled,
@@ -311,10 +311,13 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			work.GameName = gameEntity.Game.Name
 			work.Role = enums.CV
 			work.CharactorImage = s.Find("div.character_image img").AttrOr("src", "")
-			work.CharactorName = strings.TrimSpace(s.Find("div.character_name").Text())
-			work.Height = s.Find("div.personal_data dl.contains('身長') dd").Eq(0).Text()
-			work.Measurements = s.Find("div.personal_data dl.contains('スリーサイズ') dd").Eq(0).Text()
-			work.WorkSummary, err = s.Find("div.formal_explanation").Html()
+			work.CharactorName = strings.ReplaceAll(strings.TrimSpace(s.Find("div.character_name").Text()), " ", "")
+			work.Height = removeAllChar(s.Find("div.personal_data dl:contains('身長') dd").Eq(0).Text(), " \n")
+			work.Measurements = removeAllChar(s.Find("div.personal_data dl:contains('スリーサイズ') dd").Eq(0).Text(), " \n")
+			fmt.Printf("三围：%s\n", work.Measurements)
+			fmt.Printf("身高:%s\n", work.Height)
+			sm, _ := s.Find("div.formal_explanation").Html()
+			work.WorkSummary = strings.ReplaceAll(sm, "<br/>", "\n")
 			work.Sort = i
 			applog.InfoLogSaveAppLog("角色经历 01: " + work.WorkSummary)
 			applog.InfoLogSaveAppLog("角色图像 01: " + work.CharactorImage)
@@ -325,7 +328,7 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 				work.Images = MergeStrings(work.Images, img)
 			})
 
-			var err error = nil
+			// var err error = nil
 			if charHref != "" {
 				parsedURL, err := url.Parse(charHref)
 				if err != nil {
@@ -339,12 +342,12 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 				work.SourceCharactorId = queryParams.Get("character")
 				applog.InfoLogSaveAppLog("角色url: " + work.SourceCharactorId)
 			}
-			work.WorkSummary, err = s.Find("div.formal_explanation").Html()
+			// work.WorkSummary, err = s.Find("div.formal_explanation").Html()
 
-			applog.InfoLogSaveAppLog("角色经历 02: " + work.WorkSummary)
-			if err != nil {
-				applog.ErrorLogSaveAppLog("FetchCharactors error \n", err)
-			}
+			// applog.InfoLogSaveAppLog("角色经历 02: " + work.WorkSummary)
+			// if err != nil {
+			// 	applog.ErrorLogSaveAppLog("FetchCharactors error \n", err)
+			// }
 			work.StaffName = s.Find("div.character_name").Text()
 
 			staffHref := b.GetBaseUrl() + s.Find("div.cv a").AttrOr("href", "")

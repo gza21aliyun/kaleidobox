@@ -392,6 +392,8 @@ func combineCharacters(gameEntity models.GameEntity) models.GameEntity {
 			newWork.WorkSummary = c.WorkSummary
 			newWork.Images = c.Images
 			newWork.CharactorImage = c.CharactorImage
+			newWork.Measurements = c.Measurements
+			newWork.Height = c.Height
 
 			newCvs = append(newCvs, *newWork)
 		} else {

@@ -201,6 +201,18 @@ function CharactorPage() {
                     {charactor.source_charactor_id || t('common.none')}
                   </span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-brand-600 dark:text-brand-400">身高:</span>
+                  <span className="text-brand-900 dark:text-white font-mono text-sm">
+                    {charactor.height || t('common.none')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-brand-600 dark:text-brand-400">三围:</span>
+                  <span className="text-brand-900 dark:text-white font-mono text-sm">
+                    {charactor.measurements || t('common.none')}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -271,7 +283,7 @@ function CharactorPage() {
                             <td className="py-3 px-3">
                               {work.work.images && (
                                 <img
-                                  src={work.work.images}
+                                  src={work.work.charactor_image}
                                   alt={t('common.characterImage')}
                                   className="w-12 h-24 object-cover rounded"
                                 />

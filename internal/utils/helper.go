@@ -377,3 +377,11 @@ func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []st
 	}
 	return &result[0]
 }
+
+func removeAllChar(str string, char string) string {
+	rs := str
+	for _, c := range char {
+		rs = strings.ReplaceAll(rs, string(c), "")
+	}
+	return rs
+}

@@ -165,7 +165,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
         <BetterSwitch
           id="new_folder_chooser"
           checked={formData.new_folder_chooser || false}
-          onCheckedChange={checked => onChange({ ...formData, close_to_tray: checked } as appconf.AppConfig)}
+          onCheckedChange={checked => onChange({ ...formData, new_folder_chooser: checked } as appconf.AppConfig)}
         />
       </div>
     </>

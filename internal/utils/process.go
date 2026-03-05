@@ -59,7 +59,7 @@ type PROCESSENTRY32W struct {
 // CheckIfProcessRunning 检查指定进程是否正在运行
 // 使用 Windows API 代替 tasklist，避免编码问题
 func CheckIfProcessRunning(processName string) (bool, error) {
-	_, err := GetProcessPIDByName(processName)
+	_, err := GetProcessPIDByName(processName, "")
 	if err != nil {
 		if strings.Contains(err.Error(), "process not found") {
 			return false, nil
@@ -186,7 +186,7 @@ func GetRunningProcesses() ([]ProcessInfo, error) {
 // GetProcessPIDByName 根据进程名获取PID
 // 如果有多个同名进程，返回第一个找到的
 // 使用 Windows API (CreateToolhelp32Snapshot) 代替 tasklist，避免编码和语言问题
-func GetProcessPIDByName(processName string) (uint32, error) {
+func GetProcessPIDByName(processName string, path string) (uint32, error) {
 	// 创建进程快照
 	snapshot, _, err := procCreateToolhelp32Snapshot.Call(
 		uintptr(TH32CS_SNAPPROCESS),
@@ -217,7 +217,17 @@ func GetProcessPIDByName(processName string) (uint32, error) {
 
 		// 不区分大小写比较
 		if strings.EqualFold(exeName, targetName) {
-			return pe32.ProcessID, nil
+			processPath, err := getProcessPath(pe32.ProcessID)
+			applog.InfoLogSaveAppLog("processPath:%s, %v", processPath, err)
+			if path == processPath {
+				applog.InfoLogSaveAppLog("processName:%s found, paths are same", processName, err)
+				return pe32.ProcessID, nil
+			}
+			if path == "" {
+				applog.InfoLogSaveAppLog("processName:%s found, paths are empty", processName, err)
+				return pe32.ProcessID, nil
+			}
+
 		}
 
 		// 获取下一个进程
@@ -521,14 +531,14 @@ func getNextProcess(snapshot uintptr, pe32 *PROCESSENTRY32W) bool {
 }
 
 // getProcessPath 获取指定 PID 进程的完整路径
-func (p NewProcessInfo) getProcessPath() (string, error) {
+func getProcessPath(pid uint32) (string, error) {
 	// 创建模块快照
 	snapshot, _, err := procCreateToolhelp32Snapshot.Call(
 		uintptr(TH32CS_SNAPMODULE),
-		uintptr(p.PID),
+		uintptr(pid),
 	)
 	if snapshot == uintptr(syscall.InvalidHandle) {
-		return "", fmt.Errorf("failed to create module snapshot for PID %d: %w", p.PID, err)
+		return "", fmt.Errorf("failed to create module snapshot for PID %d: %w", pid, err)
 	}
 	defer procCloseHandle.Call(snapshot)
 
@@ -538,7 +548,7 @@ func (p NewProcessInfo) getProcessPath() (string, error) {
 	// 获取第一个模块（通常是可执行文件）
 	ret, _, _ := procModule32First.Call(snapshot, uintptr(unsafe.Pointer(&me32)))
 	if ret == 0 {
-		return "", fmt.Errorf("failed to get first module for PID %d", p.PID)
+		return "", fmt.Errorf("failed to get first module for PID %d", pid)
 	}
 
 	// 返回模块路径

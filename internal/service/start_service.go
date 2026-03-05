@@ -32,6 +32,7 @@ type StartService struct {
 	backupService     *BackupService
 	gameService       *GameService
 	sessionService    *SessionService
+	hotkeyService     *HotkeyService
 	activeTimeTracker *timer.ActiveTimeTracker
 	mu                sync.Mutex
 
@@ -92,6 +93,11 @@ func (s *StartService) SetGameService(gameService *GameService) {
 // SetSessionService 设置会话服务（用于管理游玩记录）
 func (s *StartService) SetSessionService(sessionService *SessionService) {
 	s.sessionService = sessionService
+}
+
+// SetHotkeyService 设置热键服务（用于管理热键）
+func (s *StartService) SetHotkeyService(hotkeyService *HotkeyService) {
+	s.hotkeyService = hotkeyService
 }
 
 // StartGameWithTracking 启动游戏并自动追踪游玩时长
@@ -160,6 +166,7 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 			cmd = exec.Command(path, arguments)
 		}
 	}
+	s.hotkeyService.readyHotkeysForGame(gameID)
 	cmd.Dir = filepath.Dir(path)
 
 	if err := cmd.Start(); err != nil {
@@ -182,7 +189,7 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 	}
 
 	// 启动进程检测和监控 goroutine
-	go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, launcherExeName, processName, useLE)
+	go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, launcherExeName, processName, useLE, path)
 
 	// 启动成功，返回 true 给前端
 	return true, nil
@@ -191,7 +198,8 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 // detectAndMonitorProcess 检测实际游戏进程并开始监控
 // 采用分阶段检测策略，利用60秒会话记录阈值提供的余裕时间
 // usedLE: 是否使用了 Locale Emulator 启动，影响进程检测策略
-func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, gameID string, startTime time.Time, launcherPID uint32, launcherExeName string, savedProcessName string, usedLE bool) {
+func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, gameID string, startTime time.Time, launcherPID uint32,
+	launcherExeName string, savedProcessName string, usedLE bool, path string) {
 	var actualProcessID uint32
 	var actualProcessName string
 	var needExternalMonitor bool // 是否需要外部进程监控（非cmd子进程）
@@ -205,7 +213,7 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 		time.Sleep(5 * time.Second)
 
 		// 在系统进程中搜索保存的进程名
-		pid, err := utils.GetProcessPIDByName(savedProcessName)
+		pid, err := utils.GetProcessPIDByName(savedProcessName, path)
 		if err != nil {
 			applog.LogWarningf(s.ctx, "Failed to find saved process %s: %v, falling back to launcher monitoring", savedProcessName, err)
 			// 如果找不到保存的进程，使用启动器进程监控
@@ -231,7 +239,7 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 
 			// 保存进程名
 			if savedProcessName == "" {
-				s.updateGameProcessName(gameID, launcherExeName)
+				// s.updateGameProcessName(gameID, launcherExeName)
 			}
 		} else {
 			// 启用了自动检测，使用分阶段检测策略来准确判断启动器类型
@@ -246,8 +254,21 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 			if !launcherStillRunning {
 				// 启动器在5秒内就退出了，说明是快速启动器（如Steam）
 				applog.LogInfof(s.ctx, "Launcher %s exited quickly (within 5s), will prompt for actual game process", launcherExeName)
-				s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
-				return
+				// s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
+				newProc := s.detectNewProcesses(int(launcherPID), gameID, 5*time.Second, 2*time.Second)
+				if newProc != nil {
+					actualProcessID = newProc.PID
+					actualProcessName = newProc.Name
+					needExternalMonitor = true
+					if savedProcessName == "" {
+						s.updateGameProcessName(gameID, actualProcessName)
+
+					}
+				} else {
+					s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
+					return
+				}
+
 			}
 
 			// 阶段3: 启动器还在运行，进入观察期（15秒）
@@ -264,8 +285,19 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 				if !utils.IsProcessRunningByPID(launcherPID, s.ctx) {
 					// 启动器在观察期内退出了，说明它只是个启动器
 					applog.LogInfof(s.ctx, "Launcher %s exited during observation period, will prompt for actual game process", launcherExeName)
-					s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
-					return
+					newProc := s.detectNewProcesses(int(launcherPID), gameID, 5*time.Second, 2*time.Second)
+					if newProc != nil {
+						actualProcessID = newProc.PID
+						actualProcessName = newProc.Name
+						needExternalMonitor = true
+						if savedProcessName == "" {
+							s.updateGameProcessName(gameID, actualProcessName)
+
+						}
+					} else {
+						s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
+						return
+					}
 				}
 			}
 
@@ -345,7 +377,7 @@ func (s *StartService) promptUserToSelectProcess(sessionID string, gameID string
 	s.pendingProcessSelectMu.Unlock()
 
 	// 获取选中进程的PID
-	pid, err := utils.GetProcessPIDByName(selectedProcess)
+	pid, err := utils.GetProcessPIDByName(selectedProcess, "")
 	if err != nil {
 		applog.LogErrorf(s.ctx, "Failed to find selected process %s: %v", selectedProcess, err)
 		s.sessionService.DeletePlaySession(sessionID)
@@ -382,6 +414,7 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 	select {
 	case exitErr = <-exitChan:
 		delete(s.gamesLaunched, processID)
+		s.hotkeyService.clearkeysForGame()
 		// 游戏正常退出
 		if exitErr != nil {
 			applog.LogDebugf(s.ctx, "Game %s exited with error: %v", gameID, exitErr)
@@ -646,7 +679,7 @@ func (s *StartService) startMagpie() {
 	applog.LogInfof(s.ctx, "Magpie started successfully")
 }
 
-func (s *StartService) detectNewProcesses(targetPID int, interval time.Duration, timeout time.Duration) {
+func (s *StartService) detectNewProcesses(targetPID int, gameID string, interval time.Duration, timeout time.Duration) *utils.NewProcessInfo {
 	startTime := time.Now()
 	knownPIDs := make(map[int]bool)
 
@@ -654,7 +687,7 @@ func (s *StartService) detectNewProcesses(targetPID int, interval time.Duration,
 	initialProcesses, err := utils.GetRunningProcesses()
 	if err != nil {
 		applog.LogErrorf(s.ctx, "Failed to list initial processes: %v", err)
-		return
+		return nil
 	}
 	for _, proc := range initialProcesses {
 		knownPIDs[int(proc.PID)] = true
@@ -679,6 +712,7 @@ func (s *StartService) detectNewProcesses(targetPID int, interval time.Duration,
 					if int(proc.PPID) == targetPID {
 						applog.LogInfof(s.ctx, "Detected new process launched by PID %d: %s (PID: %d)", targetPID, proc.Name, proc.PID)
 						// 可以在这里添加业务逻辑，例如记录或通知
+						return &proc
 					}
 					knownPIDs[int(proc.PID)] = true
 				}
@@ -687,11 +721,11 @@ func (s *StartService) detectNewProcesses(targetPID int, interval time.Duration,
 			// 超时退出
 			if time.Since(startTime) > timeout {
 				applog.LogInfof(s.ctx, "Process monitoring timeout reached")
-				return
+				return nil
 			}
 		case <-s.ctx.Done():
 			applog.LogInfof(s.ctx, "Process monitoring cancelled")
-			return
+			return nil
 		}
 	}
 }

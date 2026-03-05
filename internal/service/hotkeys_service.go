@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -75,9 +76,10 @@ type HotkeyService struct {
 	hookMutex   sync.RWMutex
 
 	// 按键映射管理
-	keyMappings map[string]*models.Hotkey // source_key -> mapping
-	actionKeys  map[string]*models.Hotkey
-	mappingLock sync.RWMutex
+	keyMappings   map[string]*models.Hotkey // source_key -> mapping
+	actionKeys    map[string]*models.Hotkey
+	mappingLock   sync.RWMutex
+	actionkeyLock sync.RWMutex
 	// keyLock     sync.RWMutex
 
 	// 按键状态跟踪
@@ -86,11 +88,13 @@ type HotkeyService struct {
 
 	// 快捷键管理（特殊用途）
 	// screenshotHotkey *models.Hotkey
-	hotkeyLock sync.RWMutex
 
 	// 当前活动游戏
 	activeGameID atomic.Value
 	activeLock   sync.RWMutex
+
+	isMonitoringKeySetting atomic.Bool
+	monitoredKey           atomic.Value
 
 	imageService *ImageService
 	startService *StartService
@@ -134,6 +138,8 @@ func (s *HotkeyService) Init(ctx context.Context, db *sql.DB, config *appconf.Ap
 	// 启动监听
 	// s.startKeyboardListener()
 	s.startJoystickListener()
+	s.monitoredKey.Store("")
+	s.activeGameID.Store("")
 
 	applog.LogInfof(s.ctx, "Simplified key mapping service initialized")
 }
@@ -195,9 +201,9 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 
 func (s *HotkeyService) loadHotkeyConfig() {
 	applog.LogInfof(s.ctx, "Loading hotkey configuration")
-	s.hotkeyLock.Lock()
+	s.actionkeyLock.Lock()
 	s.mappingLock.Lock()
-	defer s.hotkeyLock.Unlock()
+	defer s.actionkeyLock.Unlock()
 	defer s.mappingLock.Unlock()
 
 	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
@@ -306,7 +312,7 @@ func (s *HotkeyService) SetActiveGameID(gameID string) {
 }
 
 // handleKeyPress 处理按键按下事件
-func (s *HotkeyService) handleKeyPress(key string) {
+func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType) {
 	applog.LogDebugf(s.ctx, "Key pressed: %s", key)
 	if s.GetActiveGameID() == "" {
 		s.processCheck()
@@ -319,7 +325,14 @@ func (s *HotkeyService) handleKeyPress(key string) {
 	s.stateLock.Lock()
 	s.keyStates[key] = true
 	s.stateLock.Unlock()
+	hk := models.Hotkey{
+		KeyCode:    key,
+		Name:       name,
+		DeviceType: device,
+	}
+
 	if s.actionKeys[key] != nil { // 映射的按键
+		s.monitoredKey.Store(hk)
 		return
 	}
 
@@ -328,6 +341,7 @@ func (s *HotkeyService) handleKeyPress(key string) {
 	if hotkey != nil {
 		s.simulateKeyPress(hotkey.ActionParams, []enums.ModifierKey{})
 	}
+	s.monitoredKey.Store(hk)
 }
 
 func (s *HotkeyService) handleActionKey(key *models.Hotkey) {
@@ -337,24 +351,32 @@ func (s *HotkeyService) handleActionKey(key *models.Hotkey) {
 }
 
 // handleKeyRelease 处理按键释放事件
-func (s *HotkeyService) handleKeyRelease(key string) {
+func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceType) {
 	applog.LogDebugf(s.ctx, "Key released: %s", key)
 
 	// 更新状态
 	s.stateLock.Lock()
 	s.keyStates[key] = false
 	s.stateLock.Unlock()
+	hk := models.Hotkey{
+		KeyCode:    key,
+		Name:       name,
+		DeviceType: device,
+	}
 
 	hotkey := s.keyMappings[key]
 	if hotkey != nil {
 		s.simulateKeyRelease(hotkey.ActionParams, []enums.ModifierKey{})
+		s.monitoredKey.Store(hk)
 		return
 	}
 	hotkey = s.actionKeys[key]
 	if hotkey != nil {
 		s.handleActionKey(hotkey)
+		s.monitoredKey.Store(hk)
 		return
 	}
+
 }
 
 // simulateKeyPress 模拟按键按下
@@ -412,8 +434,8 @@ func (s *HotkeyService) handleKeboardEvents() {
 			if keyCode != "" {
 				// 简化处理：统一视为按下事件
 				// 在实际应用中可能需要更复杂的逻辑来区分按下和释放
-				s.hotkeyLock.Lock()
-				defer s.hotkeyLock.Unlock()
+				s.actionkeyLock.Lock()
+				defer s.actionkeyLock.Unlock()
 				hotkey := s.actionKeys[keyCode]
 				if hotkey != nil {
 					s.handleActionKey(hotkey)
@@ -468,74 +490,83 @@ func (s *HotkeyService) convertJoystickButton(key int) string {
 }
 
 func (s *HotkeyService) handleJoystickEvents() {
-	stick := s.joysticks["dualshock4"]
+	device := enums.DeviceTypeDualShock4
+	stick := s.joysticks[string(device)]
 
 	// 监听按钮按下
 	stick.On(joystick.SquarePress, func(data interface{}) {
-		s.handleKeyPress("square")
+		s.handleKeyPress("square", "□", device)
 	})
 
 	stick.On(joystick.SquareRelease, func(data interface{}) {
-		s.handleKeyRelease("square")
+		s.handleKeyRelease("square", "□", device)
 	})
 
 	stick.On(joystick.CirclePress, func(data interface{}) {
-		s.handleKeyPress("circle")
+		s.handleKeyPress("circle", "○", device)
 	})
 
 	stick.On(joystick.CircleRelease, func(data interface{}) {
-		s.handleKeyRelease("circle")
+		s.handleKeyRelease("circle", "○", device)
 	})
 
 	stick.On(joystick.TrianglePress, func(data interface{}) {
-		s.handleKeyPress("triangle")
+		s.handleKeyPress("triangle", "△", device)
 	})
 
 	stick.On(joystick.TriangleRelease, func(data interface{}) {
-		s.handleKeyRelease("triangle")
+		s.handleKeyRelease("triangle", "△", device)
 	})
 
 	stick.On(joystick.XPress, func(data interface{}) {
-		s.handleKeyPress("cross")
+		s.handleKeyPress("cross", "X", device)
 	})
 
 	stick.On(joystick.XRelease, func(data interface{}) {
-		s.handleKeyRelease("cross")
+		s.handleKeyRelease("cross", "X", device)
 	})
 
 	// 监听肩键
 	stick.On(joystick.L1Press, func(data interface{}) {
-		s.handleKeyPress("l1")
+		s.handleKeyPress("l1", "L1", device)
 	})
 
 	stick.On(joystick.R1Press, func(data interface{}) {
-		s.handleKeyPress("r1")
+		s.handleKeyPress("r1", "R1", device)
 	})
 
 	// 监听扳机键 (模拟量)
 	stick.On(joystick.L2Press, func(data interface{}) {
-		s.handleKeyPress("l2")
+		s.handleKeyPress("l2", "L2", device)
 	})
 
 	stick.On(joystick.R2Press, func(data interface{}) {
-		s.handleKeyPress("r2")
+		s.handleKeyPress("r2", "R2", device)
+	})
+
+	stick.On(joystick.L3Press, func(data interface{}) {
+		s.handleKeyPress("l3", "L3", device)
+	})
+
+	stick.On(joystick.R3Press, func(data interface{}) {
+		s.handleKeyPress("r3", "R3", device)
 	})
 
 	// 监听方向键
 	stick.On(joystick.UpPress, func(data interface{}) {
-		s.handleKeyPress("up")
+		s.handleKeyPress("up", "↑", device)
 	})
 
 	stick.On(joystick.DownPress, func(data interface{}) {
-		s.handleKeyPress("down")
+		s.handleKeyPress("down", "↓", device)
 	})
 
 	stick.On(joystick.LeftPress, func(data interface{}) {
-		s.handleKeyPress("left")
+		s.handleKeyPress("left", "←", device)
 	})
 
 	stick.On(joystick.RightPress, func(data interface{}) {
-		s.handleKeyPress("right")
+		s.handleKeyPress("right", "→", device)
 	})
 
 	// 监听摇杆轴 (模拟量)
@@ -546,12 +577,12 @@ func (s *HotkeyService) handleJoystickEvents() {
 		applog.LogDebugf(s.ctx, "Left X axis: %v", data)
 		if data.(int) > 5000 {
 
-			s.toggleKey(KeyDs4L3Right, true)
+			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device)
 		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4L3Right, false)
-			s.toggleKey(KeyDs4L3Left, false)
+			s.toggleKey(KeyDs4L3Right, false, KeyDs4L3Right, device)
+			s.toggleKey(KeyDs4L3Left, false, KeyDs4L3Left, device)
 		} else {
-			s.toggleKey(KeyDs4L3Left, true)
+			s.toggleKey(KeyDs4L3Left, true, KeyDs4L3Left, device)
 		}
 
 	})
@@ -563,12 +594,12 @@ func (s *HotkeyService) handleJoystickEvents() {
 		applog.LogDebugf(s.ctx, "Left X axis: %v", data)
 		if data.(int) > 5000 {
 
-			s.toggleKey(KeyDs4R3Right, true)
+			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device)
 		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4R3Right, false)
-			s.toggleKey(KeyDs4R3Left, false)
+			s.toggleKey(KeyDs4R3Right, false, KeyDs4R3Right, device)
+			s.toggleKey(KeyDs4R3Left, false, KeyDs4R3Left, device)
 		} else {
-			s.toggleKey(KeyDs4R3Left, true)
+			s.toggleKey(KeyDs4R3Left, true, KeyDs4R3Left, device)
 		}
 
 	})
@@ -577,12 +608,12 @@ func (s *HotkeyService) handleJoystickEvents() {
 
 		if data.(int) > 5000 {
 
-			s.toggleKey(KeyDs4L3Up, true)
+			s.toggleKey(KeyDs4L3Up, true, KeyDs4L3Up, device)
 		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4L3Up, false)
-			s.toggleKey(KeyDs4L3Down, false)
+			s.toggleKey(KeyDs4L3Up, false, KeyDs4L3Up, device)
+			s.toggleKey(KeyDs4L3Down, false, KeyDs4L3Down, device)
 		} else {
-			s.toggleKey(KeyDs4L3Down, true)
+			s.toggleKey(KeyDs4L3Down, true, KeyDs4L3Down, device)
 		}
 	})
 
@@ -590,28 +621,28 @@ func (s *HotkeyService) handleJoystickEvents() {
 
 		if data.(int) > 5000 {
 
-			s.toggleKey(KeyDs4R3Up, true)
+			s.toggleKey(KeyDs4R3Up, true, KeyDs4R3Up, device)
 		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4R3Up, false)
-			s.toggleKey(KeyDs4R3Down, false)
+			s.toggleKey(KeyDs4R3Up, false, KeyDs4R3Up, device)
+			s.toggleKey(KeyDs4R3Down, false, KeyDs4R3Down, device)
 		} else {
-			s.toggleKey(KeyDs4R3Down, true)
+			s.toggleKey(KeyDs4R3Down, true, KeyDs4R3Down, device)
 		}
 	})
 }
 
-func (s *HotkeyService) toggleKey(key string, isPress bool) {
+func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device enums.DeviceType) {
 	s.stateLock.Lock()
 
 	defer s.stateLock.Unlock()
 	if isPress {
 		if !s.keyStates[key] {
-			s.handleKeyPress(key)
+			s.handleKeyPress(key, name, device)
 			s.keyStates[key] = true
 		}
 	} else {
 		if s.keyStates[key] {
-			s.handleKeyRelease(key)
+			s.handleKeyRelease(key, name, device)
 			s.keyStates[key] = false
 		}
 	}
@@ -1045,4 +1076,32 @@ func getCurrentForegroundProcessId() uint32 {
 		return 0
 	}
 	return processID
+}
+
+func (s *HotkeyService) MonitorKeySetting() (models.Hotkey, error) {
+	s.monitoredKey.Store(nil)
+	s.isMonitoringKeySetting.Store(true)
+	var tiker *time.Ticker = time.NewTicker(time.Millisecond * 500)
+	defer s.isMonitoringKeySetting.Store(false)
+	defer s.monitoredKey.Store(nil)
+	for {
+		select {
+		case <-tiker.C:
+			key := s.monitoredKey.Load().(*models.Hotkey)
+			if key != nil {
+				return *key, nil
+			}
+			if s.isMonitoringKeySetting.Load() == false {
+				return models.Hotkey{}, nil
+			}
+		case <-s.ctx.Done():
+			return models.Hotkey{}, errors.New("key setting monitoring cancelled")
+		}
+
+	}
+
+}
+
+func (s *HotkeyService) CancelMonitorKeySetting() {
+	s.isMonitoringKeySetting.Store(false)
 }

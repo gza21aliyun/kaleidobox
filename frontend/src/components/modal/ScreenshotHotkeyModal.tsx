@@ -2,6 +2,7 @@ import { createPortal } from "react-dom";
 import { useState, useEffect, useRef } from "react";
 import { arrayMapString } from "../utils/Utility";
 import { enums, models, vo } from "../../../wailsjs/go/models";
+import { MonitorKeySetting, CancelMonitorKeySetting } from "../../../wailsjs/go/service/HotkeyService";
 import { formatLocalDate } from "../../utils/time";
 // import { 
 //   DeviceType, 
@@ -114,6 +115,8 @@ export function ScreenshotHotkeyModal({
       setIsListening(false);
     };
 
+    
+
     const handleKeyUp = (e: KeyboardEvent) => {
       if (!isListening || selectedDeviceType !== enums.DeviceType.KEYBOARD) return;
       // 不处理keyup事件
@@ -129,6 +132,21 @@ export function ScreenshotHotkeyModal({
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [isListening, selectedDeviceType, isOpen]);
+
+  const setListening = async (isListen: boolean) => {
+    if (isListen) {
+      setIsListening(true);
+      const key = await MonitorKeySetting();
+      setKeyCode(key.key_code);
+      setIsListening(false);
+    } else {
+      setIsListening(false);
+      CancelMonitorKeySetting()
+    }
+      
+      
+      
+  }
 
   const handleSave = async () => {
     if (!keyCode.trim()) {
@@ -262,7 +280,7 @@ export function ScreenshotHotkeyModal({
             />
             <button
               type="button"
-              onClick={() => setIsListening(!isListening)}
+              onClick={() => setListening(!isListening)}
               disabled={isListening}
               className={`absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-medium rounded ${
                 isListening

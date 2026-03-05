@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { enums, models, vo } from "../../../wailsjs/go/models";
-import { AddGame, FetchMetadata, FetchMetadataByName, SelectCoverImageWithTempID, SelectGameExecutable } from "../../../wailsjs/go/service/GameService";
+import { AddGame, FetchMetadata, FetchMetadataByName, SelectCoverImageWithTempID,
+   SelectGameExecutable, SelectGameExecutable2 } from "../../../wailsjs/go/service/GameService";
+import { useAppStore } from "../../store";
 import { BetterSelect } from "../ui/BetterSelect";
 
 interface AddGameModalProps {
@@ -15,6 +17,7 @@ type StepType = 1 | 2 | 3 | 4;
 
 export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps) {
   const [step, setStep] = useState<StepType>(1);
+  const { config } = useAppStore();
   const [executablePath, setExecutablePath] = useState("");
   const [gameName, setGameName] = useState("");
   const [metadataResults, setMetadataResults] = useState<vo.GameMetadataFromWebVO[]>([]);
@@ -44,7 +47,13 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
 
   const handleSelectExecutable = async () => {
     try {
-      const path = await SelectGameExecutable();
+      var path = "";
+      if (config && config.new_folder_chooser) {
+        path = await SelectGameExecutable();    
+      } else {
+        path = await SelectGameExecutable2();
+      }
+      
       if (path) {
         setExecutablePath(path);
         // Extract parent folder name

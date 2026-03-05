@@ -17,8 +17,10 @@ import (
 	"lunabox/internal/utils"
 	"lunabox/internal/vo"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -652,6 +654,52 @@ func (s *ImportService) SelectLibraryDirectory(isLnk bool) (string, error) {
 	}
 	selection, err := runtime.OpenDirectoryDialog(s.ctx, options)
 	return selection, err
+}
+
+func (s *ImportService) SelectLibraryDirectory2(isLnk bool) (string, error) {
+	var title string
+	if !isLnk {
+		title = "选择游戏库目录"
+	} else {
+		title = "选择快捷方式目录"
+	}
+
+	psScript := fmt.Sprintf(`
+		Add-Type -AssemblyName System.Windows.Forms
+		$folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
+		$folderBrowser.Description = "%s"
+		$folderBrowser.ShowNewFolderButton = $false
+		$folderBrowser.RootFolder = "MyComputer"
+		$result = $folderBrowser.ShowDialog()
+		if ($result -eq "OK") {
+			[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+			Write-Output $folderBrowser.SelectedPath
+		} else {
+			Write-Output ""
+		}
+		`, title)
+
+	cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", psScript)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow: true,
+	}
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("执行 PowerShell 失败：%v", err)
+	}
+
+	// PowerShell 输出可能包含 BOM 或 UTF-16LE，需要正确处理
+	selection := strings.TrimSpace(string(output))
+
+	// 清理可能的 BOM 和空字符
+	selection = strings.ReplaceAll(selection, "\x00", "")     // 移除空字符
+	selection = strings.TrimPrefix(selection, "\xef\xbb\xbf") // 移除 UTF-8 BOM
+
+	if selection == "" {
+		return "", nil // 用户取消选择
+	}
+
+	return selection, nil
 }
 
 // ScanLibraryDirectory 扫描游戏库目录，返回候选游戏列表

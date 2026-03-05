@@ -78,6 +78,7 @@ type AppConfig struct {
 	DmmIsEnabled      bool   `json:"dmm_is_enabled"`
 	EroscapeIsEnabled bool   `json:"eroscape_is_enabled"`
 	EroscapeUseMirror bool   `json:"eroscape_use_mirror"`
+	NewFolderChooser  bool   `json:"new_folder_chooser"`
 }
 
 // getConfigPath 获取配置文件路径

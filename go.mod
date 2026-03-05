@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.6
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.94.0
+	github.com/dlclark/regexp2 v1.11.5
 	github.com/duckdb/duckdb-go/v2 v2.5.3
 	github.com/energye/systray v1.0.2
 	github.com/go-vgo/robotgo v1.0.1
@@ -48,7 +49,6 @@ require (
 	github.com/bits-and-blooms/bitset v1.24.4 // indirect
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
 	github.com/dblohm7/wingoes v0.0.0-20250822163801-6d8e6105c62d // indirect
-	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/duckdb/duckdb-go-bindings v0.1.23 // indirect
 	github.com/duckdb/duckdb-go-bindings/darwin-amd64 v0.1.23 // indirect
 	github.com/duckdb/duckdb-go-bindings/darwin-arm64 v0.1.23 // indirect

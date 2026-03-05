@@ -12,8 +12,10 @@ import (
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
 	"lunabox/internal/vo"
+	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"encoding/json"
@@ -74,6 +76,54 @@ func (s *GameService) SelectGameExecutable() (string, error) {
 		applog.LogErrorf(s.ctx, "failed to open file dialog: %v", err)
 	}
 	return selection, err
+}
+
+func (s *GameService) SelectGameExecutable2() (string, error) {
+	psScript := `
+		$PSDefaultParameterValues['Out-File:Encoding'] = 'UTF8'
+		[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+		Add-Type -AssemblyName System.Windows.Forms
+
+		$dialog = New-Object System.Windows.Forms.OpenFileDialog
+		$dialog.Title = "Select Game Executable"
+		$dialog.Filter = "Executables (*.exe, *.bat, *.cmd, *.lnk)|*.exe;*.bat;*.cmd;*.lnk|All Files (*.*)|*.*"
+		$dialog.CheckFileExists = $true
+		$dialog.CheckPathExists = $true
+
+		$result = $dialog.ShowDialog()
+		if ($result -eq "OK") {
+			$path = $dialog.FileName
+			# 直接输出路径，避免编码问题
+			Write-Host $path
+		}
+		`
+
+	cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-NonInteractive", "-Command", psScript)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow: true,
+	}
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("选择文件失败：%v", err)
+	}
+
+	selection := strings.TrimSpace(string(output))
+
+	// 清理可能的控制字符
+	selection = strings.Map(func(r rune) rune {
+		if r >= 32 || r == '\n' || r == '\r' {
+			return r
+		}
+		return -1
+	}, selection)
+
+	selection = strings.TrimSpace(selection)
+
+	if selection == "" {
+		return "", nil
+	}
+
+	return selection, nil
 }
 
 func (s *GameService) AddGame(game models.Game) error {

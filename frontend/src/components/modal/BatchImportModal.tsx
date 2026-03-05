@@ -1,6 +1,7 @@
 import type { models, service } from "../../../wailsjs/go/models";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useAppStore } from "../../store"
 import { enums, vo } from "../../../wailsjs/go/models";
 
 import { FetchMetadata, FetchMetadataByName, GetGamesByIdsStr } from "../../../wailsjs/go/service/GameService";
@@ -8,6 +9,7 @@ import {
   BatchImportGames,
   ScanLibraryDirectory,
   SelectLibraryDirectory,
+  SelectLibraryDirectory2,
   BatchImportGamesFolderLnk,
 } from "../../../wailsjs/go/service/ImportService";
 import { BetterSelect } from "../ui/BetterSelect";
@@ -41,6 +43,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
   const [importResult, setImportResult] = useState<service.ImportResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0, gameName: "" });
+  const { config } = useAppStore();
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);
@@ -58,7 +61,12 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
 
   const handleSelectDirectory = async (isLnk: boolean) => {
     try {
-      const path = await SelectLibraryDirectory(isLnk);
+      var path: string
+      if (config && config.new_folder_chooser) {
+        path = await SelectLibraryDirectory(isLnk);
+      } else {
+        path = await SelectLibraryDirectory2(isLnk);
+      }
       if (path) {
         setLibraryPath(path);
         setStep("scan");

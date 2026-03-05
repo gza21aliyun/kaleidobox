@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
 import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from "../../../wailsjs/runtime";
-import { useTranslation } from 'react-i18next';
 
 import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FillGame } from "../../../wailsjs/go/service/GameService";
 import {
@@ -22,7 +21,6 @@ interface BatchUpdateModalProps {
 
 
 export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: BatchUpdateModalProps) {
-  const { t } = useTranslation();
 //   const [step, setStep] = useState<Step>("select");
 //   const [libraryPath, setLibraryPath] = useState("");
   const [candidates, setCandidates] = useState<models.Game[]>(games);
@@ -296,7 +294,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                 <div className="flex items-center gap-3">
                             <div className="i-mdi-folder-multiple text-3xl text-blue-500" />
                             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
-                            {t('update.modals.batchUpdate.title')}
+                            批量更新游戏库
                             </h2>
                         </div>
                         <div>
@@ -324,12 +322,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                           
                         }}
                         options={[
-                          { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
-                          { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
-                          { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
-                          { value: enums.SourceType.DMM, label: t('sourceType.dmm') },
-                          { value: enums.SourceType.EROSCAPE, label: t('sourceType.eroscape') },
-                          { value: enums.SourceType.DLSITE, label: t('sourceType.dlsite') },
+                          { value: enums.SourceType.BANGUMI, label: "Bangumi" },
+                          { value: enums.SourceType.VNDB, label: "VNDB" },
+                          { value: enums.SourceType.YMGAL, label: "月幕Gal" },
+                          { value: enums.SourceType.DMM, label: "DMM" },
+                          { value: enums.SourceType.EROSCAPE, label: "批评空间" },
+                          { value: enums.SourceType.DLSITE, label: "DlSite" },
                         ]}
                         className="min-w-[120px] w-[150px]"
                       />
@@ -337,7 +335,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        {t('update.modals.batchUpdate.overwriteData')}
+                        覆盖数据
                       </label>
                       <BetterSwitch
                         id="overwrite_switch"
@@ -350,7 +348,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        {t('update.modals.batchUpdate.tags')}
+                        标签
                       </label>
                       <BetterSwitch
                         id="load_tags_switch"
@@ -363,7 +361,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        {t('update.modals.batchUpdate.staffs')}
+                        制作人员
                       </label>
                       <BetterSwitch
                         id="load_staffs_switch"
@@ -376,7 +374,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        {t('update.modals.batchUpdate.characters')}
+                        角色信息
                       </label>
                       <BetterSwitch
                         id="load_characters_switch"
@@ -389,7 +387,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        {t('update.modals.batchUpdate.images')}
+                        图片资源
                       </label>
                       <BetterSwitch
                         id="load_images_switch"
@@ -427,12 +425,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       setSelectedIds(candidates.map(c => c.id))
                     }}
                   className="flex-1 rounded-lg bg-neutral-50 dark:bg-neutral-900/20 p-4 text-center cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-900/30 transition-colors duration-200"
-                  title={t('update.modals.batchUpdate.selectAllGames')}>
+                  title="点击选取全部游戏">
                   <div className="text-3xl font-bold text-neutral-600 dark:text-neutral-400">
                     {candidates.length}
                   </div>
                   <div className="text-sm text-neutral-700 dark:text-neutral-300">
-                    {t('update.modals.batchUpdate.gameCount')}
+                    游戏数
                   </div>
                 </div>
                 <div 
@@ -440,12 +438,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       setSelectedIds(updatedIds)
                     }}
                   className="flex-1 rounded-lg bg-success-50 dark:bg-success-900/20 p-4 text-center cursor-pointer hover:bg-success-100 dark:hover:bg-success-900/30 transition-colors duration-200"
-                  title={t('update.modals.batchUpdate.selectUpdated')}>
+                  title="选取已更新">
                   <div className="text-3xl font-bold text-success-600 dark:text-success-400">
                     {updatedCount}
                   </div>
                   <div className="text-sm text-success-700 dark:text-success-300">
-                    {t('update.modals.batchUpdate.updated')}
+                    已更新
                   </div>
                 </div>
                 {notFoundCount > 0 && (
@@ -454,12 +452,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       setSelectedIds(candidates.filter(c => !isMatched(c, source)).map(c => c.id))
                     }}
                     className="flex-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors duration-200"
-                    title={t('update.modals.batchUpdate.selectUnmatched')}>
+                    title="选取未匹配">
                       <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                         {notFoundCount}
                       </div>
                       <div className="text-sm text-orange-700 dark:text-orange-300">
-                        {t('update.modals.batchUpdate.unmatched')}
+                        未匹配
                       </div>
                   </div>
                 )}
@@ -471,7 +469,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       {pendingCount}
                     </div>
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                      {t('update.modals.batchUpdate.pending')}
+                      待更新
                     </div>
                   </div>
                 )}
@@ -501,16 +499,16 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                               />
                             </th>
                             <th className="px-3 py-2 text-left text-sm font-medium text-brand-600 dark:text-brand-300">
-                              {t('update.modals.batchUpdate.name')}
+                              名称
                             </th>
                             <th className="px-3 py-2 text-left text-sm font-medium text-brand-600 dark:text-brand-300">
-                              {t('update.modals.batchUpdate.matchStatus')}
+                              匹配情况
                             </th>
                             <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-32">
-                              {t('update.modals.batchUpdate.updateStatus')}
+                              更新状态
                             </th>
                             <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-20">
-                              {t('update.modals.batchUpdate.action')}
+                              操作
                             </th>
                           </tr>
                         </thead>
@@ -563,27 +561,27 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                                     itemIdMatching == candidate.id ? (
                                         <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                                             <div className="i-mdi-sync mr-1 animate-spin" />
-                                            {t('update.modals.batchUpdate.updating')}
+                                            更新中
                                         </span>
                                     ) : failedIds.includes(candidate.id) ? (
                                         <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-1 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
                                             <div className="i-mdi-alert-circle mr-1" />
-                                            {t('update.modals.batchUpdate.error')}
+                                            已出错
                                         </span>
                                     ) : updatedIds.includes(candidate.id) ? (
                                         <span className="inline-flex items-center rounded-full bg-success-100 px-2 py-1 text-xs text-success-700 dark:bg-success-900/30 dark:text-success-400">
                                             <div className="i-mdi-check-circle mr-1" />
-                                            {t('update.modals.batchUpdate.updated')}
+                                            已更新
                                         </span>
                                     ) : !isMatched(candidate, source) ? ( 
                                         <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                                             <div className="i-mdi-alert-circle mr-1" />
-                                            {t('update.modals.batchUpdate.notFound')}
+                                            未找到
                                         </span>
                                     ) : (
                                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-900/30 dark:text-gray-400">
                                             <div className="i-mdi-clock-outline mr-1" />
-                                            {t('update.modals.batchUpdate.matched')}
+                                            已匹配
                                         </span>
                                     )
                                 }
@@ -613,7 +611,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       onClick={handleUpdate}
                       className="rounded-lg px-5 py-2.5 text-sm font-medium text-white bg-neutral-600 hover:bg-neutral-700"
                     >
-                      {t('update.modals.batchUpdate.startUpdate')}
+                      开始更新元数据
                     </button>
                   )}
                   {/* <button
@@ -632,7 +630,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                     disabled={selectedCount === 0 && taskId.current !== ""}
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-success-600 hover:bg-success-700"
                   >
-                    {t('update.modals.batchUpdate.cancelUpdate')}
+                    取消更新
                   </button>
                 </div>
               </div>
@@ -650,7 +648,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
           <div className="w-full max-w-2xl max-h-[80vh] rounded-xl bg-white shadow-2xl dark:bg-brand-800 flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-brand-200 dark:border-brand-700">
               <h3 className="text-lg font-bold text-brand-900 dark:text-white">
-                {t('update.modals.batchUpdate.manualSelect')}:
+                手动选择:
                 {" "}
                 {candidates[manualSelectIndex].name}
               </h3>
@@ -664,7 +662,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
               {isSearching ? (
                 <div className="py-8 text-center">
                   <div className="i-mdi-loading animate-spin text-3xl mx-auto mb-2 text-neutral-500" />
-                  <p className="text-brand-400">{t('update.modals.batchUpdate.searching')}</p>
+                  <p className="text-brand-400">搜索中...</p>
                 </div>
               ) : (
                 <>
@@ -696,20 +694,20 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                   </div>
 
                   {manualMatches.length === 0 && (
-                    <p className="text-center text-brand-400 py-4">{t('update.modals.batchUpdate.noMatchesFound')}</p>
+                    <p className="text-center text-brand-400 py-4">未找到匹配结果</p>
                   )}
 
                   {/* 手动输入ID */}
                   <div className="border-t border-brand-200 dark:border-brand-700 pt-4 mt-4">
-                    <p className="text-sm text-brand-500 mb-3">{t('update.modals.batchUpdate.searchById')}:</p>
+                    <p className="text-sm text-brand-500 mb-3">通过 ID 查找:</p>
                     <div className="flex gap-2">
                       <BetterSelect
                         value={manualSource}
                         onChange={value => setManualSource(value as enums.SourceType)}
                         options={[
-                          { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
-                          { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
-                          { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
+                          { value: enums.SourceType.BANGUMI, label: "Bangumi" },
+                          { value: enums.SourceType.VNDB, label: "VNDB" },
+                          { value: enums.SourceType.YMGAL, label: "月幕gal" },
                         ]}
                         className="w-32"
                       />
@@ -717,7 +715,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                         type="text"
                         value={manualId}
                         onChange={e => setManualId(e.target.value)}
-                        placeholder={t('update.modals.batchUpdate.enterId')}
+                        placeholder="输入 ID"
                         className="flex-1 rounded border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm dark:border-brand-600 dark:bg-brand-700"
                       />
                       <button
@@ -725,7 +723,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                         disabled={!manualId || isSearching}
                         className="rounded bg-neutral-500 px-4 py-1.5 text-sm text-white hover:bg-neutral-600 disabled:opacity-50"
                       >
-                        {t('update.modals.batchUpdate.search')}
+                        查找
                       </button>
                     </div>
                   </div>

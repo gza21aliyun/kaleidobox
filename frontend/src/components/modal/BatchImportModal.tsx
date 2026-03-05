@@ -3,7 +3,6 @@ import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useAppStore } from "../../store"
 import { enums, vo } from "../../../wailsjs/go/models";
-import { useTranslation } from 'react-i18next';
 
 import { FetchMetadata, FetchMetadataByName, GetGamesByIdsStr } from "../../../wailsjs/go/service/GameService";
 import {
@@ -38,7 +37,6 @@ interface LocalCandidate {
 }
 
 export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpdate }: BatchImportModalProps) {
-  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("select");
   const [libraryPath, setLibraryPath] = useState("");
   const [candidates, setCandidates] = useState<LocalCandidate[]>([]);
@@ -92,7 +90,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
         }
         catch (error) {
           console.error("Failed to scan directory:", error);
-          toast.error(t('import.toasts.scanDirectoryFailed'));
+          toast.error("扫描目录失败");
           setStep("select");
         }
         finally {
@@ -102,7 +100,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
     }
     catch (error) {
       console.error("Failed to select directory:", error);
-      toast.error(t('import.toasts.selectDirectoryFailed'));
+      toast.error("选择目录失败");
     }
   };
 
@@ -261,13 +259,13 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
       setStep("result");
 
       if (result.success > 0) {
-        toast.success(t('import.toasts.importSuccess', { count: result.success }));
+        toast.success(`成功导入 ${result.success} 个游戏`);
         onImportComplete();
       }
     }
     catch (error) {
       console.error("Failed to import:", error);
-      toast.error(t('import.toasts.importFailed'));
+      toast.error("导入失败");
       setStep("preview");
     }
     finally {
@@ -387,7 +385,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
           <div className="flex items-center gap-3">
             <div className="i-mdi-folder-multiple text-3xl text-success-500" />
             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
-              {t('import.modals.batchImport.title')}
+              批量导入游戏库
             </h2>
           </div>
           <button
@@ -406,10 +404,10 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
               <div className="text-center py-8">
                 <div className="i-mdi-folder-open text-6xl text-brand-400 mx-auto mb-4" />
                 <p className="text-brand-600 dark:text-brand-300 mb-2">
-                  {t('import.modals.batchImport.selectLibraryDirectory')}
+                  选择您的游戏库目录
                 </p>
                 <p className="text-sm text-brand-400 dark:text-brand-500">
-                  {t('import.modals.batchImport.scanLibraryDescription')}
+                  程序将扫描一级子文件夹，每个包含可执行文件的文件夹将被识别为一个游戏
                 </p>
                 
                 <button
@@ -420,17 +418,17 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                   className="flex w-full items-center justify-center rounded-lg py-4 text-white transition disabled:opacity-50 bg-success-500 hover:bg-success-600"
                 >
                   <div className="i-mdi-folder-search mr-2 text-xl" />
-                  {t('import.modals.batchImport.selectLibraryDirectory')}
+                  选择游戏库目录
                 </button>
               </div>
 
               <div className="text-center py-8">
                 <div className="i-mdi-folder-open text-6xl text-brand-400 mx-auto mb-4" />
                 <p className="text-brand-600 dark:text-brand-300 mb-2">
-                  {t('import.modals.batchImport.selectShortcutDirectory')}
+                  选择您的快捷方式目录
                 </p>
                 <p className="text-sm text-brand-400 dark:text-brand-500">
-                  {t('import.modals.batchImport.scanShortcutDescription')}
+                  程序将扫描所有子文件夹，每个快捷方式将被识别为一个游戏
                 </p>
                 
                 <button
@@ -441,7 +439,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                   className="flex w-full items-center justify-center rounded-lg py-4 text-white transition disabled:opacity-50 bg-blue-500 hover:bg-blue-600"
                 >
                   <div className="i-mdi-folder-search mr-2 text-xl" />
-                  {t('import.modals.batchImport.selectShortcutDirectory')}
+                  选择快捷方式目录
                 </button>
               </div>
               
@@ -453,7 +451,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
             <div className="py-12 text-center">
               <div className="i-mdi-loading animate-spin text-5xl mx-auto mb-4 text-success-500" />
               <p className="text-lg text-brand-600 dark:text-brand-300">
-                {t('import.modals.batchImport.scanningDirectory')}
+                正在扫描目录...
               </p>
               <p className="text-sm text-brand-400 dark:text-brand-500 mt-2">
                 {libraryPath}
@@ -471,7 +469,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                     {candidates.length}
                   </div>
                   <div className="text-sm text-neutral-700 dark:text-neutral-300">
-                    {t('import.modals.batchImport.detected')}
+                    检测到
                   </div>
                 </div>
                 <div className="flex-1 rounded-lg bg-success-50 dark:bg-success-900/20 p-4 text-center">
@@ -479,7 +477,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                     {matchedCount}
                   </div>
                   <div className="text-sm text-success-700 dark:text-success-300">
-                    {t('import.modals.batchImport.matched')}
+                    已匹配
                   </div>
                 </div>
                 {notFoundCount > 0 && (
@@ -488,7 +486,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                       {notFoundCount}
                     </div>
                     <div className="text-sm text-orange-700 dark:text-orange-300">
-                      {t('import.modals.batchImport.notFound')}
+                      未匹配
                     </div>
                   </div>
                 )}
@@ -498,7 +496,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                       {pendingCount}
                     </div>
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                      {t('import.modals.batchImport.pending')}
+                      待匹配
                     </div>
                   </div>
                 )}
@@ -530,16 +528,16 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                               />
                             </th>
                             <th className="px-3 py-2 text-left text-sm font-medium text-brand-600 dark:text-brand-300">
-                              {t('import.modals.batchImport.searchName')}
+                              搜索名称
                             </th>
                             <th className="px-3 py-2 text-left text-sm font-medium text-brand-600 dark:text-brand-300">
-                              {t('import.modals.batchImport.executable')}
+                              启动程序
                             </th>
                             <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-32">
-                              {t('import.modals.batchImport.matchStatus')}
+                              匹配状态
                             </th>
                             <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-20">
-                              {t('import.modals.batchImport.action')}
+                              操作
                             </th>
                           </tr>
                         </thead>
@@ -602,25 +600,25 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                                 {candidate.matchStatus === "pending" && (
                                   <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-900/30 dark:text-gray-400">
                                     <div className="i-mdi-clock-outline mr-1" />
-                                    {t('import.modals.batchImport.pending')}
+                                    待匹配
                                   </span>
                                 )}
                                 {(candidate.matchStatus === "matched" || candidate.matchStatus === "manual") && (
                                   <span className="inline-flex items-center rounded-full bg-success-100 px-2 py-1 text-xs text-success-700 dark:bg-success-900/30 dark:text-success-400">
                                     <div className="i-mdi-check-circle mr-1" />
-                                    {t('import.modals.batchImport.matched')}
+                                    已匹配
                                   </span>
                                 )}
                                 {candidate.matchStatus === "not_found" && (
                                   <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                                     <div className="i-mdi-alert-circle mr-1" />
-                                    {t('import.modals.batchImport.notFound')}
+                                    未找到
                                   </span>
                                 )}
                                 {candidate.matchStatus === "error" && (
                                   <span className="inline-flex items-center rounded-full bg-error-100 px-2 py-1 text-xs text-error-700 dark:bg-error-900/30 dark:text-error-400">
                                     <div className="i-mdi-close-circle mr-1" />
-                                    {t('import.modals.batchImport.error')}
+                                    错误
                                   </span>
                                 )}
                               </td>
@@ -646,7 +644,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                   onClick={() => setStep("select")}
                   className="rounded-lg border border-brand-300 px-5 py-2.5 text-sm font-medium text-brand-700 hover:bg-brand-100 dark:border-brand-600 dark:text-brand-300 dark:hover:bg-brand-700"
                 >
-                  ← {t('import.modals.batchImport.selectAgain')}
+                  ← 重新选择
                 </button>
                 <div className="flex gap-3">
                   {pendingCount > 0 && (
@@ -654,7 +652,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                       onClick={handleStartMatch}
                       className="rounded-lg px-5 py-2.5 text-sm font-medium text-white bg-neutral-600 hover:bg-neutral-700"
                     >
-                      {t('import.modals.batchImport.startMatching')}
+                      开始匹配元数据
                     </button>
                   )}
                   <button
@@ -662,14 +660,22 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                     disabled={selectedCount === 0}
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-success-600 hover:bg-success-700"
                   >
-                    {t('import.modals.batchImport.import', { count: selectedCount })}
+                    导入
+                    {" "}
+                    {selectedCount}
+                    {" "}
+                    个游戏
                   </button>
                   <button
                     onClick={handleUpdate}
                     disabled={selectedCount === 0}
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-success-600 hover:bg-success-700"
                   >
-                    {t('import.modals.batchImport.importAndUpdate', { count: selectedCount })}
+                    导入
+                    {" "}
+                    {selectedCount}
+                    {" "}
+                    个游戏并后台更新匹配
                   </button>
                 </div>
               </div>
@@ -681,7 +687,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
             <div className="py-12 text-center">
               <div className="i-mdi-loading animate-spin text-5xl mx-auto mb-4 text-neutral-500" />
               <p className="text-lg text-brand-600 dark:text-brand-300">
-                {t('import.modals.batchImport.matchingMetadata')}
+                正在匹配元数据...
               </p>
               <p className="text-sm text-brand-400 dark:text-brand-500 mt-2">
                 {matchProgress.current}
@@ -699,7 +705,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                 />
               </div>
               <p className="text-xs text-brand-400 mt-4">
-                {t('import.modals.batchImport.matchingNote')}
+                为避免触发限流，匹配速度可能较慢，请耐心等待
               </p>
             </div>
           )}
@@ -709,7 +715,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
             <div className="py-12 text-center">
               <div className="i-mdi-loading animate-spin text-5xl mx-auto mb-4 text-success-500" />
               <p className="text-lg text-brand-600 dark:text-brand-300">
-                {t('import.modals.batchImport.importingGames')}
+                正在导入游戏...
               </p>
             </div>
           )}
@@ -723,7 +729,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                   <div className="text-2xl font-bold text-success-600 dark:text-success-400">
                     {importResult.success}
                   </div>
-                  <div className="text-sm text-success-700 dark:text-success-300">{t('import.modals.batchImport.importedSuccessfully')}</div>
+                  <div className="text-sm text-success-700 dark:text-success-300">成功导入</div>
                 </div>
                 {importResult.skipped > 0 && (
                   <div className="flex-1 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 text-center">
@@ -731,7 +737,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                     <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                       {importResult.skipped}
                     </div>
-                    <div className="text-sm text-yellow-700 dark:text-yellow-300">{t('import.modals.batchImport.skipped')}</div>
+                    <div className="text-sm text-yellow-700 dark:text-yellow-300">已跳过</div>
                   </div>
                 )}
                 {importResult.failed > 0 && (
@@ -740,7 +746,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                     <div className="text-2xl font-bold text-error-600 dark:text-error-400">
                       {importResult.failed}
                     </div>
-                    <div className="text-sm text-error-700 dark:text-error-300">{t('import.modals.batchImport.importFailed')}</div>
+                    <div className="text-sm text-error-700 dark:text-error-300">导入失败</div>
                   </div>
                 )}
               </div>
@@ -748,7 +754,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
               {importResult.skipped_names && importResult.skipped_names.length > 0 && (
                 <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 p-4">
                   <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
-                    {t('import.modals.batchImport.skippedGames')}:
+                    跳过的游戏:
                   </h4>
                   <div className="max-h-[150px] overflow-y-auto">
                     <ul className="text-sm text-yellow-600 dark:text-yellow-300 space-y-1">
@@ -766,7 +772,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
               {importResult.failed_names && importResult.failed_names.length > 0 && (
                 <div className="rounded-lg border border-error-200 dark:border-error-800 p-4">
                   <h4 className="font-medium text-error-700 dark:text-error-400 mb-2">
-                    {t('import.modals.batchImport.failedGames')}:
+                    导入失败的游戏:
                   </h4>
                   <ul className="text-sm text-error-600 dark:text-error-300 space-y-1">
                     {importResult.failed_names.map((name, i) => (
@@ -784,7 +790,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                   onClick={resetAndClose}
                   className="rounded-lg px-8 py-2.5 text-sm font-medium text-white bg-success-600 hover:bg-success-700"
                 >
-                  {t('import.modals.batchImport.complete')}
+                  完成
                 </button>
               </div>
             </div>
@@ -798,7 +804,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
           <div className="w-full max-w-2xl max-h-[80vh] rounded-xl bg-white shadow-2xl dark:bg-brand-800 flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-brand-200 dark:border-brand-700">
               <h3 className="text-lg font-bold text-brand-900 dark:text-white">
-                {t('import.modals.batchImport.manualSelect')}:
+                手动选择:
                 {" "}
                 {candidates[manualSelectIndex].searchName}
               </h3>
@@ -812,7 +818,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
               {isSearching ? (
                 <div className="py-8 text-center">
                   <div className="i-mdi-loading animate-spin text-3xl mx-auto mb-2 text-neutral-500" />
-                  <p className="text-brand-400">{t('import.modals.batchImport.searching')}</p>
+                  <p className="text-brand-400">搜索中...</p>
                 </div>
               ) : (
                 <>
@@ -844,20 +850,20 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                   </div>
 
                   {manualMatches.length === 0 && (
-                    <p className="text-center text-brand-400 py-4">{t('import.modals.batchImport.noMatchesFound')}</p>
+                    <p className="text-center text-brand-400 py-4">未找到匹配结果</p>
                   )}
 
                   {/* 手动输入ID */}
                   <div className="border-t border-brand-200 dark:border-brand-700 pt-4 mt-4">
-                    <p className="text-sm text-brand-500 mb-3">{t('import.modals.batchImport.searchById')}:</p>
+                    <p className="text-sm text-brand-500 mb-3">通过 ID 查找:</p>
                     <div className="flex gap-2">
                       <BetterSelect
                         value={manualSource}
                         onChange={value => setManualSource(value as enums.SourceType)}
                         options={[
-                          { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
-                          { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
-                          { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
+                          { value: enums.SourceType.BANGUMI, label: "Bangumi" },
+                          { value: enums.SourceType.VNDB, label: "VNDB" },
+                          { value: enums.SourceType.YMGAL, label: "月幕gal" },
                         ]}
                         className="w-32"
                       />
@@ -865,7 +871,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                         type="text"
                         value={manualId}
                         onChange={e => setManualId(e.target.value)}
-                        placeholder={t('import.modals.batchImport.enterId')}
+                        placeholder="输入 ID"
                         className="flex-1 rounded border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm dark:border-brand-600 dark:bg-brand-700"
                       />
                       <button
@@ -873,7 +879,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                         disabled={!manualId || isSearching}
                         className="rounded bg-neutral-500 px-4 py-1.5 text-sm text-white hover:bg-neutral-600 disabled:opacity-50"
                       >
-                        {t('import.modals.batchImport.search')}
+                        查找
                       </button>
                     </div>
                   </div>
@@ -893,7 +899,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                     }}
                     className="w-full text-center text-sm text-brand-400 hover:text-brand-600 py-2"
                   >
-                    {t('import.modals.batchImport.skipMetadata')}
+                    不匹配元数据，仅导入路径
                   </button>
                 </>
               )}

@@ -67,6 +67,7 @@ type HotkeyService struct {
 
 	// gobot相关（手柄支持）
 	robot      *gobot.Robot
+	robotMutex sync.Mutex
 	keyboard   *keyboard.Driver
 	joysticks  map[string]*joystick.Driver
 	deviceLock sync.RWMutex
@@ -150,7 +151,7 @@ func (s *HotkeyService) loadConfigurations() {
 
 	// 加载按键映射配置（从hotkeys表）
 	// s.loadKeyMappingsFromHotkeys()
-	s.loadHotkeyConfig()
+	s.loadHotkeyConfig("")
 
 	// 加载截图快捷键
 	// s.loadScreenshotHotkeyFromDB()
@@ -199,15 +200,20 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 	return rs, err
 }
 
-func (s *HotkeyService) loadHotkeyConfig() {
+func (s *HotkeyService) loadHotkeyConfig(gameId string) {
 	applog.LogInfof(s.ctx, "Loading hotkey configuration")
 	s.actionkeyLock.Lock()
 	s.mappingLock.Lock()
 	defer s.actionkeyLock.Unlock()
 	defer s.mappingLock.Unlock()
+	s.keyMappings = make(map[string]*models.Hotkey)
+	s.actionKeys = make(map[string]*models.Hotkey)
 
 	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
 	FROM hotkeys WHERE is_enabled = TRUE`
+	if gameId != "" {
+		query += fmt.Sprintf(" AND game_id = '%s'", gameId)
+	}
 
 	rows, _ := s.fetchHotkeys(query)
 
@@ -287,6 +293,8 @@ func (s *HotkeyService) startKeyboardListener() {
 
 	// go s.keyboardEventHandler()
 	applog.LogInfof(s.ctx, "Keyboard listener started")
+	s.robotMutex.Lock()
+	defer s.robotMutex.Unlock()
 	s.keyboard = keyboard.NewDriver()
 	s.robot = gobot.NewRobot("keyboardbot",
 		[]gobot.Connection{},
@@ -314,9 +322,15 @@ func (s *HotkeyService) SetActiveGameID(gameID string) {
 // handleKeyPress 处理按键按下事件
 func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType) {
 	applog.LogDebugf(s.ctx, "Key pressed: %s", key)
+	hk := models.Hotkey{
+		KeyCode:    key,
+		Name:       name,
+		DeviceType: device,
+	}
 	if s.GetActiveGameID() == "" {
 		s.processCheck()
 		if s.GetActiveGameID() == "" {
+			s.monitoredKey.Store(hk)
 			return
 		}
 	}
@@ -325,11 +339,6 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	s.stateLock.Lock()
 	s.keyStates[key] = true
 	s.stateLock.Unlock()
-	hk := models.Hotkey{
-		KeyCode:    key,
-		Name:       name,
-		DeviceType: device,
-	}
 
 	if s.actionKeys[key] != nil { // 映射的按键
 		s.monitoredKey.Store(hk)
@@ -353,16 +362,15 @@ func (s *HotkeyService) handleActionKey(key *models.Hotkey) {
 // handleKeyRelease 处理按键释放事件
 func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceType) {
 	applog.LogDebugf(s.ctx, "Key released: %s", key)
-
-	// 更新状态
-	s.stateLock.Lock()
-	s.keyStates[key] = false
-	s.stateLock.Unlock()
 	hk := models.Hotkey{
 		KeyCode:    key,
 		Name:       name,
 		DeviceType: device,
 	}
+	// 更新状态
+	s.stateLock.Lock()
+	s.keyStates[key] = false
+	s.stateLock.Unlock()
 
 	hotkey := s.keyMappings[key]
 	if hotkey != nil {
@@ -653,6 +661,8 @@ func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device 
 func (s *HotkeyService) startJoystickListener() {
 	applog.LogInfof(s.ctx, "Starting joystick listener...")
 	devicetype := enums.DeviceTypeDualShock4
+	s.robotMutex.Lock()
+	defer s.robotMutex.Unlock()
 	// 启动手柄机器人
 	// 创建 joystick 适配器
 
@@ -1084,17 +1094,22 @@ func (s *HotkeyService) MonitorKeySetting() (models.Hotkey, error) {
 	var tiker *time.Ticker = time.NewTicker(time.Millisecond * 500)
 	defer s.isMonitoringKeySetting.Store(false)
 	defer s.monitoredKey.Store(nil)
+
+	s.startJoystickListener()
 	for {
 		select {
 		case <-tiker.C:
 			key := s.monitoredKey.Load().(*models.Hotkey)
 			if key != nil {
+				s.robot.Stop()
 				return *key, nil
 			}
 			if s.isMonitoringKeySetting.Load() == false {
+				s.robot.Stop()
 				return models.Hotkey{}, nil
 			}
 		case <-s.ctx.Done():
+			s.robot.Stop()
 			return models.Hotkey{}, errors.New("key setting monitoring cancelled")
 		}
 
@@ -1104,4 +1119,27 @@ func (s *HotkeyService) MonitorKeySetting() (models.Hotkey, error) {
 
 func (s *HotkeyService) CancelMonitorKeySetting() {
 	s.isMonitoringKeySetting.Store(false)
+}
+
+func (s *HotkeyService) readyHotkeysForGame(gameId string) {
+	s.SetActiveGameID(gameId)
+	s.startJoystickListener()
+	s.loadHotkeyConfig(gameId)
+}
+
+func (s *HotkeyService) clearkeysForGame() {
+	s.isMonitoringKeySetting.Store(false)
+	s.SetActiveGameID("")
+	s.mappingLock.Lock()
+	s.actionkeyLock.Lock()
+	s.robotMutex.Lock()
+	defer s.robotMutex.Unlock()
+	defer s.actionkeyLock.Unlock()
+	defer s.mappingLock.Unlock()
+	s.keyMappings = make(map[string]*models.Hotkey)
+	s.actionKeys = make(map[string]*models.Hotkey)
+	if s.robot != nil {
+		s.robot.Stop()
+		s.robot = nil
+	}
 }

@@ -3,6 +3,8 @@ import { BetterButton } from '../ui/BetterButton';
 import { toast } from "react-hot-toast";
 import { models, enums } from '../../../wailsjs/go/models';
 import { GetHotkeysByGameID, UpdateHotkey, AddHotkey, DeleteHotkey } from '../../../wailsjs/go/service/HotkeyService';
+import i18next from "../../i18n/i18n";
+const t = i18next.t;
 
 interface Ps4PanelProps {
   gameId: string;
@@ -52,7 +54,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
       setHotkeys(gameHotkeys);
     } catch (error) {
       console.error('Failed to load hotkeys:', error);
-      toast.error('加载快捷键配置失败');
+      toast.error(t('ps4.loadHotkeysFailed'));
     } finally {
       setLoading(false);
     }
@@ -129,10 +131,10 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
       }
       
       setShowMappingDialog(false);
-      toast.success(`已将 ${button} 映射到 ${targetKey}`);
+      toast.success(t('ps4.mappingSaved', { button, targetKey }));
     } catch (error) {
       console.error('Failed to save mapping:', error);
-      toast.error('保存映射配置失败');
+      toast.error(t('ps4.saveMappingFailed'));
     }
   };
 
@@ -173,7 +175,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
   if (loading) {
     return (
       <div className="ps4-panel flex items-center justify-center h-full">
-        <div className="text-gray-500">加载中...</div>
+        <div className="text-gray-500">{t('common.loading')}</div>
       </div>
     );
   }
@@ -237,7 +239,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">
-                  设置 {currentMappingButton} 按键映射
+                  {t('ps4.setButtonMapping', { button: currentMappingButton })}
                 </h3>
                 <button
                   onClick={cancelMapping}
@@ -249,7 +251,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
               
               <div className="space-y-4">
                 <p className="text-gray-600">
-                  请按下您想要映射到 <strong>{currentMappingButton}</strong> 的键盘按键
+                  {t('ps4.pressKeyToMap', { button: currentMappingButton })}
                 </p>
                 
                 <div className="p-4 bg-gray-100 rounded-lg">
@@ -257,7 +259,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
                     {waitingForKey ? (
                       <div className="animate-pulse">
                         <div className="text-2xl">⌨️</div>
-                        <p className="mt-2 text-gray-500">正在等待按键输入...</p>
+                        <p className="mt-2 text-gray-500">{t('ps4.waitingForKeyInput')}</p>
                       </div>
                     ) : (
                       <div>
@@ -265,7 +267,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
                           type="text"
                           value={newKeyCode}
                           onChange={(e) => setNewKeyCode(e.target.value)}
-                          placeholder="或手动输入按键代码"
+                          placeholder={t('ps4.enterKeyCode')}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <BetterButton 
@@ -273,7 +275,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
                           className="mt-2 w-full"
                           variant="secondary"
                         >
-                          点击开始按键捕获
+                          {t('ps4.startKeyCapture')}
                         </BetterButton>
                       </div>
                     )}
@@ -282,7 +284,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
 
                 <div className="flex justify-end space-x-2 pt-4">
                   <BetterButton onClick={cancelMapping}>
-                    取消
+                    {t('common.cancel')}
                   </BetterButton>
                   <BetterButton 
                     onClick={() => {
@@ -292,7 +294,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
                     }}
                     disabled={!newKeyCode}
                   >
-                    确认映射
+                    {t('ps4.confirmMapping')}
                   </BetterButton>
                 </div>
               </div>

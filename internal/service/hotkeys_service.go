@@ -138,8 +138,8 @@ func (s *HotkeyService) Init(ctx context.Context, db *sql.DB, config *appconf.Ap
 
 	// 启动监听
 	// s.startKeyboardListener()
-	s.startJoystickListener()
-	s.monitoredKey.Store("")
+	// s.startJoystickListener()
+	s.monitoredKey.Store(&models.Hotkey{})
 	s.activeGameID.Store("")
 
 	applog.LogInfof(s.ctx, "Simplified key mapping service initialized")
@@ -330,7 +330,7 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	if s.GetActiveGameID() == "" {
 		s.processCheck()
 		if s.GetActiveGameID() == "" {
-			s.monitoredKey.Store(hk)
+			s.monitoredKey.Store(&hk)
 			return
 		}
 	}
@@ -341,7 +341,7 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	s.stateLock.Unlock()
 
 	if s.actionKeys[key] != nil { // 映射的按键
-		s.monitoredKey.Store(hk)
+		s.monitoredKey.Store(&hk)
 		return
 	}
 
@@ -350,7 +350,7 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	if hotkey != nil {
 		s.simulateKeyPress(hotkey.ActionParams, []enums.ModifierKey{})
 	}
-	s.monitoredKey.Store(hk)
+	s.monitoredKey.Store(&hk)
 }
 
 func (s *HotkeyService) handleActionKey(key *models.Hotkey) {
@@ -375,13 +375,13 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 	hotkey := s.keyMappings[key]
 	if hotkey != nil {
 		s.simulateKeyRelease(hotkey.ActionParams, []enums.ModifierKey{})
-		s.monitoredKey.Store(hk)
+		s.monitoredKey.Store(&hk)
 		return
 	}
 	hotkey = s.actionKeys[key]
 	if hotkey != nil {
 		s.handleActionKey(hotkey)
-		s.monitoredKey.Store(hk)
+		s.monitoredKey.Store(&hk)
 		return
 	}
 
@@ -582,7 +582,7 @@ func (s *HotkeyService) handleJoystickEvents() {
 		// data 包含摇杆位置值 -32768 到 32767
 		// var l3LeftIsRelease = true
 		// var l3RightIsRelease = true
-		applog.LogDebugf(s.ctx, "Left X axis: %v", data)
+		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
 		if data.(int) > 5000 {
 
 			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device)
@@ -599,7 +599,7 @@ func (s *HotkeyService) handleJoystickEvents() {
 		// data 包含摇杆位置值 -32768 到 32767
 		// var l3LeftIsRelease = true
 		// var l3RightIsRelease = true
-		applog.LogDebugf(s.ctx, "Left X axis: %v", data)
+		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
 		if data.(int) > 5000 {
 
 			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device)
@@ -643,13 +643,16 @@ func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device 
 	s.stateLock.Lock()
 
 	defer s.stateLock.Unlock()
+
 	if isPress {
 		if !s.keyStates[key] {
+			fmt.Printf("toggle key press %s\n", key)
 			s.handleKeyPress(key, name, device)
 			s.keyStates[key] = true
 		}
 	} else {
 		if s.keyStates[key] {
+			fmt.Printf("toggle key up %s\n", key)
 			s.handleKeyRelease(key, name, device)
 			s.keyStates[key] = false
 		}
@@ -1089,18 +1092,18 @@ func getCurrentForegroundProcessId() uint32 {
 }
 
 func (s *HotkeyService) MonitorKeySetting() (models.Hotkey, error) {
-	s.monitoredKey.Store(nil)
+	s.monitoredKey.Store(&models.Hotkey{})
 	s.isMonitoringKeySetting.Store(true)
 	var tiker *time.Ticker = time.NewTicker(time.Millisecond * 500)
 	defer s.isMonitoringKeySetting.Store(false)
-	defer s.monitoredKey.Store(nil)
+	defer s.monitoredKey.Store(&models.Hotkey{})
 
 	s.startJoystickListener()
 	for {
 		select {
 		case <-tiker.C:
 			key := s.monitoredKey.Load().(*models.Hotkey)
-			if key != nil {
+			if key.KeyCode != "" {
 				s.robot.Stop()
 				return *key, nil
 			}

@@ -1,9 +1,9 @@
 import { create } from "zustand";
 
-import type { appconf, models, vo } from "../wailsjs/go/models";
+import { appconf, models, vo } from "../wailsjs/go/models";
 
 import { GetAppConfig, UpdateAppConfig } from "../wailsjs/go/service/ConfigService";
-import { GetGames } from "../wailsjs/go/service/GameService";
+import { GetGames, GetGamesByPage } from "../wailsjs/go/service/GameService";
 import { GetHomePageData } from "../wailsjs/go/service/HomeService";
 
 type AISummaryCache = {
@@ -29,6 +29,7 @@ type AppState = {
   setAISummary: (dimension: string, summary: string) => void;
   getAISummary: (dimension: string) => string | undefined;
   setGames: (games: models.Game[]) => void;
+  // page: number;
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -46,6 +47,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSidebarOpen: (open: boolean) => set({ isSidebarOpen: open }),
   homeData: null,
   config: null,
+  // page: 1,
   isLoading: false,
   games: [],
   gamesLoading: false,
@@ -81,11 +83,41 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   // 游戏列表管理
+  // fetchGames: async () => {
+  //   set({ gamesLoading: true });
+  //   try {
+  //     const result = await GetGames();
+  //     set({ games: result || [] });
+  //   }
+  //   catch (error) {
+  //     console.error("Failed to fetch games:", error);
+  //   }
+  //   finally {
+  //     set({ gamesLoading: false });
+  //   }
+  // },
   fetchGames: async () => {
     set({ gamesLoading: true });
+    var page = 1;
+    var pageSize = 10;
     try {
-      const result = await GetGames();
-      set({ games: result || [] });
+      var gameList: models.Game[] = [];
+      for (;;) { 
+        const result = await GetGamesByPage(page, pageSize);        
+        
+        if (page == 1) {
+          gameList = result || [];
+        } else {
+          gameList = gameList.concat(result || []);
+        }
+        set({ games: gameList });
+        page++;
+        if (result?.length < pageSize) {
+          break;
+        }
+        
+      }
+      
     }
     catch (error) {
       console.error("Failed to fetch games:", error);

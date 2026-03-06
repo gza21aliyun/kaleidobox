@@ -327,6 +327,100 @@ func (s *GameService) DeleteGames(ids []string) error {
 	return nil
 }
 
+func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, error) {
+	query := `SELECT 
+		id, name, 
+		COALESCE(cover_url, '') as cover_url, 
+		COALESCE(company, '') as company, 
+		COALESCE(summary, '') as summary, 
+		COALESCE(path, '') as path, 
+		COALESCE(save_path, '') as save_path,
+		COALESCE(status, 'not_started') as status,
+		COALESCE(source_type, '') as source_type, 
+		cached_at, 
+		COALESCE(source_id, '') as source_id, 
+		created_at,
+		updated_at,
+		COALESCE(tags, '') as tags,
+		COALESCE(arguments, '') as arguments,
+		COALESCE(images, '') as images,
+		COALESCE(bangumi_id, '') as bangumi_id,
+		COALESCE(dmm_id, '') as dmm_id,
+		COALESCE(eroscape_id, '') as eroscape_id,
+		COALESCE(ymgal_id, '') as ymgal_id,
+		COALESCE(search_name, '') as search_name,
+		COALESCE(dlsite_id, '') as dlsite_id,
+		COALESCE(release_at, '') as release_at,
+		COALESCE(related_games, '') as related_games,
+		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
+		COALESCE(use_magpie, FALSE) as use_magpie,
+		COALESCE(process_name, '') as process_name
+	FROM games 
+	ORDER BY created_at DESC
+	LIMIT ? OFFSET ?
+
+	`
+
+	rows, err := s.db.QueryContext(s.ctx, query, pageSize, page)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "GetGames: failed to query games: %v", err)
+		return nil, fmt.Errorf("failed to query games: %w", err)
+	}
+	defer rows.Close()
+
+	var games []models.Game
+	for rows.Next() {
+		var game models.Game
+		var sourceType string
+		var status string
+
+		err := rows.Scan(
+			&game.ID,
+			&game.Name,
+			&game.CoverURL,
+			&game.Company,
+			&game.Summary,
+			&game.Path,
+			&game.SavePath,
+			&status,
+			&sourceType,
+			&game.CachedAt,
+			&game.SourceID,
+			&game.CreatedAt,
+			&game.UpdatedAt,
+			&game.Tags,
+			&game.Arguments,
+			&game.Images,
+			&game.BangumiId,
+			&game.DmmId,
+			&game.EroscapeId,
+			&game.YmgalId,
+			&game.SearchName,
+			&game.DlsiteId,
+			&game.ReleaseAt,
+			&game.RelatedGames,
+			&game.UseLocaleEmulator,
+			&game.UseMagpie,
+			&game.ProcessName,
+		)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
+			return nil, fmt.Errorf("failed to scan game: %w", err)
+		}
+
+		game.SourceType = enums.SourceType(sourceType)
+		game.Status = enums.GameStatus(status)
+		games = append(games, game)
+	}
+
+	if err = rows.Err(); err != nil {
+		applog.LogErrorf(s.ctx, "GetGames: error iterating games: %v", err)
+		return nil, fmt.Errorf("error iterating games: %w", err)
+	}
+
+	return games, nil
+}
+
 func (s *GameService) GetGames() ([]models.Game, error) {
 	query := `SELECT 
 		id, name, 

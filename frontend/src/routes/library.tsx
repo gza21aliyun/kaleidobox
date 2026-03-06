@@ -33,6 +33,16 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/library",
   component: LibraryPage,
+  // loader: async ({ context }) => {
+  //   //只在没有缓存数据时加载
+  //   const cachedGames = useAppStore.getState().games;
+  //   if (cachedGames && cachedGames.length > 0) {
+  //     return { games: cachedGames };
+  //   }
+  //   const games = await GetGames();
+  //   return { games };
+  // },
+  // shouldReload: false, // 关键：禁止自动重新加载
 });
 
 
@@ -319,7 +329,9 @@ function LibraryPage() {
   };
 
   useEffect(() => {
-    loadGames();
+    if (games.length === 0) {
+      loadGames();
+    }
   }, []);
 
   if (gamesLoading && games.length === 0) {

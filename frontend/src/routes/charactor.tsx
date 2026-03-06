@@ -4,9 +4,10 @@ import { createRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { GetCharactorById } from "../../wailsjs/go/service/CharactorService";
 import { GetWorkGamesByCharactorId } from "../../wailsjs/go/service/GameService";
-import { FetchImage } from "../../wailsjs/go/service/ImageService";
+import { FetchImages } from "../../wailsjs/go/service/ImageService";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
+import { ImageBackupCard } from "../components/card/ImageCard";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -56,6 +57,46 @@ function CharactorPage() {
     if (staffId != "") {
       navigate({ to: `/staff/${staffId}` });
     }
+  };
+
+  const WorksImageRow = ({ workId }: { workId: string }) => {
+    const [images, setImages] = useState<models.ImageBackup[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      if (workId) {
+        FetchImages(workId, 3, 1).then((res) => {
+          setImages(res ?? []);
+          setLoading(false);
+        }).catch((err) => {
+          console.error("Failed to fetch works images:", err);
+          setLoading(false);
+        });
+      }
+    }, [workId]);
+
+    if (loading) {
+      return null;
+    }
+
+    if (images.length === 0) {
+      return null;
+    }
+
+    return (
+      <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+        <td colSpan={7} className="py-3 px-6 w-full">
+          <div className="text-xs text-brand-600 dark:text-brand-400 mb-2 font-medium">作品图片：</div>
+          <div className="flex flex-wrap gap-3 w-full">
+            {images.map((imageBackup, idx) => (
+              <div key={idx} className="w-54 h-40 flex-shrink-0">
+                <ImageBackupCard imageBackup={imageBackup} />
+              </div>
+            ))}
+          </div>
+        </td>
+      </tr>
+    );
   };
 
   if (loading) {
@@ -303,7 +344,7 @@ function CharactorPage() {
                               {work.work.work_summary || '-'}
                             </td>
                           </tr>
-                          <tr></tr>
+                          <WorksImageRow workId={work.work.id} />
                         </>
                       ))}
                     </tbody>

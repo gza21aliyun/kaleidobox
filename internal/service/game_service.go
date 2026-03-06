@@ -357,8 +357,8 @@ func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, err
 		COALESCE(process_name, '') as process_name
 	FROM games 
 	ORDER BY created_at DESC
-	LIMIT '%d' OFFSET '%d'
-	`, pageSize, page)
+	LIMIT %d OFFSET %d
+	`, pageSize, (page-1)*pageSize)
 	return s.GetGamesByQuery(query)
 }
 

@@ -4,15 +4,56 @@ import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
 import { tagMapForEach, workMapForEach, charactorsForEach, getCharactors } from "../utils/Utility";
 import { GetGamesByRelatedGames } from "../../../wailsjs/go/service/GameService";
+import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { GameCard } from "../card/GameCard";
+import { ImageBackupCard } from "../card/ImageCard";
 
 interface GameEditFormProps {
   game: models.Game;
   config?: appconf.AppConfig;
   onTagTaps: (tag: string) => void;
 }
+
+const CharactorImages = ({ workId }: { workId: string }) => {
+  const { t } = useTranslation();
+  const [images, setImages] = useState<models.ImageBackup[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (workId) {
+      FetchImages(workId, 3, 1).then((res) => {
+        setImages(res ?? []);
+        setLoading(false);
+      }).catch((err) => {
+        console.error("Failed to fetch works images:", err);
+        setLoading(false);
+      });
+    }
+  }, [workId]);
+
+  if (loading) {
+    return null;
+  }
+
+  if (images.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3">
+      <h4 className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-2">{t('gameIntro.characterImages')}</h4>
+      <div className="flex flex-wrap gap-3">
+        {images.map((imageBackup, idx) => (
+          <div key={idx} className="w-54 h-40 flex-shrink-0">
+            <ImageBackupCard imageBackup={imageBackup} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export function GameIntroPanel({ 
     game, config, onTagTaps }: GameEditFormProps) { 
@@ -83,62 +124,78 @@ export function GameIntroPanel({
                 {/* 角色 */}
                 <div className="mt-4">
                     <div className="font-semibold mb-2 text-brand-900 dark:text-white">{t('gameIntro.characters')}</div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="space-y-4">
                         {true ? (
                             
                             charactorsForEach(worksMap, (charactor) => (
                                 <div key={`${charactor.charactor_name}-${charactor.staff_name}`} 
-                                    className="flex items-center gap-3 bg-white dark:bg-brand-800/30 rounded-lg p-3 border border-brand-200 dark:border-brand-700 min-w-[280px] hover:shadow-md transition-shadow">
-                                    {/* 角色图片 */}
-                                    {charactor.charactor_image && (
-                                        <div className="flex-shrink-0">
-                                            <img 
-                                                src={charactor.charactor_image} 
-                                                alt={charactor.charactor_name}
-                                                className="w-26 h-40 object-cover rounded-lg"
-                                                style={{ objectFit: 'cover', objectPosition: 'center top' }}
-                                            />
-                                        </div>
-                                    )}
-                                    
-                                    {/* 角色信息 */}
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-brand-900 dark:text-white truncate">
-                                            <button
-                                                    onClick={() => {
-                                                        var characterIds = getCharactors(worksMap)
-                                                        if (charactor.charactor_id) {
-                                                            navigate({ 
-                                                                to: `/charactor/${charactor.charactor_id}`, 
-                                                                // params: { charactorId: charactor.charactor_id } 
-                                                                search: { characterIds },
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="text-sm text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
-                                                >
-                                                    {charactor.charactor_name}
-                                                </button>
-                                            {/* {charactor.charactor_name} */}
-                                        </h3>
-                                        
-                                        {charactor.staff_name && (
-                                            <div className="mt-1">
-                                                <span className="text-xs text-brand-600 dark:text-brand-400">{t('gameIntro.cv')}：</span>
-                                                <button
-                                                    onClick={() => {
-                                                        if (charactor.staff_id) {
-                                                            navigate({ to: '/staff/$staffId', params: { staffId: charactor.staff_id } });
-                                                        }
-                                                    }}
-                                                    className="text-sm text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
-                                                >
-                                                    {charactor.staff_name}
-                                                </button>
+                                    className="bg-white dark:bg-brand-800/30 rounded-lg p-4 border border-brand-200 dark:border-brand-700 hover:shadow-md transition-shadow">
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                        {/* 角色图片 */}
+                                        {charactor.charactor_image && (
+                                            <div className="md:col-span-2">
+                                                <img 
+                                                    src={charactor.charactor_image} 
+                                                    alt={charactor.charactor_name}
+                                                    className="w-full h-40 object-cover rounded-lg"
+                                                    style={{ objectFit: 'cover', objectPosition: 'center top' }}
+                                                />
                                             </div>
                                         )}
+                                        
+                                        {/* 角色信息 */}
+                                        <div className="md:col-span-10">
+                                            <div className="flex flex-wrap items-center gap-4 mb-3">
+                                                <h3 className="font-bold text-brand-900 dark:text-white text-lg">
+                                                    <button
+                                                            onClick={() => {
+                                                                var characterIds = getCharactors(worksMap)
+                                                                if (charactor.charactor_id) {
+                                                                    navigate({ 
+                                                                        to: `/charactor/${charactor.charactor_id}`, 
+                                                                        search: { characterIds },
+                                                                    });
+                                                                }
+                                                            }}
+                                                            className="text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
+                                                        >
+                                                            {charactor.charactor_name}
+                                                        </button>
+                                                </h3>
+                                                
+                                                {charactor.staff_name && (
+                                                    <div>
+                                                        <span className="text-sm text-brand-600 dark:text-brand-400">{t('gameIntro.cv')}：</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (charactor.staff_id) {
+                                                                    navigate({ to: `/staff/${charactor.staff_id}` });
+                                                                }
+                                                            }}
+                                                            className="text-sm text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
+                                                        >
+                                                            {charactor.staff_name}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* 角色简介 */}
+                                            {charactor.work_summary && (
+                                                <div className="mb-4">
+                                                    <h4 className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-1">{t('gameIntro.characterSummary')}</h4>
+                                                    <p className="text-sm text-brand-700 dark:text-brand-300 whitespace-pre-wrap leading-relaxed">
+                                                        {charactor.work_summary}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            
+                                            {/* 角色图片 */}
+                                            {charactor.id && (
+                                                <CharactorImages workId={charactor.id} />
+                                            )}
+                                        </div>
                                     </div>
-                                    
                                 </div>
                                 
                             ))

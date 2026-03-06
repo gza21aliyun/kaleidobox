@@ -2,10 +2,11 @@
 import { appconf, enums, models } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
-import { tagMapForEach, workMapForEach, charactorsForEach } from "../utils/Utility";
-import { GetTagListByString } from "../../../wailsjs/go/service/TagService";
+import { tagMapForEach, workMapForEach, charactorsForEach, getCharactors } from "../utils/Utility";
+import { GetGamesByRelatedGames } from "../../../wailsjs/go/service/GameService";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { GameCard } from "../card/GameCard";
 
 interface GameEditFormProps {
   game: models.Game;
@@ -19,6 +20,7 @@ export function GameIntroPanel({
         const { t } = useTranslation();
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const textareaRef = useRef<HTMLTextAreaElement>(null);
+        const [relatedGames, setRelatedGames] = useState<models.Game[]>([])
 
 
 
@@ -76,6 +78,7 @@ export function GameIntroPanel({
                         />
                 </div>
 
+                {/* 角色 */}
                 <div className="mt-4">
                     <div className="font-semibold mb-2 text-brand-900 dark:text-white">{t('gameIntro.characters')}</div>
                     <div className="flex flex-wrap gap-3">
@@ -101,8 +104,13 @@ export function GameIntroPanel({
                                         <h3 className="font-bold text-brand-900 dark:text-white truncate">
                                             <button
                                                     onClick={() => {
+                                                        var characterIds = getCharactors(worksMap)
                                                         if (charactor.charactor_id) {
-                                                            navigate({ to: '/charactor/$charactorId', params: { charactorId: charactor.charactor_id } });
+                                                            navigate({ 
+                                                                to: `/charactor/${charactor.charactor_id}`, 
+                                                                // params: { charactorId: charactor.charactor_id } 
+                                                                search: { characterIds },
+                                                            });
                                                         }
                                                     }}
                                                     className="text-sm text-brand-700 dark:text-brand-300 hover:text-brand-900 dark:hover:text-white font-medium underline-offset-2 hover:underline transition-colors"
@@ -137,6 +145,18 @@ export function GameIntroPanel({
                         )}
                     </div>
                 </div>
+
+                {/* 关联游戏 */}
+                { relatedGames.length > 0 && (
+                    <div className="mt-4">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('gameIntro.relatedGames')}</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
+                            {relatedGames.map((game) => (
+                                <GameCard key={game.id} game={game} />
+                            ))}
+                        </div>
+                    </div>
+                )}
 
 
 

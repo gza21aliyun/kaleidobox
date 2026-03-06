@@ -6,7 +6,7 @@ import { GetCharactorById } from "../../wailsjs/go/service/CharactorService";
 import { GetWorkGamesByCharactorId } from "../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../wailsjs/go/service/ImageService";
 import { Route as rootRoute } from "./__root";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ImageBackupCard } from "../components/card/ImageCard";
 
 export const Route = createRoute({
@@ -15,27 +15,34 @@ export const Route = createRoute({
   component: CharactorPage,
 });
 
+export interface CharacterSearchParams {
+  characterIds?: string[]; // 可选参数
+}
+
 function CharactorPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as CharacterSearchParams; // 获取查询参数
+  const characterIds = search.characterIds || [];
   const { charactorId } = Route.useParams();
   const [charactor, setCharactor] = useState<models.Charactor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [games, setGames] = useState<models.WorkGame[]>([]);
+  const [ currentCharaId, setCurrentCharaId ] = useState(charactorId);
 
   useEffect(() => {
     console.log("进入charactorPage");
-    if (charactorId) {
+    if (currentCharaId) {
       loadCharactorDetails();
     }
-  }, [charactorId]);
+  }, [currentCharaId]);
 
   const loadCharactorDetails = async () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await GetCharactorById(charactorId);
+      const result = await GetCharactorById(currentCharaId);
       setCharactor(result);
       const loadedGames = await GetWorkGamesByCharactorId(result.id);
       setGames(loadedGames);
@@ -169,15 +176,74 @@ function CharactorPage() {
     );
   }
 
+  const currentIndex = characterIds.indexOf(currentCharaId);
+
+  // 计算是否可以向左/向右切换
+  const canGoPrev = currentIndex > 0;
+  const canGoNext = currentIndex < characterIds.length - 1;
+  console.log("index:", currentIndex)
+
+  // 切换到上一个游戏
+  const goToPrevChara = () => {
+    if (canGoPrev) {
+      const prevCharaId = characterIds[currentIndex - 1];
+      // navigate({ to: `/game/${prevGameId}`, search });
+      setCurrentCharaId(prevCharaId);
+    }
+  };
+
+  // 切换到下一个游戏
+  const goToNextChara = () => {
+    if (canGoNext) {
+      const nextCharaId = characterIds[currentIndex + 1];
+      // navigate({ to: `/game/${nextGameId}`, search });
+      setCurrentCharaId(nextCharaId);
+    }
+  };
+
   return (
     <div className="p-6">
-      <button
-        onClick={() => window.history.back()}
-        className="flex rounded-md items-center text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
-      >
-        <div className="i-mdi-arrow-left text-2xl mr-1" />
-        <span>{t('charactor.buttons.back')}</span>
-      </button>
+      {/* Back Button */}
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => window.history.back()}
+          className="flex rounded-md items-center text-brand-750 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors"
+        >
+          <div className="i-mdi-arrow-left text-2xl mr-1" />
+          <span>{t('common.back')}</span>
+        </button>
+
+        {/* Navigation Arrows */}
+        {characterIds.length > 0 && (
+          <div className="flex gap-2">
+            <button
+              onClick={goToPrevChara}
+              disabled={!canGoPrev}
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                canGoPrev
+                  ? "bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-700 dark:text-brand-200 dark:hover:bg-brand-600"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+              }`}
+              title={t('common.previous')}
+            >
+              <div className="i-mdi-arrow-left text-xl" />
+            </button>
+
+            <button
+              onClick={goToNextChara}
+              disabled={!canGoNext}
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                canGoNext
+                  ? "bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-700 dark:text-brand-200 dark:hover:bg-brand-600"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+              }`}
+              title={t('common.next')}
+            >
+              <div className="i-mdi-arrow-right text-xl" />
+            </button>
+          </div>
+        )}
+      </div>
       <br />
       <br />
       <div className="mb-6">

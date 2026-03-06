@@ -328,7 +328,7 @@ func (s *GameService) DeleteGames(ids []string) error {
 }
 
 func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, error) {
-	query := `SELECT 
+	query := fmt.Sprintf(`SELECT 
 		id, name, 
 		COALESCE(cover_url, '') as cover_url, 
 		COALESCE(company, '') as company, 
@@ -357,11 +357,14 @@ func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, err
 		COALESCE(process_name, '') as process_name
 	FROM games 
 	ORDER BY created_at DESC
-	LIMIT ? OFFSET ?
+	LIMIT '%d' OFFSET '%d'
+	`, pageSize, page)
+	return s.GetGamesByQuery(query)
+}
 
-	`
+func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {
 
-	rows, err := s.db.QueryContext(s.ctx, query, pageSize, page)
+	rows, err := s.db.QueryContext(s.ctx, query)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "GetGames: failed to query games: %v", err)
 		return nil, fmt.Errorf("failed to query games: %w", err)
@@ -452,72 +455,43 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 	FROM games 
 	ORDER BY created_at DESC`
 
-	rows, err := s.db.QueryContext(s.ctx, query)
-	if err != nil {
-		applog.LogErrorf(s.ctx, "GetGames: failed to query games: %v", err)
-		return nil, fmt.Errorf("failed to query games: %w", err)
+	return s.GetGamesByQuery(query)
+}
+
+func (s *GameService) GetGamesByRelatedGames(gameIdsStr string) ([]models.Game, error) {
+	games := []models.Game{}
+	gameStrs := strings.Split(gameIdsStr, ";")
+	if len(gameStrs) == 0 {
+		return games, nil
 	}
-	defer rows.Close()
-
-	var games []models.Game
-	for rows.Next() {
-		var game models.Game
-		var sourceType string
-		var status string
-
-		err := rows.Scan(
-			&game.ID,
-			&game.Name,
-			&game.CoverURL,
-			&game.Company,
-			&game.Summary,
-			&game.Path,
-			&game.SavePath,
-			&status,
-			&sourceType,
-			&game.CachedAt,
-			&game.SourceID,
-			&game.CreatedAt,
-			&game.UpdatedAt,
-			&game.Tags,
-			&game.Arguments,
-			&game.Images,
-			&game.BangumiId,
-			&game.DmmId,
-			&game.EroscapeId,
-			&game.YmgalId,
-			&game.SearchName,
-			&game.DlsiteId,
-			&game.ReleaseAt,
-			&game.RelatedGames,
-			&game.UseLocaleEmulator,
-			&game.UseMagpie,
-			&game.ProcessName,
-		)
-		if err != nil {
-			applog.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
-			return nil, fmt.Errorf("failed to scan game: %w", err)
+	for _, gameStr := range gameStrs {
+		strs := strings.Split(gameStr, ":")
+		id := strs[1]
+		source := strs[0]
+		// var game models.Game = models.Game{}
+		rs := []models.Game{}
+		query := ""
+		if source == "local" {
+			query = fmt.Sprintf("%s WHERE id = '%s'", s.GetQueryBase(), id)
+		} else if source == string(enums.Dmm) {
+			query = fmt.Sprintf("%s WHERE dmm_id = '%s'", s.GetQueryBase(), id)
+		} else if source == string(enums.Dlsite) {
+			query = fmt.Sprintf("%s WHERE dlsite_id = '%s'", s.GetQueryBase(), id)
+		} else if source == string(enums.Ymgal) {
+			query = fmt.Sprintf("%s WHERE ymgal_id = '%s'", s.GetQueryBase(), id)
+		} else if source == string(enums.Eroscape) {
+			query = fmt.Sprintf("%s WHERE eroscape_id = '%s'", s.GetQueryBase(), id)
+		} else if source == string(enums.Bangumi) {
+			query = fmt.Sprintf("%s WHERE bangumi_id = '%s'", s.GetQueryBase(), id)
 		}
-
-		game.SourceType = enums.SourceType(sourceType)
-		game.Status = enums.GameStatus(status)
-		games = append(games, game)
+		rs, _ = s.GetGamesByQuery(query)
+		games = append(games, rs...)
 	}
-
-	if err = rows.Err(); err != nil {
-		applog.LogErrorf(s.ctx, "GetGames: error iterating games: %v", err)
-		return nil, fmt.Errorf("error iterating games: %w", err)
-	}
-
 	return games, nil
 }
 
-func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
-	var games []models.Game = []models.Game{}
-	if idsStr == "" {
-		return games, nil
-	}
-	query := `SELECT 
+func (s *GameService) GetQueryBase() string {
+	return `SELECT 
 		id, name, 
 		COALESCE(cover_url, '') as cover_url, 
 		COALESCE(company, '') as company, 
@@ -544,7 +518,15 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie
-	FROM games 
+	FROM games`
+}
+
+func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
+	var games []models.Game = []models.Game{}
+	if idsStr == "" {
+		return games, nil
+	}
+	query := s.GetQueryBase() + `
 	WHERE LIST_CONTAINS(STRING_SPLIT(?, ','), id)
 	ORDER BY created_at DESC`
 

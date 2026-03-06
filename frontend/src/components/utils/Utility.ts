@@ -200,6 +200,25 @@ export function charactorsForEach(map: Map<enums.StaffRole, models.Work[]>, fn: 
         return result;
 }
 
+export function getCharactors(map: Map<enums.StaffRole, models.Work[]>) : models.Work[] {
+        if (!map) return [];    
+        var charactors: models.Work[] = []   
+        const handle = (role: enums.StaffRole) => {
+            if (map.has(role)) {
+                map.get(role)!.forEach((work) => {
+                    if (work.charactor_name != "")
+                        charactors.push(work);
+                })
+            }
+        };
+        handle(enums.StaffRole.CV);
+        charactors = charactors.sort((a, b) => a.sort - b.sort);
+        handle(enums.StaffRole.CHARACTOR);
+
+        return charactors;
+}
+
+
 /**
  * 从文件路径中提取文件夹路径
  * @param filePath 完整文件路径

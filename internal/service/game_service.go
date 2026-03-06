@@ -460,6 +460,9 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 
 func (s *GameService) GetGamesByRelatedGames(gameIdsStr string) ([]models.Game, error) {
 	games := []models.Game{}
+	if gameIdsStr == "" {
+		return games, nil
+	}
 	gameStrs := strings.Split(gameIdsStr, ";")
 	if len(gameStrs) == 0 {
 		return games, nil

@@ -38,7 +38,9 @@ export function GameIntroPanel({
                 setWorksMap(m)
             
             })
-            
+            GetGamesByRelatedGames(game.related_games).then((res) => { 
+                setRelatedGames(res || [])
+            })
             
             return () => { 
                 setWorksMap(new Map())

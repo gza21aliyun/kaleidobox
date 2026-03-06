@@ -1,5 +1,5 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createRootRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { useEffect, useState, useRef } from "react";
 import { OnFileDrop, OnFileDropOff } from "../../wailsjs/runtime/runtime";
 import { SideBar } from "../components/bar/SideBar";
 import { TopBar } from "../components/bar/TopBar";
@@ -11,6 +11,9 @@ function RootLayout() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [showDragDropModal, setShowDragDropModal] = useState(false);
   const [droppedPaths, setDroppedPaths] = useState<string[]>([]);
+  const mainContentRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const scrollPositions = useRef<Record<string, number>>({});
 
   // 背景图相关配置
   const bgEnabled = config?.background_enabled && config?.background_image;
@@ -80,6 +83,48 @@ function RootLayout() {
     };
   }, []);
 
+  // 保存和恢复滚动位置
+  useEffect(() => {
+    // 恢复新路由的滚动位置
+    const savedPosition = scrollPositions.current[location.pathname];
+    if (mainContentRef.current && savedPosition !== undefined) {
+      // 使用 requestAnimationFrame 确保 DOM 已更新
+      requestAnimationFrame(() => {
+        mainContentRef.current!.scrollTop = savedPosition;
+      });
+    } else if (mainContentRef.current) {
+      // 如果没有保存的位置，滚动到顶部
+      mainContentRef.current.scrollTop = 0;
+    }
+
+    // 组件卸载时保存滚动位置
+    return () => {
+      if (mainContentRef.current) {
+        scrollPositions.current[location.pathname] = mainContentRef.current.scrollTop;
+      }
+    };
+  }, [location.pathname]);
+
+  // 监听滚动事件，实时更新当前路由的滚动位置
+  useEffect(() => {
+    const handleScroll = () => {
+      if (mainContentRef.current) {
+        const currentPath = location.pathname;
+        scrollPositions.current[currentPath] = mainContentRef.current.scrollTop;
+      }
+    };
+
+    if (mainContentRef.current) {
+      mainContentRef.current.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (mainContentRef.current) {
+        mainContentRef.current.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [location.pathname]);
+
   const handleImportComplete = () => {
     fetchGames();
   };
@@ -117,6 +162,7 @@ function RootLayout() {
         <div className="flex flex-1 overflow-hidden">
           <SideBar bgEnabled={!!bgEnabled} bgOpacity={bgOpacity} />
           <main
+            ref={mainContentRef}
             className={`flex-1 overflow-auto ${
               bgEnabled ? "" : "bg-brand-100 dark:bg-brand-900"
             }`}

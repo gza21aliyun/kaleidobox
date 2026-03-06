@@ -42,7 +42,7 @@ export const Route = createRoute({
   //   const games = await GetGames();
   //   return { games };
   // },
-  // shouldReload: false, // 关键：禁止自动重新加载
+  shouldReload: false, // 关键：禁止自动重新加载
 });
 
 
@@ -333,6 +333,8 @@ function LibraryPage() {
       loadGames();
     }
   }, []);
+
+
 
   if (gamesLoading && games.length === 0) {
     if (!showSkeleton) {

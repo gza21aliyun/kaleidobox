@@ -138,7 +138,7 @@ func (s *HotkeyService) Init(ctx context.Context, db *sql.DB, config *appconf.Ap
 
 	// 启动监听
 	// s.startKeyboardListener()
-	s.startJoystickListener()
+	// s.startJoystickListener()
 	s.monitoredKey.Store("")
 	s.activeGameID.Store("")
 

@@ -363,15 +363,15 @@ func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, err
 }
 
 func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {
-
+	fmt.Printf("GetGamesByQuery 01: query: %s\n", query)
+	var games []models.Game = []models.Game{}
 	rows, err := s.db.QueryContext(s.ctx, query)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "GetGames: failed to query games: %v", err)
-		return nil, fmt.Errorf("failed to query games: %w", err)
+		return games, fmt.Errorf("failed to query games: %w", err)
 	}
 	defer rows.Close()
 
-	var games []models.Game
 	for rows.Next() {
 		var game models.Game
 		var sourceType string
@@ -408,7 +408,7 @@ func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {
 		)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
-			return nil, fmt.Errorf("failed to scan game: %w", err)
+			// return games, fmt.Errorf("failed to scan game: %w", err)
 		}
 
 		game.SourceType = enums.SourceType(sourceType)
@@ -418,7 +418,7 @@ func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {
 
 	if err = rows.Err(); err != nil {
 		applog.LogErrorf(s.ctx, "GetGames: error iterating games: %v", err)
-		return nil, fmt.Errorf("error iterating games: %w", err)
+		return games, fmt.Errorf("error iterating games: %w", err)
 	}
 
 	return games, nil
@@ -463,7 +463,7 @@ func (s *GameService) GetGamesByRelatedGames(gameIdsStr string) ([]models.Game, 
 	if gameIdsStr == "" {
 		return games, nil
 	}
-	gameStrs := strings.Split(gameIdsStr, ";")
+	gameStrs := strings.Split(gameIdsStr, ",")
 	if len(gameStrs) == 0 {
 		return games, nil
 	}
@@ -493,6 +493,16 @@ func (s *GameService) GetGamesByRelatedGames(gameIdsStr string) ([]models.Game, 
 	return games, nil
 }
 
+func (s *GameService) GetGamesByBrand(brand string) ([]models.Game, error) {
+	games := []models.Game{}
+	if brand == "" {
+		return games, nil
+	}
+	query := fmt.Sprintf("%s WHERE company = '%s'", s.GetQueryBase(), brand)
+	games, err := s.GetGamesByQuery(query)
+	return games, err
+}
+
 func (s *GameService) GetQueryBase() string {
 	return `SELECT 
 		id, name, 
@@ -501,7 +511,6 @@ func (s *GameService) GetQueryBase() string {
 		COALESCE(summary, '') as summary, 
 		COALESCE(path, '') as path, 
 		COALESCE(save_path, '') as save_path,
-		COALESCE(process_name, '') as process_name,
 		COALESCE(status, 'not_started') as status,
 		COALESCE(source_type, '') as source_type, 
 		cached_at, 
@@ -520,7 +529,8 @@ func (s *GameService) GetQueryBase() string {
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
-		COALESCE(use_magpie, FALSE) as use_magpie
+		COALESCE(use_magpie, FALSE) as use_magpie,
+		COALESCE(process_name, '') as process_name,
 	FROM games`
 }
 

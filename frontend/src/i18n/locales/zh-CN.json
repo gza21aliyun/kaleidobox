@@ -878,7 +878,8 @@
     "characters": "角色",
     "cv": "CV",
     "noCategories": "暂无分类标签",
-    "relatedGames": "关联游戏"
+    "relatedGames": "关联游戏",
+    "characterSummary":"角色介绍"
   },
   "gameLaunch": {
     "processMonitoring": "进程监控",

@@ -110,6 +110,7 @@ func LogTracef(ctx context.Context, format string, args ...interface{}) {
 
 	if mode == ModeGUI {
 		runtime.LogTracef(ctx, format, args...)
+		fmt.Printf(format+"\n", args...)
 	} else {
 		logToCLI("TRACE", format, args...)
 	}
@@ -151,6 +152,7 @@ func LogPrintf(ctx context.Context, format string, args ...interface{}) {
 
 	if mode == ModeGUI {
 		runtime.LogPrintf(ctx, format, args...)
+		fmt.Printf(format+"\n", args...)
 	} else {
 		logToCLI("INFO", format, args...)
 	}
@@ -164,6 +166,7 @@ func LogWarningf(ctx context.Context, format string, args ...interface{}) {
 
 	if mode == ModeGUI {
 		runtime.LogWarningf(ctx, format, args...)
+		fmt.Printf(format+"\n", args...)
 	} else {
 		logToCLI("WARNING", format, args...)
 	}
@@ -176,7 +179,7 @@ func LogErrorf(ctx context.Context, format string, args ...interface{}) {
 	modeMu.RUnlock()
 
 	if mode == ModeGUI {
-		// runtime.LogErrorf(ctx, format, args...)
+		runtime.LogErrorf(ctx, format, args...)
 		fmt.Printf(format+"\n", args...)
 	} else {
 		logToCLI("ERROR", format, args...)
@@ -191,6 +194,7 @@ func LogFatalf(ctx context.Context, format string, args ...interface{}) {
 
 	if mode == ModeGUI {
 		runtime.LogFatalf(ctx, format, args...)
+		fmt.Printf(format+"\n", args...)
 	} else {
 		logToCLI("FATAL", format, args...)
 	}

@@ -23,6 +23,48 @@ type DmmInfoGetter struct {
 
 type IdFunction func(request vo.MetadataRequest) (models.Game, error)
 
+// DMMSearchResponse DMM 搜索结果响应
+type DMMSearchResponse struct {
+	Error interface{}           `json:"error"`
+	Body  DMMSearchResponseBody `json:"body"`
+}
+
+// DMMSearchResponseBody 响应体
+type DMMSearchResponseBody struct {
+	ProductArray []DMMProductArray `json:"productArray"`
+}
+
+// DMMProductArray 产品数组
+type DMMProductArray struct {
+	CardProduct DMMCardProduct `json:"cardProduct"`
+}
+
+// DMMCardProduct 卡片产品信息
+type DMMCardProduct struct {
+	Title               string      `json:"title"`
+	ContentID           string      `json:"contentId"`
+	DetailURL           string      `json:"detailUrl"`
+	PackageImageURL     string      `json:"packageImageUrl"`
+	ThumbnailImageURLPs string      `json:"thumbnailImageUrlPs"`
+	ThumbnailImageURLPl string      `json:"thumbnailImageUrlPl"`
+	BrandName           string      `json:"brandName"`
+	BrandURL            string      `json:"brandUrl"`
+	OriginalPrice       string      `json:"originalPrice"`
+	SellingPrice        string      `json:"sellingPrice"`
+	IsSellingPriceMore  bool        `json:"isSellingPriceMore"`
+	DiscountRate        interface{} `json:"discountRate"`
+	IsDifferentDiscount bool        `json:"isDifferentDiscount"`
+	DiscountEndDate     interface{} `json:"discountEndDate"`
+	ReturnPoint         string      `json:"returnPoint"`
+	ReturnPointRate     string      `json:"returnPointRate"`
+	// ContentCharacteristicArray []ContentCharacteristic `json:"contentCharacteristicArray"`
+	IsCouponTargetProduct bool   `json:"isCouponTargetProduct"`
+	IsBulkProduct         bool   `json:"isBulkProduct"`
+	IsReserve             bool   `json:"isReserve"`
+	PriorityProductID     string `json:"priorityProductId"`
+	FloorProductID        string `json:"floorProductId"`
+}
+
 func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (models.Game, error) {
 	game, err := b.FetchByNameImpl(name, dmmIsEnabled,
 		func(request vo.MetadataRequest) (models.Game, error) {
@@ -144,12 +186,20 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 
 	// 处理游戏详情页面
 	c.OnHTML("div.pageLayout__contentWrapper", func(e *colly.HTMLElement) {
+		time.Sleep(time.Second * 1)
 		name := e.ChildText("h1.productTitle__item--headline")
 		fmt.Println("开始获取DMM游戏信息 41 " + name)
 		game.Name = name
 
+		// fmt.Printf("alltext: %s\n", e.Text)
+
 		// 提取公司信息
 		company := e.ChildText("div.productLayout__secondaryColumn div.contentsDetailTop__tableRow:contains('ブランド') div.contentsDetailTop__tableDataRight a")
+		companyLink := e.ChildAttr("div.productLayout__secondaryColumn div.contentsDetailTop__tableRow:contains('ブランド') div.contentsDetailTop__tableDataRight a", "href")
+
+		companyId := strings.ReplaceAll(strings.ReplaceAll(companyLink, "https://dlsoft.dmm.co.jp/list/?maker=", ""), "&sort=ranking", "")
+		relatedStr, err := b.GetRelatedGames(companyId)
+		game.RelatedGames = relatedStr
 
 		game.Company = company
 
@@ -170,6 +220,8 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		if err != nil {
 			return
 		}
+		time.Sleep(time.Millisecond * 500)
+
 		// 提取标签
 		// var tags []string
 		e.DOM.Find("div.productLayout__secondaryColumn div.contentsDetailBottom__tableRow--container li").Each(func(i int, s *goquery.Selection) {
@@ -181,6 +233,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 			}
 
 		})
+
 		game.Tags = JoinString(tagList, ",", func(tag models.Tag) string { return tag.Name })
 		gameEntity.Tags = ArrayToMap(tagList, func(t1 models.Tag) string { return t1.Category })
 		// 获取图片
@@ -334,11 +387,28 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 
 			}
 		})
+
 		jstr, _ := json.Marshal(worksMap)
 		log.Printf("worksMap: " + string(jstr))
 		gameEntity.WorksMap = worksMap
 
 	})
+
+	// 在访问完搜索页面后进行过滤和处理
+	// c.OnScraped(func(r *colly.Response) {
+	// 	// r.Body 包含原始 HTML 内容
+	// 	// 使用 goquery 解析 HTML
+	// 	// fmt.Println("访问完成 %s\n", string(r.Body))
+	// 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(r.Body)))
+	// 	if err != nil {
+	// 		fmt.Printf("解析 HTML 失败：%v\n", err)
+	// 		return
+	// 	}
+	// 	doc.Find("div.universalSection a").Each(func(i int, s *goquery.Selection) {
+	// 		fmt.Printf("related:%s\n", s.Text())
+	// 	})
+
+	// })
 
 	// 错误处理
 	c.OnError(func(r *colly.Response, err error) {
@@ -355,6 +425,8 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 	// 等待收集完成
 	c.Wait()
 	fmt.Println("开始获取DMM游戏信息 39 " + game.CoverURL)
+
+	// fmt.Printf("related games:%s\n", game.RelatedGames)
 
 	// 检查是否成功获取了数据
 	if game.Name == "" {
@@ -373,7 +445,38 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 
 	return gameEntity, nil
 }
-
+func (g *DmmInfoGetter) GetRelatedGames(makerId string) (string, error) {
+	return "", nil
+	//由于根据品牌找游戏本地可请以做到，暂时不这么搞了
+	fmt.Printf("GetRelatedGames 01 \n")
+	staffUrl := fmt.Sprintf("https://dlsoft.dmm.co.jp/ajax/article-contents/?floorId=digital_pcgame&articleId=%s&articleType=maker",
+		makerId)
+	fmt.Println(staffUrl)
+	resp3, err := getResp(*g.client, staffUrl, "")
+	if err != nil || resp3 == nil {
+		fmt.Println("error FetchWorks 12: %v", err)
+	}
+	if resp3 == nil {
+		fmt.Println("resp3 is  nil")
+		return "", err
+	}
+	var res DMMSearchResponse
+	if err := json.NewDecoder(resp3.Body).Decode(&res); err != nil {
+		// fmt.Println("BangumiInfoGetter FetchMetadata 05 error: %v", err)
+		resp3.Body.Close()
+		return "", err
+	} else {
+		resp3.Body.Close()
+	}
+	fmt.Printf("GetRelatedGames 02\n")
+	// rs :=""
+	// for _, pd := range res.Body.ProductArray {
+	// 	rs = JoinString()
+	// }
+	return JoinString(res.Body.ProductArray, ",", func(pd DMMProductArray) string {
+		return string(enums.Dmm) + ":" + pd.CardProduct.ContentID
+	}), nil
+}
 func combineCharacters(gameEntity models.GameEntity) models.GameEntity {
 	worksMap := gameEntity.WorksMap
 	charactors := worksMap[enums.Charactor]

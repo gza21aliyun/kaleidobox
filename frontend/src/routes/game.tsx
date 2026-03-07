@@ -81,6 +81,12 @@ function GameDetailPage() {
         };
         }, [game]);
 
+  useEffect(() => {
+    if (gameId !== currentGameId) {
+      setCurrentGameId(gameId);
+    }
+  }, [gameId]);
+
   const loadData = async () => {
       try {
         const gameData = await GetGameByID(currentGameId);

@@ -480,6 +480,16 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			}
 		})
 
+		e.DOM.Find("div#gamegroup > ul > li > ul > li > a").Each(func(i int, s *goquery.Selection) {
+			relatedGameLink := s.AttrOr("href", "")
+			if relatedGameLink != "" {
+
+				gameId := strings.ReplaceAll(strings.ReplaceAll(relatedGameLink, "game.php?game=", ""), "#ad", "")
+				idStr := string(enums.Eroscape) + ":" + gameId
+				game.RelatedGames = MergeStrings(game.RelatedGames, idStr)
+			}
+		})
+
 		gameEntity.Tags = tagsMap
 		tagList := []models.Tag{}
 		for _, tags := range tagsMap {

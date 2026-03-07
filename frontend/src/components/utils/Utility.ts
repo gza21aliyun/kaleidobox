@@ -200,7 +200,7 @@ export function charactorsForEach(map: Map<enums.StaffRole, models.Work[]>, fn: 
         return result;
 }
 
-export function getCharactors(map: Map<enums.StaffRole, models.Work[]>) : models.Work[] {
+export function getCharactorIds(map: Map<enums.StaffRole, models.Work[]>) : string[] {
         if (!map) return [];    
         var charactors: models.Work[] = []   
         const handle = (role: enums.StaffRole) => {
@@ -214,8 +214,9 @@ export function getCharactors(map: Map<enums.StaffRole, models.Work[]>) : models
         handle(enums.StaffRole.CV);
         charactors = charactors.sort((a, b) => a.sort - b.sort);
         handle(enums.StaffRole.CHARACTOR);
+        return arrayMapString(charactors, (charactor) => charactor.charactor_id)
 
-        return charactors;
+        // return charactors;
 }
 
 

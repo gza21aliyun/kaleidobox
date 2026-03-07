@@ -283,7 +283,7 @@ function CharactorPage() {
                 <img
                     src={charactor.image_path}
                     alt={`${charactor.name} ${t('charactor.labels.characterImage')}`}
-                    className="w-32 h-68 object-cover rounded mx-auto"
+                    className="w-40 h-68 object-contain rounded mx-auto"
                 />
                 </div>
             )}

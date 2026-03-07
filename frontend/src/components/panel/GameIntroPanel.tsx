@@ -2,13 +2,14 @@
 import { appconf, enums, models } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
-import { tagMapForEach, workMapForEach, charactorsForEach, getCharactors } from "../utils/Utility";
-import { GetGamesByRelatedGames } from "../../../wailsjs/go/service/GameService";
+import { tagMapForEach, workMapForEach, charactorsForEach, getCharactorIds } from "../utils/Utility";
+import { GetGamesByRelatedGames, GetGamesByBrand } from "../../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { GameCard } from "../card/GameCard";
 import { ImageBackupCard } from "../card/ImageCard";
+import { arrayFind, arrayMapString, joinString } from "../utils/Utility";
 
 interface GameEditFormProps {
   game: models.Game;
@@ -43,7 +44,6 @@ const CharactorImages = ({ workId }: { workId: string }) => {
 
   return (
     <div className="mt-3">
-      <h4 className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-2">{t('gameIntro.characterImages')}</h4>
       <div className="flex flex-wrap gap-3">
         {images.map((imageBackup, idx) => (
           <div key={idx} className="w-54 h-40 flex-shrink-0">
@@ -79,7 +79,7 @@ export function GameIntroPanel({
                 setWorksMap(m)
             
             })
-            GetGamesByRelatedGames(game.related_games).then((res) => { 
+            GetGamesByBrand(game.company).then((res) => { 
                 setRelatedGames(res || [])
             })
             
@@ -137,7 +137,7 @@ export function GameIntroPanel({
                                                 <img 
                                                     src={charactor.charactor_image} 
                                                     alt={charactor.charactor_name}
-                                                    className="w-full h-40 object-cover rounded-lg"
+                                                    className="w-40 h-60 object-contain rounded-lg"
                                                     style={{ objectFit: 'cover', objectPosition: 'center top' }}
                                                 />
                                             </div>
@@ -149,7 +149,7 @@ export function GameIntroPanel({
                                                 <h3 className="font-bold text-brand-900 dark:text-white text-lg">
                                                     <button
                                                             onClick={() => {
-                                                                var characterIds = getCharactors(worksMap)
+                                                                var characterIds = getCharactorIds(worksMap)
                                                                 if (charactor.charactor_id) {
                                                                     navigate({ 
                                                                         to: `/charactor/${charactor.charactor_id}`, 
@@ -180,20 +180,22 @@ export function GameIntroPanel({
                                                 )}
                                             </div>
                                             
-                                            {/* 角色简介 */}
-                                            {charactor.work_summary && (
-                                                <div className="mb-4">
-                                                    <h4 className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-1">{t('gameIntro.characterSummary')}</h4>
-                                                    <p className="text-sm text-brand-700 dark:text-brand-300 whitespace-pre-wrap leading-relaxed">
-                                                        {charactor.work_summary}
-                                                    </p>
-                                                </div>
-                                            )}
-                                            
-                                            {/* 角色图片 */}
-                                            {charactor.id && (
-                                                <CharactorImages workId={charactor.id} />
-                                            )}
+                                            {/* 角色简介和图片并排显示 */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* 角色简介 */}
+                                                {charactor.work_summary && (
+                                                    <div>
+                                                        <p className="text-sm text-brand-700 dark:text-brand-300 whitespace-pre-wrap leading-relaxed">
+                                                            {charactor.work_summary.replace('\n\n', '\n')}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* 角色图片 */}
+                                                {charactor.id && (
+                                                    <CharactorImages workId={charactor.id} />
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -209,9 +211,12 @@ export function GameIntroPanel({
                 { relatedGames.length > 0 && (
                     <div className="mt-4">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('gameIntro.relatedGames')}</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
-                            {relatedGames.map((game) => (
-                                <GameCard key={game.id} game={game} />
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3">
+                            {relatedGames.filter((g) => g.id != game.id).map((g) => (
+                                <GameCard key={g.id} 
+                                    game={g}
+                                    filteredGameIdsStr={arrayMapString(relatedGames, (g) => g.id)}
+                                    />
                             ))}
                         </div>
                     </div>

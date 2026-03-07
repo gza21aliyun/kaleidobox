@@ -459,8 +459,8 @@ var (
 	procModule32Next  = kernel32.NewProc("Module32NextW")
 )
 
-// GetRunningProcessesWithPaths 获取系统中正在运行的进程列表（包含完整路径）
-func GetRunningProcessesWithPaths() ([]NewProcessInfo, error) {
+// GetRunningProcessesWithPPID 获取系统中正在运行的进程列表（包含完整路径）
+func GetRunningProcessesWithPPID() ([]NewProcessInfo, error) {
 	// 创建进程快照
 	snapshot, _, err := procCreateToolhelp32Snapshot.Call(
 		uintptr(TH32CS_SNAPPROCESS),

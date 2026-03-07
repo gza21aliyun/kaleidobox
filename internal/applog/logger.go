@@ -317,6 +317,8 @@ func saveLogToFile(level, message string) {
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return
 	}
+	logFileMu.Lock()
+	defer logFileMu.Unlock()
 
 	// 以追加模式打开文件，如果不存在则创建
 	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)

@@ -73,6 +73,7 @@ type AppConfig struct {
 	MagpiePath         string `json:"magpie_path,omitempty"`          // Magpie 可执行文件路径
 	// 进程检测配置
 	AutoDetectGameProcess bool `json:"auto_detect_game_process"` // 是否启用自动游戏进程检测（分阶段检测策略）
+	DetectTime            int  `json:"detect_time"`              // 进程检测时间,启动器不一定是自动型的，还有手动型的，用于提示用户快点按进游戏
 	// 时区配置
 	TimeZone          string `json:"time_zone,omitempty"` // 数据库使用的 IANA 时区名称（如 "Asia/Shanghai"）
 	DmmIsEnabled      bool   `json:"dmm_is_enabled"`
@@ -148,6 +149,7 @@ func LoadConfig() (*AppConfig, error) {
 		EroscapeUseMirror:       false,
 		NewFolderChooser:        true,
 		JoystickType:            "",
+		DetectTime:              60,
 	}
 
 	// 获取配置文件路径

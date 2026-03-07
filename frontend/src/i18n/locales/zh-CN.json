@@ -916,7 +916,8 @@
     "magpiePath": "Magpie 路径",
     "magpiePathPlaceholder": "选择 Magpie.exe 文件路径",
     "magpiePathDescription": "设置后可在游戏编辑界面启用 Magpie 超分辨率缩放启动",
-    "magpieSelectError": "选择 Magpie 失败"
+    "magpieSelectError": "选择 Magpie 失败",
+    "detectTime": "检测时间(秒)"
   },
   "gameStats": {
     "loadStatsFailed": "加载统计数据失败",

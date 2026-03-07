@@ -116,6 +116,7 @@ func (s *StartService) StartGameWithOptions(gameID string, options LaunchOptions
 func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, error) {
 	// 获取游戏路径和进程配置
 	path, processName, arguments, err := s.getGamePathAndProcess(gameID)
+	applog.InfoLogSaveAppLog("游戏路径: %s, 进程名称: %s, 参数: %s\n", path, processName, arguments)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "failed to get game path: %v", err)
 		return false, fmt.Errorf("failed to get game path: %w", err)
@@ -189,6 +190,7 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 	}
 
 	// 启动进程检测和监控 goroutine
+	applog.InfoLogSaveAppLog("启动进程检测和监控 goroutine")
 	go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, launcherExeName, processName, useLE, path)
 
 	// 启动成功，返回 true 给前端
@@ -210,22 +212,36 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 		applog.LogInfof(s.ctx, "Game %s has saved process_name: %s, will search for it after initial delay", gameID, savedProcessName)
 
 		// 等待5秒，给启动器时间启动实际游戏
-		time.Sleep(5 * time.Second)
-
-		// 在系统进程中搜索保存的进程名
-		pid, err := utils.GetProcessPIDByName(savedProcessName, path)
-		if err != nil {
-			applog.LogWarningf(s.ctx, "Failed to find saved process %s: %v, falling back to launcher monitoring", savedProcessName, err)
-			// 如果找不到保存的进程，使用启动器进程监控
-			actualProcessID = launcherPID
-			actualProcessName = launcherExeName
-			needExternalMonitor = false
+		// time.Sleep(time.Duration(s.config.DetectTime) * time.Second)
+		newProcess := s.detectNewProcesses(launcherPID, gameID, savedProcessName)
+		if newProcess != nil {
+			applog.InfoLogSaveAppLog("Game %s has new process found same as saved process name: %s, PID: %d", gameID, newProcess.Name, newProcess.PID)
+			actualProcessID = newProcess.PID
+			actualProcessName = newProcess.Name
+			needExternalMonitor = true
 		} else {
-			actualProcessID = pid
-			actualProcessName = savedProcessName
-			needExternalMonitor = true // 需要外部监控，因为这不是cmd的子进程
-			applog.LogInfof(s.ctx, "Found saved process %s with PID %d", savedProcessName, pid)
+			applog.LogInfof(s.ctx, "Game %s has no new process: %s", gameID, savedProcessName)
+			// 在系统进程中搜索保存的进程名
+			pid, err := utils.GetProcessPIDByName(savedProcessName, path)
+			if err != nil {
+				applog.LogWarningf(s.ctx, "Failed to find saved process %s: %v, falling back to launcher monitoring", savedProcessName, err)
+				// 如果找不到保存的进程，使用启动器进程监控
+				actualProcessID = launcherPID
+				actualProcessName = launcherExeName
+				needExternalMonitor = false
+				if s.config.AutoDetectGameProcess {
+					s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
+
+				}
+				return
+			} else {
+				actualProcessID = pid
+				actualProcessName = savedProcessName
+				needExternalMonitor = true // 需要外部监控，因为这不是cmd的子进程
+				applog.LogInfof(s.ctx, "Found saved process %s with PID %d", savedProcessName, pid)
+			}
 		}
+
 	} else {
 		// 情况2: 没有保存的process_name，或process_name与启动器相同
 
@@ -236,6 +252,11 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 			actualProcessID = launcherPID
 			actualProcessName = launcherExeName
 			needExternalMonitor = false
+			if !utils.IsProcessRunningByPID(launcherPID, s.ctx) {
+				applog.LogWarningf(s.ctx, "Launcher process %s (PID %d) has exited unexpectedly", launcherExeName, launcherPID)
+				return
+
+			}
 
 			// 保存进程名
 			if savedProcessName == "" {
@@ -245,72 +266,16 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 			// 启用了自动检测，使用分阶段检测策略来准确判断启动器类型
 			applog.LogInfof(s.ctx, "Starting staged detection for game %s, launcher: %s (PID %d)", gameID, launcherExeName, launcherPID)
 
-			// 阶段1: 初始等待5秒，让启动器有时间启动实际游戏
-			time.Sleep(5 * time.Second)
-
-			// 阶段2: 第一次检测
-			launcherStillRunning := utils.IsProcessRunningByPID(launcherPID, s.ctx)
-
-			if !launcherStillRunning {
-				// 启动器在5秒内就退出了，说明是快速启动器（如Steam）
-				applog.LogInfof(s.ctx, "Launcher %s exited quickly (within 5s), will prompt for actual game process", launcherExeName)
-				// s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
-				newProc := s.detectNewProcesses(int(launcherPID), gameID, 5*time.Second, 2*time.Second)
-				if newProc != nil {
-					actualProcessID = newProc.PID
-					actualProcessName = newProc.Name
-					needExternalMonitor = true
-					if savedProcessName == "" {
-						s.updateGameProcessName(gameID, actualProcessName)
-
-					}
-				} else {
-					s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
-					return
-				}
-
-			}
-
-			// 阶段3: 启动器还在运行，进入观察期（15秒）
-			// 每2秒检查一次，看启动器是否会退出
-			applog.LogInfof(s.ctx, "Launcher %s still running, entering observation period (15s)", launcherExeName)
-
-			observationPeriod := 15 * time.Second
-			checkInterval := 2 * time.Second
-			observationStart := time.Now()
-
-			for time.Since(observationStart) < observationPeriod {
-				time.Sleep(checkInterval)
-
-				if !utils.IsProcessRunningByPID(launcherPID, s.ctx) {
-					// 启动器在观察期内退出了，说明它只是个启动器
-					applog.LogInfof(s.ctx, "Launcher %s exited during observation period, will prompt for actual game process", launcherExeName)
-					newProc := s.detectNewProcesses(int(launcherPID), gameID, 5*time.Second, 2*time.Second)
-					if newProc != nil {
-						actualProcessID = newProc.PID
-						actualProcessName = newProc.Name
-						needExternalMonitor = true
-						if savedProcessName == "" {
-							s.updateGameProcessName(gameID, actualProcessName)
-
-						}
-					} else {
-						s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
-						return
-					}
-				}
-			}
-
-			// 阶段4: 观察期结束，启动器仍在运行
-			// 说明启动器本身就是游戏进程（如普通单exe游戏）
-			applog.LogInfof(s.ctx, "Launcher %s still running after 20s total, treating it as the game process", launcherExeName)
-			actualProcessID = launcherPID
-			actualProcessName = launcherExeName
-			needExternalMonitor = false
-
-			// 保存进程名
-			if savedProcessName == "" {
-				s.updateGameProcessName(gameID, launcherExeName)
+			newProcess := s.detectNewProcesses(launcherPID, gameID, "")
+			if newProcess != nil {
+				applog.LogInfof(s.ctx, "Game %s has new process found to save: %s, PID: %d", gameID, newProcess.Name, newProcess.PID)
+				actualProcessID = newProcess.PID
+				actualProcessName = newProcess.Name
+				needExternalMonitor = true
+				s.updateGameProcessName(gameID, newProcess.Name)
+			} else {
+				s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
+				return
 			}
 		}
 	}
@@ -419,7 +384,7 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 		if exitErr != nil {
 			applog.LogDebugf(s.ctx, "Game %s exited with error: %v", gameID, exitErr)
 		}
-	case <-time.After(24 * time.Hour):
+	case <-time.After(96 * time.Hour):
 		// 超时保护（24小时后强制清理）
 		applog.LogWarningf(s.ctx, "Game %s exceeded maximum runtime (24h), forcing cleanup", gameID)
 	}
@@ -679,52 +644,86 @@ func (s *StartService) startMagpie() {
 	applog.LogInfof(s.ctx, "Magpie started successfully")
 }
 
-func (s *StartService) detectNewProcesses(targetPID int, gameID string, interval time.Duration, timeout time.Duration) *utils.NewProcessInfo {
+func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, processName string) *utils.NewProcessInfo {
+	tpid := targetPID
+	applog.InfoLogSaveAppLog("detectNewProcesses start")
 	startTime := time.Now()
-	knownPIDs := make(map[int]bool)
+	knownPIDs := make(map[uint32]bool)
+	var newProcess *utils.NewProcessInfo = nil
+	var interval = 2
+	var waitTime = 0
 
 	// 初始化已知进程列表
-	initialProcesses, err := utils.GetRunningProcesses()
+	initialProcesses, err := utils.GetRunningProcessesWithPPID()
+	applog.InfoLogSaveAppLog("detectNewProcesses initialProcesses: %d", len(initialProcesses))
 	if err != nil {
-		applog.LogErrorf(s.ctx, "Failed to list initial processes: %v", err)
+		applog.ErrorLogSaveAppLog("detectNewProcesses Failed to list initial processes: %v", err)
 		return nil
 	}
 	for _, proc := range initialProcesses {
-		knownPIDs[int(proc.PID)] = true
+		knownPIDs[proc.PID] = true
+		if proc.PPID == tpid {
+			applog.InfoLogSaveAppLog("detectNewProcesses Found process: %s (PID: %d)", proc.Name, proc.PID)
+			tpid = proc.PID
+			newProcess = &utils.NewProcessInfo{Name: proc.Name, PID: proc.PID, PPID: proc.PPID}
+			if newProcess.Name == processName {
+				return newProcess
+			}
+			break
+			// return &proc
+		}
 	}
+	//todo:暂时如果一个启动器启动了几个程序，其中一个是子程序，然后其下一个程序才是真正游戏程序的情况还没能覆盖，找到这样的游戏再搞
 
-	ticker := time.NewTicker(interval)
+	ticker := time.NewTicker(time.Second * time.Duration(interval))
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			currentProcesses, err := utils.GetRunningProcessesWithPaths()
+			currentProcesses, err := utils.GetRunningProcessesWithPPID()
+			waitTime += interval
+			// currentProcesses, err := utils.GetRunningProcesses()
+			applog.InfoLogSaveAppLog("detectNewProcesses currentProcesses: %d, waittime:%d", len(initialProcesses), waitTime)
 			if err != nil {
-				applog.LogErrorf(s.ctx, "Failed to list current processes: %v", err)
+				applog.ErrorLogSaveAppLog("detectNewProcesses Failed to list current processes: %v", err)
 				continue
 			}
 
 			// 检查是否有新进程
 			for _, proc := range currentProcesses {
-				if !knownPIDs[int(proc.PID)] {
+				if !knownPIDs[proc.PID] {
 					// 检查该进程是否由目标进程启动
-					if int(proc.PPID) == targetPID {
-						applog.LogInfof(s.ctx, "Detected new process launched by PID %d: %s (PID: %d)", targetPID, proc.Name, proc.PID)
+					applog.InfoLogSaveAppLog("detectNewProcesses New process detected: %s (PID: %d)")
+					if proc.PPID == tpid {
+						applog.InfoLogSaveAppLog("detectNewProcesses Detected new process launched by PID %d: %s (PID: %d)", targetPID, proc.Name, proc.PID)
 						// 可以在这里添加业务逻辑，例如记录或通知
-						return &proc
+						// return &proc
+						tpid = proc.PID
+						newProcess = &utils.NewProcessInfo{Name: proc.Name, PID: proc.PID, PPID: proc.PPID}
+						if newProcess.Name == processName {
+							return newProcess
+						}
+						break
 					}
-					knownPIDs[int(proc.PID)] = true
+					knownPIDs[proc.PID] = true
 				}
 			}
 
 			// 超时退出
-			if time.Since(startTime) > timeout {
-				applog.LogInfof(s.ctx, "Process monitoring timeout reached")
-				return nil
+			if time.Since(startTime) > time.Second*time.Duration(s.config.DetectTime) {
+				applog.InfoLogSaveAppLog("detectNewProcesses Process monitoring timeout reached")
+				if newProcess != nil && utils.IsProcessRunningByPID(tpid, s.ctx) {
+					if processName != "" && processName != newProcess.Name {
+						return nil
+					}
+					return newProcess
+				} else {
+					return nil
+				}
 			}
 		case <-s.ctx.Done():
-			applog.LogInfof(s.ctx, "Process monitoring cancelled")
+			applog.InfoLogSaveAppLog("detectNewProcesses Process monitoring cancelled")
 			return nil
 		}
 	}

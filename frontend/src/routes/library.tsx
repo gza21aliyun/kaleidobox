@@ -576,10 +576,13 @@ function LibraryPage() {
         onClose={() => setIsBatchImportOpen(false)}
         onImportComplete={fetchGames}
         onOpenUpdate={(res) => {
-          setSelectedGameIds(res.map((g) => g.id))
+          console.log("onOpenUpdate res:", res)
           // gamesForUpdate.current = res;
-          setIsBatchUpdateOpen(true);
-          fetchGames();
+          fetchGames().then(() => { 
+            setSelectedGameIds(res.map((g) => g.id))
+            setIsBatchUpdateOpen(true);
+          })
+          
         }}
       />
 

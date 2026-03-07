@@ -42,6 +42,7 @@ function GameDetailPage() {
   const search = useSearch({ strict: false }) as GameSearchParams; // 获取查询参数
   const filteredGameIds = search.filteredGameIdsStr || [];
   const config = useAppStore(state => state.config);
+  const setGames = useAppStore(state => state.setGames);
   const [game, setGame] = useState<models.Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
@@ -268,6 +269,7 @@ function GameDetailPage() {
       return;
     try {
       await DeleteGame(game.id);
+      setGames([])
       toast.success(t('common.deleteSuccess'));
       navigate({ to: "/library" });
     }

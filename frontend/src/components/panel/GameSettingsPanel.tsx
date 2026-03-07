@@ -87,8 +87,20 @@ export function GameSettingsPanel({ formData, onChange }: GameSettingsPanelProps
             onCheckedChange={checked =>
               onChange({ ...formData, auto_detect_game_process: checked } as appconf.AppConfig)}
           />
+          <div className="flex flex-col gap-1.5 pl-6">
+            <label className="text-sm font-medium text-brand-700 dark:text-brand-300">{t("gameSettings.detectTime")}</label>
+            <input
+              type="number"
+              name="detect_time"
+              value={formData.detect_time || 60}
+              onChange={e => onChange({ ...formData, detect_time: Number.parseInt(e.target.value) || 0 } as appconf.AppConfig)}
+              className="glass-input w-24 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white"
+            />
+          </div>
         </div>
+        
       </div>
+      
 
       {/* Locale Emulator 配置 */}
       <div className="mt-6 border-t border-brand-200 dark:border-brand-700 pt-6">

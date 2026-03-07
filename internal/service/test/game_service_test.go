@@ -691,7 +691,7 @@ func TestGameService_ImportLnk(t *testing.T) {
 	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
 
 	t.Run("import success", func(t *testing.T) {
-		importServie.BatchImportGamesFolderLnk(`J:\新しいフォルダー\KURO\`)
+		importServie.BatchImportGamesFolderLnk(`J:\新しいフォルダー\test\`)
 	})
 }
 

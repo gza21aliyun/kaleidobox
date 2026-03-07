@@ -30,6 +30,7 @@ interface LocalCandidate {
   selectedExe: string;
   searchName: string;
   isSelected: boolean;
+  arguments: string;
   matchedGame: models.Game | null;
   matchSource: enums.SourceType | null;
   matchStatus: "pending" | "matched" | "not_found" | "error" | "manual";
@@ -80,6 +81,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
             executables: c.executables || [],
             selectedExe: c.selected_exe,
             searchName: c.search_name,
+            arguments: c.arguments,
             isSelected: true,
             matchedGame: null,
             matchSource: null,
@@ -105,6 +107,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
   };
 
     const handleUpdate = () => {    
+      console.log("handleUpdate:", candidates);
       const importCandidates: vo.BatchImportCandidate[] = candidates
         .filter(c => c.isSelected)
         .map((c) => {
@@ -114,6 +117,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
             executables: c.executables,
             selected_exe: c.selectedExe,
             search_name: c.searchName,
+            arguments: c.arguments,
             is_selected: c.isSelected,
             match_status: c.matchStatus,
           });
@@ -125,10 +129,12 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
           }
           return candidate;
         });
+        console.log("importCandidates:", importCandidates)
 
         // var rs = await BatchImportGames(importCandidates)
         BatchImportGames(importCandidates).then((res) => { 
           resetAndClose()
+          console.log("res:", res)
           onOpenUpdate(res.games)
         
         })
@@ -244,6 +250,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
             search_name: c.searchName,
             is_selected: c.isSelected,
             match_status: c.matchStatus,
+            arguments: c.arguments,
           });
           if (c.matchedGame) {
             candidate.matched_game = c.matchedGame;

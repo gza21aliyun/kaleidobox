@@ -1194,6 +1194,7 @@ func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate
 	fmt.Printf("  目标文件路径: %s", result.SelectedExe)
 	fmt.Printf("  targetPath路径: %s", targetPath)
 	fmt.Printf("  fullcommand路径: %s", fullCommand)
+	fmt.Printf("  auguments: %s", result.Arguments)
 	fmt.Printf("  WorkingDirectory路径: %s", shortcutInfo.WorkingDirectory)
 	fmt.Printf("  搜索名称: %s\n", result.SearchName)
 	return result, nil

@@ -271,7 +271,7 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 				applog.LogInfof(s.ctx, "Game %s has new process found to save: %s, PID: %d", gameID, newProcess.Name, newProcess.PID)
 				actualProcessID = newProcess.PID
 				actualProcessName = newProcess.Name
-				needExternalMonitor = true
+				needExternalMonitor = newProcess.PID != launcherPID
 				s.updateGameProcessName(gameID, newProcess.Name)
 			} else {
 				s.promptUserToSelectProcess(sessionID, gameID, startTime, launcherExeName)
@@ -649,6 +649,7 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 	applog.InfoLogSaveAppLog("detectNewProcesses start")
 	startTime := time.Now()
 	knownPIDs := make(map[uint32]bool)
+	var oldProcess *utils.NewProcessInfo = nil
 	var newProcess *utils.NewProcessInfo = nil
 	var interval = 2
 	var waitTime = 0
@@ -662,6 +663,9 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 	}
 	for _, proc := range initialProcesses {
 		knownPIDs[proc.PID] = true
+		if proc.PID == targetPID {
+			oldProcess = &utils.NewProcessInfo{Name: proc.Name, PID: proc.PID, PPID: proc.PPID}
+		}
 		if proc.PPID == tpid {
 			applog.InfoLogSaveAppLog("detectNewProcesses Found process: %s (PID: %d)", proc.Name, proc.PID)
 			tpid = proc.PID
@@ -672,6 +676,7 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 			break
 			// return &proc
 		}
+
 	}
 	//todo:暂时如果一个启动器启动了几个程序，其中一个是子程序，然后其下一个程序才是真正游戏程序的情况还没能覆盖，找到这样的游戏再搞
 
@@ -719,6 +724,9 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 					}
 					return newProcess
 				} else {
+					if oldProcess != nil && utils.IsProcessRunningByPID(oldProcess.PID, s.ctx) {
+						return oldProcess
+					}
 					return nil
 				}
 			}

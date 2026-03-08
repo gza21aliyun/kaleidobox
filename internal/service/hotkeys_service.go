@@ -757,19 +757,23 @@ func (s *HotkeyService) GetGlobalHotkeys() ([]models.Hotkey, error) {
 	var hotkeys []models.Hotkey = []models.Hotkey{}
 	for rows.Next() {
 		var hotkey models.Hotkey
+		var deviceType string
+		var actionType string
 		err := rows.Scan(
 			&hotkey.ID,
 			&hotkey.GameID,
 			&hotkey.Name,
-			&hotkey.DeviceType,
+			&deviceType,
 			&hotkey.KeyCode,
 			// &hotkey.Modifiers,
-			&hotkey.ActionType,
+			&actionType,
 			&hotkey.ActionParams,
 			&hotkey.IsEnabled,
 			&hotkey.CreatedAt,
 			&hotkey.UpdatedAt,
 		)
+		hotkey.DeviceType = enums.DeviceType(deviceType)
+		hotkey.ActionType = enums.HotkeyActionType(actionType)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "扫描快捷键数据失败: %v", err)
 			continue
@@ -792,10 +796,10 @@ func (s *HotkeyService) UpdateHotkey(hotkey models.Hotkey) error {
 
 	_, err := s.db.Exec(query,
 		hotkey.Name,
-		hotkey.DeviceType,
+		string(hotkey.DeviceType),
 		hotkey.KeyCode,
 		// hotkey.Modifiers,
-		hotkey.ActionType,
+		string(hotkey.ActionType),
 		hotkey.ActionParams,
 		hotkey.IsEnabled,
 		hotkey.ID,
@@ -833,10 +837,10 @@ func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
 		hotkey.ID,
 		hotkey.GameID,
 		hotkey.Name,
-		hotkey.DeviceType,
+		string(hotkey.DeviceType),
 		hotkey.KeyCode,
 		// hotkey.Modifiers,
-		hotkey.ActionType,
+		string(hotkey.ActionType),
 		hotkey.ActionParams,
 		hotkey.IsEnabled,
 		hotkey.CreatedAt,
@@ -872,19 +876,23 @@ func (s *HotkeyService) GetHotkeysByGameID(gameID string) ([]models.Hotkey, erro
 	var hotkeys []models.Hotkey = []models.Hotkey{}
 	for rows.Next() {
 		var hotkey models.Hotkey
+		var deviceType string
+		var actionType string
 		err := rows.Scan(
 			&hotkey.ID,
 			&hotkey.GameID,
 			&hotkey.Name,
-			&hotkey.DeviceType,
+			&deviceType,
 			&hotkey.KeyCode,
 			// &hotkey.Modifiers,
-			&hotkey.ActionType,
+			&actionType,
 			&hotkey.ActionParams,
 			&hotkey.IsEnabled,
 			&hotkey.CreatedAt,
 			&hotkey.UpdatedAt,
 		)
+		hotkey.DeviceType = enums.DeviceType(deviceType)
+		hotkey.ActionType = enums.HotkeyActionType(actionType)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "扫描快捷键数据失败: %v", err)
 			continue

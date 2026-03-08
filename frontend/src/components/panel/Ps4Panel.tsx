@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { BetterButton } from '../ui/BetterButton';
 import { toast } from "react-hot-toast";
 import { models, enums } from '../../../wailsjs/go/models';
-import { GetHotkeysByGameID, UpdateHotkey, AddHotkey, DeleteHotkey, GetGlobalHotkeys, MonitorKeySetting, CancelMonitorKeySetting } from '../../../wailsjs/go/service/HotkeyService';
+import { GetHotkeysByGameID, UpdateHotkey, AddHotkey, DeleteHotkey, GetGlobalHotkeys } from '../../../wailsjs/go/service/HotkeyService';
 import { GetAppConfig, UpdateAppConfig } from '../../../wailsjs/go/service/ConfigService';
 import i18next from "../../i18n/i18n";
 const t = i18next.t;
@@ -237,68 +237,84 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
   };
 
   // 处理按钮点击
-  const handleButtonClick = async (button: string) => {
+  const handleButtonClick = (button: string) => {
     setCurrentMappingButton(button);
     setNewKeyCode('');
     setShowMappingDialog(true);
     setWaitingForKey(true);
-    
-    try {
-      // 使用MonitorKeySetting监听手柄按键
-      const key = await MonitorKeySetting();
-      if (key && currentMappingButton) {
-        setNewKeyCode(key.key_code);
-        // 更新或创建映射
-        await saveMapping(currentMappingButton, key.key_code);
-      }
-    } catch (error) {
-      console.error('Failed to capture key:', error);
-    } finally {
-      setWaitingForKey(false);
-      setShowMappingDialog(false);
-    }
   };
 
-  // 保存映射配置
-  const saveMapping = async (button: string, targetKey: string) => {
+  // 键盘事件处理
+  useEffect(() => {
+    if (waitingForKey) {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        e.preventDefault();
+        const keyCode = e.key;
+        console.log('Key pressed:', keyCode);
+        setNewKeyCode(keyCode);
+        if (currentMappingButton) {
+          console.log('Updating mapping for button:', currentMappingButton, 'with key:', keyCode);
+          updateMapping(currentMappingButton, keyCode);
+        }
+        setWaitingForKey(false);
+        setShowMappingDialog(false);
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [waitingForKey, currentMappingButton]);
+
+  // 更新映射配置（仅更新状态，不保存到数据库）
+  const updateMapping = (button: string, targetKey: string) => {
     try {
+      console.log('updateMapping called with button:', button, 'targetKey:', targetKey);
       const existingHotkey = findMapping(button);
+      console.log('Existing hotkey:', existingHotkey);
       
       if (existingHotkey) {
         // 更新现有映射
         const updatedHotkey = new models.Hotkey({
           ...existingHotkey,
+          name: targetKey,
           action_params: targetKey,
           device_type: selectedDeviceType || enums.DeviceType.DUALSHOCK4,
-          updated_at: new Date()
+          updated_at: new Date().toISOString()
         });
-        await UpdateHotkey(updatedHotkey);
-        setHotkeys(prev => prev.map(h => 
-          h.id === existingHotkey.id ? updatedHotkey : h
-        ));
+        console.log('Updated hotkey:', updatedHotkey);
+        setHotkeys(prev => {
+          const newHotkeys = prev.map(h => 
+            h.id === existingHotkey.id ? updatedHotkey : h
+          );
+          console.log('New hotkeys after update:', newHotkeys);
+          return newHotkeys;
+        });
       } else {
         // 创建新映射
         const newHotkey = new models.Hotkey({
           id: Date.now().toString(),
           game_id: gameId,
-          name: `${currentDevice?.name || 'PS4'} ${button}`,
+          name: targetKey,
           device_type: selectedDeviceType || enums.DeviceType.DUALSHOCK4,
           key_code: button,
           modifiers: [],
           action_type: enums.HotkeyActionType.CUSTOM,
           action_params: targetKey,
           is_enabled: true,
-          created_at: new Date(),
-          updated_at: new Date()
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         });
-        const createdHotkey = await AddHotkey(newHotkey);
-        setHotkeys(prev => [...prev, newHotkey]);
+        console.log('New hotkey to add:', newHotkey);
+        setHotkeys(prev => {
+          const newHotkeys = [...prev, newHotkey];
+          console.log('New hotkeys after add:', newHotkeys);
+          return newHotkeys;
+        });
       }
       
-      setShowMappingDialog(false);
       toast.success(t('ps4.mappingSaved', { button, targetKey }));
     } catch (error) {
-      console.error('Failed to save mapping:', error);
+      console.error('Failed to update mapping:', error);
       toast.error(t('ps4.saveMappingFailed'));
     }
   };
@@ -320,7 +336,6 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
     setShowMappingDialog(false);
     setWaitingForKey(false);
     setCurrentMappingButton(null);
-    CancelMonitorKeySetting();
   };
 
   // 保存所有映射
@@ -335,9 +350,7 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
       
       // 2. 删除所有游戏特定的映射
       for (const hotkey of gameHotkeys) {
-        if (hotkey.device_type === enums.DeviceType.DUALSHOCK4) {
-          await DeleteHotkey(hotkey.id);
-        }
+        await DeleteHotkey(hotkey.id);
       }
       
       // 3. 获取全局映射

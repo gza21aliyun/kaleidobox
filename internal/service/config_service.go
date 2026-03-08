@@ -164,8 +164,14 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.LocaleEmulatorPath = newConfig.LocaleEmulatorPath
 	s.config.MagpiePath = newConfig.MagpiePath
 	s.config.AutoDetectGameProcess = newConfig.AutoDetectGameProcess
+
 	// 时区相关配置
 	s.config.TimeZone = newConfig.TimeZone
+	s.config.EroscapeIsEnabled = newConfig.EroscapeIsEnabled
+	s.config.EroscapeUseMirror = newConfig.EroscapeUseMirror
+	s.config.DmmIsEnabled = newConfig.DmmIsEnabled
+	s.config.JoystickType = newConfig.JoystickType
+	s.config.NewFolderChooser = newConfig.NewFolderChooser
 	return nil
 }
 

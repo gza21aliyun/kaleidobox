@@ -19,6 +19,11 @@ interface KeyMapping {
   position: { x: number; y: number };
 }
 
+interface KeyMap {
+  label: string;
+  keyCode: string;
+}
+
 export function Ps4Panel({ gameId }: Ps4PanelProps) {
   const [hotkeys, setHotkeys] = useState<models.Hotkey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +33,11 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
   const [waitingForKey, setWaitingForKey] = useState(false);
   const [selectedDeviceType, setSelectedDeviceType] = useState<enums.DeviceType | null>(null);
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
+
+  const keyboardMap: KeyMap[] = [
+    { keyCode: 'ctrl', label: 'Control' }
+
+  ]
 
   
 
@@ -274,10 +284,12 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
       
       if (existingHotkey) {
         // 更新现有映射
+        var foundMapping = keyboardMap.find((mapping) => mapping.label === targetKey)
         const updatedHotkey = new models.Hotkey({
           ...existingHotkey,
           name: targetKey,
-          action_params: targetKey,
+          action_params: foundMapping?.keyCode ?? targetKey,
+          action_type: enums.HotkeyActionType.CUSTOM,
           device_type: selectedDeviceType || enums.DeviceType.DUALSHOCK4,
           updated_at: new Date().toISOString()
         });

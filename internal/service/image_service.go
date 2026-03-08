@@ -236,8 +236,8 @@ func (s *ImageService) DeleteImageBackup(url string) error {
 }
 
 func (s *ImageService) FetchImages(id string, subjectType int, imageType int) ([]models.ImageBackup, error) {
-	count, err := s.CountImageBackups()
-	applog.LogInfof(s.ctx, "FetchImages start, count:%d, err:%v\n", count, err)
+	_, err := s.CountImageBackups()
+	// applog.LogInfof(s.ctx, "FetchImages start, count:%d, err:%v\n", count, err)
 	// query := fmt.Sprintf(`
 	// 	SELECT url, local_path, subject_id, subject_type, image_type
 	// 	FROM image_backups
@@ -249,7 +249,7 @@ func (s *ImageService) FetchImages(id string, subjectType int, imageType int) ([
 		WHERE subject_id = ? AND subject_type = ? AND image_type = ?
 	`
 	rs, err := s.FetchImageBackups(query, id, subjectType, imageType)
-	applog.LogInfof(s.ctx, "FetchImages count:%d\n", len(rs))
+	// applog.LogInfof(s.ctx, "FetchImages count:%d\n", len(rs))
 	return rs, err
 }
 

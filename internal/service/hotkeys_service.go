@@ -172,13 +172,17 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 	for rows.Next() {
 		var hotkey models.Hotkey
 		// var modifiersBytes []byte
+		var deviceType string
+		var actionType string
 
 		err := rows.Scan(
-			&hotkey.ID, &hotkey.GameID, &hotkey.Name, &hotkey.DeviceType, &hotkey.KeyCode,
+			&hotkey.ID, &hotkey.GameID, &hotkey.Name, &deviceType, &hotkey.KeyCode,
 			// &modifiersBytes,
-			&hotkey.ActionType, &hotkey.ActionParams,
+			&actionType, &hotkey.ActionParams,
 			&hotkey.IsEnabled, &hotkey.CreatedAt, &hotkey.UpdatedAt,
 		)
+		hotkey.DeviceType = enums.DeviceType(deviceType)
+		hotkey.ActionType = enums.HotkeyActionType(actionType)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "Failed to scan hotkey: %v", err)
 			continue
@@ -210,15 +214,15 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) {
 	s.actionKeys = make(map[string]*models.Hotkey)
 
 	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
-	FROM hotkeys WHERE is_enabled = TRUE`
+	FROM hotkeys`
 	if gameId != "" {
-		query += fmt.Sprintf(" AND (game_id = '%s' OR game_id = '%s')", gameId, "global")
+		query += fmt.Sprintf(" WHERE (game_id = '%s' OR game_id = '%s')", gameId, "global")
 	}
 
 	rows, _ := s.fetchHotkeys(query)
 
 	for _, hotkey := range rows {
-		if hotkey.ActionType != enums.HotkeyActionKeyMapping {
+		if hotkey.ActionType != enums.HotkeyActionCustom {
 			if !hotkey.IsGlobal() || s.actionKeys[hotkey.KeyCode] == nil {
 				s.actionKeys[hotkey.KeyCode] = hotkey
 			}
@@ -242,7 +246,7 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) {
 		statsStr += fmt.Sprintf("%s:%d ", deviceType, count)
 	}
 
-	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s)", len(s.keyMappings), statsStr)
+	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s)%d", len(s.keyMappings), statsStr, len(rows))
 }
 
 // loadConnectedDevicesFromDB 从数据库加载已连接设备
@@ -341,8 +345,10 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 
 	// 更新状态
 	s.stateLock.Lock()
+	s.mappingLock.Lock()
 	s.keyStates[key] = true
-	s.stateLock.Unlock()
+	defer s.stateLock.Unlock()
+	defer s.mappingLock.Unlock()
 
 	if s.actionKeys[key] != nil { // 映射的按键
 		s.monitoredKey.Store(&hk)
@@ -373,10 +379,14 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 	}
 	// 更新状态
 	s.stateLock.Lock()
+	s.mappingLock.Lock()
 	s.keyStates[key] = false
-	s.stateLock.Unlock()
+	defer s.stateLock.Unlock()
+	defer s.mappingLock.Unlock()
 
 	hotkey := s.keyMappings[key]
+
+	fmt.Printf("Key: %v , mappings:%v\n", hotkey, s.keyMappings)
 	if hotkey != nil {
 		s.simulateKeyRelease(hotkey.ActionParams, []enums.ModifierKey{})
 		s.monitoredKey.Store(&hk)
@@ -780,6 +790,7 @@ func (s *HotkeyService) GetGlobalHotkeys() ([]models.Hotkey, error) {
 		}
 		hotkeys = append(hotkeys, hotkey)
 	}
+	fmt.Printf("已加载快捷键:%d\n", len(hotkeys))
 
 	return hotkeys, nil
 }

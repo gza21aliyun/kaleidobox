@@ -212,16 +212,20 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) {
 	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
 	FROM hotkeys WHERE is_enabled = TRUE`
 	if gameId != "" {
-		query += fmt.Sprintf(" AND game_id = '%s'", gameId)
+		query += fmt.Sprintf(" AND (game_id = '%s' OR game_id = '%s')", gameId, "global")
 	}
 
 	rows, _ := s.fetchHotkeys(query)
 
 	for _, hotkey := range rows {
 		if hotkey.ActionType != enums.HotkeyActionKeyMapping {
-			s.actionKeys[hotkey.KeyCode] = hotkey
+			if !hotkey.IsGlobal() || s.actionKeys[hotkey.KeyCode] == nil {
+				s.actionKeys[hotkey.KeyCode] = hotkey
+			}
 		} else {
-			s.keyMappings[hotkey.KeyCode] = hotkey
+			if !hotkey.IsGlobal() || s.keyMappings[hotkey.KeyCode] == nil {
+				s.keyMappings[hotkey.KeyCode] = hotkey
+			}
 		}
 
 		applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)

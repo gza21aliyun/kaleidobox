@@ -58,6 +58,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       // 这里应该调用获取游戏截图的API
       // 暂时使用空数组
       let rs = await FetchImages(game.id, 0, 3);
+      console.log("获取游戏截图成功:", rs);
       setScreenshots(rs ?? []);
       let imgs = await FetchImages(game.id, 0, 2);
       setImages(imgs ?? []);
@@ -118,8 +119,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
               {screenshotHotkey && (
                 <span className="px-2 py-1 bg-brand-100 text-brand-700 text-sm rounded dark:bg-brand-900/30 dark:text-brand-300">
                   {screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers?.length > 0
-                    ? `${screenshotHotkey.modifiers.join(" + ")} + ${screenshotHotkey.key_code}`
-                    : screenshotHotkey.key_code
+                    ? `${screenshotHotkey.device_type}   ${screenshotHotkey.modifiers.join(" + ")} + ${screenshotHotkey.name}`
+                    : `${screenshotHotkey.device_type}   ${screenshotHotkey.name}`
                   }
                 </span>
               )}

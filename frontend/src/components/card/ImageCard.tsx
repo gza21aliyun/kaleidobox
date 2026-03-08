@@ -98,6 +98,6 @@ function getLocalPath(localPath: string)  {
         if (ar.length < 3) {
             return ""
         }
-        const path = `/local/${ar[ar.length - 2]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`
+        const path = `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`
         return path;
     }

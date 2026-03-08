@@ -363,7 +363,7 @@ func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, err
 }
 
 func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {
-	fmt.Printf("GetGamesByQuery 01: query: %s\n", query)
+	// fmt.Printf("GetGamesByQuery 01: query: %s\n", query)
 	var games []models.Game = []models.Game{}
 	rows, err := s.db.QueryContext(s.ctx, query)
 	if err != nil {

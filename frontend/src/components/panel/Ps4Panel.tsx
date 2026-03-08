@@ -26,24 +26,32 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
 
   // PS4手柄按键位置定义
   const buttonMappings: KeyMapping[] = [
-    { button: 'square', position: { x: 25, y: 35 }, label: '□' },
-    { button: 'cross', position: { x: 35, y: 45 }, label: '✕' },
-    { button: 'circle', position: { x: 45, y: 35 }, label: '○' },
-    { button: 'triangle', position: { x: 35, y: 25 }, label: '△' },
-    { button: 'l1', position: { x: 15, y: 15 }, label: 'L1' },
-    { button: 'r1', position: { x: 75, y: 15 }, label: 'R1' },
-    { button: 'l2', position: { x: 10, y: 5 }, label: 'L2' },
-    { button: 'r2', position: { x: 80, y: 5 }, label: 'R2' },
-    { button: 'share', position: { x: 20, y: 25 }, label: 'SHARE' },
-    { button: 'options', position: { x: 70, y: 25 }, label: 'OPTIONS' },
-    { button: 'ps', position: { x: 45, y: 50 }, label: 'PS' },
-    { button: 'touchpad', position: { x: 40, y: 30 }, label: 'TOUCHPAD' },
-    { button: 'left_stick', position: { x: 25, y: 60 }, label: 'LS' },
-    { button: 'right_stick', position: { x: 65, y: 60 }, label: 'RS' },
-    { button: 'dpad_up', position: { x: 20, y: 75 }, label: '↑' },
-    { button: 'dpad_down', position: { x: 20, y: 85 }, label: '↓' },
-    { button: 'dpad_left', position: { x: 15, y: 80 }, label: '←' },
-    { button: 'dpad_right', position: { x: 25, y: 80 }, label: '→' }
+    { button: 'square', position: { x: 52, y: 17 }, label: 'A' },
+    { button: 'cross', position: { x: 58, y: 25 }, label: 'S' },
+    { button: 'circle', position: { x: 65, y: 17 }, label: 'D' },
+    { button: 'triangle', position: { x: 58, y: 10 }, label: 'W' },
+    { button: 'l1', position: { x: 15, y: -5 }, label: 'Q' },
+    { button: 'r1', position: { x: 60, y: -5 }, label: 'E' },
+    { button: 'l2', position: { x: 10, y: -15 }, label: 'Z' },
+    { button: 'r2', position: { x: 65, y: -15 }, label: 'C' },
+    { button: 'l3', position: { x: 23, y: 40 }, label: '1' },
+    { button: 'r3', position: { x: 49, y: 40 }, label: '3' },
+    { button: 'share', position: { x: 22, y: 5 }, label: 'V' },
+    { button: 'options', position: { x: 50, y: 5 }, label: 'M' },
+    { button: 'ps', position: { x: 37, y: 30 }, label: 'B' },
+    { button: 'touchpad', position: { x: 37, y: 13 }, label: 'N' },
+    { button: 'l3-left', position: { x: 15, y: 40 }, label: '←' },
+    { button: 'l3-up', position: { x: 23, y: 29 }, label: '↑' },
+    { button: 'l3-right', position: { x: 31, y: 40 }, label: '→' },
+    { button: 'l3-down', position: { x: 23, y: 51 }, label: '↓' },
+    { button: 'r3-left', position: { x: 41, y: 40 }, label: 'J' },
+    { button: 'r3-up', position: { x: 49, y: 29 }, label: 'I' },
+    { button: 'r3-right', position: { x: 57, y: 40 }, label: 'L' },
+    { button: 'r3-down', position: { x: 49, y: 51 }, label: 'K' },
+    { button: 'dpad_up', position: { x: 13, y: 10 }, label: 'T' },
+    { button: 'dpad_down', position: { x: 13, y: 25 }, label: 'G' },
+    { button: 'dpad_left', position: { x: 8, y: 17 }, label: 'F' },
+    { button: 'dpad_right', position: { x: 19, y: 17 }, label: 'H' }
   ];
 
   // 加载游戏的快捷键配置
@@ -181,127 +189,53 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
   }
 
   return (
-    <div className="ps4-panel relative w-full h-full min-h-[500px]">
-      {/* 手柄背景图 */}
+    <div className="ps4-panel relative w-full h-full min-h-[700px]">
+      {/* 手柄图片和按钮映射容器 - 固定大小并居中 */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative w-80 h-64 bg-gray-800 rounded-2xl border-4 border-gray-700 shadow-xl">
-          {/* 手柄主体形状 */}
-          <div className="absolute inset-4 bg-gray-900 rounded-xl"></div>
-          
-          {/* 左右握把 */}
-          <div className="absolute left-2 top-8 w-12 h-32 bg-gray-700 rounded-l-lg"></div>
-          <div className="absolute right-2 top-8 w-12 h-32 bg-gray-700 rounded-r-lg"></div>
-          
-          {/* 中央凹槽 */}
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-16 bg-gray-700 rounded-full"></div>
+        <div className="relative w-[700px] h-[500px]">
+          {/* 手柄背景图 - 位于按钮层下方 */}
+          <img 
+            src="/ds4.png" 
+            alt="DS4 Controller"
+            className="absolute inset-0 w-[500px] h-[312px] object-contain"
+          />
+
+          {/* 按钮映射层 - 位于图片上方 */}
+          {buttonMappings.map((mapping) => {
+            const hotkey = findMapping(mapping.button);
+            return (
+              <div key={mapping.button} className="absolute" 
+                   style={{
+                     left: `${mapping.position.x}%`,
+                     top: `${mapping.position.y}%`,
+                     transform: 'translate(-50%, -50%)'
+                   }}>
+                <button
+                  className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transform"
+                  onClick={() => handleButtonClick(mapping.button)}
+                  title={hotkey ? `${mapping.label} → ${hotkey.action_params || '未设置'}` : mapping.label}
+                >
+                  {hotkey ? hotkey.action_params?.toUpperCase() || mapping.label : mapping.label}
+                </button>
+                
+                {/* 删除按钮 */}
+                {hotkey && (
+                  <button
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full text-white text-xs flex items-center justify-center shadow-md"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteMapping(hotkey.id);
+                    }}
+                    title="删除映射"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
-
-      {/* 按钮映射层 */}
-      {buttonMappings.map((mapping) => {
-        const hotkey = findMapping(mapping.button);
-        return (
-          <div key={mapping.button} className="absolute" 
-               style={{
-                 left: `${mapping.position.x}%`,
-                 top: `${mapping.position.y}%`,
-                 transform: 'translate(-50%, -50%)'
-               }}>
-            <button
-              className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transform"
-              onClick={() => handleButtonClick(mapping.button)}
-              title={hotkey ? `${mapping.label} → ${hotkey.action_params || '未设置'}` : mapping.label}
-            >
-              {hotkey ? hotkey.action_params?.toUpperCase() || mapping.label : mapping.label}
-            </button>
-            
-            {/* 删除按钮 */}
-            {hotkey && (
-              <button
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full text-white text-xs flex items-center justify-center shadow-md"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteMapping(hotkey.id);
-                }}
-                title="删除映射"
-              >
-                ×
-              </button>
-            )}
-          </div>
-        );
-      })}
-
-      {/* 映射设置对话框 */}
-      {showMappingDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">
-                  {t('ps4.setButtonMapping', { button: currentMappingButton })}
-                </h3>
-                <button
-                  onClick={cancelMapping}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <p className="text-gray-600">
-                  {t('ps4.pressKeyToMap', { button: currentMappingButton })}
-                </p>
-                
-                <div className="p-4 bg-gray-100 rounded-lg">
-                  <div className="text-center">
-                    {waitingForKey ? (
-                      <div className="animate-pulse">
-                        <div className="text-2xl">⌨️</div>
-                        <p className="mt-2 text-gray-500">{t('ps4.waitingForKeyInput')}</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <input
-                          type="text"
-                          value={newKeyCode}
-                          onChange={(e) => setNewKeyCode(e.target.value)}
-                          placeholder={t('ps4.enterKeyCode')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <BetterButton 
-                          onClick={startKeyCapture} 
-                          className="mt-2 w-full"
-                          variant="secondary"
-                        >
-                          {t('ps4.startKeyCapture')}
-                        </BetterButton>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-2 pt-4">
-                  <BetterButton onClick={cancelMapping}>
-                    {t('common.cancel')}
-                  </BetterButton>
-                  <BetterButton 
-                    onClick={() => {
-                      if (newKeyCode && currentMappingButton) {
-                        saveMapping(currentMappingButton, newKeyCode);
-                      }
-                    }}
-                    disabled={!newKeyCode}
-                  >
-                    {t('ps4.confirmMapping')}
-                  </BetterButton>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

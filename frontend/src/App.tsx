@@ -19,10 +19,11 @@ import { Route as staffRoute } from "./routes/staff";
 import { Route as charactorRoute } from "./routes/charactor";
 import { Route as charactorListRoute } from "./routes/charactor_list";
 import { Route as TagListRoute } from "./routes/tag_list";
+import { Route as joystickRoute } from "./routes/joystick";
 import { useAppStore } from "./store";
 
 const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, categoriesRoute, 
-  categoryRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute]);
+  categoryRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute]);
 
 const router = createRouter({ routeTree });
 

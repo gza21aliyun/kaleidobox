@@ -327,6 +327,9 @@ export function Ps4Panel({ gameId }: Ps4PanelProps) {
   const saveAllMappings = async () => {
     try {
       saveJoystickConfig(selectedDeviceType);
+      if (selectedDeviceType === null) { 
+        return
+      }
       // 1. 获取所有游戏特定的映射
       const gameHotkeys = await GetHotkeysByGameID(gameId);
       

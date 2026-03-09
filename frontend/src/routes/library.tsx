@@ -87,38 +87,7 @@ function LibraryPage() {
   
 
   
-  useEffect(() => {
-      const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
-        
-          // 注意：使用正确的语法从data对象获取值
-          const task : models.TaskNotice = new models.TaskNotice(data);
-          
-          // console.log("received taskid:" + task.id + " current taskid:" + taskId + ", item_id:" + task.item_id +  " item_status:" + task.item_status)
-          if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id !== "") {
-                  const newGame : models.Game = task.item_data as models.Game;
-                  console.log("newGame:", newGame)
-                  const newGames = [...games]
-                  const game = arrayFind(newGames, (it) => it.id === task.item_id)
-                  if (game) {
-                    const index = newGames.indexOf(game)
-                    
-                    newGames[index] = newGame
-                    setGames(newGames)
-                  }
-                  
-  
-              }
-          
-          
-          
-      });
-  
-      return () => {
-          if (unlistenTaskUpdate) {
-          unlistenTaskUpdate(); // 取消事件监听
-          }
-      };
-      }, [games]);
+
 
   
   

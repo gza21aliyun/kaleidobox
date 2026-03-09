@@ -1,10 +1,12 @@
 import { create } from "zustand";
 
-import { appconf, models, vo } from "../wailsjs/go/models";
+import { appconf, models, vo, enums } from "../wailsjs/go/models";
 
 import { GetAppConfig, UpdateAppConfig } from "../wailsjs/go/service/ConfigService";
 import { GetGames, GetGamesByPage } from "../wailsjs/go/service/GameService";
 import { GetHomePageData } from "../wailsjs/go/service/HomeService";
+import { EventsOn } from "../wailsjs/runtime/runtime";
+import { arrayFind } from "./components/utils/Utility";
 
 type AISummaryCache = {
   [dimension: string]: string;
@@ -140,3 +142,32 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ games: gamesToSet || [] });
   },
 }));
+
+// 全局事件监听器，确保在任何页面都能接收到游戏更新
+const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
+  const task: models.TaskNotice = new models.TaskNotice(data);
+  
+  if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id !== "") {
+    const newGame: models.Game = task.item_data as models.Game;
+    console.log("newGame:", newGame);
+    
+    const currentGames = useAppStore.getState().games;
+    const newGames = [...currentGames];
+    const game = arrayFind(newGames, (it) => it.id === task.item_id);
+    
+    if (game) {
+      const index = newGames.indexOf(game);
+      newGames[index] = newGame;
+      useAppStore.getState().setGames(newGames);
+    }
+  }
+});
+
+// 在应用退出时取消事件监听
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (unlistenTaskUpdate) {
+      unlistenTaskUpdate();
+    }
+  });
+}

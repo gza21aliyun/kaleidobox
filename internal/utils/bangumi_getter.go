@@ -306,9 +306,11 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	game := gameEntity.Game
 
 	// 使用中文名，如果没有则使用原名
-	name := bangumiResp.NameCN
-	if name == "" {
+	name := ""
+	if !b.searchCn || bangumiResp.NameCN == "" {
 		name = bangumiResp.Name
+	} else {
+		name = bangumiResp.NameCN
 	}
 
 	// 选择最佳的封面图片 (优先使用 large，然后是 common)

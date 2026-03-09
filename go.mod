@@ -14,6 +14,7 @@ require (
 	github.com/go-vgo/robotgo v1.0.1
 	github.com/gocolly/colly/v2 v2.3.0
 	github.com/google/uuid v1.6.0
+	github.com/hbollon/go-edlib v1.7.0
 	github.com/labstack/gommon v0.4.2
 	github.com/mattn/go-runewidth v0.0.19
 	github.com/spf13/cobra v1.10.2

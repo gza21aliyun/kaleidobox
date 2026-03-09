@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/dlclark/regexp2"
+	"github.com/hbollon/go-edlib"
 )
 
 func MergeStrings(tagStr1, tagStr2 string) string {
@@ -353,6 +354,29 @@ func getGameNameAlternative(searchName string) string {
 }
 
 func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
+	type Result struct {
+		similarity float32
+		Value      T1
+	}
+	if len(slice1) == 0 {
+		return nil
+	}
+	var results []Result
+	for _, item := range slice1 {
+		name := fn(item)
+		if name == searchName {
+			return &item
+		}
+		similarity := edlib.JaroWinklerSimilarity(searchName, name)
+		results = append(results, Result{similarity: similarity, Value: item})
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].similarity > results[j].similarity
+	})
+	return &results[0].Value
+}
+
+func searchNameByRegex2[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
 	mainTitle, _, num := getTitles(searchName)
 	fmt.Printf("searchName:%s, mainTitle:%s\n", searchName, mainTitle)
 	result := searchByRegex(slice1, generateSearchRegex(searchName), searchName, excludeWords, fn)

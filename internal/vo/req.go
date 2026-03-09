@@ -18,6 +18,8 @@ type MetadataRequest struct {
 	ShouldFetchImages     bool             `json:"should_fetch_images"`
 	ShouldFetchTags       bool             `json:"should_fetch_tags"`
 	DbGameId              string           `json:"db_game_id"`
+	ShouldMatchAgain      bool             `json:"should_match_again"`
+	ShouldUnionFetch      bool             `json:"should_union_fetch"`
 }
 
 // BatchImportCandidate 批量导入候选项

@@ -52,6 +52,8 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   const [shouldLoadCharacters, setShouldLoadCharacters] = useState(true);
   const [shouldLoadImages, setShouldLoadImages] = useState(true);
   const [shouldLoadTags, setShouldLoadTags] = useState(true);
+  const [shouldMatchAgain, setShouldMatchAgain] = useState(false);
+  const [shouldUnionFetch, setShouldUnionFetch] = useState(false);
   const [itemIdMatching, setItemIdMatching] = useState("")
 
   // Move this useEffect to the top level, right after all useState declarations
@@ -144,6 +146,29 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
         return false;
     }
 
+  const isEmptyMatched = (c: models.Game) => {
+        // if (updatedIds.includes(c.id)) return true;
+        if (c.source_type === null) {
+            return true;
+        }
+        if (c.bangumi_id && c.bangumi_id.length > 0) {
+            return false;
+        }
+        if (c.dmm_id && c.dmm_id.length > 0) {
+            return false;
+        }
+        if (c.eroscape_id && c.eroscape_id.length > 0) {
+            return false;
+        }
+        if (c.ymgal_id && c.ymgal_id.length > 0) {
+            return false;
+        }
+        if (c.dlsite_id && c.dlsite_id.length > 0) {
+            return false;
+        }
+        return true;
+    }
+
   const cancelUpdate = () => { 
     if (taskId.current !== "") {
         CancelTask(taskId.current)
@@ -160,9 +185,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
       should_fetch_charactors: shouldLoadCharacters,
       should_fetch_images: shouldLoadImages,
       should_fetch_tags: shouldLoadTags,
+      should_match_again: shouldMatchAgain,
+      should_union_fetch: shouldUnionFetch,
     });
     console.log("req:", req)
     UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), req, uuid)
+    toast.success("开始批量更新元数据")
     
     
   };
@@ -282,6 +310,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   // 已匹配包括自动匹配和手动匹配
   const matchedCount = matchedIds.length;
   const updatedCount = updatedIds.length;
+  const emptyFoundCount = candidates.filter(c => !isEmptyMatched(c)).length;
   const notFoundCount = candidates.filter(c => !isMatched(c, source)).length;
   const pendingCount = candidates.filter(c => selectedIds.includes(c.id) && !updatedIds.includes(c.id)).length;
 
@@ -335,7 +364,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        覆盖数据
+                        覆盖
                       </label>
                       <BetterSwitch
                         id="overwrite_switch"
@@ -361,7 +390,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        制作人员
+                        人员
                       </label>
                       <BetterSwitch
                         id="load_staffs_switch"
@@ -374,7 +403,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        角色信息
+                        角色
                       </label>
                       <BetterSwitch
                         id="load_characters_switch"
@@ -387,13 +416,39 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        图片资源
+                        图片
                       </label>
                       <BetterSwitch
                         id="load_images_switch"
                         checked={shouldLoadImages}
                         onCheckedChange={(checked) => {
                           setShouldLoadImages(checked);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        重匹配
+                      </label>
+                      <BetterSwitch
+                        id="load_images_switch"
+                        checked={shouldMatchAgain}
+                        onCheckedChange={(checked) => {
+                          setShouldMatchAgain(checked);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        联合搜
+                      </label>
+                      <BetterSwitch
+                        id="load_images_switch"
+                        checked={shouldUnionFetch}
+                        onCheckedChange={(checked) => {
+                          setShouldUnionFetch(checked);
                         }}
                       />
                     </div>
@@ -458,6 +513,21 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       </div>
                       <div className="text-sm text-orange-700 dark:text-orange-300">
                         未匹配
+                      </div>
+                  </div>
+                )}
+                {emptyFoundCount > 0 && (
+                  <div
+                    onClick={() => {
+                      setSelectedIds(candidates.filter(c => isEmptyMatched(c)).map(c => c.id))
+                    }}
+                    className="flex-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors duration-200"
+                    title="选取空匹配">
+                      <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                        {notFoundCount}
+                      </div>
+                      <div className="text-sm text-orange-700 dark:text-orange-300">
+                        空匹配
                       </div>
                   </div>
                 )}

@@ -1213,7 +1213,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			var err error
 
 			// log.Printf("TaskFunc 11 fetch metadata 01 for game %s, id: %s, source: %v", ngame.Name, id, taskData.Source)
-			if strings.TrimSpace(id) != "" {
+			if strings.TrimSpace(id) != "" && !taskData.Req.ShouldMatchAgain {
 				log.Printf("TaskFunc 12 fetch metadata 02 for game %s， id: %s", ngame.Name, id)
 
 				// 通过ID获取元数据

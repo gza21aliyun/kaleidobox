@@ -66,11 +66,11 @@ func (s *WorkService) CreateWork(work models.Work) error {
 		work.Sort,
 	)
 	if err != nil {
-		fmt.Printf("创建工作失败 gameId:%s, staffName: %s, charactorName: %s, err:%v\n",
-			work.GameId, work.StaffName, work.CharactorName, err)
+		applog.ErrorLogSaveAppLog("创建工作失败 gameId:%s, staffName: %s, charactorName: %s\n",
+			err, work.GameId, work.StaffName, work.CharactorName)
 	} else {
-		fmt.Printf("创建工作成功 gameId:%s, staffName: %s, charactorName: %s\n",
-			work.GameId, work.StaffName, work.CharactorName)
+		// fmt.Printf("创建工作成功 gameId:%s, staffName: %s, charactorName: %s\n",
+		// 	work.GameId, work.StaffName, work.CharactorName)
 	}
 	return err
 }

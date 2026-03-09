@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
@@ -42,8 +42,8 @@ func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 		charactor.OtherNames,
 		charactor.ImagePath,
 		charactor.Images,
-		charactor.SourceType,
 		charactor.SourceCharactorId,
+		string(charactor.SourceType),
 		charactor.GameIds,
 		charactor.Summary,
 		charactor.Gender,
@@ -51,6 +51,7 @@ func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 		charactor.Height,
 		charactor.Sort,
 	)
+	fmt.Printf("创建角色：%s, err:%v\n", charactor.Name, err)
 	return err
 }
 
@@ -60,21 +61,7 @@ func (s *CharactorService) GetCharactorBySource(sourceType enums.SourceType, sou
 		source_type, game_ids, summary, gender, measurements, height, sort
 		FROM charactors
 		WHERE source_charactor_id = ? AND source_type = `
-	if sourceType == enums.Bangumi {
-		query += `'BANGUMI'`
-	} else if sourceType == enums.Ymgal {
-		query += `'YMGAL'`
-	} else if sourceType == enums.VNDB {
-		query += `'VNDB'`
-	} else if sourceType == enums.Eroscape {
-		query += `'EROSCAPE'`
-	} else if sourceType == enums.Dmm {
-		query += `'DMM'`
-	} else if sourceType == enums.Dlsite {
-		query += `'DLSITE'`
-	} else {
-		return models.Charactor{}, errors.New("Invalid source type")
-	}
+	query += fmt.Sprintf(`'%s'`, string(sourceType))
 	return s.GetCharactorByQueryId(sourceCharactorId, "", query)
 }
 

@@ -266,7 +266,7 @@ func (b EroscapeInfoGetter) FetchImages(request vo.MetadataRequest, gameEntity m
 	game.Images = ""
 
 	c.OnHTML("div#images div", func(e *colly.HTMLElement) {
-		applog.InfoLogSaveAppLog("图库：", game.Images)
+		// applog.InfoLogSaveAppLog("图库：", game.Images)
 		src := e.ChildAttr("img", "src")
 		if src != "" {
 			game.Images = MergeStrings(game.Images, src)

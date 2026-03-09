@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
@@ -665,33 +666,69 @@ func TestGameService_Search(t *testing.T) {
 }
 
 func TestGameService_ImportLnk(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	_, cleanup := setupTestDB(t)
 	defer cleanup()
 	config := appconf.AppConfig{}
 	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
 	config.EroscapeUseMirror = true
 
-	gameService := service.NewGameService()
-	gameService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	imageService := service.NewImageService()
-	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	taskService := service.NewTaskService()
-	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	charactorService := service.NewCharactorService()
-	charactorService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	staffService := service.NewStaffService()
-	staffService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	workService := service.NewWorkService()
-	workService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	workService.SetServices(staffService, charactorService, imageService)
-	tagService := service.NewTagService()
-	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
-	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
-	importServie := service.NewImportService()
-	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
+	services := createServices(t)
 
 	t.Run("import success", func(t *testing.T) {
-		importServie.BatchImportGamesFolderLnk(`J:\新しいフォルダー\test\`)
+		services.ImportService.BatchImportGamesFolderLnk(`J:\新しいフォルダー\test\`)
+	})
+}
+
+func TestGameService_ImportLnkThenFetch(t *testing.T) {
+	_, cleanup := setupTestDB(t)
+	defer cleanup()
+	config := appconf.AppConfig{}
+	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
+	config.EroscapeUseMirror = true
+
+	services := createServices(t)
+
+	t.Run("import success", func(t *testing.T) {
+		applog.SetMode(applog.ModeCLI)
+		ip, err := services.ImportService.BatchImportGamesFolderLnk(`J:\新しいフォルダー\test\`)
+		if err != nil {
+			t.Fatalf("导入游戏失败: %v", err)
+		}
+		_, err = services.ImportService.BatchImportGames(ip)
+		if err != nil {
+			t.Fatalf("导入游戏元数据失败: %v", err)
+		}
+
+		games, err := services.GameService.GetGames()
+		// games = []models.Game{games[1]}
+		if err != nil {
+			t.Fatalf("获取游戏列表失败: %v", err)
+		}
+		if len(games) == 0 {
+			t.Error("游戏列表为空")
+		}
+		req := vo.MetadataRequest{
+			Source:                enums.Eroscape,
+			ID:                    games[0].SourceID,
+			ShouldFetchStaffs:     true,
+			ShouldFetchCharactors: true,
+			ShouldFetchImages:     false,
+			IsOverwrite:           true,
+			DbGameId:              games[0].ID,
+		}
+		services.GameService.ExecueteGamesUpdate(games, req)
+		charcount, err := services.CharactorService.CountCharactors()
+		cs, err := services.CharactorService.ListCharactors()
+		data, err := json.MarshalIndent(cs, "", "  ")
+		fmt.Printf("角色：%v\n", string(data))
+		if err != nil {
+			t.Fatalf("获取角色数量失败: %v", err)
+		}
+		if charcount == 0 {
+			t.Error("角色数量为空")
+		}
+		fmt.Printf("charcount: %d\n", charcount)
+
 	})
 }
 

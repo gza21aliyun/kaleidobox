@@ -302,6 +302,7 @@ func (s *ImageService) FetchImageBackups(query string, id string, subjectType in
 		}
 		imageBackups = append(imageBackups, imageBackup)
 	}
+	go s.DownloadImageBackups(imageBackups)
 	return imageBackups, nil
 }
 
@@ -357,6 +358,60 @@ func (s *ImageService) GetImageBackupsByUrls(urls []string) ([]*models.ImageBack
 		imageBackups = append(imageBackups, &imageBackup)
 	}
 	return imageBackups, nil
+}
+
+func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
+	if !s.config.AutoDownloadImages {
+		return nil
+	}
+	if len(list) == 0 {
+		return nil
+	}
+	for _, imageBackup := range list {
+		if imageBackup.LocalPath != "" {
+			continue
+		}
+		path, err := utils.GetDataDir()
+		if err != nil {
+			continue
+		}
+		path = fmt.Sprintf(`%s\images`, path)
+		_, err = os.Stat(path)
+		if err != nil {
+			err := os.MkdirAll(path, os.ModePerm)
+			if err != nil {
+				continue
+			}
+		}
+		path = fmt.Sprintf(`%s\%s`, path, imageBackup.SubjectId)
+		_, err = os.Stat(path)
+		if err != nil {
+			err := os.MkdirAll(path, os.ModePerm)
+			if err != nil {
+				continue
+			}
+		}
+		ext := filepath.Ext(imageBackup.Url)
+		fileName := fmt.Sprintf(`%s\%s.%s`, path, uuid.New().String(), ext)
+		err = DownloadImage(imageBackup.Url, fileName)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "下载图片 %s 失败：%v", imageBackup.Url, err)
+			// 清理下载失败的文件
+			os.Remove(fileName)
+			continue
+		}
+		err = s.UpdateImageBackup(&models.ImageBackup{
+			Url:         imageBackup.Url,
+			LocalPath:   fileName,
+			SubjectId:   imageBackup.SubjectId,
+			SubjectType: imageBackup.SubjectType,
+			ImageType:   imageBackup.ImageType,
+		})
+		if err == nil {
+			applog.InfoLogSaveAppLog("下载图片 %s 成功：%s", imageBackup.Url, fileName)
+		}
+	}
+	return nil
 }
 
 func (s *ImageService) DownloadImages() error {

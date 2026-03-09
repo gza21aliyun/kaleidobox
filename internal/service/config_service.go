@@ -173,6 +173,7 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.JoystickType = newConfig.JoystickType
 	s.config.NewFolderChooser = newConfig.NewFolderChooser
 	s.config.BangumiSearchCn = newConfig.BangumiSearchCn
+	s.config.AutoDownloadImages = newConfig.AutoDownloadImages
 	return nil
 }
 

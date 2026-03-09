@@ -261,6 +261,7 @@ func (s *ImageService) FetchImage(id string, subjectType int, imageType int) (mo
 	if len(list) == 0 {
 		return models.ImageBackup{}, errors.New("not found")
 	}
+	go s.DownloadImageBackups(list)
 	return list[0], nil
 }
 

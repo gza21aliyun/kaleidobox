@@ -458,6 +458,15 @@ function GameDetailPage() {
     }
   }
 
+  const getDlsiteUrl = () => { 
+    var type = "" 
+    if (!game.dlsite_id.includes("RJ")) {
+      type = "pro";
+    } else {type = "maniax";}
+    const workUrl = `https://www.dlsite.com/${type}/work/=/product_id/${game.dlsite_id}.html`
+    return workUrl
+  }
+
   
 
   return (
@@ -588,7 +597,7 @@ function GameDetailPage() {
           <div className="flex gap-2 mt-4">
             {game.bangumi_id && (
               <button
-                onClick={() => window.open(`https://bgm.tv/subject/${game.bangumi_id}`)}
+                onClick={() => OpenBrowser(`https://bgm.tv/subject/${game.bangumi_id}`)}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
               >
                 Bangumi
@@ -596,7 +605,7 @@ function GameDetailPage() {
             )}
             {game.ymgal_id && (
               <button
-                onClick={() => window.open(`https://www.ymgal.games/co/${game.ymgal_id}`)}
+                onClick={() => OpenBrowser(`https://www.ymgal.games/co/${game.ymgal_id}`)}
                 className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
               >
                 {t('game.buttons.ymgal')}
@@ -604,7 +613,7 @@ function GameDetailPage() {
             )}
             {game.dmm_id && (
               <button
-                onClick={() => window.open(`https://dlsoft.dmm.co.jp/detail/${game.dmm_id}/`)}
+                onClick={() => OpenBrowser(`https://dlsoft.dmm.co.jp/detail/${game.dmm_id}/`)}
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
               >
                 Dmm
@@ -613,6 +622,14 @@ function GameDetailPage() {
             {game.eroscape_id && (
               <button
                 onClick={() => OpenBrowser(getEroscapeUrl())}
+                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+              >
+                {t('game.buttons.eroscape')}
+              </button>
+            )}
+            {game.dlsite_id && (
+              <button
+                onClick={() => OpenBrowser(getDlsiteUrl())}
                 className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
               >
                 {t('game.buttons.eroscape')}

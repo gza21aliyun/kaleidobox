@@ -367,6 +367,16 @@ func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []st
 		if name == searchName {
 			return &item
 		}
+		containsExcludeWords := false
+		for _, word := range excludeWords {
+			if strings.Contains(name, word) {
+				containsExcludeWords = true
+				break
+			}
+		}
+		if containsExcludeWords {
+			continue
+		}
 		similarity := edlib.JaroWinklerSimilarity(searchName, name)
 		results = append(results, Result{similarity: similarity, Value: item})
 	}

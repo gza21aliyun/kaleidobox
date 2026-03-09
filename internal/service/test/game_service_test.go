@@ -652,7 +652,7 @@ func TestGameService_Search(t *testing.T) {
 		gameName := "お兄ちゃん、右手の使用を禁止します２"
 
 		bgmGetter := utils.NewEroscapeInfoGetter(false)
-		bgm, err := bgmGetter.FetchMetadataByName(gameName, true)
+		bgm, err := bgmGetter.FetchMetadataByName2(gameName, true)
 
 		// dmmGetter := utils.NewDmmInfoGetter()
 		// dmm, _ := dmmGetter.FetchMetadataByName(name, s.config.DmmIsEnabled)

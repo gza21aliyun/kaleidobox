@@ -19,14 +19,16 @@ import (
 )
 
 type BangumiInfoGetter struct {
-	client  *http.Client
-	timeout time.Duration
+	client   *http.Client
+	timeout  time.Duration
+	searchCn bool
 }
 
-func NewBangumiInfoGetter() *BangumiInfoGetter {
+func NewBangumiInfoGetter(searchCn bool) *BangumiInfoGetter {
 	return &BangumiInfoGetter{
-		client:  &http.Client{},
-		timeout: 10 * time.Second,
+		client:   &http.Client{},
+		timeout:  10 * time.Second,
+		searchCn: searchCn,
 	}
 }
 
@@ -367,9 +369,9 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 	params.Add("limit", "1")
 	params.Add("offset", "0")
 	fullURL := fmt.Sprintf("%s?%s", searchURL, params.Encode())
-
+	mainTitle, _, _ := getTitles(name)
 	reqBody := map[string]interface{}{
-		"keyword": name,
+		"keyword": mainTitle,
 		"sort":    "rank",
 		"filter": map[string]interface{}{
 			"type": []int{4},
@@ -416,8 +418,15 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 	if len(searchResp.Data) == 0 {
 		return models.Game{}, errors.New("no results found")
 	}
-
-	bangumiResp := searchResp.Data[0]
+	bangumiResp := *searchNameByRegex(searchResp.Data, name, []string{},
+		func(t1 bangumiResponse) string {
+			if b.searchCn {
+				return t1.NameCN
+			} else {
+				return t1.Name
+			}
+		})
+	// bangumiResp := searchResp.Data[0]
 
 	if bangumiResp.Type != 4 { // 4 代表游戏
 		return models.Game{}, errors.New("the provided ID does not correspond to a game")

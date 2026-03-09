@@ -31,6 +31,9 @@ func NewEroscapeInfoGetter(useMirror bool) *EroscapeInfoGetter {
 		useMirror: useMirror,
 	}
 }
+
+var _ Getter = (*EroscapeInfoGetter)(nil)
+
 func CreateCollector(domain string) *colly.Collector {
 	c := colly.NewCollector(
 		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"),
@@ -83,7 +86,11 @@ func CreateCollector(domain string) *colly.Collector {
 	return c
 }
 
-func (b EroscapeInfoGetter) FetchMetadataByName(name string, isEnabled bool) (models.Game, error) {
+func (b EroscapeInfoGetter) FetchMetadataByName(name string, totken string) (models.Game, error) {
+	return b.FetchMetadataByName2(name, true)
+}
+
+func (b EroscapeInfoGetter) FetchMetadataByName2(name string, isEnabled bool) (models.Game, error) {
 	applog.InfoLogSaveAppLog("FetchMetadataByNameFunc 00\n")
 	// mainTitle, num := getTitles(name)
 	game, err := b.FetchMetadataByNameFunc(name, isEnabled,
@@ -396,6 +403,12 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 	// fmt.Println("cvs:", len(cvs))
 	return gameEntity, nil
 }
+
+func (b EroscapeInfoGetter) FetchMetadata(id string, token string) (models.Game, error) {
+	gameEntity, err := b.FetchMetadataById(vo.MetadataRequest{ID: id})
+	return gameEntity.Game, err
+}
+
 func (b EroscapeInfoGetter) FetchMetadataById(
 	request vo.MetadataRequest) (models.GameEntity, error) {
 	var game models.Game = request.GetGame()

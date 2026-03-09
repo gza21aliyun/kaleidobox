@@ -29,6 +29,8 @@ type DMMSearchResponse struct {
 	Body  DMMSearchResponseBody `json:"body"`
 }
 
+var _ Getter = (*DmmInfoGetter)(nil)
+
 // DMMSearchResponseBody 响应体
 type DMMSearchResponseBody struct {
 	ProductArray []DMMProductArray `json:"productArray"`
@@ -65,7 +67,11 @@ type DMMCardProduct struct {
 	FloorProductID        string `json:"floorProductId"`
 }
 
-func (b DmmInfoGetter) FetchMetadataByName(name string, dmmIsEnabled bool) (models.Game, error) {
+func (b DmmInfoGetter) FetchMetadataByName(name string, totken string) (models.Game, error) {
+	return b.FetchMetadataByName2(name, true)
+}
+
+func (b DmmInfoGetter) FetchMetadataByName2(name string, dmmIsEnabled bool) (models.Game, error) {
 	game, err := b.FetchByNameImpl(name, dmmIsEnabled,
 		func(request vo.MetadataRequest) (models.Game, error) {
 			fmt.Println("FetchMetadataByName 34")
@@ -118,38 +124,44 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, dmmIsEnabled bool, fn IdFunc
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
-		// gameFound := searchNameByRegex(potentialGames, name, []string{"セット"}, func(t1 struct {
-		// 	Title string
-		// 	GameId string
-		// }) string {return t1.Title})
-		// if gameFound != nil {
-		// 	game.Name = gameFound.Title
-		// 	game.SourceID = gameFound.GameId
-		// 	game.SourceType = enums.Eroscape
-		// 	game.EroscapeId = gameFound.GameId
-		// }
-		for _, gameFound := range potentialGames {
-			// 应用过滤条件
-			if gameFound.Review == "" {
-				continue
-			}
-			if strings.Contains(gameFound.Title, "セット") {
-				continue
-			}
-			if gameFound.Link == "" {
-				continue
-			}
-			game.Name = gameFound.Title
-			fmt.Println("dmm详情：" + gameFound.Link)
+		gameFound := searchNameByRegex(potentialGames, name, []string{"セット"}, func(t1 struct {
+			Title    string
+			Link     string
+			Review   string
+			CoverUrl string
+		}) string {
+			return t1.Title
+		})
+		if gameFound != nil {
 			linkParts := strings.Split(gameFound.Link, "/")
 			id := linkParts[len(linkParts)-2]
-			fmt.Println("05 id: " + id)
+			game.Name = gameFound.Title
 			game.SourceID = id
-			game.DmmId = game.SourceID
-			game.CoverURL = gameFound.CoverUrl
-			// c.Visit(gameFound.Link) // 不在这里访问详情页
-			return
+			game.SourceType = enums.Eroscape
+			game.EroscapeId = id
 		}
+		// for _, gameFound := range potentialGames {
+		// 	// 应用过滤条件
+		// 	if gameFound.Review == "" {
+		// 		continue
+		// 	}
+		// 	if strings.Contains(gameFound.Title, "セット") {
+		// 		continue
+		// 	}
+		// 	if gameFound.Link == "" {
+		// 		continue
+		// 	}
+		// 	game.Name = gameFound.Title
+		// 	fmt.Println("dmm详情：" + gameFound.Link)
+		// 	linkParts := strings.Split(gameFound.Link, "/")
+		// 	id := linkParts[len(linkParts)-2]
+		// 	fmt.Println("05 id: " + id)
+		// 	game.SourceID = id
+		// 	game.DmmId = game.SourceID
+		// 	game.CoverURL = gameFound.CoverUrl
+		// 	// c.Visit(gameFound.Link) // 不在这里访问详情页
+		// 	return
+		// }
 	})
 
 	// 错误处理
@@ -168,6 +180,11 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, dmmIsEnabled bool, fn IdFunc
 	game, err = fn(GetReqEntity(&game))
 
 	return game, err
+}
+
+func (b DmmInfoGetter) FetchMetadata(id string, token string) (models.Game, error) {
+	gameEntity, err := b.FetchMetadataById(vo.MetadataRequest{ID: id})
+	return gameEntity.Game, err
 }
 
 func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.GameEntity, error) {

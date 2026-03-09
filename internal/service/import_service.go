@@ -637,6 +637,12 @@ func (s *ImportService) stringToSourceType(sourceType string) enums.SourceType {
 		return enums.VNDB
 	case "ymgal":
 		return enums.Ymgal
+	case "dlsite":
+		return enums.Dlsite
+	case "dmm":
+		return enums.Dmm
+	case "eroscape":
+		return enums.Eroscape
 	default:
 		return enums.Local
 	}
@@ -831,9 +837,12 @@ func (s *ImportService) FetchMetadataForCandidate(searchName string) (vo.BatchIm
 		source enums.SourceType
 		token  string
 	}{
-		{utils.NewBangumiInfoGetter(), enums.Bangumi, s.config.BangumiAccessToken},
+		{utils.NewBangumiInfoGetter(s.config.BangumiSearchCn), enums.Bangumi, s.config.BangumiAccessToken},
 		{utils.NewVNDBInfoGetter(), enums.VNDB, s.config.VNDBAccessToken},
 		{utils.NewYmgalInfoGetter(), enums.Ymgal, ""},
+		{utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror), enums.Eroscape, ""},
+		{utils.NewDmmInfoGetter(), enums.Dmm, ""},
+		{utils.NewDlsiteInfoGetter(), enums.Dlsite, ""},
 	}
 
 	for _, src := range sources {

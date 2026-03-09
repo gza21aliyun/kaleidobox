@@ -81,6 +81,7 @@ type AppConfig struct {
 	EroscapeUseMirror bool   `json:"eroscape_use_mirror"`
 	NewFolderChooser  bool   `json:"new_folder_chooser"`
 	JoystickType      string `json:"joystick_type,omitempty"`
+	BangumiSearchCn   bool   `json:"bangumi_search_cn"`
 }
 
 // getConfigPath 获取配置文件路径
@@ -150,6 +151,7 @@ func LoadConfig() (*AppConfig, error) {
 		NewFolderChooser:        true,
 		JoystickType:            "",
 		DetectTime:              60,
+		BangumiSearchCn:         false,
 	}
 
 	// 获取配置文件路径

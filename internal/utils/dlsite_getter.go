@@ -38,6 +38,8 @@ const workUrl = "https://www.dlsite.com/%s/work/=/product_id/%s.html"
 
 // const workUrl = "https://74.86.226.234:443/%s/work/=/product_id/%s.html"
 
+var _ Getter = (*DlsiteInfoGetter)(nil)
+
 type DlsiteWorkResponse struct {
 	AgeCategory       int           `json:"age_category"`
 	AgeCategoryString string        `json:"age_category_string"`
@@ -459,7 +461,11 @@ type DlsiteInfoGetter struct {
 	timeout time.Duration
 }
 
-func (b DlsiteInfoGetter) FetchMetadataByName(name string) (models.Game, error) {
+func (b DlsiteInfoGetter) FetchMetadataByName(name string, totken string) (models.Game, error) {
+	return b.FetchMetadataByName2(name)
+}
+
+func (b DlsiteInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
 	game, err := b.FetchByNameImpl(name,
 		func(request vo.MetadataRequest) (models.Game, error) {
 			fmt.Println("FetchMetadataByName 34")
@@ -759,6 +765,11 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 	gameEntity.Tags = ArrayToMap(tagList, func(t1 models.Tag) string { return t1.Category })
 
 	return gameEntity, nil
+}
+
+func (b DlsiteInfoGetter) FetchMetadata(id string, token string) (models.Game, error) {
+	gameEntity, err := b.FetchMetadataById(vo.MetadataRequest{ID: id})
+	return gameEntity.Game, err
 }
 
 func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.GameEntity, error) {

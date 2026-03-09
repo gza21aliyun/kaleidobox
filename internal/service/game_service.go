@@ -840,7 +840,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 
 	go func() {
 		defer wg.Done()
-		bgmGetter := utils.NewBangumiInfoGetter()
+		bgmGetter := utils.NewBangumiInfoGetter(s.config.BangumiSearchCn)
 		bgm, _ := bgmGetter.FetchMetadataByName(name, s.config.BangumiAccessToken)
 		if bgm != (models.Game{}) {
 			mu.Lock()
@@ -874,7 +874,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	go func() {
 		defer wg.Done()
 		dmmGetter := utils.NewDmmInfoGetter()
-		dmm, _ := dmmGetter.FetchMetadataByName(name, s.config.DmmIsEnabled)
+		dmm, _ := dmmGetter.FetchMetadataByName2(name, s.config.DmmIsEnabled)
 		if dmm != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dmm, Game: dmm})
@@ -885,7 +885,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	go func() {
 		defer wg.Done()
 		dlsiteGetter := utils.NewDlsiteInfoGetter()
-		dlsite, _ := dlsiteGetter.FetchMetadataByName(name)
+		dlsite, _ := dlsiteGetter.FetchMetadataByName2(name)
 		if dlsite != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dlsite, Game: dlsite})
@@ -896,7 +896,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	go func() {
 		defer wg.Done()
 		eroscapeGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-		eroscape, _ := eroscapeGetter.FetchMetadataByName(name, s.config.EroscapeIsEnabled)
+		eroscape, _ := eroscapeGetter.FetchMetadataByName2(name, s.config.EroscapeIsEnabled)
 		if eroscape != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Eroscape, Game: eroscape})
@@ -924,7 +924,7 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 	switch req.Source {
 	case enums.Bangumi:
 		fmt.Println("Fetching metadata from Bangumi Id:" + req.DbGameId)
-		bgmGetter := utils.NewBangumiInfoGetter()
+		bgmGetter := utils.NewBangumiInfoGetter(s.config.BangumiSearchCn)
 		gameEntity, e = bgmGetter.FetchMetadataReq(req, s.config.BangumiAccessToken)
 		gameEntity, e = bgmGetter.FetchWorks(req, gameEntity, s.config.BangumiAccessToken)
 		// game = gameEntity.Game
@@ -1229,7 +1229,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				// 通过名称获取元数据
 				if taskData.Req.Source == enums.Bangumi {
 					// log.Printf("TaskFunc 21 fetch for game %s", ngame.Name)
-					bgmGetter := utils.NewBangumiInfoGetter()
+					bgmGetter := utils.NewBangumiInfoGetter(s.config.BangumiSearchCn)
 					updatedGame, err = bgmGetter.FetchMetadataByName(ngame.SearchName, s.config.BangumiAccessToken)
 				} else if taskData.Req.Source == enums.VNDB {
 					// log.Printf("TaskFunc 22 fetch for game %s", ngame.Name)
@@ -1242,17 +1242,17 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				} else if taskData.Req.Source == enums.Eroscape {
 					// log.Printf("TaskFunc 24 fetch for game %s", ngame.Name)
 					escGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-					updatedGame, err = escGetter.FetchMetadataByName(ngame.SearchName, true)
+					updatedGame, err = escGetter.FetchMetadataByName2(ngame.SearchName, true)
 					// updatedGame = esc
 				} else if taskData.Req.Source == enums.Dmm {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 					dmmGetter := utils.NewDmmInfoGetter()
-					updatedGame, err = dmmGetter.FetchMetadataByName(ngame.SearchName, true)
+					updatedGame, err = dmmGetter.FetchMetadataByName2(ngame.SearchName, true)
 					// updatedGame = dmm
 				} else if taskData.Req.Source == enums.Dlsite {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 					dlsiteGetter := utils.NewDlsiteInfoGetter()
-					updatedGame, err = dlsiteGetter.FetchMetadataByName(ngame.SearchName)
+					updatedGame, err = dlsiteGetter.FetchMetadataByName2(ngame.SearchName)
 					// updatedGame = dmm
 				} else {
 					// log.Printf("TaskFunc 26 fetch for game %s", ngame.Name)

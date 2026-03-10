@@ -113,6 +113,7 @@ export function ScreenshotHotkeyModal({
       const hotkey = models.Hotkey.createFrom({
         key: displayKey,
         description: "截图快捷键",
+        name: displayKey,
         game_id: "golbal",
         deviceTypes: selectedDeviceType
       });
@@ -142,9 +143,11 @@ export function ScreenshotHotkeyModal({
   const setListening = async (isListen: boolean) => {
     if (isListen) {
       setIsListening(true);
-      const key = await MonitorKeySetting();
-      setKeyCode(key);
-      setIsListening(false);
+      if (selectedDeviceType != enums.DeviceType.KEYBOARD) {
+        const key = await MonitorKeySetting(selectedDeviceType);
+        setKeyCode(key);
+        setIsListening(false);
+      }      
     } else {
       setIsListening(false);
       CancelMonitorKeySetting()

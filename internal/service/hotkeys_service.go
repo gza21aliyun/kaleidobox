@@ -33,6 +33,15 @@ import (
 // MappingType 映射类型
 type MappingType string
 
+var (
+	procGetAsyncKeyState = user32.NewProc("GetAsyncKeyState")
+)
+
+// Windows API常量
+const (
+	KEY_PRESSED = 0x8000
+)
+
 const (
 	MappingTypeDirect  MappingType = "direct"  // 直接映射：按下就按下，释放就释放
 	MappingTypeRelease MappingType = "release" // 释放触发：只在释放时触发
@@ -204,7 +213,7 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 	return rs, err
 }
 
-func (s *HotkeyService) loadHotkeyConfig(gameId string) {
+func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 	applog.LogInfof(s.ctx, "Loading hotkey configuration")
 	s.actionkeyLock.Lock()
 	s.mappingLock.Lock()
@@ -212,6 +221,7 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) {
 	defer s.mappingLock.Unlock()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
+	var devicetype enums.DeviceType
 
 	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
 	FROM hotkeys`
@@ -225,10 +235,12 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) {
 		if hotkey.ActionType != enums.HotkeyActionCustom {
 			if !hotkey.IsGlobal() || s.actionKeys[hotkey.KeyCode] == nil {
 				s.actionKeys[hotkey.KeyCode] = hotkey
+				devicetype = hotkey.DeviceType
 			}
 		} else {
 			if !hotkey.IsGlobal() || s.keyMappings[hotkey.KeyCode] == nil {
 				s.keyMappings[hotkey.KeyCode] = hotkey
+				devicetype = hotkey.DeviceType
 			}
 		}
 
@@ -247,6 +259,7 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) {
 	}
 
 	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s)%d", len(s.keyMappings), statsStr, len(rows))
+	return devicetype
 }
 
 // loadConnectedDevicesFromDB 从数据库加载已连接设备
@@ -301,6 +314,7 @@ func (s *HotkeyService) startKeyboardListener() {
 
 	// go s.keyboardEventHandler()
 	applog.LogInfof(s.ctx, "Keyboard listener started")
+
 	s.robotMutex.Lock()
 	defer s.robotMutex.Unlock()
 	s.keyboard = keyboard.NewDriver()
@@ -335,7 +349,8 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 		Name:       name,
 		DeviceType: device,
 	}
-	if s.GetActiveGameID() == "" {
+	//这里true的话每次按键都会去找前台游戏，但可能会增加延迟。注意如果改为true，一开始的loadhotkeys应该改为读取所有hotkeys而不是为单个游戏
+	if /*true ||*/ s.GetActiveGameID() == "" {
 		s.processCheck()
 		if s.GetActiveGameID() == "" {
 			s.monitoredKey.Store(&hk)
@@ -345,10 +360,10 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 
 	// 更新状态
 	s.stateLock.Lock()
-	s.mappingLock.Lock()
+	s.mappingLock.RLock()
 	s.keyStates[key] = true
 	defer s.stateLock.Unlock()
-	defer s.mappingLock.Unlock()
+	defer s.mappingLock.RUnlock()
 
 	if s.actionKeys[key] != nil { // 映射的按键
 		s.monitoredKey.Store(&hk)
@@ -379,10 +394,12 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 	}
 	// 更新状态
 	s.stateLock.Lock()
-	s.mappingLock.Lock()
+	s.mappingLock.RLock()
+	s.actionkeyLock.RLock()
 	s.keyStates[key] = false
 	defer s.stateLock.Unlock()
-	defer s.mappingLock.Unlock()
+	defer s.mappingLock.RUnlock()
+	defer s.actionkeyLock.RUnlock()
 
 	hotkey := s.keyMappings[key]
 
@@ -511,7 +528,7 @@ func (s *HotkeyService) convertJoystickButton(key int) string {
 	return ""
 }
 
-func (s *HotkeyService) handleJoystickEvents() {
+func (s *HotkeyService) handleDS4Events() {
 	device := enums.DeviceTypeDualShock4
 	stick := s.joysticks[string(device)]
 
@@ -675,9 +692,9 @@ func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device 
 }
 
 // 启动相关方法
-func (s *HotkeyService) startJoystickListener() {
+func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 	applog.LogInfof(s.ctx, "Starting joystick listener...")
-	devicetype := enums.DeviceTypeDualShock4
+	// devicetype := enums.DeviceTypeDualShock4
 	s.robotMutex.Lock()
 	defer s.robotMutex.Unlock()
 	// 启动手柄机器人
@@ -689,17 +706,19 @@ func (s *HotkeyService) startJoystickListener() {
 	stick := joystick.NewDriver(joystickAdaptor, string(devicetype))
 
 	s.joysticks[string(devicetype)] = stick
+	if devicetype == enums.DeviceTypeDualShock4 {
+		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
+			[]gobot.Connection{joystickAdaptor},
+			[]gobot.Device{stick},
+			s.handleDS4Events,
+		)
+		go func() {
+			if err := s.robot.Start(); err != nil {
+				applog.LogErrorf(s.ctx, "Failed to start joystick robot: %v", err)
+			}
+		}()
+	}
 
-	s.robot = gobot.NewRobot(string(devicetype)+"Robot",
-		[]gobot.Connection{joystickAdaptor},
-		[]gobot.Device{stick},
-		s.handleJoystickEvents,
-	)
-	go func() {
-		if err := s.robot.Start(); err != nil {
-			applog.LogErrorf(s.ctx, "Failed to start joystick robot: %v", err)
-		}
-	}()
 }
 
 // 公共接口方法
@@ -1114,14 +1133,17 @@ func getCurrentForegroundProcessId() uint32 {
 	return processID
 }
 
-func (s *HotkeyService) MonitorKeySetting() (models.Hotkey, error) {
+func (s *HotkeyService) MonitorKeySetting(devicetype enums.DeviceType) (models.Hotkey, error) {
+	// if devicetype == enums.DeviceTypeKeyboard {
+	// 	return
+	// }
 	s.monitoredKey.Store(&models.Hotkey{})
 	s.isMonitoringKeySetting.Store(true)
 	var tiker *time.Ticker = time.NewTicker(time.Millisecond * 500)
 	defer s.isMonitoringKeySetting.Store(false)
 	defer s.monitoredKey.Store(&models.Hotkey{})
 
-	s.startJoystickListener()
+	s.startJoystickListener(devicetype)
 	for {
 		select {
 		case <-tiker.C:
@@ -1149,8 +1171,12 @@ func (s *HotkeyService) CancelMonitorKeySetting() {
 
 func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	s.SetActiveGameID(gameId)
-	s.startJoystickListener()
-	s.loadHotkeyConfig(gameId)
+	devicetype := s.loadHotkeyConfig(gameId)
+	if devicetype == enums.DeviceTypeKeyboard {
+		s.startAlternativeKeyListener()
+	} else {
+		s.startJoystickListener(devicetype)
+	}
 }
 
 func (s *HotkeyService) clearkeysForGame() {
@@ -1168,4 +1194,81 @@ func (s *HotkeyService) clearkeysForGame() {
 		s.robot.Stop()
 		s.robot = nil
 	}
+}
+
+// startAlternativeKeyListener 备用键盘监听方案
+func (s *HotkeyService) startAlternativeKeyListener() {
+	applog.LogInfof(s.ctx, "Starting alternative keyboard listener...")
+
+	// 初始化键状态映射
+	lastKeyState := make(map[int]bool)
+	count := 0
+
+	// 使用较短的时间间隔以获得更好的响应性
+	ticker := time.NewTicker(50 * time.Millisecond)
+	s.actionkeyLock.RLock()
+	defer s.actionkeyLock.RUnlock()
+	defer ticker.Stop()
+	keys := s.actionKeys
+
+	for {
+		select {
+		case <-ticker.C:
+			s.checkKeyboardState(lastKeyState, count, keys)
+			count++
+
+		case <-s.ctx.Done():
+			applog.LogInfof(s.ctx, "Alternative keyboard listener stopped")
+			return
+		}
+	}
+}
+
+func (s *HotkeyService) checkKeyboardState(lastKeyState map[int]bool, count int, keys map[string]*models.Hotkey) {
+	// s.stateLock.Lock()
+	// defer s.stateLock.Unlock()
+	// s.stateLock
+
+	// 首先检查是否有活动游戏且当前焦点进程匹配
+	if s.GetActiveGameID() == "" {
+		s.processCheck()
+		if s.GetActiveGameID() == "" {
+			return
+		}
+	}
+
+	// 获取当前修饰键
+	// modifiers := s.getModifierKeys()
+
+	// 检查每个监控的键
+	for keyCode, hotkey := range keys {
+		if keyCode == "" {
+			continue
+		}
+		vkCode := int(keyCode[0])
+		currentState := s.isKeyPressed(vkCode)
+		lastState, exists := lastKeyState[vkCode]
+		// 如果按键状态发生变化且当前是按下状态，则触发事件
+		if (!exists || !lastState) && currentState {
+			// applog.LogInfof(s.ctx, "按下01 %s", keyCode)
+			// 创建键盘事件
+			// event := keyboard.KeyEvent{
+			// 	Key: vkCode,
+			// }
+
+			// 检查是否有匹配的快捷键（包括修饰键）
+			// go s.handleKeyboardEvent(event)
+			go s.handleActionKey(hotkey)
+		}
+
+		// 更新状态
+		lastKeyState[vkCode] = currentState
+	}
+
+}
+
+// isKeyPressed 检查指定虚拟键是否被按下
+func (s *HotkeyService) isKeyPressed(vkCode int) bool {
+	ret, _, _ := procGetAsyncKeyState.Call(uintptr(vkCode))
+	return (ret & KEY_PRESSED) != 0
 }

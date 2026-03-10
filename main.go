@@ -237,6 +237,7 @@ func main() {
 				forceQuit = true
 				runtime.Quit(ctx)
 			})
+			applog.SetLogAll(config.LogAll)
 			gameService.Init(ctx, db, config)
 			aiService.Init(ctx, db, config)
 			backupService.Init(ctx, db, config)

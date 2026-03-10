@@ -122,6 +122,16 @@ func Contains[T1 any](slice1 []T1, fn func(t1 T1) bool) bool {
 	return false
 }
 
+func Filter[T1 any](slice1 []T1, fn func(t1 T1) bool) []T1 {
+	var rs []T1 = []T1{}
+	for _, item1 := range slice1 {
+		if fn(item1) {
+			rs = append(rs, item1)
+		}
+	}
+	return rs
+}
+
 func MapArray[T1 any, T2 any](slice1 []T1, fn func(t1 T1) T2) []T2 {
 	var result []T2
 	for _, item1 := range slice1 {
@@ -350,6 +360,7 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(searchName, "０") {
 		name = strings.ReplaceAll(searchName, "０", "0")
 	}
+	fmt.Printf("getGameNameAlternative:%s\n", name)
 	return name
 }
 

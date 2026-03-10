@@ -9,6 +9,7 @@ import (
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -393,10 +394,10 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
 			}
 		}
 		ext := filepath.Ext(imageBackup.Url)
-		fileName := fmt.Sprintf(`%s\%s.%s`, path, uuid.New().String(), ext)
+		fileName := fmt.Sprintf(`%s\%s%s`, path, uuid.New().String(), ext)
 		err = DownloadImage(imageBackup.Url, fileName)
 		if err != nil {
-			applog.LogErrorf(s.ctx, "下载图片 %s 失败：%v", imageBackup.Url, err)
+			applog.LogErrorf(s.ctx, "下载图片3 %s 失败：%v", fileName, err)
 			// 清理下载失败的文件
 			os.Remove(fileName)
 			continue
@@ -452,7 +453,8 @@ func (s *ImageService) DownloadImages() error {
 		fileName := fmt.Sprintf(`%s\%s.%s`, path, uuid.New().String(), ext)
 		err = DownloadImage(imageBackup.Url, fileName)
 		if err != nil {
-			applog.LogErrorf(s.ctx, "下载图片 %s 失败：%v", imageBackup.Url, err)
+			fileName := fmt.Sprintf(`%s\%s.%s`, path, uuid.New().String(), ext)
+			applog.LogErrorf(s.ctx, "下载图片2 %s 失败：%v, f:%s", fileName, imageBackup.Url, err)
 			// 清理下载失败的文件
 			os.Remove(fileName)
 			continue
@@ -612,18 +614,23 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 }
 
 func DownloadImage(url, fileName string) error {
-	srcFile, err := os.Open(url)
+	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP 请求失败，状态码：%d", resp.StatusCode)
+	}
+
 	destFile, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
 	defer destFile.Close()
 
-	if _, err := io.Copy(destFile, srcFile); err != nil {
+	if _, err := io.Copy(destFile, resp.Body); err != nil {
 		return err
 	}
 	return nil

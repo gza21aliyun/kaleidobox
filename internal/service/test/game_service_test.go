@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
@@ -718,9 +717,11 @@ func TestGameService_ImportLnkThenFetch(t *testing.T) {
 		}
 		services.GameService.ExecueteGamesUpdate(games, req)
 		charcount, err := services.CharactorService.CountCharactors()
-		cs, err := services.CharactorService.ListCharactors()
-		data, err := json.MarshalIndent(cs, "", "  ")
-		fmt.Printf("角色：%v\n", string(data))
+		// cs, err := services.CharactorService.ListCharactors()
+		// cs, err := services.WorkService.ListWorks()
+		// rs := utils.Filter(cs, func(t1 *models.Work) bool { return t1.Role == enums.CV || t1.Role == enums.Charactor })
+		// data, err := json.MarshalIndent(cs, "", "  ")
+		// fmt.Printf("角色：%v\n", string(data))
 		if err != nil {
 			t.Fatalf("获取角色数量失败: %v", err)
 		}

@@ -950,6 +950,15 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = escGetter.FetchMetadataById(req)
 		gameEntity, e = escGetter.FetchCharactors(req, gameEntity)
 		gameEntity, e = escGetter.FetchImages(req, gameEntity)
+		if req.ShouldUnionFetch && gameEntity.Game.DmmId != "" {
+			newReq := vo.MetadataRequest{DbGameId: game.ID, ID: gameEntity.Game.DmmId, Source: enums.Dmm,
+				IsOverwrite: false}
+			dmmGetter := utils.NewDmmInfoGetter()
+			dmmGameEntity, _ := dmmGetter.FetchMetadataById(newReq)
+			game = gameEntity.Game
+			game.Summary = dmmGameEntity.Game.Summary
+			gameEntity.Game = game
+		}
 		// game = gameEntity.Game
 		// fmt.Println("发售日3：", game.ReleaseAt)
 		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
@@ -1364,6 +1373,9 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game, req
 	updatedGame.Arguments = ngame.Arguments
 	updatedGame.SearchName = ngame.SearchName
 	updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
+	if updatedGame.DmmId == "" {
+		updatedGame.DmmId = ngame.DmmId
+	}
 }
 
 func (s *GameService) GetWorkGamesByStaffId(staffId string) ([]models.WorkGame, error) {

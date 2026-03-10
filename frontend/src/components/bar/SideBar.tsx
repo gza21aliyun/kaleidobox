@@ -15,6 +15,7 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
   const navItems = [
     { to: "/", label: t('nav.home'), icon: "i-mdi-home" },
     { to: "/library", label: t('nav.library'), icon: "i-mdi-gamepad-variant" },
+    { to: "/task", label: t('nav.task'), icon: "i-mdi-clipboard-list" },
     { to: "/charactor_list", label: t('nav.charactors'), icon: "i-mdi-account-group" },
     { to: "/tag_list", label: t('nav.tags'), icon: "i-mdi-tag-multiple" },
     { to: "/stats", label: t('nav.stats'), icon: "i-mdi-chart-bar" },

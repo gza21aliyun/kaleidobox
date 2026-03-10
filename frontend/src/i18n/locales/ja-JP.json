@@ -26,6 +26,7 @@
   "nav": {
     "home": "ホーム",
     "library": "ライブラリ",
+    "task": "タスク",
     "stats": "統計",
     "categories": "カテゴリ",
     "settings": "設定",
@@ -757,6 +758,7 @@
     "confirmMapping": "マッピングを確認"
   },
   "task": {
+    "title": "タスク",
     "noRunningTasks": "実行中のタスクはありません",
     "actions": {
       "pause": "タスクを一時停止",

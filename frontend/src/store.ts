@@ -31,6 +31,9 @@ type AppState = {
   setAISummary: (dimension: string, summary: string) => void;
   getAISummary: (dimension: string) => string | undefined;
   setGames: (games: models.Game[]) => void;
+  // 任务列表全局状态
+  tasks: models.TaskNotice[];
+  setTasks: (tasks: models.TaskNotice[]) => void;
   // page: number;
 };
 
@@ -141,12 +144,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   setGames: (gamesToSet: models.Game[]) => {
     set({ games: gamesToSet || [] });
   },
+  // 任务列表全局状态
+  tasks: [],
+  setTasks: (tasksToSet: models.TaskNotice[]) => {
+    set({ tasks: tasksToSet || [] });
+  },
 }));
 
-// 全局事件监听器，确保在任何页面都能接收到游戏更新
+// 全局事件监听器，确保在任何页面都能接收到游戏更新和任务更新
 const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
   const task: models.TaskNotice = new models.TaskNotice(data);
   
+  // 处理游戏更新
   if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id !== "") {
     const newGame: models.Game = task.item_data as models.Game;
     console.log("newGame:", newGame);
@@ -160,6 +169,17 @@ const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
       newGames[index] = newGame;
       useAppStore.getState().setGames(newGames);
     }
+  }
+  
+  // 处理任务列表更新
+  const currentTasks = useAppStore.getState().tasks;
+  const existingTaskIndex = currentTasks.findIndex((t) => t.id === task.id);
+  if (existingTaskIndex !== -1) {
+    const updatedTasks = [...currentTasks];
+    updatedTasks[existingTaskIndex] = task;
+    useAppStore.getState().setTasks(updatedTasks);
+  } else {
+    useAppStore.getState().setTasks([...currentTasks, task]);
   }
 });
 

@@ -26,6 +26,7 @@
   "nav": {
     "home": "Home",
     "library": "Library",
+    "task": "Tasks",
     "stats": "Stats",
     "categories": "Categories",
     "settings": "Settings",
@@ -792,6 +793,7 @@
     "confirmMapping": "Confirm mapping"
   },
   "task": {
+    "title": "Tasks",
     "noRunningTasks": "No running tasks",
     "actions": {
       "pause": "Pause task",

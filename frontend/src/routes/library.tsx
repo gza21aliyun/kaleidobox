@@ -21,7 +21,6 @@ import { BetterDropdownMenu } from "../components/ui/BetterDropdownMenu";
 import { sortOptions, statusOptions } from "../consts/options";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
-import { TaskPanel } from "../components/panel/TaskPanel";
 import { arrayFind, arrayMapString, joinString } from "../components/utils/Utility";
 import { formatLocalDate } from "../utils/time";
 import { useTranslation } from 'react-i18next';
@@ -316,8 +315,6 @@ function LibraryPage() {
     <div className={`space-y-6 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${gamesLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('library.title')}</h1>
-
-        <TaskPanel />
       </div>
 
       <FilterBar

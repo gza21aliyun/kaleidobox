@@ -74,6 +74,7 @@
   "nav": {
     "home": "首页",
     "library": "游戏库",
+    "task": "任务",
     "stats": "统计",
     "categories": "分类",
     "settings": "设置",
@@ -956,6 +957,7 @@
     "confirmMapping": "确认映射"
   },
   "task": {
+    "title": "任务",
     "noRunningTasks": "无运行中的任务",
     "actions": {
       "pause": "暂停任务",

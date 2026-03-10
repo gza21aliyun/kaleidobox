@@ -20,10 +20,12 @@ import { Route as charactorRoute } from "./routes/charactor";
 import { Route as charactorListRoute } from "./routes/charactor_list";
 import { Route as TagListRoute } from "./routes/tag_list";
 import { Route as joystickRoute } from "./routes/joystick";
+import { Route as taskRoute } from "./routes/task";
+
 import { useAppStore } from "./store";
 
 const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, categoriesRoute, 
-  categoryRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute]);
+  categoryRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute, taskRoute]);
 
 const router = createRouter({ routeTree });
 

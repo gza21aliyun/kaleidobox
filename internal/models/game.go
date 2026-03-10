@@ -52,11 +52,13 @@ type GameBackup struct {
 }
 
 type ImageBackup struct {
-	Url         string `json:"url"`
-	LocalPath   string `json:"local_path"`
-	SubjectId   string `json:"subject_id"`
-	SubjectType int    `json:"subject_type"` //0 游戏 1 人物 2 工作人员 3 作品
-	ImageType   int    `json:"image_type"`   //0/0 游戏封面 0/1 游戏背景 0/2 官图list 0/3 截图list 1/0 人物图 2/0 人员图 3/0 作品人物图 3/1 作品人物官图list
+	Url         string    `json:"url"`
+	LocalPath   string    `json:"local_path"`
+	SubjectId   string    `json:"subject_id"`
+	SubjectType int       `json:"subject_type"` //0 游戏 1 人物 2 工作人员 3 作品
+	ImageType   int       `json:"image_type"`   //0/0 游戏封面 0/1 游戏背景 0/2 官图list 0/3 截图list 1/0 人物图 2/0 人员图 3/0 作品人物图 3/1 作品人物官图list
+	GameId      string    `json:"game_id"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type GameFilter struct {

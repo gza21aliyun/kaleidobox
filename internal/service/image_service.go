@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"lunabox/internal/applog"
@@ -86,7 +87,7 @@ func (s *ImageService) Init(ctx context.Context, db *sql.DB, config *appconf.App
 // CreateImageBackup 创建新的 ImageBackup 记录
 func (s *ImageService) CreateImageBackup(imageBackup models.ImageBackup) error {
 	query := `
-		INSERT INTO image_backups (url, local_path, subject_id, subject_type, image_type)
+		INSERT INTO image_backups (url, local_path, subject_id, subject_type, image_type, game_id, created_at)
 		VALUES (?, ?, ?, ?, ?)
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
@@ -95,6 +96,8 @@ func (s *ImageService) CreateImageBackup(imageBackup models.ImageBackup) error {
 		imageBackup.SubjectId,
 		imageBackup.SubjectType,
 		imageBackup.ImageType,
+		imageBackup.GameId,
+		imageBackup.CreatedAt,
 	)
 	return err
 }
@@ -172,7 +175,7 @@ func (s *ImageService) CreateOrUpdateImageBackup(imageBackup models.ImageBackup)
 // GetImageBackupByUrl 根据 Url 查询 ImageBackup 记录
 func (s *ImageService) GetImageBackupByUrl(url string) (*models.ImageBackup, error) {
 	query := `
-		SELECT url, local_path
+		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
 		FROM image_backups
 		WHERE url = ?
 	`
@@ -182,6 +185,11 @@ func (s *ImageService) GetImageBackupByUrl(url string) (*models.ImageBackup, err
 	err := row.Scan(
 		&imageBackup.Url,
 		&imageBackup.LocalPath,
+		&imageBackup.SubjectId,
+		&imageBackup.SubjectType,
+		&imageBackup.ImageType,
+		&imageBackup.GameId,
+		&imageBackup.CreatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -193,27 +201,27 @@ func (s *ImageService) GetImageBackupByUrl(url string) (*models.ImageBackup, err
 }
 
 // GetImageBackupByLocalPath 根据 LocalPath 查询 ImageBackup 记录
-func (s *ImageService) GetImageBackupByLocalPath(localPath string) (*models.ImageBackup, error) {
-	query := `
-		SELECT url, local_path
-		FROM image_backups
-		WHERE local_path = ?
-	`
-	row := s.db.QueryRowContext(s.ctx, query, localPath)
+// func (s *ImageService) GetImageBackupByLocalPath(localPath string) (*models.ImageBackup, error) {
+// 	query := `
+// 		SELECT url, local_path
+// 		FROM image_backups
+// 		WHERE local_path = ?
+// 	`
+// 	row := s.db.QueryRowContext(s.ctx, query, localPath)
 
-	var imageBackup models.ImageBackup
-	err := row.Scan(
-		&imageBackup.Url,
-		&imageBackup.LocalPath,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // 未找到记录
-		}
-		return nil, err
-	}
-	return &imageBackup, nil
-}
+// 	var imageBackup models.ImageBackup
+// 	err := row.Scan(
+// 		&imageBackup.Url,
+// 		&imageBackup.LocalPath,
+// 	)
+// 	if err != nil {
+// 		if err == sql.ErrNoRows {
+// 			return nil, nil // 未找到记录
+// 		}
+// 		return nil, err
+// 	}
+// 	return &imageBackup, nil
+// }
 
 // UpdateImageBackup 更新 ImageBackup 记录
 func (s *ImageService) UpdateImageBackup(imageBackup *models.ImageBackup) error {
@@ -245,7 +253,7 @@ func (s *ImageService) FetchImages(id string, subjectType int, imageType int) ([
 	// 	WHERE subject_id = %s AND subject_type = %d AND image_type = %d
 	// `, id, subjectType, imageType)
 	query := `
-		SELECT url, local_path, subject_id, subject_type, image_type
+		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
 		FROM image_backups
 		WHERE subject_id = ? AND subject_type = ? AND image_type = ?
 	`
@@ -269,7 +277,7 @@ func (s *ImageService) FetchImage(id string, subjectType int, imageType int) (mo
 // ListImageBackups 查询所有 ImageBackup 记录
 func (s *ImageService) ListImageBackups() ([]models.ImageBackup, error) {
 	query := `
-		SELECT url, local_path, subject_id, subject_type, image_type
+		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
 		FROM image_backups
 	`
 	return s.FetchImageBackups(query, "", 0, 0)
@@ -298,6 +306,8 @@ func (s *ImageService) FetchImageBackups(query string, id string, subjectType in
 			&imageBackup.SubjectId,
 			&imageBackup.SubjectType,
 			&imageBackup.ImageType,
+			&imageBackup.GameId,
+			&imageBackup.CreatedAt,
 		)
 		if err != nil {
 			return nil, err
@@ -322,45 +332,45 @@ func (s *ImageService) CountImageBackups() (int, error) {
 }
 
 // GetImageBackupsByUrls 批量根据 URLs 查询 ImageBackup 记录
-func (s *ImageService) GetImageBackupsByUrls(urls []string) ([]*models.ImageBackup, error) {
-	if len(urls) == 0 {
-		return []*models.ImageBackup{}, nil
-	}
+// func (s *ImageService) GetImageBackupsByUrls(urls []string) ([]*models.ImageBackup, error) {
+// 	if len(urls) == 0 {
+// 		return []*models.ImageBackup{}, nil
+// 	}
 
-	// 构造占位符
-	placeholders := make([]string, len(urls))
-	args := make([]interface{}, len(urls))
-	for i, url := range urls {
-		placeholders[i] = "?"
-		args[i] = url
-	}
+// 	// 构造占位符
+// 	placeholders := make([]string, len(urls))
+// 	args := make([]interface{}, len(urls))
+// 	for i, url := range urls {
+// 		placeholders[i] = "?"
+// 		args[i] = url
+// 	}
 
-	query := `
-		SELECT url, local_path
-		FROM image_backups
-		WHERE url IN (` + joinStrings(placeholders, ",") + `)
-	`
+// 	query := `
+// 		SELECT url, local_path
+// 		FROM image_backups
+// 		WHERE url IN (` + joinStrings(placeholders, ",") + `)
+// 	`
 
-	rows, err := s.db.QueryContext(s.ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+// 	rows, err := s.db.QueryContext(s.ctx, query, args...)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
 
-	var imageBackups []*models.ImageBackup
-	for rows.Next() {
-		var imageBackup models.ImageBackup
-		err := rows.Scan(
-			&imageBackup.Url,
-			&imageBackup.LocalPath,
-		)
-		if err != nil {
-			return nil, err
-		}
-		imageBackups = append(imageBackups, &imageBackup)
-	}
-	return imageBackups, nil
-}
+// 	var imageBackups []*models.ImageBackup
+// 	for rows.Next() {
+// 		var imageBackup models.ImageBackup
+// 		err := rows.Scan(
+// 			&imageBackup.Url,
+// 			&imageBackup.LocalPath,
+// 		)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		imageBackups = append(imageBackups, &imageBackup)
+// 	}
+// 	return imageBackups, nil
+// }
 
 func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
 	if !s.config.AutoDownloadImages {
@@ -385,7 +395,7 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
 				continue
 			}
 		}
-		path = fmt.Sprintf(`%s\%s`, path, imageBackup.SubjectId)
+		path = fmt.Sprintf(`%s\%s`, path, imageBackup.GameId)
 		_, err = os.Stat(path)
 		if err != nil {
 			err := os.MkdirAll(path, os.ModePerm)
@@ -419,7 +429,7 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
 func (s *ImageService) DownloadImages() error {
 	var count = 0
 	query := `
-		SELECT url, local_path, subject_id, subject_type, image_type
+		SELECT url, local_path, subject_id, subject_type, image_type, created_at
 		FROM image_backups
 		WHERE local_path = '' OR local_path IS NULL
 	`
@@ -441,7 +451,7 @@ func (s *ImageService) DownloadImages() error {
 				continue
 			}
 		}
-		path = fmt.Sprintf(`%s\%s`, path, imageBackup.SubjectId)
+		path = fmt.Sprintf(`%s\%s`, path, imageBackup.GameId)
 		_, err = os.Stat(path)
 		if err != nil {
 			err := os.MkdirAll(path, os.ModePerm)
@@ -564,6 +574,7 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 		SubjectId:   gameId,
 		SubjectType: 0,
 		ImageType:   3,
+		CreatedAt:   time.Now(),
 	})
 
 }
@@ -582,6 +593,8 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 			SubjectId:   gameEntity.Game.ID,
 			SubjectType: 0,
 			ImageType:   2,
+			CreatedAt:   time.Now(),
+			GameId:      gameEntity.Game.ID,
 		}
 		err = s.CreateImageBackup(*backup)
 	}
@@ -593,6 +606,8 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 			SubjectId:   gameEntity.Game.ID,
 			SubjectType: 0,
 			ImageType:   0,
+			CreatedAt:   time.Now(),
+			GameId:      gameEntity.Game.ID,
 		}
 		err = s.CreateImageBackup(*cover)
 	}

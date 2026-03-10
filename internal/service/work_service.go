@@ -11,6 +11,7 @@ import (
 	"lunabox/internal/models"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -88,7 +89,8 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 			return err
 		}
 		work.StaffId = staff.Id
-		err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.StaffImage, SubjectId: staff.Id, SubjectType: 2})
+		err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.StaffImage, SubjectId: staff.Id,
+			SubjectType: 2, CreatedAt: time.Now(), GameId: work.GameId})
 	}
 	// fmt.Println("11 CreateOrUpdateWorkStaffCharactor")
 	if work.CharactorName != "" {
@@ -100,7 +102,8 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 			return err
 		}
 		work.CharactorId = charactor.Id
-		err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.CharactorImage, SubjectId: charactor.Id, SubjectType: 1})
+		err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.CharactorImage, SubjectId: charactor.Id,
+			SubjectType: 1, CreatedAt: time.Now(), GameId: work.GameId})
 	}
 	// fmt.Println("12 CreateOrUpdateWorkStaffCharactor")
 	newWork := models.Work{}
@@ -128,10 +131,10 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 				applog.LogErrorf(s.ctx, "创建工作出错 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)
 			} else {
 				err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{
-					Url: work.CharactorImage, SubjectId: work.Id, SubjectType: 3, ImageType: 0})
+					Url: work.CharactorImage, SubjectId: work.Id, SubjectType: 3, ImageType: 0, CreatedAt: time.Now(), GameId: work.GameId})
 				for _, image := range strings.Split(work.Images, ",") {
 					err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{
-						Url: image, SubjectId: work.Id, SubjectType: 3, ImageType: 1})
+						Url: image, SubjectId: work.Id, SubjectType: 3, ImageType: 1, CreatedAt: time.Now(), GameId: work.GameId})
 				}
 			}
 			return err

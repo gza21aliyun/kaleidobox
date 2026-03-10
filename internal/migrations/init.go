@@ -151,7 +151,9 @@ func SchemaQueries() []string {
 			local_path TEXT,
 			subject_id TEXT,
 			subject_type INTEGER,
-			image_type INTEGER
+			image_type INTEGER,
+			game_id TEXT,
+			created_at TIMESTAMPTZ 
 		)`,
 		// 新增统一的快捷键配置表
 		`CREATE TABLE IF NOT EXISTS hotkeys (

@@ -316,11 +316,11 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-4xl max-h-[90vh] rounded-xl bg-white shadow-2xl dark:bg-brand-800 flex flex-col">
+      <div className="w-full max-w-6xl max-h-[90vh] rounded-xl bg-white shadow-2xl dark:bg-brand-800 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-brand-200 dark:border-brand-700">
             <div className="flex items-center gap-3">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center gap-3">
                             <div className="i-mdi-folder-multiple text-3xl text-blue-500" />
                             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
                             批量更新游戏库
@@ -334,7 +334,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                 
                 {/* 更新选项开关 */}
                 <div className="glass-card bg-brand-50 dark:bg-brand-800/30 rounded-lg p-4">
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-4 gap-3">
 
                     <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg"> 
                       <span className="text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap"></span> {/* 标签移到左侧 */}

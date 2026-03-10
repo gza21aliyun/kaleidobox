@@ -6,9 +6,13 @@ import { createPortal } from "react-dom";
 
 interface ImageCardProps {
   url: string;
+  className?: string;
+  alt?: string;
 }
 export function ImageCard({
-    url
+    url,
+    className,
+    alt
 }: ImageCardProps) {
     const [imageUrl, setImageUrl] = useState("");
 
@@ -30,7 +34,9 @@ export function ImageCard({
     return (
         <div className="image-card">
             { imageUrl === "" ? (<p>Loading...</p>) : 
-            ( <img src={imageUrl} alt="Image" /> )}
+            ( <img src={imageUrl} alt="Image"
+                className={className}
+             /> )}
             
         </div>
     );

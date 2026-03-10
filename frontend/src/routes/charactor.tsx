@@ -7,7 +7,7 @@ import { GetWorkGamesByCharactorId } from "../../wailsjs/go/service/GameService"
 import { FetchImages } from "../../wailsjs/go/service/ImageService";
 import { Route as rootRoute } from "./__root";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { ImageBackupCard } from "../components/card/ImageCard";
+import { ImageBackupCard, ImageCard } from "../components/card/ImageCard";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -366,12 +366,12 @@ function CharactorPage() {
                               handleGameClick(work.game.id);
                             }}
                           >
-                            <td className="py-3 px-3">
+                            <td className="py-3 px-3 w-1/10">
                               {work.game.cover_url && (
                                 <img
                                   src={work.game.cover_url}
                                   alt={`${work.game.name?.trim() || t('common.game')} ${t('common.cover')}`}
-                                  className="w-16 h-24 object-cover rounded"
+                                  className="w-24 h-40 object-cover rounded"
                                 />
                               )}
                             </td>
@@ -382,17 +382,17 @@ function CharactorPage() {
                             <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
                               {work.game.summary || '-'}
                             </td>
-                            <td className="py-3 px-3">
+                            <td className="py-3 px-3 w-1/15">
                               <span className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                                 {work.work.source_type || t('common.unknown')}
                               </span>
                             </td>
-                            <td className="py-3 px-3">
-                              {work.work.images && (
-                                <img
-                                  src={work.work.charactor_image}
+                            <td className="py-3 px-3 w-1/15">
+                              {work.work.charactor_image && (
+                                <ImageCard
+                                  url={work.work.charactor_image}
                                   alt={t('common.characterImage')}
-                                  className="w-12 h-24 object-cover rounded"
+                                  className="w-20 h-40 object-cover rounded"
                                 />
                               )}
                             </td>

@@ -303,9 +303,9 @@ function StaffPage() {
                             </td>
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (
                                 <td className="py-3 px-3">
-                                {work.work.images && (
+                                {work.work.charactor_image && (
                                 <img 
-                                    src={work.work.images} 
+                                    src={work.work.charactor_image} 
                                     className="w-12 h-24 object-cover rounded"
                                 />
                                 )}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
@@ -24,6 +25,7 @@ import (
 type LaunchOptions struct {
 	UseLocaleEmulator *bool // 是否使用 Locale Emulator，nil 表示使用游戏配置
 	UseMagpie         *bool // 是否使用 Magpie，nil 表示使用游戏配置
+	DetectSavePath    *bool
 }
 
 type StartService struct {
@@ -115,7 +117,7 @@ func (s *StartService) StartGameWithOptions(gameID string, options LaunchOptions
 // startGame 内部启动方法，支持通过 options 覆盖配置
 func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, error) {
 	// 获取游戏路径和进程配置
-	path, processName, arguments, err := s.getGamePathAndProcess(gameID)
+	path, processName, arguments, savePath, err := s.getGamePathAndProcess(gameID)
 	applog.InfoLogSaveAppLog("游戏路径: %s, 进程名称: %s, 参数: %s\n", path, processName, arguments)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "failed to get game path: %v", err)
@@ -191,7 +193,7 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 
 	// 启动进程检测和监控 goroutine
 	applog.InfoLogSaveAppLog("启动进程检测和监控 goroutine")
-	go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, launcherExeName, processName, useLE, path)
+	go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, launcherExeName, processName, useLE, path, savePath)
 
 	// 启动成功，返回 true 给前端
 	return true, nil
@@ -201,7 +203,7 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 // 采用分阶段检测策略，利用60秒会话记录阈值提供的余裕时间
 // usedLE: 是否使用了 Locale Emulator 启动，影响进程检测策略
 func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, gameID string, startTime time.Time, launcherPID uint32,
-	launcherExeName string, savedProcessName string, usedLE bool, path string) {
+	launcherExeName string, savedProcessName string, usedLE bool, path string, savepath string) {
 	var actualProcessID uint32
 	var actualProcessName string
 	var needExternalMonitor bool // 是否需要外部进程监控（非cmd子进程）
@@ -295,6 +297,9 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 	} else {
 		// 使用原有的 waitForGameExit：可以利用 cmd.Wait() 事件驱动
 		s.waitForGameExit(cmd, sessionID, gameID, startTime, actualProcessID)
+	}
+	if savepath == "" {
+		go s.detectProcessSavePath(actualProcessID)
 	}
 }
 
@@ -592,12 +597,13 @@ func (s *StartService) autoBackupGameSave(gameID string) {
 }
 
 // getGamePathAndProcess 获取游戏路径和已保存的进程名
-func (s *StartService) getGamePathAndProcess(gameID string) (path string, processName string, arguments string, err error) {
+func (s *StartService) getGamePathAndProcess(gameID string) (path string, processName string,
+	arguments string, savePath string, err error) {
 	game, err := s.gameService.GetGameByID(gameID)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", "", err
 	}
-	return game.Path, game.ProcessName, game.Arguments, nil
+	return game.Path, game.ProcessName, game.Arguments, game.SavePath, nil
 }
 
 // getGameLaunchConfig 获取游戏的启动配置
@@ -737,8 +743,21 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 	}
 }
 
+// IsAdmin 检查当前进程是否具有管理员权限
+func IsAdmin() bool {
+	_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 // 使用 Sysmon 或 ETW 捕获进程的文件操作
-func (s *StartService) detectProcessSavePath(pid string) (string, error) {
+func (s *StartService) detectProcessSavePath(pid uint32) (string, error) {
+	fmt.Printf("detectProcessSavePath 01\n")
+	if !IsAdmin() {
+		return "", errors.New("not admin")
+	}
 	// 构造需要管理员权限的命令（例如启动 Sysmon）
 	cmd := exec.Command("powershell", "-Command", "Start-Process sysmon.exe -ArgumentList '-accepteula -i' -Verb RunAs")
 
@@ -747,6 +766,7 @@ func (s *StartService) detectProcessSavePath(pid string) (string, error) {
 		HideWindow: true,
 	}
 
+	fmt.Printf("detectProcessSavePath 02\n")
 	// 执行命令
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to request admin privileges: %w", err)
@@ -757,10 +777,12 @@ func (s *StartService) detectProcessSavePath(pid string) (string, error) {
 
 	// 解析日志文件（后续逻辑）
 	logFile := "C:\\Windows\\Sysmon\\sysmon.log"
-	events, err := parseSysmonLog(logFile, pid)
+	events, err := parseSysmonLog(logFile, string(pid))
 	if err != nil {
 		return "", fmt.Errorf("failed to parse Sysmon log: %w", err)
 	}
+
+	fmt.Printf("detectProcessSavePath 03\n")
 
 	// 返回最新文件路径
 	if len(events) > 0 {

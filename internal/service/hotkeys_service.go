@@ -1173,9 +1173,9 @@ func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	s.SetActiveGameID(gameId)
 	devicetype := s.loadHotkeyConfig(gameId)
 	if devicetype == enums.DeviceTypeKeyboard {
-		s.startAlternativeKeyListener()
+		go s.startAlternativeKeyListener()
 	} else {
-		s.startJoystickListener(devicetype)
+		go s.startJoystickListener(devicetype)
 	}
 }
 

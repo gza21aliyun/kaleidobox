@@ -101,7 +101,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
     const imagesPath = `images/${game.id}/`;
     console.log("galleryImages:", galleryImages)
 
-    const hasFolder = arrayContains(images, (img) => img.local_path !== "")
+    const hasFolder = arrayContains([...images, ...screenshots], (img) => img.local_path !== "")
 
   // 如果没有任何内容显示，不显示面板
   // if (!screenshotHotkey && galleryImages.length === 0) {
@@ -115,6 +115,21 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="font-semibold text-brand-900 dark:text-white">{t('gameGallery.screenshots')}</div>
+            {hasFolder && (
+                    <BetterButton
+                      onClick={async () => {
+                        try {
+                          await OpenLocalPath(imagesPath);
+                        }
+                        catch {
+                          toast.error(t('gameGallery.openPathError'));
+                        }
+                      }}
+                      disabled={!game.path}
+                      icon="i-mdi-folder-open"
+                      title={t('gameGallery.openLocation')}
+                    />
+                )}
             <div className="flex items-center gap-2">
               {screenshotHotkey && (
                 <span className="px-2 py-1 bg-brand-100 text-brand-700 text-sm rounded dark:bg-brand-900/30 dark:text-brand-300">

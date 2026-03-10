@@ -30,6 +30,9 @@ var (
 
 	logFilePath string
 	logFileMu   sync.RWMutex
+
+	logAll   bool
+	logAllMu sync.RWMutex
 )
 
 // ANSI 颜色代码
@@ -47,6 +50,12 @@ func SetMode(mode RunMode) {
 	modeMu.Lock()
 	defer modeMu.Unlock()
 	currentMode = mode
+}
+
+func SetLogAll(all bool) {
+	logAllMu.Lock()
+	defer logAllMu.Unlock()
+	logAll = all
 }
 
 // GetMode 获取当前运行模式
@@ -251,6 +260,16 @@ func ErrorLogSaveAppLog(format string, err error, args ...interface{}) {
 	saveLogToFile("ERROR", msg)
 }
 
+func ErrorLogSaveAppLogs(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+
+	// 输出到控制台
+	fmt.Print(msg)
+
+	// 直接写入 app.log 文件
+	saveLogToFile("ERROR", msg)
+}
+
 func ErrorLogSaveAppOutput(format string, err error, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args...) + fmt.Sprintf(", error:\n %v\n", err)
 
@@ -284,7 +303,11 @@ func InfoLogSaveAppLog(format string, args ...interface{}) {
 	fmt.Print(msg + "\n")
 
 	// 直接写入 app.log 文件
-	saveLogToFile("INFO", msg)
+	logAllMu.RLock()
+	defer logAllMu.RUnlock()
+	if logAll != false {
+		saveLogToFile("Info", msg)
+	}
 }
 
 /**
@@ -298,7 +321,12 @@ func WarningLogSaveAppLog(format string, args ...interface{}) {
 	fmt.Print(msg + "\n")
 
 	// 直接写入 app.log 文件
-	saveLogToFile("WARNING", msg)
+	logAllMu.RLock()
+	defer logAllMu.RUnlock()
+	if logAll != false {
+		saveLogToFile("WARNING", msg)
+	}
+
 }
 
 /**

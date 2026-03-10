@@ -9,6 +9,7 @@ import (
 	"lunabox/internal/applog"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
+	"lunabox/internal/utils"
 	"strconv"
 	"strings"
 	"time"
@@ -162,6 +163,87 @@ func (s *WorkService) CreateOrUpdateListWorkStaffCharactor(works []models.Work) 
 	}
 }
 
+func (s *WorkService) DeleteWorksForGame(gameId string) {
+	s.DeleteWorksForGames([]string{gameId})
+}
+
+func (s *WorkService) DeleteWorksForGames(gameIds []string) {
+	if len(gameIds) == 0 {
+		return
+	}
+
+	placeholders := utils.BuildPlaceholders(len(gameIds))
+	query := fmt.Sprintf("SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort FROM works WHERE game_id IN (%s)", placeholders)
+
+	args := make([]interface{}, len(gameIds))
+	for i, v := range gameIds {
+		args[i] = v
+	}
+	works, err := s.GetWorksByQueryId(query, args...)
+	if err != nil {
+		applog.ErrorLogSaveAppLogs("获取工作失败 gameIds:%v, err: %v\n", gameIds, err)
+		return
+	}
+
+	staffGameMap := make(map[string]map[string]bool)
+	charactorGameMap := make(map[string]map[string]bool)
+
+	for _, work := range works {
+		if work.StaffId != "" {
+			if staffGameMap[work.StaffId] == nil {
+				staffGameMap[work.StaffId] = make(map[string]bool)
+			}
+			staffGameMap[work.StaffId][work.GameId] = true
+		}
+		if work.CharactorId != "" {
+			if charactorGameMap[work.CharactorId] == nil {
+				charactorGameMap[work.CharactorId] = make(map[string]bool)
+			}
+			charactorGameMap[work.CharactorId][work.GameId] = true
+		}
+	}
+
+	deleteQuery := fmt.Sprintf("DELETE FROM works WHERE game_id IN (%s)", placeholders)
+	_, err = s.db.ExecContext(s.ctx, deleteQuery, args...)
+	if err != nil {
+		applog.ErrorLogSaveAppLogs("删除工作失败 gameIds:%v, err: %v\n", gameIds, err)
+	}
+
+	for _, gameId := range gameIds {
+		for staffId, gameIdMap := range staffGameMap {
+			if !gameIdMap[gameId] {
+				continue
+			}
+			staff, err := s.staffService.GetStaffById(staffId)
+			if err != nil || staff.Id == "" {
+				continue
+			}
+			staff.GameIds = utils.RemoveString(staff.GameIds, gameId)
+			if staff.GameIds == "" {
+				s.staffService.DeleteStaff(staffId)
+			} else {
+				s.staffService.UpdateStaff(staff)
+			}
+		}
+
+		for charactorId, gameIdMap := range charactorGameMap {
+			if !gameIdMap[gameId] {
+				continue
+			}
+			charactor, err := s.charactorService.GetCharactorById(charactorId)
+			if err != nil || charactor.Id == "" {
+				continue
+			}
+			charactor.GameIds = utils.RemoveString(charactor.GameIds, gameId)
+			if charactor.GameIds == "" {
+				s.charactorService.DeleteCharactor(charactorId)
+			} else {
+				s.charactorService.UpdateCharactor(charactor)
+			}
+		}
+	}
+}
+
 func (s *WorkService) GetWorkByStaff(gameId, staffName string) (models.Work, error) {
 	query := `
 		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, source_type, 
@@ -282,8 +364,8 @@ func (s *WorkService) GetWorkGamesById(id string) (models.Work, error) {
 	return works, err
 }
 
-func (s *WorkService) GetWorksByQueryId(query, id1 string) ([]models.Work, error) {
-	rows, err := s.db.QueryContext(s.ctx, query, id1)
+func (s *WorkService) GetWorksByQueryId(query string, args ...interface{}) ([]models.Work, error) {
+	rows, err := s.db.QueryContext(s.ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

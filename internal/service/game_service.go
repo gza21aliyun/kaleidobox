@@ -874,7 +874,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	go func() {
 		defer wg.Done()
 		dmmGetter := utils.NewDmmInfoGetter()
-		dmm, _ := dmmGetter.FetchMetadataByName2(name, s.config.DmmIsEnabled)
+		dmm, _ := dmmGetter.FetchMetadataByName2(name)
 		if dmm != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dmm, Game: dmm})
@@ -896,7 +896,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	go func() {
 		defer wg.Done()
 		eroscapeGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-		eroscape, _ := eroscapeGetter.FetchMetadataByName2(name, s.config.EroscapeIsEnabled)
+		eroscape, _ := eroscapeGetter.FetchMetadataByName2(name)
 		if eroscape != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Eroscape, Game: eroscape})
@@ -1251,12 +1251,12 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				} else if taskData.Req.Source == enums.Eroscape {
 					// log.Printf("TaskFunc 24 fetch for game %s", ngame.Name)
 					escGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-					updatedGame, err = escGetter.FetchMetadataByName2(ngame.SearchName, true)
+					updatedGame, err = escGetter.FetchMetadataByName2(ngame.SearchName)
 					// updatedGame = esc
 				} else if taskData.Req.Source == enums.Dmm {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 					dmmGetter := utils.NewDmmInfoGetter()
-					updatedGame, err = dmmGetter.FetchMetadataByName2(ngame.SearchName, true)
+					updatedGame, err = dmmGetter.FetchMetadataByName2(ngame.SearchName)
 					// updatedGame = dmm
 				} else if taskData.Req.Source == enums.Dlsite {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)

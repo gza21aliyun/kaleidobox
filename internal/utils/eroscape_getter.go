@@ -87,13 +87,13 @@ func CreateCollector(domain string) *colly.Collector {
 }
 
 func (b EroscapeInfoGetter) FetchMetadataByName(name string, totken string) (models.Game, error) {
-	return b.FetchMetadataByName2(name, true)
+	return b.FetchMetadataByName2(name)
 }
 
-func (b EroscapeInfoGetter) FetchMetadataByName2(name string, isEnabled bool) (models.Game, error) {
+func (b EroscapeInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
 	applog.InfoLogSaveAppLog("FetchMetadataByNameFunc 00\n")
 	// mainTitle, num := getTitles(name)
-	game, err := b.FetchMetadataByNameFunc(name, isEnabled,
+	game, err := b.FetchMetadataByNameFunc(name,
 		func(request vo.MetadataRequest) (models.Game, error) {
 			// fmt.Printf("FetchMetadataByNameFunc 01")
 			gameEntity, err := b.FetchMetadataById(request)
@@ -103,7 +103,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName2(name string, isEnabled bool) (m
 	if game.SourceID == "" {
 		alternativeName := getGameNameAlternative(name)
 		if alternativeName != "" {
-			game, err = b.FetchMetadataByNameFunc(alternativeName, isEnabled,
+			game, err = b.FetchMetadataByNameFunc(alternativeName,
 				func(request vo.MetadataRequest) (models.Game, error) {
 					// fmt.Printf("FetchMetadataByNameFunc 01")
 					gameEntity, err := b.FetchMetadataById(request)
@@ -141,11 +141,8 @@ func (b EroscapeInfoGetter) GetDomain() string {
 	return domain
 }
 
-func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isEnabled bool, fn IdFunction) (models.Game, error) {
+func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, fn IdFunction) (models.Game, error) {
 	log.Println("Fetching 01 metadata by name:", name)
-	if !isEnabled { // 禁用的话，就返回一个空游戏
-		return models.Game{}, nil
-	}
 	log.Println("Fetching 02 metadata by name:", name)
 
 	var searchPart = "kensaku.php?category=game&word_category=name&mode=normal&word="

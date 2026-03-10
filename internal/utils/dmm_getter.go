@@ -68,11 +68,11 @@ type DMMCardProduct struct {
 }
 
 func (b DmmInfoGetter) FetchMetadataByName(name string, totken string) (models.Game, error) {
-	return b.FetchMetadataByName2(name, true)
+	return b.FetchMetadataByName2(name)
 }
 
-func (b DmmInfoGetter) FetchMetadataByName2(name string, dmmIsEnabled bool) (models.Game, error) {
-	game, err := b.FetchByNameImpl(name, dmmIsEnabled,
+func (b DmmInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
+	game, err := b.FetchByNameImpl(name,
 		func(request vo.MetadataRequest) (models.Game, error) {
 			fmt.Println("FetchMetadataByName 34")
 			gameEntity, err := b.FetchMetadataById(request)
@@ -81,10 +81,7 @@ func (b DmmInfoGetter) FetchMetadataByName2(name string, dmmIsEnabled bool) (mod
 	return game, err
 }
 
-func (b DmmInfoGetter) FetchByNameImpl(name string, dmmIsEnabled bool, fn IdFunction) (models.Game, error) {
-	if !dmmIsEnabled {
-		return models.Game{}, fmt.Errorf("DMM is not enabled")
-	}
+func (b DmmInfoGetter) FetchByNameImpl(name string, fn IdFunction) (models.Game, error) {
 	var url string = "https://dlsoft.dmm.co.jp/search/?service=pcgame&searchstr="
 	// mainTitle := getMainTitle(name)
 	// url += mainTitle

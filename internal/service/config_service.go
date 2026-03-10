@@ -167,13 +167,13 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 
 	// 时区相关配置
 	s.config.TimeZone = newConfig.TimeZone
-	s.config.EroscapeIsEnabled = newConfig.EroscapeIsEnabled
 	s.config.EroscapeUseMirror = newConfig.EroscapeUseMirror
-	s.config.DmmIsEnabled = newConfig.DmmIsEnabled
 	s.config.JoystickType = newConfig.JoystickType
 	s.config.NewFolderChooser = newConfig.NewFolderChooser
 	s.config.BangumiSearchCn = newConfig.BangumiSearchCn
 	s.config.AutoDownloadImages = newConfig.AutoDownloadImages
+	s.config.LogAll = newConfig.LogAll
+	applog.SetLogAll(s.config.LogAll)
 	return nil
 }
 

@@ -430,3 +430,35 @@ func removeAllChar(str string, char string) string {
 	}
 	return rs
 }
+
+func RemoveString(tagStr1, tagStr2 string) string {
+	if tagStr1 == "" {
+		return ""
+	}
+	if tagStr2 == "" {
+		return tagStr1
+	}
+	tags1 := strings.Split(tagStr1, ",")
+	tags2 := strings.Split(tagStr2, ",")
+
+	tagSet := make(map[string]bool)
+	for _, tag := range tags1 {
+		trimmedTag := strings.TrimSpace(tag)
+		if trimmedTag != "" {
+			tagSet[trimmedTag] = true
+		}
+	}
+	for _, tag := range tags2 {
+		trimmedTag := strings.TrimSpace(tag)
+		if trimmedTag != "" {
+			delete(tagSet, trimmedTag)
+		}
+	}
+
+	var uniqueTags []string
+	for tag := range tagSet {
+		uniqueTags = append(uniqueTags, tag)
+	}
+
+	return strings.Join(uniqueTags, ",")
+}

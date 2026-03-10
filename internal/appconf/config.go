@@ -76,13 +76,12 @@ type AppConfig struct {
 	DetectTime            int  `json:"detect_time"`              // 进程检测时间,启动器不一定是自动型的，还有手动型的，用于提示用户快点按进游戏
 	// 时区配置
 	TimeZone           string `json:"time_zone,omitempty"` // 数据库使用的 IANA 时区名称（如 "Asia/Shanghai"）
-	DmmIsEnabled       bool   `json:"dmm_is_enabled"`
-	EroscapeIsEnabled  bool   `json:"eroscape_is_enabled"`
 	EroscapeUseMirror  bool   `json:"eroscape_use_mirror"`
 	NewFolderChooser   bool   `json:"new_folder_chooser"`
 	JoystickType       string `json:"joystick_type,omitempty"`
 	BangumiSearchCn    bool   `json:"bangumi_search_cn"`
 	AutoDownloadImages bool   `json:"auto_download_images"`
+	LogAll             bool   `json:"log_all"`
 }
 
 // getConfigPath 获取配置文件路径
@@ -146,14 +145,13 @@ func LoadConfig() (*AppConfig, error) {
 		LocaleEmulatorPath:      "",
 		MagpiePath:              "",
 		AutoDetectGameProcess:   true, // 默认启用自动检测，保持向后兼容
-		DmmIsEnabled:            true,
-		EroscapeIsEnabled:       true,
 		EroscapeUseMirror:       false,
 		NewFolderChooser:        true,
 		JoystickType:            "",
 		DetectTime:              60,
 		BangumiSearchCn:         false,
 		AutoDownloadImages:      true,
+		LogAll:                  false,
 	}
 
 	// 获取配置文件路径

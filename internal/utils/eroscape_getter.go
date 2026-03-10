@@ -324,7 +324,7 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			fmt.Printf("三围：%s\n", work.Measurements)
 			fmt.Printf("身高:%s\n", work.Height)
 			sm, _ := s.Find("div.formal_explanation").Html()
-			work.WorkSummary = strings.ReplaceAll(sm, "<br/>", "\n")
+			work.WorkSummary = strings.ReplaceAll(strings.TrimSpace(sm), "<br/>", "\n")
 			work.Sort = i
 			applog.InfoLogSaveAppLog("角色经历 01: " + work.WorkSummary)
 			applog.InfoLogSaveAppLog("角色图像 01: " + work.CharactorImage)
@@ -455,6 +455,33 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		// 提取简介
 		summary := e.ChildText("div.area-detail-read")
 		game.Summary = summary
+
+		dmm := e.DOM.Find("div#bottom_inter_links_main li:contains('DMM') > a").AttrOr("href", "")
+		parsedURL, err := url.Parse(dmm)
+		if err != nil {
+			applog.ErrorLogSaveAppLog("dmm URL 解析失败:", err)
+			// return
+		} else {
+			// 获取查询参数
+			lurl := parsedURL.Query().Get("lurl")
+			if lurl != "" {
+				unescapedLurl, err := url.QueryUnescape(lurl)
+				if err == nil {
+					lurlParsed, err := url.Parse(unescapedLurl)
+					if err == nil {
+						pathParts := strings.Split(strings.Trim(lurlParsed.Path, "/"), "/")
+						for i, part := range pathParts {
+							if part == "detail" && i+1 < len(pathParts) {
+								game.DmmId = pathParts[i+1]
+								break
+							}
+						}
+					}
+				}
+			}
+			fmt.Printf("dmm id:%s\n", game.DmmId)
+
+		}
 
 		// 提取标签
 		// var tags []string

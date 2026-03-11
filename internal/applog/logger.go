@@ -149,6 +149,7 @@ func LogInfof(ctx context.Context, format string, args ...interface{}) {
 		runtime.LogInfof(ctx, format, args...)
 		fmt.Printf(format+"\n", args...)
 	} else {
+		fmt.Printf(format+"\n", args...)
 		logToCLI("INFO", format, args...)
 	}
 }

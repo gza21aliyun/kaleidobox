@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
-	"encoding/xml"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"lunabox/internal/appconf"
@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -246,9 +247,11 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 
 	} else {
 		// 情况2: 没有保存的process_name，或process_name与启动器相同
-
-		// 检查是否启用自动进程检测
-		if !s.config.AutoDetectGameProcess {
+		if savedProcessName == launcherExeName {
+			actualProcessID = launcherPID
+			actualProcessName = launcherExeName
+			needExternalMonitor = false
+		} else if !s.config.AutoDetectGameProcess {
 			// 用户禁用了自动检测，直接使用启动器进程
 			applog.LogInfof(s.ctx, "Auto-detect disabled for game %s, using launcher process: %s (PID %d)", gameID, launcherExeName, launcherPID)
 			actualProcessID = launcherPID
@@ -266,7 +269,8 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 			}
 		} else {
 			// 启用了自动检测，使用分阶段检测策略来准确判断启动器类型
-			applog.LogInfof(s.ctx, "Starting staged detection for game %s, launcher: %s (PID %d)", gameID, launcherExeName, launcherPID)
+			applog.LogInfof(s.ctx, "Starting staged detection for game %s, launcher: %s,new launcher:%s (PID %d)", gameID,
+				launcherExeName, savedProcessName, launcherPID)
 
 			newProcess := s.detectNewProcesses(launcherPID, gameID, "")
 			if newProcess != nil {
@@ -286,21 +290,23 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 	if s.config.RecordActiveTimeOnly {
 		_, err := s.activeTimeTracker.StartTracking(sessionID, gameID, actualProcessID)
 		if err != nil {
-			applog.LogWarningf(s.ctx, "Failed to start active time tracking: %v", err)
+			applog.LogWarningf(s.ctx, "Failed to start active time tracking: %v, %s", err, actualProcessName)
 		}
+	}
+	if savepath == "" {
+		go s.DetectProcessSavePath(actualProcessID)
 	}
 
 	// 根据情况选择监控方式
 	if needExternalMonitor {
 		// 需要外部监控：实际游戏进程不是cmd的子进程
 		s.monitorProcessByPID(sessionID, gameID, startTime, actualProcessID, actualProcessName)
+		fmt.Println(actualProcessName)
 	} else {
 		// 使用原有的 waitForGameExit：可以利用 cmd.Wait() 事件驱动
 		s.waitForGameExit(cmd, sessionID, gameID, startTime, actualProcessID)
 	}
-	if savepath == "" {
-		go s.detectProcessSavePath(actualProcessID)
-	}
+
 }
 
 // promptUserToSelectProcess 提示用户选择实际的游戏进程
@@ -601,8 +607,10 @@ func (s *StartService) getGamePathAndProcess(gameID string) (path string, proces
 	arguments string, savePath string, err error) {
 	game, err := s.gameService.GetGameByID(gameID)
 	if err != nil {
+		fmt.Printf("getGamePathAndProcess fail\n")
 		return "", "", "", "", err
 	}
+	fmt.Printf("getGamePathAndProcess path:%s, process:%s, savepath:%s\n", game.Path, game.ProcessName, game.SavePath)
 	return game.Path, game.ProcessName, game.Arguments, game.SavePath, nil
 }
 
@@ -671,6 +679,10 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 		knownPIDs[proc.PID] = true
 		if proc.PID == targetPID {
 			oldProcess = &utils.NewProcessInfo{Name: proc.Name, PID: proc.PID, PPID: proc.PPID}
+			fmt.Printf("old process found, pid:%d, name:%s, saved name:%s\n", targetPID, proc.Name, processName)
+			if proc.Name == processName && processName != "" {
+				return oldProcess
+			}
 		}
 		if proc.PPID == tpid {
 			applog.InfoLogSaveAppLog("detectNewProcesses Found process: %s (PID: %d)", proc.Name, proc.PID)
@@ -752,83 +764,323 @@ func IsAdmin() bool {
 	return true
 }
 
-// 使用 Sysmon 或 ETW 捕获进程的文件操作
-func (s *StartService) detectProcessSavePath(pid uint32) (string, error) {
-	fmt.Printf("detectProcessSavePath 01\n")
+// ... existing code ...
+// detectProcessSavePath 使用 ProcMon 监控进程的文件操作
+func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
+	var procmonPath string = `C:\temp\projects\lunabox\build\bin\Procmon.exe`
+	fmt.Printf("开始DetectProcessSavePath\n")
+	// fmt.Printf("detectProcessSavePath 01, pid: %d, procmonPath: %s\n", pid, procmonPath)
+
 	if !IsAdmin() {
-		return "", errors.New("not admin")
-	}
-	// 构造需要管理员权限的命令（例如启动 Sysmon）
-	cmd := exec.Command("powershell", "-Command", "Start-Process sysmon.exe -ArgumentList '-accepteula -i' -Verb RunAs")
-
-	// 设置隐藏窗口属性（可选）
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		HideWindow: true,
+		applog.LogErrorf(s.ctx, "当前程序没有管理员权限")
+		return "", errors.New("需要管理员权限才能使用 ProcMon")
 	}
 
-	fmt.Printf("detectProcessSavePath 02\n")
-	// 执行命令
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to request admin privileges: %w", err)
+	// 检查 ProcMon 是否存在
+	if _, err := os.Stat(procmonPath); os.IsNotExist(err) {
+		exePath, _ := os.Executable()
+		exeDir := filepath.Dir(exePath)
+
+		// 建议的路径
+		suggestedPath := filepath.Join(exeDir, "Procmon.exe")
+		applog.LogErrorf(s.ctx, "ProcMon 不存在：%s", suggestedPath)
+		return "", fmt.Errorf("ProcMon 未找到：%s，请先下载并放置到该路径", suggestedPath)
 	}
 
-	// 等待一段时间让 Sysmon 启动并收集日志
-	time.Sleep(10 * time.Second)
-
-	// 解析日志文件（后续逻辑）
-	logFile := "C:\\Windows\\Sysmon\\sysmon.log"
-	events, err := parseSysmonLog(logFile, string(pid))
+	// 创建日志目录
+	logDir := filepath.Join(os.TempDir(), "lunabox_procmon")
+	err := os.MkdirAll(logDir, 0755)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse Sysmon log: %w", err)
+		applog.LogErrorf(s.ctx, "创建日志目录失败：%v", err)
+		return "", fmt.Errorf("创建日志目录失败：%w", err)
 	}
 
-	fmt.Printf("detectProcessSavePath 03\n")
+	// 生成唯一的日志文件名
+	timestamp := time.Now().Format("20060102_150405")
+	csvPath := filepath.Join(logDir, fmt.Sprintf("pid_%d_%s.csv", pid, timestamp))
 
-	// 返回最新文件路径
-	if len(events) > 0 {
-		latestEvent := events[len(events)-1]
-		return filepath.Dir(latestEvent.FilePath), nil
+	applog.LogInfof(s.ctx, "ProcMon 日志路径：%s", csvPath)
+
+	// 确保之前的 ProcMon 实例已终止
+	terminateProcmon()
+	time.Sleep(500 * time.Millisecond)
+
+	// 启动 ProcMon 并捕获
+	err = runProcmonCapture(procmonPath, pid, csvPath, 20)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "ProcMon 捕获失败：%v", err)
+		return "", fmt.Errorf("ProcMon 执行失败：%w", err)
 	}
 
-	return "", fmt.Errorf("no file creation events found for PID %s", pid)
+	// 解析 CSV 文件
+	savePath := parseProcMonCSV(csvPath, pid)
+	if savePath != "" {
+		applog.LogInfof(s.ctx, "成功检测到存档路径：%s", savePath)
+		return savePath, nil
+	}
+
+	applog.LogWarningf(s.ctx, "未在 ProcMon 日志中找到进程 %d 的文件操作", pid)
+	return "", fmt.Errorf("未检测到进程 %d 的存档文件", pid)
 }
 
-// SysmonEvent 定义 Sysmon 日志中的事件结构
-type SysmonEvent struct {
-	EventID   int    `xml:"EventID"`
-	ProcessId string `xml:"EventData>Data[name='ProcessId']"`
-	FilePath  string `xml:"EventData>Data[name='TargetFilename']"`
+// terminateProcmon 终止所有运行中的 ProcMon 进程
+func terminateProcmon() {
+	cmd := exec.Command("taskkill", "/F", "/IM", "procmon.exe", "/IM", "procmon64.exe")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd.Run() // 忽略错误，可能本来就没有运行
+
+	time.Sleep(500 * time.Millisecond)
 }
 
-// parseSysmonLog 解析 Sysmon 日志文件，筛选出与指定 PID 相关的文件创建事件
-func parseSysmonLog(logFile string, targetPID string) ([]SysmonEvent, error) {
-	// 读取日志文件内容
-	data, err := os.ReadFile(logFile)
+// runProcmonCapture 运行 ProcMon 进行捕获
+func runProcmonCapture(procmonPath string, targetPID uint32, csvPath string, durationSeconds int) error {
+    applog.LogInfof(context.Background(), "启动 ProcMon 捕获，进程 ID: %d, 持续时间：%d 秒", targetPID, durationSeconds)
+
+    // 生成临时的 PML 日志文件名
+    tempDir := os.TempDir()
+    pmlName := fmt.Sprintf("procmon_capture_%d_%d.pml", targetPID, time.Now().Unix())
+    pmlPath := filepath.Join(tempDir, pmlName)
+    applog.LogInfof(context.Background(), "PML 日志路径：%s", pmlPath)
+
+    // 步骤 1: 启动 ProcMon 并开始捕获（使用 /BackingFile 指定 PML 文件）
+    startCmd := exec.Command(procmonPath, "/AcceptEula", "/Quiet", "/Minimized", "/BackingFile", pmlPath)
+    startCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    err := startCmd.Start()
+    if err != nil {
+        return fmt.Errorf("启动 ProcMon 失败：%w", err)
+    }
+
+    applog.LogInfof(context.Background(), "ProcMon 已启动，等待 %d 秒...", durationSeconds)
+
+    // 步骤 2: 等待指定时间，让 ProcMon 收集数据
+    time.Sleep(time.Duration(durationSeconds) * time.Second)
+
+    // 步骤 3: 停止 ProcMon（这会自动关闭并保存 PML 文件）
+    stopCmd := exec.Command(procmonPath, "/Terminate")
+    stopCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    err = stopCmd.Run()
+    if err != nil {
+        applog.LogWarningf(context.Background(), "停止 ProcMon 失败：%v", err)
+    }
+
+    // 等待文件写入完成
+    time.Sleep(2000 * time.Millisecond)
+
+    // 检查 PML 文件是否存在
+    if _, err := os.Stat(pmlPath); os.IsNotExist(err) {
+        applog.LogWarningf(context.Background(), "PML 文件不存在：%s，尝试备用方案", pmlPath)
+        return saveProcmonDataWithPowerShell(targetPID, csvPath, durationSeconds)
+    }
+
+    applog.LogInfof(context.Background(), "PML 文件已创建：%s", pmlPath)
+
+    // 步骤 4: 启动一个新的 ProcMon 实例来打开 PML 文件并导出为 CSV
+    // 使用 /OpenLog 打开 PML，然后用 /SaveAs 导出为 CSV
+    exportCmd := exec.Command(procmonPath, 
+        "/AcceptEula", 
+        "/Quiet",
+        "/OpenLog", pmlPath,
+        "/SaveAs", csvPath)
+    exportCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    err = exportCmd.Run()
+    if err != nil {
+        applog.LogWarningf(context.Background(), "ProcMon 导出 CSV 失败：%v", err)
+        terminateProcmon()
+        return saveProcmonDataWithPowerShell(targetPID, csvPath, durationSeconds)
+    }
+
+    // 等待导出完成
+    time.Sleep(2000 * time.Millisecond)
+
+    // 终止 ProcMon
+    terminateProcmon()
+
+    applog.LogInfof(context.Background(), "ProcMon 捕获完成，PML 日志：%s, CSV 导出：%s", pmlPath, csvPath)
+    
+    // 可选：清理 PML 文件
+    // os.Remove(pmlPath)
+    
+    return nil
+}
+
+// saveProcmonDataWithPowerShell 使用 PowerShell 保存 ProcMon 数据（备用方案）
+func saveProcmonDataWithPowerShell(targetPID uint32, csvPath string, durationSeconds int) error {
+	script := fmt.Sprintf(`
+$ErrorActionPreference = "Stop"
+$targetPID = %d
+$csvPath = "%s"
+$startTime = [DateTime]::Now.AddSeconds(-%d)
+$endTime = [DateTime]::Now
+
+try {
+	# 使用 Windows 事件日志查询（如果 Sysmon 已安装）
+	$events = Get-WinEvent -FilterHashtable @{
+		LogName='Microsoft-Windows-Sysmon/Operational'
+		Id=11
+		StartTime=$startTime
+		EndTime=$endTime
+	} -MaxEvents 500 -ErrorAction SilentlyContinue | 
+	Where-Object { 
+		$_.Message -match "ProcessId:\\s*$targetPID"
+	}
+
+	if ($events.Count -gt 0) {
+		# 导出为 CSV
+		$events | Select-Object TimeCreated, Id, Message | 
+		Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
+		
+		Write-Output "成功保存 %d 个事件到 CSV" -f $events.Count
+	} else {
+		# 如果没有 Sysmon 事件，创建空 CSV
+		"Time of Day,Process Name,PID,Operation,Path,Result,Detail" | Out-File -FilePath $csvPath -Encoding UTF8
+		Write-Output "未找到事件，创建空 CSV"
+	}
+} catch {
+	# 出错时创建空 CSV
+	"Time of Day,Process Name,PID,Operation,Path,Result,Detail" | Out-File -FilePath $csvPath -Encoding UTF8
+	Write-Error $_.Exception.Message
+	exit 1
+}
+`, targetPID, csvPath, durationSeconds)
+
+	cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", script)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	output, err := cmd.CombinedOutput()
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to read log file: %w", err)
+		return fmt.Errorf("PowerShell 保存失败：%w, 输出：%s", err, string(output))
 	}
 
-	// 解析 XML 内容
-	var events struct {
-		Events []SysmonEvent `xml:"Event"`
+	applog.LogInfof(context.Background(), "PowerShell 保存结果：%s", string(output))
+	return nil
+}
+
+// ... existing code ...
+
+// parseProcMonCSV 解析 ProcMon CSV 文件
+func parseProcMonCSV(csvPath string, targetPID uint32) string {
+	file, err := os.Open(csvPath)
+	if err != nil {
+		applog.LogErrorf(context.Background(), "打开 CSV 文件失败：%v", err)
+		return ""
 	}
-	if err := xml.Unmarshal(data, &events); err != nil {
-		return nil, fmt.Errorf("failed to parse XML: %w", err)
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = -1 // 允许不同数量的字段
+	reader.LazyQuotes = true    // 处理不规范的 CSV
+
+	records, err := reader.ReadAll()
+	if err != nil {
+		applog.LogErrorf(context.Background(), "读取 CSV 失败：%v", err)
+		return ""
 	}
 
-	// 筛选出与目标 PID 相关的事件
-	var filteredEvents []SysmonEvent
-	for _, event := range events.Events {
-		if event.EventID == 11 && event.ProcessId == targetPID { // EventID 11 表示文件创建
-			filteredEvents = append(filteredEvents, event)
+	applog.LogInfof(context.Background(), "CSV 文件共有 %d 行记录", len(records))
+
+	var saveFiles []string
+	targetPIDStr := fmt.Sprintf("%d", targetPID)
+
+	for i, record := range records {
+		// 跳过表头（ProcMon CSV 通常有多行表头）
+		if i < 2 || len(record) < 5 {
+			continue
+		}
+
+		// CSV 格式：Time of Day, Process Name, PID, Operation, Path, Result, Detail
+		pName := strings.TrimSpace(record[1])
+		pTime := strings.TrimSpace(record[0])
+		pidStr := strings.TrimSpace(record[2])
+		path := strings.TrimSpace(record[4])
+		operation := strings.TrimSpace(record[3])
+
+		// 检查 PID 是否匹配
+		if pidStr == targetPIDStr {
+			// 检查是否是文件写入相关的操作
+			if isFileWriteOperation(operation) && isLikelySaveFile(path) {
+				saveFiles = append(saveFiles, path)
+				applog.LogInfof(context.Background(), "ProcMon CSV 发现文件 [%s]: %s, PID: %s, 时间: %s, 进程: %s", operation, path, pidStr, pTime, pName)
+			}
 		}
 	}
 
-	return filteredEvents, nil
+	if len(saveFiles) > 0 {
+		applog.LogInfof(context.Background(), "找到 %d 个可能的存档文件", len(saveFiles))
+		// 返回最后一个（最新的）文件所在目录
+		latestFile := saveFiles[len(saveFiles)-1]
+		return filepath.Dir(latestFile)
+	}
+
+	return ""
 }
 
-func clearSysmonLogs() error {
-	// 使用 PowerShell 清除日志
-	cmd := exec.Command("powershell", "-Command", "Clear-EventLog -LogName 'Microsoft-Windows-Sysmon/Operational'")
-	return cmd.Run()
+// isFileWriteOperation 判断是否是文件写入相关的操作
+func isFileWriteOperation(operation string) bool {
+	writeOperations := map[string]bool{
+		"CreateFile":            true,
+		"WriteFile":             true,
+		"SetInformationFile":    true,
+		"FlushBuffersFile":      true,
+		"WriteEaFile":           true,
+		"SetEndOfFile":          true,
+		"SetAllocationSizeFile": true,
+		"Cleanup":               true,
+		"Close":                 true,
+	}
+
+	return writeOperations[operation]
 }
+
+// isLikelySaveFile 判断文件是否可能是存档文件
+func isLikelySaveFile(filePath string) bool {
+	return true
+	if filePath == "" {
+		return false
+	}
+
+	ext := strings.ToLower(filepath.Ext(filePath))
+	lowerPath := strings.ToLower(filePath)
+
+	// 存档文件扩展名
+	saveExts := map[string]bool{
+		".sav": true, ".save": true, ".dat": true,
+		".bin": true, ".cfg": true, ".ini": true,
+		".json": true, ".xml": true, ".db": true,
+		".sqlite": true, ".sqlite3": true,
+		".profile": true, ".game": true,
+	}
+
+	if saveExts[ext] {
+		return true
+	}
+
+	// 排除临时文件和系统文件
+	ignorePatterns := []string{
+		".tmp", ".temp", ".log", ".cache",
+		"\\windows\\", "\\program files\\",
+		"pagefile", "hiberfil", "$recycle",
+		"\\appdata\\local\\temp\\",
+	}
+
+	for _, pattern := range ignorePatterns {
+		if strings.Contains(lowerPath, pattern) {
+			return false
+		}
+	}
+
+	// 检查是否包含存档相关的关键词
+	saveKeywords := []string{
+		"save", "data", "config", "profile",
+		"game", "progress", "backup", "setting",
+	}
+
+	for _, keyword := range saveKeywords {
+		if strings.Contains(lowerPath, keyword) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ... existing code ...

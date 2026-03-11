@@ -27,6 +27,7 @@ type Services struct {
 	TagService       *service.TagService
 	ImportService    *service.ImportService
 	ImageService     *service.ImageService
+	StartService     *service.StartService
 }
 
 func createServices(t *testing.T) *Services {
@@ -54,6 +55,8 @@ func createServices(t *testing.T) *Services {
 	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 	importServie := service.NewImportService()
 	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
+	startService := service.NewStartService()
+	startService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 
 	services := Services{
 		GameService:      gameService,
@@ -64,6 +67,7 @@ func createServices(t *testing.T) *Services {
 		TagService:       tagService,
 		ImportService:    importServie,
 		ImageService:     imageService,
+		StartService:     startService,
 	}
 	return &services
 }

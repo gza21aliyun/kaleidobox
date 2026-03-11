@@ -37,6 +37,8 @@ interface GameCardProps {
   /** 当前搜索词，用于高亮游戏名和开发商 */
   searchQuery?: string;
   filteredGameIdsStr?: string[];
+  /** 视图模式 */
+  viewMode?: "list" | "small" | "large";
 }
 
 export function GameCard({
@@ -46,6 +48,7 @@ export function GameCard({
   onSelectChange,
   searchQuery = "",
   filteredGameIdsStr = [],
+  viewMode = "small",
 }: GameCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -85,9 +88,102 @@ export function GameCard({
   const isCompleted = game.status === enums.GameStatus.COMPLETED;
   const companyDisplay = game.company || "Unknown Developer";
 
+  if (viewMode === "list") {
+    return (
+      <div
+        className={`glass-card group relative flex w-full items-center gap-4 overflow-hidden rounded-xl border border-brand-100 bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
+        onClick={selectionMode ? handleToggleSelect : undefined}
+      >
+        {selectionMode && (
+          <button
+            type="button"
+            onClick={handleToggleSelect}
+            className={`absolute left-2 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border
+                        ${selected
+              ? "bg-neutral-600 text-white border-neutral-600"
+              : "bg-white/90 text-transparent border-brand-300 dark:bg-brand-800/90 dark:border-brand-600"}
+                        shadow-sm`}
+            title={selected ? t('common.cancelSelection') : t('common.select')}
+          >
+            <div className="i-mdi-check text-sm" />
+          </button>
+        )}
+        
+        <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-brand-200 dark:bg-brand-700">
+          {game.cover_url ? (
+            <img
+              src={game.cover_url}
+              alt={game.name}
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover"
+              draggable="false"
+              onDragStart={e => e.preventDefault()}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-brand-400">
+              <div className="i-mdi-image-off text-xl" />
+            </div>
+          )}
+          {isCompleted && (
+            <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500 shadow-lg">
+              <div className="i-mdi-trophy text-[10px] text-white" />
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 grid grid-cols-[1fr_1fr] gap-x-4 gap-y-1">
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-bold text-brand-900 dark:text-white" title={game.name}>
+              <HighlightText text={game.name} query={searchQuery} />
+            </h3>
+            <p className="truncate text-xs text-brand-500 dark:text-brand-400" title={companyDisplay}>
+              <HighlightText text={companyDisplay} query={searchQuery} />
+            </p>
+          </div>
+          <div className="min-w-0">
+            {game.search_name && (
+              <p className="truncate text-xs text-brand-400 dark:text-brand-500" title={game.search_name}>
+                <span className="text-brand-300 dark:text-brand-600">Search: </span>
+                <HighlightText text={game.search_name} query={searchQuery} />
+              </p>
+            )}
+            {game.path && (
+              <p className="truncate text-xs text-brand-400 dark:text-brand-500" title={game.path}>
+                <span className="text-brand-300 dark:text-brand-600">Path: </span>
+                <HighlightText text={game.path} query={searchQuery} />
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <p className="text-xs text-brand-500 dark:text-brand-400">
+            {formatLocalDate(game.release_at)}
+          </p>
+          <div className="flex items-center gap-2 ml-2">
+            <button
+              onClick={handleStartGame}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-600 text-white shadow-lg transition-transform hover:scale-110 hover:bg-neutral-500 active:scale-95"
+              title={t('game.buttons.launchGame')}
+            >
+              <div className="i-mdi-play text-base" />
+            </button>
+            <button
+              onClick={handleViewDetails}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-brand-400 active:scale-95"
+              title={t('common.viewDetails')}
+            >
+              <div className="i-mdi-information-variant text-base" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
+      className={`glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""} ${viewMode === "large" ? "aspect-[3/4]" : ""}`}
       onClick={selectionMode ? handleToggleSelect : undefined}
     >
       {selectionMode && (

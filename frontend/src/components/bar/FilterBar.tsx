@@ -48,6 +48,9 @@ interface FilterBarProps {
   onReleaseStartDateChange?: (date: string) => void;
   releaseEndDate?: string;
   onReleaseEndDateChange?: (date: string) => void;
+  // 视图模式
+  viewMode?: "list" | "small" | "large";
+  onViewModeChange?: (mode: "list" | "small" | "large") => void;
 }
 
 export function FilterBar({
@@ -79,6 +82,8 @@ export function FilterBar({
   onReleaseStartDateChange,
   releaseEndDate,
   onReleaseEndDateChange,
+  viewMode = "small",
+  onViewModeChange,
 }: FilterBarProps) {
   const { t } = useTranslation();
   const [initialized, setInitialized] = useState(false);
@@ -275,6 +280,48 @@ export function FilterBar({
               options={statusOptions}
               className="min-w-[120px]"
             />
+          )}
+
+          {/* 视图模式切换 */}
+          {onViewModeChange && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onViewModeChange("list")}
+                className={`p-2 rounded-lg border transition-colors ${
+                  viewMode === "list"
+                    ? "bg-brand-100 dark:bg-brand-700 border-brand-300 dark:border-brand-600 text-brand-900 dark:text-white"
+                    : "bg-white dark:bg-brand-800 border-brand-200 dark:border-brand-700 text-brand-500 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-700"
+                }`}
+                title={t('library.viewMode.list')}
+              >
+                <div className="i-mdi-format-list-bulleted text-lg" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewModeChange("small")}
+                className={`p-2 rounded-lg border transition-colors ${
+                  viewMode === "small"
+                    ? "bg-brand-100 dark:bg-brand-700 border-brand-300 dark:border-brand-600 text-brand-900 dark:text-white"
+                    : "bg-white dark:bg-brand-800 border-brand-200 dark:border-brand-700 text-brand-500 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-700"
+                }`}
+                title={t('library.viewMode.small')}
+              >
+                <div className="i-mdi-view-grid-outline text-lg" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewModeChange("large")}
+                className={`p-2 rounded-lg border transition-colors ${
+                  viewMode === "large"
+                    ? "bg-brand-100 dark:bg-brand-700 border-brand-300 dark:border-brand-600 text-brand-900 dark:text-white"
+                    : "bg-white dark:bg-brand-800 border-brand-200 dark:border-brand-700 text-brand-500 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-700"
+                }`}
+                title={t('library.viewMode.large')}
+              >
+                <div className="i-mdi-view-module text-lg" />
+              </button>
+            </div>
           )}
 
           <BetterSelect

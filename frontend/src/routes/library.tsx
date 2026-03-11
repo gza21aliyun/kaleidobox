@@ -81,6 +81,7 @@ function LibraryPage() {
   // const gamesForUpdate = useRef(games)
   const [releaseStartDate, setReleaseStartDate] = useState<string>("");
   const [releaseEndDate, setReleaseEndDate] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"list" | "small" | "large">("small");
   
 
   
@@ -343,6 +344,8 @@ function LibraryPage() {
         selectedCount={filterSelectedIds.length}
         onSelectAll={handleSelectAll}
         onClearSelection={handleClearSelection}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         batchActions={(
           <>
             {/* 批量更新状态 */}
@@ -509,7 +512,13 @@ function LibraryPage() {
               </div>
             )
           : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3">
+              <div className={
+                viewMode === "list" 
+                  ? "flex flex-col gap-2"
+                  : viewMode === "large"
+                    ? "grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-4"
+                    : "grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3"
+              }>
                 {filteredGames.map(game => (
                   <GameCard
                     key={game.id}
@@ -519,6 +528,7 @@ function LibraryPage() {
                     selected={selectedGameIds.includes(game.id)}
                     onSelectChange={selected => setGameSelection(game.id, selected)}
                     filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
+                    viewMode={viewMode}
                   />
                 ))}
               </div>

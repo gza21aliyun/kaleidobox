@@ -13,7 +13,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bi-zone/etw"
@@ -169,13 +172,14 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 			cmd = exec.Command(path, arguments)
 		}
 	}
-	s.hotkeyService.readyHotkeysForGame(gameID)
+
 	cmd.Dir = filepath.Dir(path)
 
 	if err := cmd.Start(); err != nil {
 		applog.LogErrorf(s.ctx, "failed to start game: %v", err)
 		return false, fmt.Errorf("failed to start game: %w", err)
 	}
+	s.hotkeyService.readyHotkeysForGame(gameID)
 
 	// 如果启用了 Magpie，在游戏启动后启动 Magpie
 	if useMagpie && s.config.MagpiePath != "" {
@@ -765,10 +769,6 @@ func IsAdmin() bool {
 	return true
 }
 
-// ... existing code ...
-
-// DetectProcessSavePath 使用 ETW (Event Tracing for Windows) 监控进程的文件操作
-// 这是 Process Monitor 使用的技术，可以实时监控指定进程的所有文件操作
 func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 	fmt.Printf("开始 DetectProcessSavePath (ETW 方式)\n")
 
@@ -777,12 +777,8 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 		return "", errors.New("需要管理员权限才能使用 ETW")
 	}
 
-	// ============================================================
-	// TODO: 在此修改查询时间范围（单位：秒）
-	var queryTimeRangeSeconds int = 60
-	// ============================================================
+	var queryTimeRangeSeconds int = 20
 
-	// 获取进程信息
 	processName, processPath, err := getProcessInfo(pid)
 	if err != nil {
 		return "", fmt.Errorf("获取进程信息失败：%w", err)
@@ -790,7 +786,6 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 
 	applog.LogInfof(s.ctx, "监控进程：%s (PID: %d), 路径：%s", processName, pid, processPath)
 
-	// 用于存储检测到的文件操作
 	type fileOperation struct {
 		path      string
 		timestamp time.Time
@@ -800,50 +795,49 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 
 	var foundSavePath string
 	var mu sync.Mutex
-	done := make(chan bool)
 	fileOperations := make([]fileOperation, 0)
-	eventCount := 0
+	var eventCount int32
 
 	applog.LogInfof(s.ctx, "开始 ETW 文件监控，监听时长：%d 秒...", queryTimeRangeSeconds)
 
+	gd := "{edd08927-9cc4-4e65-b970-c2560fb5c289}"
+	guid, err := windows.GUIDFromString(gd)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "获取 FileIo GUID 失败：%v", err)
+		return "", fmt.Errorf("获取 GUID 失败：%w", err)
+	}
+
+	session, err := etw.NewSession(guid)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "创建 ETW 会话失败：%v", err)
+		return "", fmt.Errorf("创建 ETW 会话失败：%w", err)
+	}
+
+	// ✅ 关键：使用 atomic 标志 + defer 确保只关闭一次
+	var sessionClosed int32
+	defer func() {
+		if atomic.CompareAndSwapInt32(&sessionClosed, 0, 1) {
+			session.Close()
+			applog.LogInfof(s.ctx, "ETW session 已关闭 (defer)")
+		}
+	}()
+
+	done := make(chan bool, 1)
+
 	// 启动 ETW 监控 goroutine
 	go func() {
-		// 使用正确的 FileIo provider GUID
-		// Microsoft-Windows-Kernel-File: {90cbdc39-4a3e-11d1-84f4-0000f80464e3}
-		guid, err := windows.GUIDFromString("{9E814AAD-3204-11D2-98F5-00C04F79E3AE}")
-		if err != nil {
-			applog.LogErrorf(s.ctx, "获取 FileIo GUID 失败：%v", err)
-			done <- true
-			return
-		}
-
-		session, err := etw.NewSession(guid)
-		if err != nil {
-			applog.LogErrorf(s.ctx, "创建 ETW 会话失败：%v", err)
-			done <- true
-			return
-		}
-
-		var sessionClosed bool
-		var closeMu sync.Mutex
-
-		// 处理事件的回调函数
 		callback := func(event *etw.Event) {
-			eventCount++
-			fmt.Printf("event header:%d", event.Header.ProcessID)
+			atomic.AddInt32(&eventCount, 1)
 
-			// 只处理目标进程的事件
 			if event.Header.ProcessID != pid {
 				return
 			}
 
-			// 解析文件操作事件
 			props, err := event.EventProperties()
 			if err != nil {
 				return
 			}
 
-			// 提取文件路径 - 尝试不同的字段名
 			var filePath string
 			for _, key := range []string{"FileName", "FilePath", "Path", "RelativePath", "FileObject"} {
 				if path, ok := props[key].(string); ok && path != "" {
@@ -852,13 +846,10 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 				}
 			}
 
-			// 如果找不到字符串路径，尝试其他类型
-			if filePath == "" {
-				// 有些事件可能使用 FILE_OBJECT 或其他结构
-				applog.LogDebugf(s.ctx, "[事件 #%d] EventID: %d, 属性：%+v", eventCount, event.Header.ID, props)
-			}
+			if filePath != "" && (event.Header.ID == 12 || event.Header.ID == 14) && !strings.HasPrefix(filePath, "0x") &&
+				!strings.Contains(filePath, "ProgramData") && !strings.Contains(filePath, "Windows\\system32") && strings.HasSuffix(filePath, "\\") &&
+				!strings.Contains(filePath, `AppData\Local\Packages`) && len(filePath) > 10 && !strings.HasSuffix(strings.ToLower(filePath), ".dll") {
 
-			if filePath != "" {
 				mu.Lock()
 				fileOperations = append(fileOperations, fileOperation{
 					path:      filePath,
@@ -867,7 +858,6 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 					pid:       event.Header.ProcessID,
 				})
 
-				// 检查是否是存档文件
 				if utils.IsLikelySaveFile(filePath) && foundSavePath == "" {
 					foundSavePath = filePath
 					applog.LogInfof(s.ctx, ">>> 检测到存档文件：%s", foundSavePath)
@@ -876,34 +866,22 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 			}
 		}
 
-		// 启动一个 goroutine 用于定时关闭会话
-		go func() {
-			time.Sleep(time.Duration(queryTimeRangeSeconds+5) * time.Second)
-			closeMu.Lock()
-			if !sessionClosed {
-				session.Close()
-				sessionClosed = true
-			}
-			closeMu.Unlock()
-		}()
-
-		// 开始处理事件（这会阻塞直到会话关闭）
 		applog.LogInfof(s.ctx, "开始处理 ETW 事件...")
 		if err := session.Process(callback); err != nil {
 			applog.LogErrorf(s.ctx, "处理 ETW 事件失败：%v", err)
 		}
 		applog.LogInfof(s.ctx, "ETW 事件处理结束，共处理 %d 个事件", eventCount)
 
-		// 确保会话已关闭
-		closeMu.Lock()
-		if !sessionClosed {
-			session.Close()
-			sessionClosed = true
-		}
-		closeMu.Unlock()
-
 		done <- true
 	}()
+
+	// ✅ 定时器：到时间后关闭 session，触发 session.Process() 返回
+	time.AfterFunc(time.Duration(queryTimeRangeSeconds+5)*time.Second, func() {
+		if atomic.CompareAndSwapInt32(&sessionClosed, 0, 1) {
+			session.Close()
+			applog.LogInfof(s.ctx, "ETW session 已关闭 (定时器)")
+		}
+	})
 
 	// 等待监控完成
 	<-done
@@ -912,10 +890,11 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 	ops := make([]fileOperation, len(fileOperations))
 	copy(ops, fileOperations)
 	savePath := foundSavePath
-	totalEvents := eventCount
+	totalEvents := int(eventCount)
 	mu.Unlock()
 
 	applog.LogInfof(s.ctx, "ETW 监控结束，共捕获 %d 个总事件，%d 个文件操作", totalEvents, len(ops))
+	sort.Slice(ops, func(i, j int) bool { return len(ops[i].path) > len(ops[j].path) })
 
 	// 打印所有文件操作（调试用）
 	for i, op := range ops {
@@ -924,12 +903,33 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 		}
 	}
 
+	if len(ops) > 0 {
+		savePath = ops[0].path
+		parts := strings.Split(savePath, "\\")
+		if len(parts) > 3 {
+			savePath = strings.Join(parts[3:], "\\")
+			processPathBase := filepath.Dir(processPath)
+			rs := ""
+			if strings.HasPrefix(savePath, "Users") { // 删除开头的 "\"
+				rs = "C:\\" + savePath
+			} else if strings.Contains(savePath, processPathBase[3:]) {
+				rs = processPathBase[:2] + savePath
+			}
+
+			fmt.Printf("savepath:%s, processPathBase:%s\n", savePath, processPathBase)
+			if rs != "" {
+				return rs, nil
+			}
+		}
+
+	}
+
+	// ... 后续处理逻辑保持不变 ...
+
 	if savePath != "" {
-		applog.LogInfof(s.ctx, "成功检测到存档路径：%s", savePath)
 		return savePath, nil
 	}
 
-	// 如果没有找到典型存档文件，返回最频繁操作的文件
 	fileCount := make(map[string]int)
 	for _, op := range ops {
 		fileCount[op.path]++
@@ -945,15 +945,11 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 	}
 
 	if mostFrequentFile != "" {
-		applog.LogWarningf(s.ctx, "未检测到典型存档，返回最频繁操作的文件：%s (%d 次)", mostFrequentFile, maxCount)
 		return mostFrequentFile, nil
 	}
 
-	applog.LogWarningf(s.ctx, "未在监控时间内检测到进程 %d 的存档文件", pid)
 	return "", fmt.Errorf("未检测到进程 %d 的存档文件", pid)
 }
-
-// ... existing code ...
 
 func getProcessInfo(pid uint32) (string, string, error) {
 	// ... existing code ...

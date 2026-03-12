@@ -14,6 +14,6 @@ func TestProcmon(t *testing.T) {
 
 	t.Run("import success", func(t *testing.T) {
 		applog.SetMode(applog.ModeCLI)
-		services.StartService.DetectProcessSavePath(26496)
+		services.StartService.DetectProcessSavePath(10552)
 	})
 }

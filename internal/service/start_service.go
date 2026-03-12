@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"encoding/csv"
 	"errors"
 	"fmt"
 	"lunabox/internal/appconf"
@@ -14,12 +13,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
-	"syscall"
 	"time"
 
+	"github.com/bi-zone/etw"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"golang.org/x/sys/windows"
 )
 
 // LaunchOptions 定义游戏启动选项
@@ -205,6 +204,7 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 // usedLE: 是否使用了 Locale Emulator 启动，影响进程检测策略
 func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, gameID string, startTime time.Time, launcherPID uint32,
 	launcherExeName string, savedProcessName string, usedLE bool, path string, savepath string) {
+	fmt.Printf("launcherExeName:%s\n", launcherExeName)
 	var actualProcessID uint32
 	var actualProcessName string
 	var needExternalMonitor bool // 是否需要外部进程监控（非cmd子进程）
@@ -294,7 +294,8 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 		}
 	}
 	if savepath == "" {
-		go s.DetectProcessSavePath(actualProcessID)
+		// go s.DetectProcessSavePath(actualProcessID)
+		//todo 存档检测
 	}
 
 	// 根据情况选择监控方式
@@ -765,322 +766,385 @@ func IsAdmin() bool {
 }
 
 // ... existing code ...
-// detectProcessSavePath 使用 ProcMon 监控进程的文件操作
+
+// DetectProcessSavePath 使用 ETW (Event Tracing for Windows) 监控进程的文件操作
+// 这是 Process Monitor 使用的技术，可以实时监控指定进程的所有文件操作
 func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
-	var procmonPath string = `C:\temp\projects\lunabox\build\bin\Procmon.exe`
-	fmt.Printf("开始DetectProcessSavePath\n")
-	// fmt.Printf("detectProcessSavePath 01, pid: %d, procmonPath: %s\n", pid, procmonPath)
+	fmt.Printf("开始 DetectProcessSavePath (ETW 方式)\n")
 
 	if !IsAdmin() {
 		applog.LogErrorf(s.ctx, "当前程序没有管理员权限")
-		return "", errors.New("需要管理员权限才能使用 ProcMon")
+		return "", errors.New("需要管理员权限才能使用 ETW")
 	}
 
-	// 检查 ProcMon 是否存在
-	if _, err := os.Stat(procmonPath); os.IsNotExist(err) {
-		exePath, _ := os.Executable()
-		exeDir := filepath.Dir(exePath)
+	// ============================================================
+	// TODO: 在此修改查询时间范围（单位：秒）
+	var queryTimeRangeSeconds int = 60
+	// ============================================================
 
-		// 建议的路径
-		suggestedPath := filepath.Join(exeDir, "Procmon.exe")
-		applog.LogErrorf(s.ctx, "ProcMon 不存在：%s", suggestedPath)
-		return "", fmt.Errorf("ProcMon 未找到：%s，请先下载并放置到该路径", suggestedPath)
-	}
-
-	// 创建日志目录
-	logDir := filepath.Join(os.TempDir(), "lunabox_procmon")
-	err := os.MkdirAll(logDir, 0755)
+	// 获取进程信息
+	processName, processPath, err := getProcessInfo(pid)
 	if err != nil {
-		applog.LogErrorf(s.ctx, "创建日志目录失败：%v", err)
-		return "", fmt.Errorf("创建日志目录失败：%w", err)
+		return "", fmt.Errorf("获取进程信息失败：%w", err)
 	}
 
-	// 生成唯一的日志文件名
-	timestamp := time.Now().Format("20060102_150405")
-	csvPath := filepath.Join(logDir, fmt.Sprintf("pid_%d_%s.csv", pid, timestamp))
+	applog.LogInfof(s.ctx, "监控进程：%s (PID: %d), 路径：%s", processName, pid, processPath)
 
-	applog.LogInfof(s.ctx, "ProcMon 日志路径：%s", csvPath)
-
-	// 确保之前的 ProcMon 实例已终止
-	terminateProcmon()
-	time.Sleep(500 * time.Millisecond)
-
-	// 启动 ProcMon 并捕获
-	err = runProcmonCapture(procmonPath, pid, csvPath, 20)
-	if err != nil {
-		applog.LogErrorf(s.ctx, "ProcMon 捕获失败：%v", err)
-		return "", fmt.Errorf("ProcMon 执行失败：%w", err)
+	// 用于存储检测到的文件操作
+	type fileOperation struct {
+		path      string
+		timestamp time.Time
+		operation string
+		pid       uint32
 	}
 
-	// 解析 CSV 文件
-	savePath := parseProcMonCSV(csvPath, pid)
+	var foundSavePath string
+	var mu sync.Mutex
+	done := make(chan bool)
+	fileOperations := make([]fileOperation, 0)
+	eventCount := 0
+
+	applog.LogInfof(s.ctx, "开始 ETW 文件监控，监听时长：%d 秒...", queryTimeRangeSeconds)
+
+	// 启动 ETW 监控 goroutine
+	go func() {
+		// 使用正确的 FileIo provider GUID
+		// Microsoft-Windows-Kernel-File: {90cbdc39-4a3e-11d1-84f4-0000f80464e3}
+		guid, err := windows.GUIDFromString("{9E814AAD-3204-11D2-98F5-00C04F79E3AE}")
+		if err != nil {
+			applog.LogErrorf(s.ctx, "获取 FileIo GUID 失败：%v", err)
+			done <- true
+			return
+		}
+
+		session, err := etw.NewSession(guid)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "创建 ETW 会话失败：%v", err)
+			done <- true
+			return
+		}
+
+		var sessionClosed bool
+		var closeMu sync.Mutex
+
+		// 处理事件的回调函数
+		callback := func(event *etw.Event) {
+			eventCount++
+			fmt.Printf("event header:%d", event.Header.ProcessID)
+
+			// 只处理目标进程的事件
+			if event.Header.ProcessID != pid {
+				return
+			}
+
+			// 解析文件操作事件
+			props, err := event.EventProperties()
+			if err != nil {
+				return
+			}
+
+			// 提取文件路径 - 尝试不同的字段名
+			var filePath string
+			for _, key := range []string{"FileName", "FilePath", "Path", "RelativePath", "FileObject"} {
+				if path, ok := props[key].(string); ok && path != "" {
+					filePath = path
+					break
+				}
+			}
+
+			// 如果找不到字符串路径，尝试其他类型
+			if filePath == "" {
+				// 有些事件可能使用 FILE_OBJECT 或其他结构
+				applog.LogDebugf(s.ctx, "[事件 #%d] EventID: %d, 属性：%+v", eventCount, event.Header.ID, props)
+			}
+
+			if filePath != "" {
+				mu.Lock()
+				fileOperations = append(fileOperations, fileOperation{
+					path:      filePath,
+					timestamp: event.Header.TimeStamp,
+					operation: fmt.Sprintf("EventID_%d", event.Header.ID),
+					pid:       event.Header.ProcessID,
+				})
+
+				// 检查是否是存档文件
+				if utils.IsLikelySaveFile(filePath) && foundSavePath == "" {
+					foundSavePath = filePath
+					applog.LogInfof(s.ctx, ">>> 检测到存档文件：%s", foundSavePath)
+				}
+				mu.Unlock()
+			}
+		}
+
+		// 启动一个 goroutine 用于定时关闭会话
+		go func() {
+			time.Sleep(time.Duration(queryTimeRangeSeconds+5) * time.Second)
+			closeMu.Lock()
+			if !sessionClosed {
+				session.Close()
+				sessionClosed = true
+			}
+			closeMu.Unlock()
+		}()
+
+		// 开始处理事件（这会阻塞直到会话关闭）
+		applog.LogInfof(s.ctx, "开始处理 ETW 事件...")
+		if err := session.Process(callback); err != nil {
+			applog.LogErrorf(s.ctx, "处理 ETW 事件失败：%v", err)
+		}
+		applog.LogInfof(s.ctx, "ETW 事件处理结束，共处理 %d 个事件", eventCount)
+
+		// 确保会话已关闭
+		closeMu.Lock()
+		if !sessionClosed {
+			session.Close()
+			sessionClosed = true
+		}
+		closeMu.Unlock()
+
+		done <- true
+	}()
+
+	// 等待监控完成
+	<-done
+
+	mu.Lock()
+	ops := make([]fileOperation, len(fileOperations))
+	copy(ops, fileOperations)
+	savePath := foundSavePath
+	totalEvents := eventCount
+	mu.Unlock()
+
+	applog.LogInfof(s.ctx, "ETW 监控结束，共捕获 %d 个总事件，%d 个文件操作", totalEvents, len(ops))
+
+	// 打印所有文件操作（调试用）
+	for i, op := range ops {
+		if i < 50 { // 显示前 50 个
+			applog.LogDebugf(s.ctx, "[文件操作 #%d] PID:%d %s - %s", i+1, op.pid, op.operation, op.path)
+		}
+	}
+
 	if savePath != "" {
 		applog.LogInfof(s.ctx, "成功检测到存档路径：%s", savePath)
 		return savePath, nil
 	}
 
-	applog.LogWarningf(s.ctx, "未在 ProcMon 日志中找到进程 %d 的文件操作", pid)
+	// 如果没有找到典型存档文件，返回最频繁操作的文件
+	fileCount := make(map[string]int)
+	for _, op := range ops {
+		fileCount[op.path]++
+	}
+
+	var mostFrequentFile string
+	maxCount := 0
+	for file, count := range fileCount {
+		if count > maxCount && utils.IsLikelySaveFile(file) {
+			maxCount = count
+			mostFrequentFile = file
+		}
+	}
+
+	if mostFrequentFile != "" {
+		applog.LogWarningf(s.ctx, "未检测到典型存档，返回最频繁操作的文件：%s (%d 次)", mostFrequentFile, maxCount)
+		return mostFrequentFile, nil
+	}
+
+	applog.LogWarningf(s.ctx, "未在监控时间内检测到进程 %d 的存档文件", pid)
 	return "", fmt.Errorf("未检测到进程 %d 的存档文件", pid)
-}
-
-// terminateProcmon 终止所有运行中的 ProcMon 进程
-func terminateProcmon() {
-	cmd := exec.Command("taskkill", "/F", "/IM", "procmon.exe", "/IM", "procmon64.exe")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	cmd.Run() // 忽略错误，可能本来就没有运行
-
-	time.Sleep(500 * time.Millisecond)
-}
-
-// runProcmonCapture 运行 ProcMon 进行捕获
-func runProcmonCapture(procmonPath string, targetPID uint32, csvPath string, durationSeconds int) error {
-    applog.LogInfof(context.Background(), "启动 ProcMon 捕获，进程 ID: %d, 持续时间：%d 秒", targetPID, durationSeconds)
-
-    // 生成临时的 PML 日志文件名
-    tempDir := os.TempDir()
-    pmlName := fmt.Sprintf("procmon_capture_%d_%d.pml", targetPID, time.Now().Unix())
-    pmlPath := filepath.Join(tempDir, pmlName)
-    applog.LogInfof(context.Background(), "PML 日志路径：%s", pmlPath)
-
-    // 步骤 1: 启动 ProcMon 并开始捕获（使用 /BackingFile 指定 PML 文件）
-    startCmd := exec.Command(procmonPath, "/AcceptEula", "/Quiet", "/Minimized", "/BackingFile", pmlPath)
-    startCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-    err := startCmd.Start()
-    if err != nil {
-        return fmt.Errorf("启动 ProcMon 失败：%w", err)
-    }
-
-    applog.LogInfof(context.Background(), "ProcMon 已启动，等待 %d 秒...", durationSeconds)
-
-    // 步骤 2: 等待指定时间，让 ProcMon 收集数据
-    time.Sleep(time.Duration(durationSeconds) * time.Second)
-
-    // 步骤 3: 停止 ProcMon（这会自动关闭并保存 PML 文件）
-    stopCmd := exec.Command(procmonPath, "/Terminate")
-    stopCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-    err = stopCmd.Run()
-    if err != nil {
-        applog.LogWarningf(context.Background(), "停止 ProcMon 失败：%v", err)
-    }
-
-    // 等待文件写入完成
-    time.Sleep(2000 * time.Millisecond)
-
-    // 检查 PML 文件是否存在
-    if _, err := os.Stat(pmlPath); os.IsNotExist(err) {
-        applog.LogWarningf(context.Background(), "PML 文件不存在：%s，尝试备用方案", pmlPath)
-        return saveProcmonDataWithPowerShell(targetPID, csvPath, durationSeconds)
-    }
-
-    applog.LogInfof(context.Background(), "PML 文件已创建：%s", pmlPath)
-
-    // 步骤 4: 启动一个新的 ProcMon 实例来打开 PML 文件并导出为 CSV
-    // 使用 /OpenLog 打开 PML，然后用 /SaveAs 导出为 CSV
-    exportCmd := exec.Command(procmonPath, 
-        "/AcceptEula", 
-        "/Quiet",
-        "/OpenLog", pmlPath,
-        "/SaveAs", csvPath)
-    exportCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-    err = exportCmd.Run()
-    if err != nil {
-        applog.LogWarningf(context.Background(), "ProcMon 导出 CSV 失败：%v", err)
-        terminateProcmon()
-        return saveProcmonDataWithPowerShell(targetPID, csvPath, durationSeconds)
-    }
-
-    // 等待导出完成
-    time.Sleep(2000 * time.Millisecond)
-
-    // 终止 ProcMon
-    terminateProcmon()
-
-    applog.LogInfof(context.Background(), "ProcMon 捕获完成，PML 日志：%s, CSV 导出：%s", pmlPath, csvPath)
-    
-    // 可选：清理 PML 文件
-    // os.Remove(pmlPath)
-    
-    return nil
-}
-
-// saveProcmonDataWithPowerShell 使用 PowerShell 保存 ProcMon 数据（备用方案）
-func saveProcmonDataWithPowerShell(targetPID uint32, csvPath string, durationSeconds int) error {
-	script := fmt.Sprintf(`
-$ErrorActionPreference = "Stop"
-$targetPID = %d
-$csvPath = "%s"
-$startTime = [DateTime]::Now.AddSeconds(-%d)
-$endTime = [DateTime]::Now
-
-try {
-	# 使用 Windows 事件日志查询（如果 Sysmon 已安装）
-	$events = Get-WinEvent -FilterHashtable @{
-		LogName='Microsoft-Windows-Sysmon/Operational'
-		Id=11
-		StartTime=$startTime
-		EndTime=$endTime
-	} -MaxEvents 500 -ErrorAction SilentlyContinue | 
-	Where-Object { 
-		$_.Message -match "ProcessId:\\s*$targetPID"
-	}
-
-	if ($events.Count -gt 0) {
-		# 导出为 CSV
-		$events | Select-Object TimeCreated, Id, Message | 
-		Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
-		
-		Write-Output "成功保存 %d 个事件到 CSV" -f $events.Count
-	} else {
-		# 如果没有 Sysmon 事件，创建空 CSV
-		"Time of Day,Process Name,PID,Operation,Path,Result,Detail" | Out-File -FilePath $csvPath -Encoding UTF8
-		Write-Output "未找到事件，创建空 CSV"
-	}
-} catch {
-	# 出错时创建空 CSV
-	"Time of Day,Process Name,PID,Operation,Path,Result,Detail" | Out-File -FilePath $csvPath -Encoding UTF8
-	Write-Error $_.Exception.Message
-	exit 1
-}
-`, targetPID, csvPath, durationSeconds)
-
-	cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", script)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	output, err := cmd.CombinedOutput()
-
-	if err != nil {
-		return fmt.Errorf("PowerShell 保存失败：%w, 输出：%s", err, string(output))
-	}
-
-	applog.LogInfof(context.Background(), "PowerShell 保存结果：%s", string(output))
-	return nil
 }
 
 // ... existing code ...
 
-// parseProcMonCSV 解析 ProcMon CSV 文件
-func parseProcMonCSV(csvPath string, targetPID uint32) string {
-	file, err := os.Open(csvPath)
+func getProcessInfo(pid uint32) (string, string, error) {
+	// ... existing code ...
+	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_INFORMATION|windows.PROCESS_VM_READ, false, pid)
 	if err != nil {
-		applog.LogErrorf(context.Background(), "打开 CSV 文件失败：%v", err)
-		return ""
+		return "", "", err
 	}
-	defer file.Close()
+	defer windows.CloseHandle(handle)
 
-	reader := csv.NewReader(file)
-	reader.FieldsPerRecord = -1 // 允许不同数量的字段
-	reader.LazyQuotes = true    // 处理不规范的 CSV
-
-	records, err := reader.ReadAll()
+	var path [windows.MAX_PATH]uint16
+	size := uint32(len(path))
+	err = windows.QueryFullProcessImageName(handle, 0, &path[0], &size)
 	if err != nil {
-		applog.LogErrorf(context.Background(), "读取 CSV 失败：%v", err)
-		return ""
+		return "", "", err
 	}
 
-	applog.LogInfof(context.Background(), "CSV 文件共有 %d 行记录", len(records))
+	processPath := windows.UTF16ToString(path[:size])
+	processName := filepath.Base(processPath)
 
-	var saveFiles []string
-	targetPIDStr := fmt.Sprintf("%d", targetPID)
-
-	for i, record := range records {
-		// 跳过表头（ProcMon CSV 通常有多行表头）
-		if i < 2 || len(record) < 5 {
-			continue
-		}
-
-		// CSV 格式：Time of Day, Process Name, PID, Operation, Path, Result, Detail
-		pName := strings.TrimSpace(record[1])
-		pTime := strings.TrimSpace(record[0])
-		pidStr := strings.TrimSpace(record[2])
-		path := strings.TrimSpace(record[4])
-		operation := strings.TrimSpace(record[3])
-
-		// 检查 PID 是否匹配
-		if pidStr == targetPIDStr {
-			// 检查是否是文件写入相关的操作
-			if isFileWriteOperation(operation) && isLikelySaveFile(path) {
-				saveFiles = append(saveFiles, path)
-				applog.LogInfof(context.Background(), "ProcMon CSV 发现文件 [%s]: %s, PID: %s, 时间: %s, 进程: %s", operation, path, pidStr, pTime, pName)
-			}
-		}
-	}
-
-	if len(saveFiles) > 0 {
-		applog.LogInfof(context.Background(), "找到 %d 个可能的存档文件", len(saveFiles))
-		// 返回最后一个（最新的）文件所在目录
-		latestFile := saveFiles[len(saveFiles)-1]
-		return filepath.Dir(latestFile)
-	}
-
-	return ""
+	return processName, processPath, nil
 }
 
-// isFileWriteOperation 判断是否是文件写入相关的操作
-func isFileWriteOperation(operation string) bool {
-	writeOperations := map[string]bool{
-		"CreateFile":            true,
-		"WriteFile":             true,
-		"SetInformationFile":    true,
-		"FlushBuffersFile":      true,
-		"WriteEaFile":           true,
-		"SetEndOfFile":          true,
-		"SetAllocationSizeFile": true,
-		"Cleanup":               true,
-		"Close":                 true,
+// formatChangeType 格式化文件变更类型
+func formatChangeType(changeType uint32) string {
+	switch changeType {
+	case utils.FILE_ACTION_ADDED:
+		return "CREATED"
+	case utils.FILE_ACTION_REMOVED:
+		return "DELETED"
+	case utils.FILE_ACTION_MODIFIED:
+		return "MODIFIED"
+	case utils.FILE_ACTION_RENAMED_OLD_NAME:
+		return "RENAMED_FROM"
+	case utils.FILE_ACTION_RENAMED_NEW_NAME:
+		return "RENAMED_TO"
+	default:
+		return fmt.Sprintf("UNKNOWN(%d)", changeType)
 	}
-
-	return writeOperations[operation]
 }
 
-// isLikelySaveFile 判断文件是否可能是存档文件
-func isLikelySaveFile(filePath string) bool {
-	return true
-	if filePath == "" {
-		return false
+// ... existing code ...
+
+// DetectProcessSavePath 使用文件时间戳对比检测存档文件
+// 无需管理员权限，但可能无法访问某些受保护的目录
+func (s *StartService) SearchSavePath(processName, processPath string) (string, error) {
+	fmt.Printf("开始 DetectProcessSavePath\n")
+
+	// 可选：如果需要可以移除管理员权限检查
+	// if !IsAdmin() {
+	// 	applog.LogErrorf(s.ctx, "当前程序没有管理员权限")
+	// 	return "", errors.New("需要管理员权限才能监控文件系统")
+	// }
+
+	// ============================================================
+	// TODO: 在此修改查询时间范围（单位：秒）
+	var queryTimeRangeSeconds int = 30
+	// ============================================================
+
+	processDir := filepath.Dir(processPath)
+	applog.LogInfof(s.ctx, "监控进程：%s , 工作目录：%s", processName, processDir)
+
+	// 第一步：记录基准文件状态（只扫描高概率目录）
+	type fileState struct {
+		modTime time.Time
+		size    int64
 	}
 
-	ext := strings.ToLower(filepath.Ext(filePath))
-	lowerPath := strings.ToLower(filePath)
+	baselineFiles := make(map[string]fileState)
 
-	// 存档文件扩展名
-	saveExts := map[string]bool{
-		".sav": true, ".save": true, ".dat": true,
-		".bin": true, ".cfg": true, ".ini": true,
-		".json": true, ".xml": true, ".db": true,
-		".sqlite": true, ".sqlite3": true,
-		".profile": true, ".game": true,
+	// 只需要扫描这些高概率目录
+	keyDirs := []string{
+		filepath.Join(os.Getenv("APPDATA")),      // AppData\Roaming
+		filepath.Join(os.Getenv("LOCALAPPDATA")), // AppData\Local
+		filepath.Join(os.Getenv("USERPROFILE"), "Documents"),
+		filepath.Join(os.Getenv("USERPROFILE"), "Saved Games"),
+		processDir,
 	}
 
-	if saveExts[ext] {
-		return true
-	}
+	applog.LogInfof(s.ctx, "正在建立文件基准状态...")
+	scanStart := time.Now()
+	filesScanned := 0
 
-	// 排除临时文件和系统文件
-	ignorePatterns := []string{
-		".tmp", ".temp", ".log", ".cache",
-		"\\windows\\", "\\program files\\",
-		"pagefile", "hiberfil", "$recycle",
-		"\\appdata\\local\\temp\\",
-	}
+	for _, dir := range keyDirs {
+		if _, err := os.Stat(dir); err == nil {
+			filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+				if err != nil {
+					// 跳过无权限访问的目录
+					applog.LogDebugf(s.ctx, "无法访问目录 %s: %v", path, err)
+					return nil
+				}
+				if d.IsDir() {
+					return nil
+				}
 
-	for _, pattern := range ignorePatterns {
-		if strings.Contains(lowerPath, pattern) {
-			return false
+				// 快速过滤：只检查可能是存档的文件
+				if utils.IsLikelySaveFile(path) {
+					if info, err := d.Info(); err == nil {
+						baselineFiles[path] = fileState{
+							modTime: info.ModTime(),
+							size:    info.Size(),
+						}
+						filesScanned++
+					}
+				}
+				return nil
+			})
 		}
 	}
 
-	// 检查是否包含存档相关的关键词
-	saveKeywords := []string{
-		"save", "data", "config", "profile",
-		"game", "progress", "backup", "setting",
-	}
+	scanDuration := time.Since(scanStart)
+	applog.LogInfof(s.ctx, "基准扫描完成：耗时 %v, 扫描 %d 个文件，记录 %d 个存档候选",
+		scanDuration.Round(time.Millisecond), filesScanned, len(baselineFiles))
+	applog.LogInfof(s.ctx, "开始监控，时长：%d 秒...", queryTimeRangeSeconds)
 
-	for _, keyword := range saveKeywords {
-		if strings.Contains(lowerPath, keyword) {
-			return true
+	// 第二步：等待游戏运行并写入存档
+	time.Sleep(time.Duration(queryTimeRangeSeconds) * time.Second)
+
+	// 第三步：检测变化的文件
+	var foundSavePath string
+	var mostRecentFile string
+	var maxRecency time.Duration
+	changedFiles := 0
+
+	applog.LogInfof(s.ctx, "扫描文件变化...")
+
+	for _, dir := range keyDirs {
+		if _, err := os.Stat(dir); err == nil {
+			filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+				if err != nil {
+					// 跳过无权限访问的目录
+					return nil
+				}
+				if d.IsDir() {
+					return nil
+				}
+
+				if !utils.IsLikelySaveFile(path) {
+					return nil
+				}
+
+				info, err := d.Info()
+				if err != nil {
+					return nil
+				}
+
+				modTime := info.ModTime()
+
+				// 检查是否是新的或修改的文件
+				oldState, exists := baselineFiles[path]
+				isChanged := !exists || modTime.After(oldState.modTime) || info.Size() != oldState.size
+
+				if isChanged {
+					changedFiles++
+					recency := time.Since(modTime)
+
+					applog.LogDebugf(s.ctx, "[文件变化 #%d] %s (修改于 %v 前，大小：%d bytes)",
+						changedFiles, path, recency.Round(time.Second), info.Size())
+
+					// 选择最近修改的文件
+					if recency > maxRecency {
+						maxRecency = recency
+						mostRecentFile = path
+					}
+
+					// 如果是最近 10 秒内修改的，很可能是存档
+					if recency < 10*time.Second && foundSavePath == "" {
+						foundSavePath = path
+						applog.LogInfof(s.ctx, ">>> 检测到存档文件：%s", foundSavePath)
+					}
+				}
+
+				return nil
+			})
 		}
 	}
 
-	return false
+	// 返回结果
+	applog.LogInfof(s.ctx, "监控结束：发现 %d 个文件发生变化", changedFiles)
+
+	if foundSavePath != "" {
+		applog.LogInfof(s.ctx, "✓ 成功检测到存档路径：%s", foundSavePath)
+		return foundSavePath, nil
+	}
+
+	if mostRecentFile != "" {
+		applog.LogWarningf(s.ctx, "⚠ 未检测到典型存档，返回最近修改的文件：%s (%v 前)", mostRecentFile, maxRecency.Round(time.Second))
+		return mostRecentFile, nil
+	}
+
+	applog.LogWarningf(s.ctx, "✗ 未检测到文件写入活动")
+	return "", fmt.Errorf("未检测到存档文件")
 }
 
 // ... existing code ...

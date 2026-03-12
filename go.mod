@@ -1,6 +1,6 @@
 module lunabox
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.6
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.94.0
+	github.com/bi-zone/etw v0.0.0-20210519083747-fe9042eb0ea8
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/duckdb/duckdb-go/v2 v2.5.3
 	github.com/energye/systray v1.0.2
@@ -21,6 +22,7 @@ require (
 	github.com/wailsapp/wails/v2 v2.11.0
 	gobot.io/x/gobot/v2 v2.6.0
 	golang.org/x/image v0.35.0
+	golang.org/x/sys v0.42.0
 	golang.org/x/text v0.33.0
 )
 
@@ -121,7 +123,6 @@ require (
 	golang.org/x/mod v0.31.0 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/telemetry v0.0.0-20251203150158-8fff8a5912fc // indirect
 	golang.org/x/tools v0.40.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect

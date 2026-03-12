@@ -1407,3 +1407,11 @@ func (s *GameService) GetWorkGamesByCharactorId(staffId string) ([]models.WorkGa
 	}
 	return worksGames, err
 }
+
+func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType, page int) (models.GameReview, bool, error) {
+	if sourceType == enums.Eroscape {
+		esReviewer := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
+		return esReviewer.FetchReviews(id, "", page)
+	}
+	return models.GameReview{}, false, nil
+}

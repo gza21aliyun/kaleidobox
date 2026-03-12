@@ -32,7 +32,14 @@ func NewEroscapeInfoGetter(useMirror bool) *EroscapeInfoGetter {
 	}
 }
 
+type Reviewer interface {
+	FetchReviews(id string, token string, page int) (models.GameReview, bool, error)
+
+	FetchReviewDetail(reviewId string, token string) (models.Review, error)
+}
+
 var _ Getter = (*EroscapeInfoGetter)(nil)
+var _ Reviewer = (*EroscapeInfoGetter)(nil)
 
 func CreateCollector(domain string) *colly.Collector {
 	c := colly.NewCollector(
@@ -739,4 +746,12 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 	gameEntity.Game = game
 	applog.InfoLogSaveAppLog("开始获取Eroscape游戏信息 38 ", gameEntity.Game.Images)
 	return gameEntity, nil
+}
+
+func (b EroscapeInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, bool, error) {
+	return models.GameReview{}, false, errors.New("not implemented")
+}
+
+func (b EroscapeInfoGetter) FetchReviewDetail(reviewId string, token string) (models.Review, error) {
+	return models.Review{}, errors.New("not implemented")
 }

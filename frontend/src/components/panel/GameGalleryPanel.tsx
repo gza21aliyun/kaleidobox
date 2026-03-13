@@ -175,7 +175,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       )}
 
       {/* 画廊板块 */}
-      {galleryImages.length > 0 && (
+      {true && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
                 <span className="text-lg font-bold">{t('gameGallery.gallery')}{`(${images.length})`}</span>

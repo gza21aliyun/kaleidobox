@@ -1408,10 +1408,18 @@ func (s *GameService) GetWorkGamesByCharactorId(staffId string) ([]models.WorkGa
 	return worksGames, err
 }
 
-func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType, page int) (models.GameReview, bool, error) {
+func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType, page int) (models.GameReview, error) {
 	if sourceType == enums.Eroscape {
 		esReviewer := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
 		return esReviewer.FetchReviews(id, "", page)
 	}
-	return models.GameReview{}, false, nil
+	return models.GameReview{}, nil
+}
+
+func (s *GameService) LoadDetailReview(id string, gameId string, sourceType enums.SourceType) (models.Review, error) {
+	if sourceType == enums.Eroscape {
+		esReviewer := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
+		return esReviewer.FetchReviewDetail(id, gameId, "")
+	}
+	return models.Review{}, nil
 }

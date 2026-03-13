@@ -21,6 +21,7 @@ import { Route as rootRoute } from "./__root";
 import { GameInfoPanel } from "../components/panel/GameInfoPanel";
 import { GameGalleryPanel } from "../components/panel/GameGalleryPanel"; // 新增导入
 import { GameIntroPanel } from "../components/panel/GameIntroPanel";
+import { ReviewPanel } from "../components/panel/ReviewPanel";
 import { OpenBrowser } from "../../wailsjs/go/service/ImportService"; 
 import { useTranslation } from 'react-i18next';
 
@@ -646,7 +647,7 @@ function GameDetailPage() {
       <div className="border-b border-brand-200 dark:border-brand-700">
         <div className="flex justify-between items-center">
           <nav className="-mb-px flex space-x-8">
-            {["intro","stats", "edit", "launch", "backup", "info", "gallery", "joystick"].map(tab => (
+            {["intro","stats", "edit", "launch", "backup", "info", "gallery", "joystick", "reviews"].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -665,6 +666,7 @@ function GameDetailPage() {
                 {tab === "gallery" && t('common.gallery')}
                 {tab === "intro" && t('common.introduction')}
                 {tab === "joystick" && t('common.joystick')}
+                {tab === "reviews" && t('common.reviews')}
               </button>
             ))}
           </nav>
@@ -735,6 +737,12 @@ function GameDetailPage() {
       {activeTab === "joystick" && game && (
         <Ps4Panel
           gameId={game.id}
+        />
+      )}
+
+      {activeTab === "reviews" && game && (
+        <ReviewPanel
+          game={game}
         />
       )}
 

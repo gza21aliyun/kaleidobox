@@ -21,7 +21,15 @@
     "retry": "再試行",
     "details": "詳細",
     "settings": "設定",
-    "pleaseSelect": "選択してください"
+    "pleaseSelect": "選択してください",
+    "gameStats": "ゲーム統計",
+    "launchConfig": "起動設定",
+    "backup": "バックアップ",
+    "gameInfo": "ゲーム情報",
+    "gallery": "ギャラリー",
+    "introduction": "紹介",
+    "joystick": "ジョイスティック",
+    "reviews": "レビュー"
   },
   "nav": {
     "home": "ホーム",
@@ -756,6 +764,16 @@
     "enterKeyCode": "またはキーコードを手動で入力",
     "startKeyCapture": "キーキャプチャを開始",
     "confirmMapping": "マッピングを確認"
+  },
+  "reviews": {
+    "dataSource": "データソース",
+    "overallScore": "総合スコア",
+    "noData": "レビューがありません",
+    "loadFailed": "レビューの読み込みに失敗しました",
+    "loadDetailFailed": "レビュー詳細の読み込みに失敗しました",
+    "viewMore": "もっと見る",
+    "previous": "前へ",
+    "next": "次へ"
   },
   "task": {
     "title": "タスク",

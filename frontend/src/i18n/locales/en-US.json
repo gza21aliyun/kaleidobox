@@ -21,7 +21,15 @@
     "retry": "Retry",
     "details": "Details",
     "settings": "Settings",
-    "pleaseSelect": "Please select"
+    "pleaseSelect": "Please select",
+    "gameStats": "Game Stats",
+    "launchConfig": "Launch Config",
+    "backup": "Backup",
+    "gameInfo": "Game Info",
+    "gallery": "Gallery",
+    "introduction": "Introduction",
+    "joystick": "Joystick",
+    "reviews": "Reviews"
   },
   "nav": {
     "home": "Home",
@@ -791,6 +799,16 @@
     "enterKeyCode": "Or manually enter key code",
     "startKeyCapture": "Click to start key capture",
     "confirmMapping": "Confirm mapping"
+  },
+  "reviews": {
+    "dataSource": "Data Source",
+    "overallScore": "Overall Score",
+    "noData": "No review data",
+    "loadFailed": "Failed to load reviews",
+    "loadDetailFailed": "Failed to load review details",
+    "viewMore": "View More",
+    "previous": "Previous",
+    "next": "Next"
   },
   "task": {
     "title": "Tasks",

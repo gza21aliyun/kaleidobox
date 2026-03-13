@@ -33,9 +33,9 @@ func NewEroscapeInfoGetter(useMirror bool) *EroscapeInfoGetter {
 }
 
 type Reviewer interface {
-	FetchReviews(id string, token string, page int) (models.GameReview, bool, error)
+	FetchReviews(id string, token string, page int) (models.GameReview, error)
 
-	FetchReviewDetail(reviewId string, token string) (models.Review, error)
+	FetchReviewDetail(reviewId string, gameId, token string) (models.Review, error)
 }
 
 var _ Getter = (*EroscapeInfoGetter)(nil)
@@ -43,7 +43,7 @@ var _ Reviewer = (*EroscapeInfoGetter)(nil)
 
 func CreateCollector(domain string) *colly.Collector {
 	c := colly.NewCollector(
-		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"),
+		colly.UserAgent("Mozilla/5.1 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"),
 		colly.Async(),
 	)
 
@@ -748,10 +748,105 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 	return gameEntity, nil
 }
 
-func (b EroscapeInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, bool, error) {
-	return models.GameReview{}, false, errors.New("not implemented")
+func (b EroscapeInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, error) {
+	var reviewPart = "game_comment_time.php?game="
+	var cUrl = b.GetBaseUrl() + reviewPart + id
+	c := CreateCollector(b.GetDomain())
+	var err error = nil
+	review := models.GameReview{}
+	fmt.Printf("url:%s\n", cUrl)
+
+	c.OnHTML("div#main", func(e *colly.HTMLElement) {
+		// applog.InfoLogSaveAppLog("图库：", game.Images)
+		e.DOM.Find("div.line-height_comment > div.line-height_comment > div").Each(func(i int, s *goquery.Selection) {
+			hml, _ := s.Html()
+			right := s.Find("div.align_right").Text()
+
+			name := s.Find("div.align_right a").Eq(1).Text()
+			timeStr := s.Find("div.align_right a").Eq(0).Text()
+			points := s.Find("span.red").Text()
+			parts1 := strings.Split(hml, "<br/>")
+			fmt.Printf("part1:%d\n", len(parts1))
+			if len(parts1) < 2 {
+				return
+			}
+			content := strings.TrimSpace(parts1[1])
+			// fmt.Printf("content0:%s", content)
+			parts2 := strings.Split(content, "<div class=\"align_right")
+			fmt.Printf("part2:%d", len(parts2))
+			if len(parts2) < 1 {
+				return
+			}
+			content = strings.TrimSpace(parts2[0])
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(content))
+			if err == nil {
+				content = doc.Text()
+			}
+			link := s.Find("a:contains('長文感想')").AttrOr("href", "")
+			fmt.Printf("FetchReviews %d \n name: %s, points:%s\n link:%s\n content:%s\n right:%s \n", i, name, points, link, content, right)
+			id := ""
+			if link != "" && strings.Contains(link, "=") {
+				parts3 := strings.Split(link, "=")
+				id = parts3[len(parts3)-1]
+
+			}
+			t, err := time.Parse("2006年01月02日15時04分05秒", timeStr)
+			review.Reviews = append(review.Reviews, models.Review{
+				Id:       id,
+				Points:   points,
+				Reviewer: name,
+				Content:  content,
+				Link:     link,
+				Date:     t,
+			})
+		})
+
+	})
+
+	// 错误处理
+	c.OnError(func(r *colly.Response, err1 error) {
+
+		err = err1
+	})
+
+	// 访问构建的 URL
+	err = c.Visit(cUrl)
+	if err != nil {
+		applog.ErrorLogSaveAppLog("Request error\n", err)
+		return review, err
+	}
+
+	// 等待收集完成
+	c.Wait()
+	return review, nil
 }
 
-func (b EroscapeInfoGetter) FetchReviewDetail(reviewId string, token string) (models.Review, error) {
-	return models.Review{}, errors.New("not implemented")
+func (b EroscapeInfoGetter) FetchReviewDetail(reviewId string, gameId, token string) (models.Review, error) {
+
+	var cUrl = fmt.Sprintf("%smemo.php?game=%s&uid=%s", b.GetBaseUrl(), gameId, reviewId)
+	c := CreateCollector(b.GetDomain())
+	var err error = nil
+	review := models.Review{}
+	fmt.Printf("url:%s\n", cUrl)
+
+	c.OnHTML("div#memo", func(e *colly.HTMLElement) {
+		// applog.InfoLogSaveAppLog("图库：", game.Images)
+		review.Content = strings.TrimSpace(e.DOM.Text())
+	})
+
+	// 错误处理
+	c.OnError(func(r *colly.Response, err1 error) {
+		err = err1
+	})
+
+	// 访问构建的 URL
+	err = c.Visit(cUrl)
+	if err != nil {
+		applog.ErrorLogSaveAppLog("Request error\n", err)
+		return review, err
+	}
+
+	// 等待收集完成
+	c.Wait()
+	return review, nil
 }

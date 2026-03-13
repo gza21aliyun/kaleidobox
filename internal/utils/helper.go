@@ -360,6 +360,9 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(searchName, "０") {
 		name = strings.ReplaceAll(searchName, "０", "0")
 	}
+	if strings.Contains(searchName, "Ｍ") {
+		name = strings.ReplaceAll(searchName, "Ｍ", "M")
+	}
 	fmt.Printf("getGameNameAlternative:%s\n", name)
 	return name
 }

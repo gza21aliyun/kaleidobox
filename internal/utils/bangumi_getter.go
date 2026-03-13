@@ -512,3 +512,49 @@ func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxIte
 	gameEntity.Tags = tagsMap
 	return nil
 }
+
+func (b BangumiInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, error) {
+	var err error = nil
+	review := models.GameReview{}
+
+	url := fmt.Sprintf("https://api.bgm.tv/altair/subjects/%s/comments", id)
+	fmt.Printf("FetchReviews url:%s\ntoken:%s\n", url, token)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 01 error: %v", err)
+		return review, err
+	}
+	cookie := `chii_sid=VzNpv0; chii_sec_id=IkXIr4amSQ3QgZ%2BkR39fR3N4KLywVvL5EdnpZz4; chii_cookietime=2592000; chii_auth=JRLC%2B4fzHl%2FGgsauR3VVRSkUQczTFKHpIeOteDPsqBaqG5kMZ71JTxsmMFXpZsBX5bg4pXsD%2BsTQqu11R5tvFCPkvYiltcr0NItT;`
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Cookie", cookie)
+	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
+
+	resp, err := b.client.Do(req)
+	if err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 02 error: %v", err)
+		return review, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("BangumiInfoGetter FetchMetadata 03 error: %v", err)
+			log.Warnf("Error closing response body: %v", err)
+		}
+	}(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	jstr := string(bodyBytes)
+	fmt.Printf("banguimiResp: %s\n", jstr)
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return review, fmt.Errorf("bangumi API returned status: %d, body: \n%s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var bangumiResp bangumiResponse
+	if err := json.NewDecoder(resp.Body).Decode(&bangumiResp); err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 04 error: %v", err)
+		return review, err
+	}
+
+	return review, nil
+}

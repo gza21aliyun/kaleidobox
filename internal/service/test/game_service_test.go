@@ -28,6 +28,7 @@ type Services struct {
 	ImportService    *service.ImportService
 	ImageService     *service.ImageService
 	StartService     *service.StartService
+	config           appconf.AppConfig
 }
 
 func createServices(t *testing.T) *Services {
@@ -68,6 +69,7 @@ func createServices(t *testing.T) *Services {
 		ImportService:    importServie,
 		ImageService:     imageService,
 		StartService:     startService,
+		config:           config,
 	}
 	return &services
 }
@@ -506,6 +508,7 @@ func TestGameService_Two(t *testing.T) {
 
 func TestGameService_UGB(t *testing.T) {
 	db, cleanup := setupTestDB(t)
+	applog.SetMode(applog.ModeCLI)
 	defer cleanup()
 	config := appconf.AppConfig{}
 	config.BangumiAccessToken = "qn25oQnO4FNwPkGewj8Px21QuueWdv9nJReSuHya"
@@ -928,14 +931,17 @@ func TestGameService_BGArray(t *testing.T) {
 	})
 }
 
-/*
-func TestSaveBitmapToFile(t *testing.T) {
+func TestBangumiReviews(t *testing.T) {
 
-	t.Run("screenshot success", func(t *testing.T) {
-		time.Sleep(time.Second * 5)
+	t.Run("add game success", func(t *testing.T) {
 		applog.SetMode(applog.ModeCLI)
+		game := createBangumiGame()
 		services := createServices(t)
-		services.ImageService.TakeScreenshot("0001")
+		bgmGetter := utils.NewBangumiInfoGetter(true)
+		_, err := bgmGetter.FetchReviews(game.SourceID, services.config.BangumiAccessToken, 1)
+		if err != nil {
+			t.Fatalf("add game failed: %v", err)
+		}
+
 	})
 }
-*/

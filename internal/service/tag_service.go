@@ -349,3 +349,18 @@ func (s *TagService) CountTags() (int, error) {
 	}
 	return count, nil
 }
+
+func (s *TagService) ManageTags(tags []string) error {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	// 使用 array_contains 函数
+	query := `
+        DELETE FROM tags 
+        WHERE NOT array_contains(?, name)
+    `
+
+	_, err := s.db.ExecContext(s.ctx, query, tags)
+	return err
+}

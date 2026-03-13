@@ -718,6 +718,7 @@ function GameDetailPage() {
           game={game}
           config={config || undefined}
           onTagTaps={handleTagTaps}
+          updateGame={setGame}
         />
       )}
 

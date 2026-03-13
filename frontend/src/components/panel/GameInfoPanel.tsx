@@ -3,21 +3,27 @@ import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
 import { tagMapForEach, workMapForEach, charactorsForEach } from "../utils/Utility";
 import { GetTagListByString } from "../../../wailsjs/go/service/TagService";
+import { DeleteTagForGame } from "../../../wailsjs/go/service/GameService";
 import { useEffect, useState } from "react";
+import { useAppStore } from "../../store";
 import { useTranslation } from "react-i18next";
 
 interface GameEditFormProps {
   game: models.Game;
   config?: appconf.AppConfig;
   onTagTaps: (tag: string) => void;
+  updateGame: (g: models.Game) => void;
 }
 
 export function GameInfoPanel({ 
-    game, config, onTagTaps }: GameEditFormProps) { 
+    game, config, onTagTaps, updateGame }: GameEditFormProps) { 
         const navigate = useNavigate();
         const { t } = useTranslation();
+        const { updateGameInGames } = useAppStore();
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const [tagsMap, setTagsMap] = useState<Map<string, models.Tag[]>>(new Map())
+        const [showTagModal, setShowTagModal] = useState(false);
+        const [currentTag, setCurrentTag] = useState<models.Tag | null>(null);
 
 
         useEffect(() => { 
@@ -52,8 +58,40 @@ export function GameInfoPanel({
             
             }
         }, [game])
-        const handleTagClick = (tag: string) => {
-                navigate({ to: '/library', search: { tags: tag } });
+        const handleTagClick = (tag: models.Tag) => {
+                setCurrentTag(tag);
+                setShowTagModal(true);
+            };
+
+        const handleSearchByTag = () => {
+                if (currentTag) {
+                    navigate({ to: '/library', search: { tags: currentTag.name } });
+                    setShowTagModal(false);
+                }
+            };
+
+        const handleDeleteTag = async () => {
+                if (currentTag) {
+                    try {
+                        const newGame = await DeleteTagForGame(game, currentTag.name);
+                        updateGame(newGame);
+                        updateGameInGames(newGame);
+                        // 刷新标签列表
+                        GetTagListByString(newGame.tags).then((res) => {
+                            console.log("tag res:", res)
+                            var array: models.Tag[] = res || []
+                            var m = new Map<string, models.Tag[]>();
+                            for (let i = 0; i < array.length; i++) {
+                                const existingItems = m.get(array[i].category) || [];
+                                m.set(array[i].category, [...existingItems, array[i]]);
+                            }
+                            setTagsMap(m)
+                        });
+                        setShowTagModal(false);
+                    } catch (error) {
+                        console.error("Error deleting tag:", error);
+                    }
+                }
             };
 
         const handleStaffClick = (work: models.Work) => {
@@ -119,7 +157,7 @@ export function GameInfoPanel({
                                                 className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e0e000] text-brand-800 dark:bg-[#e0e000] dark:text-brand-200 hover:bg-[#d0d000] dark:hover:bg-[#d0d000] transition-colors cursor-pointer"
                                                 onClick={() => {
                                                     console.log(`Clicked tag: ${tag.name}`);
-                                                    handleTagClick(tag.name);
+                                                    handleTagClick(tag);
                                                 }}
                                             >
                                                 {tag.name}
@@ -134,9 +172,47 @@ export function GameInfoPanel({
                     </div>
                 </div>
 
+                {/* Tag信息弹窗 */}
+                {showTagModal && currentTag && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-semibold text-brand-900 dark:text-white">{t('gameInfo.tagInfo')}</h3>
+                                <button 
+                                    onClick={() => setShowTagModal(false)}
+                                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('gameInfo.tagName')}</label>
+                                    <p className="text-brand-900 dark:text-white">{currentTag.name}</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('gameInfo.category')}</label>
+                                    <p className="text-brand-900 dark:text-white">{currentTag.category}</p>
+                                </div>
+                                <div className="flex gap-4 justify-end mt-6">
+                                    <button
+                                        onClick={handleSearchByTag}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                    >
+                                        {t('gameInfo.searchGames')}
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteTag}
+                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                    >
+                                        {t('gameInfo.deleteTag')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-
-                
             </div>
         );
 }

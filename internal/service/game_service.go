@@ -1423,3 +1423,46 @@ func (s *GameService) LoadDetailReview(id string, gameId string, sourceType enum
 	}
 	return models.Review{}, nil
 }
+
+func (s *GameService) AddTagForGame(game models.Game, tag string) error {
+	t, err := s.tagService.GetTagByName(tag)
+	if t == nil {
+		newTag := models.Tag{Name: tag, Category: models.TagCategoryCustom}
+		err = s.tagService.CreateTag(&newTag)
+	}
+	game.Tags = utils.MergeStrings(game.Tags, tag)
+	err = s.UpdateGame(game)
+	return err
+}
+
+func (s *GameService) DeleteTagForGame(game models.Game, tag string) (models.Game, error) {
+	game.Tags = utils.RemoveString(game.Tags, tag)
+	err := s.UpdateGame(game)
+	if err != nil {
+		return game, err
+	}
+	go s.ManageTagsForGames()
+	return game, nil
+}
+
+func (s *GameService) ManageTagsForGames() error {
+	games, err := s.GetGames()
+	if err != nil {
+		applog.LogErrorf(s.ctx, "err:%v\n", err)
+		return err
+	}
+	tags := make(map[string]string)
+	for _, game := range games {
+		for _, tag := range strings.Split(game.Tags, ",") {
+			if tag != "" {
+				tags[tag] = tag
+			}
+		}
+	}
+	tagAr := []string{}
+	for _, tag := range tags {
+		tagAr = append(tagAr, tag)
+	}
+	err = s.tagService.ManageTags(tagAr)
+	return err
+}

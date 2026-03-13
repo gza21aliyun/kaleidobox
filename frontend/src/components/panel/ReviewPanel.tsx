@@ -28,29 +28,42 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   const [hasNextPage, setHasNextPage] = useState(false);
   const config = useAppStore(state => state.config);
 
-  const loadReviews = async (sourceType: enums.SourceType, page: number) => {
+  const getGameId = () => {
+    if (selectedSourceType == enums.SourceType.EROSCAPE) {
+      return game.eroscape_id;
+    } else if (selectedSourceType == enums.SourceType.YMGAL) {
+      return game.ymgal_id;
+    } else if (selectedSourceType == enums.SourceType.DMM) {
+      return game.dmm_id;
+    } else if (selectedSourceType == enums.SourceType.DLSITE) {
+      return game.dlsite_id;
+    }
+    return ""
+  }
+
+  const filteredSourceTypeOptions = sourceTypeOptions.filter(option => {
+    if (game.eroscape_id !== "" && option.value === enums.SourceType.EROSCAPE) {
+      return true;
+    } else if (game.dlsite_id !== "" && option.value === enums.SourceType.DLSITE) {
+      return true;
+    } else if (game.bangumi_id !== "" && option.value === enums.SourceType.BANGUMI) {
+      return true;
+    }
+    return false;
+  })
+
+  const loadReviews = async () => {
     try {
       setLoading(true);
-      var gameId = ""
-      if (sourceType == enums.SourceType.EROSCAPE) {
-        gameId = game.eroscape_id
-      } else if (sourceType == enums.SourceType.YMGAL) {
-        gameId = game.ymgal_id
-      } else if (sourceType == enums.SourceType.DMM) {
-        gameId = game.dmm_id
-      } else if (sourceType == enums.SourceType.DLSITE) {
-        gameId = game.dlsite_id
-      } else if (sourceType == enums.SourceType.BANGUMI) {
-        gameId = game.bangumi_id
-      } 
+      var gameId = getGameId(); 
       if (gameId == "") {
         return;
       }
 
-      const reviewData = await LoadReviewsForGame(gameId, sourceType, page);
+      const reviewData = await LoadReviewsForGame(gameId, selectedSourceType, currentPage);
       console.log("reviewData:", reviewData)
-      const hasMore = reviewData && reviewData.reviews && reviewData.reviews.length > 0;
-      setHasNextPage(hasMore);
+      const hasNext = reviewData.has_next;
+      setHasNextPage(hasNext);
       if (reviewData && reviewData.reviews && reviewData.reviews.length > 0) {
         setGameReview(reviewData);
       } else {
@@ -71,7 +84,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   }, [game]);
 
   useEffect(() => {
-    loadReviews(selectedSourceType, currentPage);
+    loadReviews();
   }, [selectedSourceType, currentPage]);
 
   const handleSourceTypeChange = (sourceType: enums.SourceType) => {
@@ -80,10 +93,11 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
     setShowSourceDropdown(false);
   };
 
-  const handleLoadMore = async (reviewId: string) => {
+  const handleLoadMore = async (reviewId: string, sourceId: string) => {
+    if (sourceId == "") return;
     try {
       setLoadingReviewDetail(reviewId);
-      const detailReview = await LoadDetailReview(reviewId, selectedSourceType);
+      const detailReview = await LoadDetailReview(reviewId, sourceId, selectedSourceType);
       
       if (detailReview && gameReview) {
         setGameReview(prev => {
@@ -117,11 +131,9 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
       for (let i = 1; i <= currentPage; i++) {
         pages.push(i);
       }
-      pages.push('...', 5);
-    } else if (currentPage === 5) {
-      pages.push(1, 2, 3, '...', 5);
+      // pages.push('...', 5);
     } else {
-      pages.push(1, '...', currentPage - 1, currentPage);
+      pages.push(1, 2, '...', currentPage - 1, currentPage);
     }
     
     return pages;
@@ -310,7 +322,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleLoadMore(review.id)}
+                        onClick={() => handleLoadMore(review.id, getGameId())}
                         className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 text-white rounded-lg transition-colors"
                       >
                         {t('reviews.viewMore') || '看更多'}

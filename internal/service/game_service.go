@@ -1420,14 +1420,17 @@ func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType,
 	if sourceType == enums.Eroscape {
 		esReviewer := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
 		return esReviewer.FetchReviews(id, "", page)
+	} else if sourceType == enums.Dlsite {
+		esReviewer := utils.NewDlsiteInfoGetter()
+		return esReviewer.FetchReviews(id, "", page)
 	}
 	return models.GameReview{}, nil
 }
 
-func (s *GameService) LoadDetailReview(id string, gameId string, sourceType enums.SourceType) (models.Review, error) {
+func (s *GameService) LoadDetailReview(review models.Review, gameId string, sourceType enums.SourceType) (models.Review, error) {
 	if sourceType == enums.Eroscape {
 		esReviewer := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-		return esReviewer.FetchReviewDetail(id, gameId, "")
+		return esReviewer.FetchReviewDetail(review, gameId, "")
 	}
 	return models.Review{}, nil
 }

@@ -741,7 +741,7 @@ function GameDetailPage() {
         />
       )}
 
-      {activeTab === "reviews" && game && game.eroscape_id && (
+      {activeTab === "reviews" && game && (
         <ReviewPanel
           game={game}
         />

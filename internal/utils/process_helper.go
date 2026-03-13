@@ -88,6 +88,7 @@ func OpenBrowser(url string) error {
 	default:
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
+	fmt.Printf("OpenBrowser:%s\n", url)
 	exe := exec.Command(cmd, args...)
 	exe.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	return exe.Start()

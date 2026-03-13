@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { models, enums } from '../../../wailsjs/go/models';
 import { LoadReviewsForGame, LoadDetailReview } from '../../../wailsjs/go/service/GameService';
+import { OpenBrowser } from '../../../wailsjs/go/service/ImportService';
 import { toast } from 'react-hot-toast';
 import { formatLocalDate } from '../../utils/time';
 import { useAppStore } from '../../store';
 import i18next from '../../i18n/i18n';
+import { BetterButton } from '../ui/BetterButton';
 
 const t = i18next.t;
 
@@ -27,6 +29,8 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const config = useAppStore(state => state.config);
+
+  console.log("review 00")
 
   const getGameId = () => {
     if (selectedSourceType == enums.SourceType.EROSCAPE) {
@@ -81,10 +85,19 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   useEffect(() => {
     setSelectedSourceType(game.source_type);
     setCurrentPage(1);
+    console.log("game:", game);
+    // OpenBrowser(`https://bgm.tv/subject/${game.bangumi_id}/comments`)
   }, [game]);
 
   useEffect(() => {
-    loadReviews();
+    if (selectedSourceType == enums.SourceType.EROSCAPE || selectedSourceType == enums.SourceType.DLSITE) {
+      loadReviews();
+    } else if (selectedSourceType == enums.SourceType.BANGUMI) {
+      setLoading(false)
+      // window.open(`https://bgm.tv/subject/${game.bangumi_id}/comments`)
+    }
+    console.log("selectedSourceType:", selectedSourceType);
+    
   }, [selectedSourceType, currentPage]);
 
   const handleSourceTypeChange = (sourceType: enums.SourceType) => {
@@ -93,17 +106,22 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
     setShowSourceDropdown(false);
   };
 
-  const handleLoadMore = async (reviewId: string, sourceId: string) => {
+  console.log("review 01")
+
+  const handleLoadMore = async (review: models.Review, sourceId: string) => {
     if (sourceId == "") return;
     try {
-      setLoadingReviewDetail(reviewId);
-      const detailReview = await LoadDetailReview(reviewId, sourceId, selectedSourceType);
+      setLoadingReviewDetail(review.id);
+      const detailReview = await LoadDetailReview(review, sourceId, selectedSourceType);
+      review.content = detailReview.content;
+      review.title = detailReview.title;
+      review.link = ""
       
       if (detailReview && gameReview) {
         setGameReview(prev => {
           if (!prev) return prev;
           const updatedReviews = prev.reviews.map(r => 
-            r.id === reviewId ? new models.Review(detailReview) : r
+            r.id === review.id ? new models.Review(review) : r
           );
           return new models.GameReview({
             ...prev,
@@ -259,6 +277,17 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
         )}
       </div>
 
+      {(selectedSourceType === enums.SourceType.BANGUMI) && ( 
+        <BetterButton onClick={() => { 
+          if (selectedSourceType == enums.SourceType.BANGUMI) { 
+            OpenBrowser(`https://bgm.tv/subject/${game.bangumi_id}/comments`)
+          }
+        }}>
+          {`前往${selectedSourceType}评论`}
+
+          </BetterButton>
+      )}
+
       {!gameReview || gameReview.reviews.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-brand-500 dark:text-brand-400">
           <div className="i-mdi-message-text-outline text-4xl mb-2" />
@@ -322,7 +351,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleLoadMore(review.id, getGameId())}
+                        onClick={() => handleLoadMore(review, getGameId())}
                         className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 text-white rounded-lg transition-colors"
                       >
                         {t('reviews.viewMore') || '看更多'}

@@ -35,7 +35,7 @@ func NewEroscapeInfoGetter(useMirror bool) *EroscapeInfoGetter {
 type Reviewer interface {
 	FetchReviews(id string, token string, page int) (models.GameReview, error)
 
-	FetchReviewDetail(reviewId string, gameId, token string) (models.Review, error)
+	FetchReviewDetail(review models.Review, gameId, token string) (models.Review, error)
 }
 
 var _ Getter = (*EroscapeInfoGetter)(nil)
@@ -821,12 +821,14 @@ func (b EroscapeInfoGetter) FetchReviews(id string, token string, page int) (mod
 	return review, nil
 }
 
-func (b EroscapeInfoGetter) FetchReviewDetail(reviewId string, gameId, token string) (models.Review, error) {
+func (b EroscapeInfoGetter) FetchReviewDetail(oldReview models.Review, gameId, token string) (models.Review, error) {
 
-	var cUrl = fmt.Sprintf("%smemo.php?game=%s&uid=%s", b.GetBaseUrl(), gameId, reviewId)
+	var cUrl = fmt.Sprintf("%smemo.php?game=%s&uid=%s", b.GetBaseUrl(), gameId, oldReview.Id)
 	c := CreateCollector(b.GetDomain())
 	var err error = nil
 	review := models.Review{}
+	parts := strings.Split(oldReview.Content, "長文感想")
+	review.Title = parts[0]
 	fmt.Printf("url:%s\n", cUrl)
 
 	c.OnHTML("div#memo", func(e *colly.HTMLElement) {

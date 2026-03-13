@@ -88,7 +88,7 @@ func (s *ImageService) Init(ctx context.Context, db *sql.DB, config *appconf.App
 func (s *ImageService) CreateImageBackup(imageBackup models.ImageBackup) error {
 	query := `
 		INSERT INTO image_backups (url, local_path, subject_id, subject_type, image_type, game_id, created_at)
-		VALUES (?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		imageBackup.Url,
@@ -99,6 +99,9 @@ func (s *ImageService) CreateImageBackup(imageBackup models.ImageBackup) error {
 		imageBackup.GameId,
 		imageBackup.CreatedAt,
 	)
+	if err == nil {
+		fmt.Printf("图库3 成功添加：%s\n", imageBackup.Url)
+	}
 	return err
 }
 
@@ -583,10 +586,12 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 	//game images
 	var err error = nil
 	for _, image := range strings.Split(gameEntity.Game.Images, ",") {
+		fmt.Printf("图库2：%s\n", image)
 		backup, _ := s.GetImageBackupByUrl(image)
 		if backup != nil && backup.Url != "" {
 			continue
 		}
+		fmt.Printf("图库3：%s\n", image)
 		backup = &models.ImageBackup{
 			Url:         image,
 			LocalPath:   "",

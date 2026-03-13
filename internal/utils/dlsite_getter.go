@@ -39,6 +39,7 @@ const workUrl = "https://www.dlsite.com/%s/work/=/product_id/%s.html"
 // const workUrl = "https://74.86.226.234:443/%s/work/=/product_id/%s.html"
 
 var _ Getter = (*DlsiteInfoGetter)(nil)
+var _ Reviewer = (*DlsiteInfoGetter)(nil)
 
 type DlsiteWorkResponse struct {
 	AgeCategory       int           `json:"age_category"`
@@ -1126,4 +1127,117 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+type DlsiteReviewResponse struct {
+	IsSuccess   bool               `json:"is_success"`
+	ErrorMsg    string             `json:"error_msg"`
+	ProductID   string             `json:"product_id"`
+	ProductName string             `json:"product_name"`
+	IsReserve   bool               `json:"is_reserve"`
+	ReviewDeny  bool               `json:"review_deny"`
+	MixPickup   bool               `json:"mix_pickup"`
+	Order       string             `json:"order"`
+	Limit       int                `json:"limit"`
+	Page        int                `json:"page"`
+	ReviewList  []DlsiteReviewItem `json:"review_list"`
+	Count       string             `json:"count"`
+}
+
+type DlsiteReviewItem struct {
+	MemberReviewID string            `json:"member_review_id"`
+	Workno         string            `json:"workno"`
+	ReviewerID     string            `json:"reviewer_id"`
+	Status         string            `json:"status"`
+	Recommend      string            `json:"recommend"`
+	Spoiler        string            `json:"spoiler"`
+	ReviewTitle    string            `json:"review_title"`
+	ReviewText     string            `json:"review_text"`
+	EntryDate      string            `json:"entry_date"`
+	RegistDate     string            `json:"regist_date"`
+	GoodReview     string            `json:"good_review"`
+	BadReview      string            `json:"bad_review"`
+	CircleID       string            `json:"circle_id"`
+	NickName       string            `json:"nick_name"`
+	Rate           string            `json:"rate"`
+	CircleName     string            `json:"circle_name"`
+	ReviewerStatus string            `json:"reviewer_status"`
+	IsPurchased    string            `json:"is_purchased"`
+	Pickup         bool              `json:"pickup"`
+	RateNum        string            `json:"rate_num"`
+	ReviewerRank   string            `json:"reviewer_rank"`
+	Longtext       bool              `json:"longtext"`
+	Genre          map[string]string `json:"genre"`
+	TopSortKey     string            `json:"top_sort_key,omitempty"`
+}
+
+func (b DlsiteInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, error) {
+	var err error = nil
+	review := models.GameReview{}
+	cate := ""
+	if strings.Contains(id, "RJ") {
+		cate = "maniax"
+	} else {
+		cate = "pro"
+	}
+
+	url := fmt.Sprintf("https://www.dlsite.com/%s/api/review?product_id=%s&order=top&limit=10&page=%d&locale=ja_JP",
+		cate, id, page)
+	fmt.Printf("FetchReviews url:%s\ntoken:%s\n", url, token)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 01 error: %v", err)
+		return review, err
+	}
+	// cookie := `chii_sid=VzNpv0; chii_sec_id=IkXIr4amSQ3QgZ%2BkR39fR3N4KLywVvL5EdnpZz4; chii_cookietime=2592000; chii_auth=JRLC%2B4fzHl%2FGgsauR3VVRSkUQczTFKHpIeOteDPsqBaqG5kMZ71JTxsmMFXpZsBX5bg4pXsD%2BsTQqu11R5tvFCPkvYiltcr0NItT;`
+	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	// req.Header.Set("Cookie", cookie)
+	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
+
+	resp, err := b.client.Do(req)
+	if err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 02 error: %v", err)
+		return review, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("BangumiInfoGetter FetchMetadata 03 error: %v", err)
+			log.Warnf("Error closing response body: %v", err)
+		}
+	}(resp.Body)
+	// bodyBytes, _ := io.ReadAll(resp.Body)
+	// jstr := string(bodyBytes)
+	// fmt.Printf("banguimiResp: %s\n", jstr)
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return review, fmt.Errorf("bangumi API returned status: %d, body: \n%s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var dlsiteResp DlsiteReviewResponse
+	if err := json.NewDecoder(resp.Body).Decode(&dlsiteResp); err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 04 error: %v", err)
+		return review, err
+	}
+	review.SourceType = enums.Dlsite
+	for _, item := range dlsiteResp.ReviewList {
+		tm, _ := time.Parse("2006-01-02 15:04:05", item.EntryDate)
+		review.Reviews = append(review.Reviews, models.Review{
+			Id:          item.ReviewerID,
+			Title:       item.ReviewTitle,
+			Content:     item.ReviewText,
+			Reviewer:    item.NickName,
+			Date:        tm,
+			TotalPoints: "5",
+			Points:      item.Rate,
+		})
+	}
+	// review.Points = dlsiteResp.
+
+	return review, nil
+}
+
+func (b DlsiteInfoGetter) FetchReviewDetail(review models.Review, gameId, token string) (models.Review, error) {
+	return models.Review{}, nil
 }

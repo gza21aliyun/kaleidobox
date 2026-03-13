@@ -253,6 +253,8 @@ func (s *GameService) DeleteGame(id string) error {
 		applog.LogErrorf(s.ctx, "DeleteGame: failed to delete play_sessions for id %s: %v", id, err)
 		return fmt.Errorf("failed to delete play sessions: %w", err)
 	}
+	//删除工作，人物，角色
+	s.workService.DeleteWorksForGame(id)
 	// 删除游戏记录
 	result, err := s.db.ExecContext(s.ctx, "DELETE FROM games WHERE id = ?", id)
 	if err != nil {
@@ -270,6 +272,7 @@ func (s *GameService) DeleteGame(id string) error {
 		applog.LogWarningf(s.ctx, "DeleteGame: game not found with id: %s", id)
 		return fmt.Errorf("game not found with id: %s", id)
 	}
+	go s.ManageTagsForGames()
 
 	return nil
 }
@@ -303,6 +306,9 @@ func (s *GameService) DeleteGames(ids []string) error {
 		return fmt.Errorf("failed to delete play sessions: %w", err)
 	}
 
+	//删除工作，人物，角色
+	s.workService.DeleteWorksForGames(ids)
+
 	result, err := tx.ExecContext(s.ctx, fmt.Sprintf("DELETE FROM games WHERE id IN (%s)", placeholders), args...)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "DeleteGames: failed to delete games: %v", err)
@@ -323,6 +329,8 @@ func (s *GameService) DeleteGames(ids []string) error {
 		applog.LogErrorf(s.ctx, "DeleteGames: failed to commit transaction: %v", err)
 		return err
 	}
+
+	go s.ManageTagsForGames()
 
 	return nil
 }

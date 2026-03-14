@@ -17,11 +17,27 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
   useEffect(() => {
     if (isOpen && gameId) {
       fetchVideoStream();
-    } else {
+    } else if (!isOpen && gameId) {
+      // 关闭弹窗时清理视频缓存
+      cleanupVideoCache();
       setVideoUrl('');
       setError('');
     }
   }, [isOpen, gameId]);
+
+  const cleanupVideoCache = async () => {
+    try {
+      console.log('cleanupVideoCache: called with gameId:', gameId);
+      const response = await fetch(`/api/video/cleanup/${gameId}`);
+      if (response.ok) {
+        console.log('cleanupVideoCache: video cache cleaned up successfully');
+      } else {
+        console.error('cleanupVideoCache: failed to clean up video cache:', response.status);
+      }
+    } catch (err) {
+      console.error('cleanupVideoCache: error cleaning up video cache:', err);
+    }
+  };
 
   const fetchVideoStream = async () => {
     setIsLoading(true);

@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
@@ -131,6 +132,55 @@ func main() {
 
 					if strings.HasPrefix(r.URL.Path, "/local/") {
 						localFileHandler.ServeHTTP(w, r)
+						return
+					}
+
+					// 处理视频缓存清理请求
+					if strings.HasPrefix(r.URL.Path, "/api/video/cleanup/") {
+						gameID := strings.TrimPrefix(r.URL.Path, "/api/video/cleanup/")
+						applog.LogInfof(appCtx, "VideoCleanupHandler: received request for gameID: %s", gameID)
+
+						// 先终止相关的ffmpeg进程
+						ffmpegProcessMutex.Lock()
+						if cmd, exists := ffmpegProcessMap[gameID]; exists {
+							applog.LogInfof(appCtx, "VideoCleanupHandler: terminating ffmpeg process for gameID: %s", gameID)
+							if err := cmd.Process.Kill(); err != nil {
+								applog.LogErrorf(appCtx, "VideoCleanupHandler: failed to kill ffmpeg process: %v", err)
+							} else {
+								applog.LogInfof(appCtx, "VideoCleanupHandler: killed ffmpeg process for gameID: %s", gameID)
+							}
+							// 从映射中删除进程
+							delete(ffmpegProcessMap, gameID)
+						}
+						ffmpegProcessMutex.Unlock()
+
+						// 清理缓存
+						videoCacheMutex.Lock()
+						cachedVideoPath, exists := videoCacheMap[gameID]
+						if exists {
+							// 从缓存中删除条目
+							delete(videoCacheMap, gameID)
+							applog.LogInfof(appCtx, "VideoCleanupHandler: removed gameID from cache: %s", gameID)
+						}
+						videoCacheMutex.Unlock()
+
+						// 尝试删除缓存文件，添加重试机制
+						if exists && cachedVideoPath != "" {
+							const maxRetries = 3
+							for i := 0; i < maxRetries; i++ {
+								if err := os.Remove(cachedVideoPath); err != nil {
+									applog.LogErrorf(appCtx, "VideoCleanupHandler: attempt %d failed to remove cached video file: %v", i+1, err)
+									// 等待一段时间后重试
+									time.Sleep(time.Second)
+								} else {
+									applog.LogInfof(appCtx, "VideoCleanupHandler: removed cached video file: %s", cachedVideoPath)
+									break
+								}
+							}
+						}
+
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte("Video cache cleaned up"))
 						return
 					}
 
@@ -448,6 +498,10 @@ func onSystrayExit() {
 var videoCacheMap = make(map[string]string)
 var videoCacheMutex sync.Mutex
 
+// 用于跟踪正在运行的ffmpeg进程
+var ffmpegProcessMap = make(map[string]*exec.Cmd)
+var ffmpegProcessMutex sync.Mutex
+
 // handleVideoStreamRequest 处理视频流请求
 func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameService *service.GameService, ctx context.Context) {
 	// 定义ffmpeg路径
@@ -515,6 +569,12 @@ func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameServic
 			"-hide_banner")
 		cmd.Stderr = os.Stderr
 
+		// 将进程添加到映射中
+		ffmpegProcessMutex.Lock()
+		ffmpegProcessMap[gameID] = cmd
+		ffmpegProcessMutex.Unlock()
+		applog.LogInfof(ctx, "VideoStreamHandler: added ffmpeg process to map for gameID: %s", gameID)
+
 		applog.LogInfof(ctx, "VideoStreamHandler: starting ffmpeg conversion")
 		err = cmd.Run()
 		if err != nil {
@@ -524,6 +584,12 @@ func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameServic
 			http.Error(w, "Failed to process video", http.StatusInternalServerError)
 			return
 		}
+
+		// 转换完成后从映射中删除进程
+		ffmpegProcessMutex.Lock()
+		delete(ffmpegProcessMap, gameID)
+		ffmpegProcessMutex.Unlock()
+		applog.LogInfof(ctx, "VideoStreamHandler: removed ffmpeg process from map for gameID: %s", gameID)
 
 		applog.LogInfof(ctx, "VideoStreamHandler: ffmpeg conversion completed")
 

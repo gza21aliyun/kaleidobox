@@ -59,7 +59,14 @@ function LibraryPage() {
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [tagsFilter, setTags] = useState<string[]>([]);
+  const [tagsFilter, setTags] = useState<string[]>(() => {
+    const savedTagsFilter = localStorage.getItem('libraryTagsFilter');
+    return savedTagsFilter ? JSON.parse(savedTagsFilter) : [];
+  });
+  
+  const [filterExpanded, setFilterExpanded] = useState(() => {
+    return tagsFilter.length == 0;
+  });
   const [batchMode, setBatchMode] = useState(false);
   const [selectedGameIds, setSelectedGameIds] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<vo.CategoryVO[]>([]);
@@ -77,11 +84,13 @@ function LibraryPage() {
     type: "info",
     onConfirm: () => { },
   });
-  const [filterExpanded, setFilterExpanded] = useState(true);
   // const gamesForUpdate = useRef(games)
   const [releaseStartDate, setReleaseStartDate] = useState<string>("");
   const [releaseEndDate, setReleaseEndDate] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"list" | "small" | "large">("small");
+  const [viewMode, setViewMode] = useState<"list" | "small" | "large">(() => {
+    const savedViewMode = localStorage.getItem('libraryViewMode');
+    return (savedViewMode as "list" | "small" | "large") || "small";
+  });
   
 
   
@@ -105,6 +114,16 @@ function LibraryPage() {
     }
     return () => clearTimeout(timer);
   }, [gamesLoading]);
+
+  // 保存 viewMode 到 localStorage
+  useEffect(() => {
+    localStorage.setItem('libraryViewMode', viewMode);
+  }, [viewMode]);
+
+  // 保存 tagsFilter 到 localStorage
+  useEffect(() => {
+    localStorage.setItem('libraryTagsFilter', JSON.stringify(tagsFilter));
+  }, [tagsFilter]);
 
   const filteredGames = games
     .filter((game) => {

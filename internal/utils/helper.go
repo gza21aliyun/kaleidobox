@@ -326,7 +326,7 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, exclu
 }
 
 func getGameNameAlternative(searchName string) string {
-	var name = ""
+	var name = searchName
 	if strings.Contains(searchName, "／") {
 		name = strings.ReplaceAll(searchName, "／", "/")
 	}
@@ -363,6 +363,14 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(searchName, "Ｍ") {
 		name = strings.ReplaceAll(searchName, "Ｍ", "M")
 	}
+	if strings.Contains(searchName, "Ｄ") {
+		name = strings.ReplaceAll(searchName, "Ｄ", "D")
+	}
+	for strings.HasSuffix(name, "〇") {
+		name = strings.TrimSuffix(name, "〇")
+	}
+
+	name = strings.TrimSuffix(name, "％")
 	fmt.Printf("getGameNameAlternative:%s\n", name)
 	return name
 }

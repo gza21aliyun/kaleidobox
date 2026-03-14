@@ -1435,7 +1435,7 @@ func (s *GameService) LoadDetailReview(review models.Review, gameId string, sour
 	return models.Review{}, nil
 }
 
-func (s *GameService) AddTagForGame(game models.Game, tag string) error {
+func (s *GameService) AddTagForGame(game models.Game, tag string) (models.Game, error) {
 	t, err := s.tagService.GetTagByName(tag)
 	if t == nil {
 		newTag := models.Tag{Name: tag, Category: models.TagCategoryCustom}
@@ -1443,7 +1443,7 @@ func (s *GameService) AddTagForGame(game models.Game, tag string) error {
 	}
 	game.Tags = utils.MergeStrings(game.Tags, tag)
 	err = s.UpdateGame(game)
-	return err
+	return game, err
 }
 
 func (s *GameService) DeleteTagForGame(game models.Game, tag string) (models.Game, error) {

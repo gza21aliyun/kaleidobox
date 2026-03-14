@@ -161,6 +161,21 @@ function LibraryPage() {
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
+
+  // 获取URL参数中的标签
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tagsParam = urlParams.get('tags');
+    console.log("tagsParam 01", tagsParam);
+    if (tagsParam) {
+      const tag = decodeURIComponent(tagsParam)
+        .replace(/"/g, "");
+      console.log("tagsParam 02", tag);
+      setTags([tag]);
+      setFilterExpanded(false)
+    }
+  }, []);
+
   const filterSelected = filteredGames.filter(game => selectedGameIds.includes(game.id))
   const filterSelectedIds = filterSelected.map(game => game.id)
 
@@ -282,11 +297,7 @@ function LibraryPage() {
       // });
       // const uniqueTags : string[] = [...new Set(tags.map(tag => tag.trim()))];
       // setTagsLoaded(uniqueTags);
-      const tags = await ListTags();
-      const map = arrayToMap(tags, tag => tag.category);
       
-      
-      setTagsLoaded(map);
 
     }
     catch (error) {
@@ -301,6 +312,15 @@ function LibraryPage() {
     if (games.length === 0) {
       loadGames();
     }
+    ListTags().then(tags => {
+      const map = arrayToMap(tags, tag => tag.category);
+      console.log("loadgames tags", map);
+      
+      
+      setTagsLoaded(map);
+
+    });
+      
   }, []);
 
 
@@ -311,6 +331,9 @@ function LibraryPage() {
     }
     return <LibrarySkeleton />;
   }
+
+  
+      console.log("rt tagsFilter:", tagsFilter)
 
   return (
     <div className={`space-y-6 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${gamesLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
@@ -516,7 +539,7 @@ function LibraryPage() {
                 viewMode === "list" 
                   ? "flex flex-col gap-2"
                   : viewMode === "large"
-                    ? "grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-4"
+                    ? "grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4"
                     : "grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3"
               }>
                 {filteredGames.map(game => (

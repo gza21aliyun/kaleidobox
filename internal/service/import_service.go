@@ -1115,10 +1115,44 @@ func (s *ImportService) BatchImportGamesFolderLnk(dir string) ([]vo.BatchImportC
 }
 
 func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate, error) {
+
+	// 关键修复：将 lnk 文件复制到临时目录并重命名，避免文件名中的特殊字符影响解析
+	tempDir := os.TempDir()
+	tempFileName := fmt.Sprintf("lnk_parse_%s.lnk", uuid.New().String())
+	tempLinkPath := filepath.Join(tempDir, tempFileName)
+
+	// 复制 lnk 文件到临时目录
+	sourceFile, err := os.Open(linkPath)
+	if err != nil {
+		return vo.BatchImportCandidate{}, fmt.Errorf("failed to open source lnk file: %w", err)
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(tempLinkPath)
+	if err != nil {
+		return vo.BatchImportCandidate{}, fmt.Errorf("failed to create temp lnk file: %w", err)
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		os.Remove(tempLinkPath) // 清理失败创建的临时文件
+		return vo.BatchImportCandidate{}, fmt.Errorf("failed to copy lnk file: %w", err)
+	}
+
+	// 确保临时文件在执行前被正确关闭
+	destFile.Close()
+
+	// 使用 defer 确保临时文件最终被删除
+	defer os.Remove(tempLinkPath)
+
+	fmt.Printf("Debug: Original lnk path: %s\n", linkPath)
+	fmt.Printf("Debug: Temp lnk path: %s\n", tempLinkPath)
+
 	// 使用 PowerShell 解析 lnk 文件（改进版本：无窗口且正确编码）
 	psCommand := `
 		$shell = New-Object -ComObject WScript.Shell
-		$shortcut = $shell.CreateShortcut("` + linkPath + `")
+		$shortcut = $shell.CreateShortcut("` + tempLinkPath + `")
 		
 		# 分别获取目标路径和参数
 		$targetPath = $shortcut.TargetPath
@@ -1166,7 +1200,7 @@ func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate
 	// targetPath := utils.RemoveBOMAndTrim(output)
 	targetPath := shortcutInfo.TargetPath
 	if targetPath == "" {
-		return vo.BatchImportCandidate{}, fmt.Errorf("could not resolve target path")
+		return vo.BatchImportCandidate{}, fmt.Errorf("could not resolve target path, \n%v\n", shortcutInfo)
 	}
 
 	// 获取文件夹路径和名称

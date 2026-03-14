@@ -100,7 +100,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, totken string) (mod
 func (b EroscapeInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
 	applog.InfoLogSaveAppLog("FetchMetadataByNameFunc 00\n")
 	// mainTitle, num := getTitles(name)
-	game, err := b.FetchMetadataByNameFunc(name,
+	game, err := b.FetchMetadataByNameFunc(name, false,
 		func(request vo.MetadataRequest) (models.Game, error) {
 			// fmt.Printf("FetchMetadataByNameFunc 01")
 			gameEntity, err := b.FetchMetadataById(request)
@@ -108,16 +108,13 @@ func (b EroscapeInfoGetter) FetchMetadataByName2(name string) (models.Game, erro
 			return gameEntity.Game, err
 		})
 	if game.SourceID == "" {
-		alternativeName := getGameNameAlternative(name)
-		if alternativeName != "" {
-			game, err = b.FetchMetadataByNameFunc(alternativeName,
-				func(request vo.MetadataRequest) (models.Game, error) {
-					// fmt.Printf("FetchMetadataByNameFunc 01")
-					gameEntity, err := b.FetchMetadataById(request)
+		game, err = b.FetchMetadataByNameFunc(name, true,
+			func(request vo.MetadataRequest) (models.Game, error) {
+				// fmt.Printf("FetchMetadataByNameFunc 01")
+				gameEntity, err := b.FetchMetadataById(request)
 
-					return gameEntity.Game, err
-				})
-		}
+				return gameEntity.Game, err
+			})
 		// fmt.Printf("FetchMetadataByNameFunc Error fetching metadata:%v\n", err)
 		return game, err
 	}
@@ -148,7 +145,7 @@ func (b EroscapeInfoGetter) GetDomain() string {
 	return domain
 }
 
-func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, fn IdFunction) (models.Game, error) {
+func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl bool, fn IdFunction) (models.Game, error) {
 	log.Println("Fetching 01 metadata by name:", name)
 	log.Println("Fetching 02 metadata by name:", name)
 
@@ -158,10 +155,17 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, fn IdFunction) 
 	// var gameUrl = baseUrl + gamePart
 
 	mainTitle, _, _ := getTitles(name)
+	var game = models.Game{}
+	if isAl {
+		mainTitle = getGameNameAlternative(mainTitle)
+		if mainTitle == "" {
+			fmt.Println("no game found")
+			return game, errors.New("no game found")
+		}
+	}
 	// url += mainTitle
 
 	url += mainTitle
-	var game = models.Game{}
 	c := CreateCollector(b.GetDomain())
 
 	var potentialGames []struct {

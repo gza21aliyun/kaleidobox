@@ -183,7 +183,7 @@ export function GameCard({
 
   return (
     <div
-      className={`glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""} ${viewMode === "large" ? "aspect-[3/4]" : ""}`}
+      className={`glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""} ${viewMode === "large" ? "aspect-[8/11]" : ""}`}
       onClick={selectionMode ? handleToggleSelect : undefined}
     >
       {selectionMode && (

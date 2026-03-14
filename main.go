@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
@@ -443,6 +444,10 @@ func onSystrayExit() {
 	}
 }
 
+// 用于缓存转换后的视频文件路径
+var videoCacheMap = make(map[string]string)
+var videoCacheMutex sync.Mutex
+
 // handleVideoStreamRequest 处理视频流请求
 func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameService *service.GameService, ctx context.Context) {
 	// 定义ffmpeg路径
@@ -450,7 +455,7 @@ func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameServic
 
 	// 提取游戏ID
 	gameID := strings.TrimPrefix(r.URL.Path, "/api/video/")
-	applog.LogInfof(ctx, "VideoStreamHandler: received request for gameID: %s", gameID)
+	applog.LogInfof(ctx, "VideoStreamHandler: received request for gameID: %s, User-Agent: %s", gameID, r.UserAgent())
 
 	if gameID != "" && gameService != nil {
 		applog.LogInfof(ctx, "VideoStreamHandler: gameService is available, processing request")
@@ -464,24 +469,80 @@ func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameServic
 
 		applog.LogInfof(ctx, "VideoStreamHandler: got video path: %s", videoPath)
 
-		// 使用ffmpeg处理视频流
-		cmd := exec.Command(ffmpegPath, "-i", videoPath, "-f", "mp4", "-vcodec", "h264", "-acodec", "aac", "-movflags", "frag_keyframe+empty_moov", "-", "-hide_banner")
-		cmd.Stdout = w
+		// 检查缓存中是否已有转换后的视频
+		videoCacheMutex.Lock()
+		cachedVideoPath, exists := videoCacheMap[gameID]
+		videoCacheMutex.Unlock()
+
+		if exists {
+			// 检查缓存文件是否存在
+			if _, err := os.Stat(cachedVideoPath); err == nil {
+				applog.LogInfof(ctx, "VideoStreamHandler: using cached video file: %s", cachedVideoPath)
+				// 使用http.ServeFile提供缓存的视频文件
+				w.Header().Set("Content-Type", "video/mp4")
+				w.Header().Set("Content-Disposition", "inline")
+				w.Header().Set("Accept-Ranges", "bytes")
+				http.ServeFile(w, r, cachedVideoPath)
+				applog.LogInfof(ctx, "VideoStreamHandler: served cached video file")
+				return
+			}
+			// 缓存文件不存在，删除缓存条目
+			videoCacheMutex.Lock()
+			delete(videoCacheMap, gameID)
+			videoCacheMutex.Unlock()
+			applog.LogInfof(ctx, "VideoStreamHandler: cached video file not found, removing from cache")
+		}
+
+		// 创建临时文件来存储转换后的视频
+		tempFile, err := os.CreateTemp("", "video_*.mp4")
+		if err != nil {
+			applog.LogErrorf(ctx, "VideoStreamHandler: failed to create temp file: %v", err)
+			http.Error(w, "Failed to process video", http.StatusInternalServerError)
+			return
+		}
+		tempFilePath := tempFile.Name()
+		tempFile.Close()
+
+		// 使用ffmpeg将视频转换为MP4格式并保存到临时文件
+		cmd := exec.Command(ffmpegPath,
+			"-y",
+			"-i", videoPath,
+			"-f", "mp4",
+			"-vcodec", "h264",
+			"-acodec", "aac",
+			"-movflags", "frag_keyframe+empty_moov+faststart",
+			tempFilePath,
+			"-hide_banner")
 		cmd.Stderr = os.Stderr
 
-		// 设置正确的Content-Type
-		w.Header().Set("Content-Type", "video/mp4")
-		w.Header().Set("Content-Disposition", "inline")
-
-		applog.LogInfof(ctx, "VideoStreamHandler: starting ffmpeg process")
+		applog.LogInfof(ctx, "VideoStreamHandler: starting ffmpeg conversion")
 		err = cmd.Run()
 		if err != nil {
-			applog.LogErrorf(ctx, "VideoStreamHandler: ffmpeg failed: %v", err)
+			applog.LogErrorf(ctx, "VideoStreamHandler: ffmpeg conversion failed: %v", err)
+			// 清理临时文件
+			os.Remove(tempFilePath)
 			http.Error(w, "Failed to process video", http.StatusInternalServerError)
 			return
 		}
 
-		applog.LogInfof(ctx, "VideoStreamHandler: video stream completed")
+		applog.LogInfof(ctx, "VideoStreamHandler: ffmpeg conversion completed")
+
+		// 将转换后的视频路径加入缓存
+		videoCacheMutex.Lock()
+		videoCacheMap[gameID] = tempFilePath
+		videoCacheMutex.Unlock()
+		applog.LogInfof(ctx, "VideoStreamHandler: added video to cache: %s", tempFilePath)
+
+		// 使用http.ServeFile提供转换后的视频文件
+		// 这样浏览器可以一次性获取完整的视频文件，支持进度条拖动
+		w.Header().Set("Content-Type", "video/mp4")
+		w.Header().Set("Content-Disposition", "inline")
+		w.Header().Set("Accept-Ranges", "bytes")
+
+		applog.LogInfof(ctx, "VideoStreamHandler: serving video file")
+		http.ServeFile(w, r, tempFilePath)
+		applog.LogInfof(ctx, "VideoStreamHandler: video file served")
+
 		return
 	} else {
 		applog.LogWarningf(ctx, "VideoStreamHandler: invalid request - gameID: %s, gameService: %v", gameID, gameService != nil)

@@ -376,6 +376,7 @@ func getGameNameAlternative(searchName string) string {
 }
 
 func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
+	_, _, num := getTitles(searchName)
 	type Result struct {
 		similarity float32
 		Value      T1
@@ -400,6 +401,11 @@ func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []st
 			continue
 		}
 		similarity := edlib.JaroWinklerSimilarity(searchName, name)
+		if num != "" {
+			if strings.Contains(name, num) || strings.Contains(name, getGameNameAlternative(num)) {
+				similarity += 0.1
+			}
+		}
 		results = append(results, Result{similarity: similarity, Value: item})
 	}
 	sort.Slice(results, func(i, j int) bool {

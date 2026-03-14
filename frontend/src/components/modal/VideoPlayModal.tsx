@@ -29,11 +29,10 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
     try {
       console.log('fetchVideoStream: called with gameId:', gameId);
       
-      // 构建视频流 URL
-      const videoUrl = `http://localhost:34115/api/video/${gameId}`;
+      // 构建视频流 URL (使用相对路径)
+      const videoUrl = `/api/video/${gameId}`;
       console.log('fetchVideoStream: requesting video from:', videoUrl);
       
-      // 模拟视频流 URL
       setVideoUrl(videoUrl);
       console.log('fetchVideoStream: videoUrl set successfully');
     } catch (err) {

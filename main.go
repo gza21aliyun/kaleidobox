@@ -10,6 +10,8 @@ import (
 	"lunabox/internal/cli/ipc"
 	"lunabox/internal/utils"
 	"net/http"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -133,44 +135,7 @@ func main() {
 
 					// 处理视频流请求
 					if strings.HasPrefix(r.URL.Path, "/api/video/") {
-						// 提取游戏ID
-						gameID := strings.TrimPrefix(r.URL.Path, "/api/video/")
-						applog.LogInfof(appCtx, "VideoStreamHandler: received request for gameID: %s", gameID)
-
-						if gameID != "" && gameService != nil {
-							applog.LogInfof(appCtx, "VideoStreamHandler: gameService is available, processing request")
-							// 获取视频路径
-							videoPath, err := gameService.GetVideoStream(gameID)
-							if err != nil {
-								applog.LogErrorf(appCtx, "VideoStreamHandler: failed to get video stream: %v", err)
-								http.Error(w, err.Error(), http.StatusNotFound)
-								return
-							}
-
-							applog.LogInfof(appCtx, "VideoStreamHandler: got video path: %s", videoPath)
-
-							// 根据文件扩展名设置正确的 Content-Type
-							ext := strings.ToLower(filepath.Ext(videoPath))
-							contentType := "video/mp4"
-							switch ext {
-							case ".mp4":
-								contentType = "video/mp4"
-							case ".avi":
-								contentType = "video/avi"
-							case ".mpg", ".mpeg":
-								contentType = "video/mpeg"
-							case ".wmv":
-								contentType = "video/x-ms-wmv"
-							}
-
-							applog.LogInfof(appCtx, "VideoStreamHandler: serving video with Content-Type: %s", contentType)
-							w.Header().Set("Content-Type", contentType)
-							http.ServeFile(w, r, videoPath)
-							return
-						} else {
-							applog.LogWarningf(appCtx, "VideoStreamHandler: invalid request - gameID: %s, gameService: %v", gameID, gameService != nil)
-						}
-						http.Error(w, "Invalid video request", http.StatusBadRequest)
+						handleVideoStreamRequest(w, r, gameService, appCtx)
 						return
 					}
 
@@ -476,4 +441,50 @@ func onSystrayExit() {
 	if systrayQuit != nil {
 		close(systrayQuit)
 	}
+}
+
+// handleVideoStreamRequest 处理视频流请求
+func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameService *service.GameService, ctx context.Context) {
+	// 定义ffmpeg路径
+	ffmpegPath := `C:\temp\projects\lunabox\build\bin\ffmpeg.exe`
+
+	// 提取游戏ID
+	gameID := strings.TrimPrefix(r.URL.Path, "/api/video/")
+	applog.LogInfof(ctx, "VideoStreamHandler: received request for gameID: %s", gameID)
+
+	if gameID != "" && gameService != nil {
+		applog.LogInfof(ctx, "VideoStreamHandler: gameService is available, processing request")
+		// 获取视频路径
+		videoPath, err := gameService.GetVideoStream(gameID)
+		if err != nil {
+			applog.LogErrorf(ctx, "VideoStreamHandler: failed to get video stream: %v", err)
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		applog.LogInfof(ctx, "VideoStreamHandler: got video path: %s", videoPath)
+
+		// 使用ffmpeg处理视频流
+		cmd := exec.Command(ffmpegPath, "-i", videoPath, "-f", "mp4", "-vcodec", "h264", "-acodec", "aac", "-movflags", "frag_keyframe+empty_moov", "-", "-hide_banner")
+		cmd.Stdout = w
+		cmd.Stderr = os.Stderr
+
+		// 设置正确的Content-Type
+		w.Header().Set("Content-Type", "video/mp4")
+		w.Header().Set("Content-Disposition", "inline")
+
+		applog.LogInfof(ctx, "VideoStreamHandler: starting ffmpeg process")
+		err = cmd.Run()
+		if err != nil {
+			applog.LogErrorf(ctx, "VideoStreamHandler: ffmpeg failed: %v", err)
+			http.Error(w, "Failed to process video", http.StatusInternalServerError)
+			return
+		}
+
+		applog.LogInfof(ctx, "VideoStreamHandler: video stream completed")
+		return
+	} else {
+		applog.LogWarningf(ctx, "VideoStreamHandler: invalid request - gameID: %s, gameService: %v", gameID, gameService != nil)
+	}
+	http.Error(w, "Invalid video request", http.StatusBadRequest)
 }

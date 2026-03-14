@@ -50,6 +50,7 @@ export function ImageBackupCard({
     imageBackup
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [scale, setScale] = useState(1);
 
     const getImageUrl = () => {
         if (imageBackup.local_path !== "") {
@@ -57,6 +58,35 @@ export function ImageBackupCard({
         }
         return imageBackup.url;
     };
+
+    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        setScale(prev => Math.max(0.1, Math.min(5, prev * delta)));
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+            setScale(prev => Math.min(5, prev * 1.1));
+            e.preventDefault();
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+            setScale(prev => Math.max(0.1, prev * 0.9));
+            e.preventDefault();
+        } else if (e.key === 'Escape') {
+            setIsModalOpen(false);
+            e.preventDefault();
+        }
+    };
+
+    useEffect(() => {
+        if (isModalOpen) {
+            document.addEventListener('keydown', handleKeyDown);
+            return () => {
+                document.removeEventListener('keydown', handleKeyDown);
+                setScale(1);
+            };
+        }
+    }, [isModalOpen]);
 
     return (
         <>
@@ -71,9 +101,16 @@ export function ImageBackupCard({
                 <div 
                     className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
                     onClick={() => setIsModalOpen(false)}
+                    onWheel={handleWheel}
                 >
                     <div 
-                        className="relative max-w-7xl max-h-screen"
+                        className="relative transition-all duration-200"
+                        style={{ 
+                            transform: `scale(${scale})`, 
+                            transformOrigin: 'center center',
+                            maxWidth: '90vw',
+                            maxHeight: '90vh'
+                        }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button

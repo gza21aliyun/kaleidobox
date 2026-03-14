@@ -12,6 +12,7 @@ import (
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
 	"lunabox/internal/vo"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -161,8 +162,8 @@ func (s *GameService) AddGame(game models.Game) error {
 		id, name, cover_url, company, summary, path, 
 		source_type, cached_at, source_id, created_at, updated_at,
 		tags, arguments, images, bangumi_id, dmm_id, eroscape_id, ymgal_id, search_name, dlsite_id, release_at, related_games, 
-		use_locale_emulator, use_magpie, process_name
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		use_locale_emulator, use_magpie, process_name, getchu_id, pv_path
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := s.db.ExecContext(s.ctx, query,
 		game.ID,
@@ -191,6 +192,8 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.UseLocaleEmulator,
 		game.UseMagpie,
 		game.ProcessName,
+		game.GetchuId,
+		game.PvPath,
 	)
 
 	if err != nil {
@@ -200,7 +203,8 @@ func (s *GameService) AddGame(game models.Game) error {
 
 	// 后台异步下载封面图片（不阻塞添加流程）
 	if originalCoverURL != "" {
-		go s.asyncDownloadCoverImage(game.ID, game.Name, originalCoverURL)
+		//由ImageBackup代替
+		// go s.asyncDownloadCoverImage(game.ID, game.Name, originalCoverURL)
 	}
 
 	return nil
@@ -362,7 +366,9 @@ func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, err
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie,
-		COALESCE(process_name, '') as process_name
+		COALESCE(process_name, '') as process_name,
+		COALESCE(getchu_id, '') as getchu_id,
+		COALESCE(pv_path, '') as pv_path
 	FROM games 
 	ORDER BY created_at DESC
 	LIMIT %d OFFSET %d
@@ -413,6 +419,8 @@ func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {
 			&game.UseLocaleEmulator,
 			&game.UseMagpie,
 			&game.ProcessName,
+			&game.GetchuId,
+			&game.PvPath,
 		)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
@@ -459,7 +467,9 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie,
-		COALESCE(process_name, '') as process_name
+		COALESCE(process_name, '') as process_name,
+		COALESCE(getchu_id, '') as getchu_id,
+		COALESCE(pv_path, '') as pv_path
 	FROM games 
 	ORDER BY created_at DESC`
 
@@ -539,6 +549,8 @@ func (s *GameService) GetQueryBase() string {
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie,
 		COALESCE(process_name, '') as process_name,
+		COALESCE(getchu_id, '') as getchu_id,
+		COALESCE(pv_path, '') as pv_path,
 	FROM games`
 }
 
@@ -572,7 +584,6 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 			&game.Summary,
 			&game.Path,
 			&game.SavePath,
-			&game.ProcessName,
 			&status,
 			&sourceType,
 			&game.CachedAt,
@@ -592,6 +603,9 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 			&game.RelatedGames,
 			&game.UseLocaleEmulator,
 			&game.UseMagpie,
+			&game.ProcessName,
+			&game.GetchuId,
+			&game.PvPath,
 		)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
@@ -638,7 +652,9 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
-		COALESCE(use_magpie, FALSE) as use_magpie
+		COALESCE(use_magpie, FALSE) as use_magpie,
+		COALESCE(getchu_id, '') as getchu_id,
+		COALESCE(pv_path, '') as pv_path
 	FROM games 
 	WHERE id = ?`
 
@@ -674,6 +690,8 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		&game.RelatedGames,
 		&game.UseLocaleEmulator,
 		&game.UseMagpie,
+		&game.GetchuId,
+		&game.PvPath,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -714,7 +732,9 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		release_at = ?,
 		related_games = ?,
 		use_locale_emulator = ?,
-		use_magpie = ?
+		use_magpie = ?,
+		getchu_id = ?,
+		pv_path = ?
 	WHERE id = ?`
 
 	result, err := s.db.ExecContext(s.ctx, query,
@@ -741,6 +761,8 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		game.RelatedGames,
 		game.UseLocaleEmulator,
 		game.UseMagpie,
+		game.GetchuId,
+		game.PvPath,
 		game.ID,
 	)
 
@@ -1102,6 +1124,36 @@ func (s *GameService) UpdateGameProcessName(gameID string, processName string) e
 	return nil
 }
 
+// GetVideoStream 获取游戏视频流
+func (s *GameService) GetVideoStream(gameID string) (string, error) {
+	applog.LogInfof(s.ctx, "GetVideoStream: called with gameID: %s", gameID)
+
+	// 获取游戏信息
+	game, err := s.GetGameByID(gameID)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "GetVideoStream: failed to get game %s: %v", gameID, err)
+		return "", fmt.Errorf("failed to get game: %w", err)
+	}
+
+	applog.LogInfof(s.ctx, "GetVideoStream: found game: %s, PvPath: %s", game.Name, game.PvPath)
+
+	if game.PvPath == "" {
+		applog.LogWarningf(s.ctx, "GetVideoStream: game %s has no video path", game.Name)
+		return "", fmt.Errorf("game has no video path")
+	}
+
+	// 检查视频文件是否存在
+	if _, err := os.Stat(game.PvPath); os.IsNotExist(err) {
+		applog.LogErrorf(s.ctx, "GetVideoStream: video file not found: %s", game.PvPath)
+		return "", fmt.Errorf("video file not found: %s", game.PvPath)
+	}
+
+	applog.LogInfof(s.ctx, "GetVideoStream: video file exists: %s", game.PvPath)
+
+	// 返回视频文件路径
+	return game.PvPath, nil
+}
+
 // BatchUpdateStatus 批量更新多个游戏的游玩状态
 func (s *GameService) BatchUpdateStatus(ids []string, status string) error {
 	ids = utils.UniqueNonEmptyStrings(ids)
@@ -1339,6 +1391,12 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game, req
 	}
 	if updatedGame.DlsiteId == "" {
 		updatedGame.DlsiteId = ngame.DlsiteId
+	}
+	if updatedGame.GetchuId == "" {
+		updatedGame.GetchuId = ngame.GetchuId
+	}
+	if updatedGame.PvPath == "" {
+		updatedGame.PvPath = ngame.PvPath
 	}
 	if ngame.Name != "" && !req.IsOverwrite {
 		updatedGame.Name = ngame.Name

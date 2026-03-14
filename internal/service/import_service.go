@@ -950,6 +950,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		game.Tags = ""
 		game.CachedAt = time.Now()
 		rs = append(rs, game)
+		s.SearchVideoPath(&game)
 
 		// 保存游戏（图片会在后台异步下载）
 		if err := s.gameService.AddGame(game); err != nil {
@@ -969,6 +970,59 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 	result.Games = rs
 
 	return result, nil
+}
+
+func (s *ImportService) SearchVideoPath(game *models.Game) error {
+	// 获取游戏可执行文件所在的目录
+	folderPath := filepath.Dir(game.Path)
+	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
+	var videoFiles []string
+	var foundOPVideo string
+
+	// 递归搜索目录及其子目录
+	err := filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // 忽略无法访问的路径
+		}
+
+		if !info.IsDir() {
+			// 检查文件扩展名是否为视频格式
+			ext := strings.ToLower(filepath.Ext(path))
+			for _, e := range exts {
+				if ext == e {
+					// 检查文件名是否包含 "op" 或 "openning"
+					fileName := strings.ToLower(filepath.Base(path))
+					if strings.Contains(fileName, "op") || strings.Contains(fileName, "openning") {
+						foundOPVideo = path
+						return filepath.SkipDir // 找到 OP 视频后停止搜索
+					}
+					// 添加到视频文件列表
+					videoFiles = append(videoFiles, path)
+					break
+				}
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		applog.LogErrorf(s.ctx, "SearchVideoPath: failed to walk directory %s: %v", folderPath, err)
+		return err
+	}
+
+	// 优先使用 OP 视频
+	if foundOPVideo != "" {
+		game.PvPath = foundOPVideo
+		applog.LogInfof(s.ctx, "SearchVideoPath: found OP video for game %s: %s", game.Name, foundOPVideo)
+	} else if len(videoFiles) > 0 {
+		// 否则使用第一个找到的视频文件
+		game.PvPath = videoFiles[0]
+		applog.LogInfof(s.ctx, "SearchVideoPath: found video for game %s: %s", game.Name, videoFiles[0])
+	} else {
+		applog.LogInfof(s.ctx, "SearchVideoPath: no video found for game %s", game.Name)
+	}
+
+	return nil
 }
 
 // ProcessDroppedPaths 处理拖拽导入的路径，支持文件夹和可执行文件

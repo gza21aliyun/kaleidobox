@@ -60,6 +60,8 @@ func SchemaQueries() []string {
 			use_locale_emulator BOOLEAN DEFAULT FALSE,
 			use_magpie BOOLEAN DEFAULT FALSE,
 			process_name TEXT,
+			getchu_id TEXT,
+			pv_path TEXT
 		)`,
 		`CREATE TABLE IF NOT EXISTS game_categories (
 			game_id TEXT,

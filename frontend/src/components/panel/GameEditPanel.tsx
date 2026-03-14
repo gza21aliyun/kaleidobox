@@ -1,6 +1,6 @@
 import type { models } from "../../../wailsjs/go/models";
 import { toast } from "react-hot-toast";
-import { OpenLocalPath } from "../../../wailsjs/go/service/GameService";
+import { OpenLocalPath, SelectGameExecutable } from "../../../wailsjs/go/service/GameService";
 import { BetterButton } from "../ui/BetterButton";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -155,6 +155,38 @@ export function GameEditPanel({
             </button>
           </div>
           <p className="mt-1 text-xs text-brand-500">{t('gameEdit.savePathHint')}</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
+            视频路径 (PvPath)
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={game.pv_path || ""}
+              onChange={e => onGameChange({ ...game, pv_path: e.target.value } as models.Game)}
+              placeholder="视频文件路径"
+              className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const selection = await SelectGameExecutable();
+                  if (selection) {
+                    onGameChange({ ...game, pv_path: selection } as models.Game);
+                  }
+                } catch (error) {
+                  toast.error("选择文件失败");
+                }
+              }}
+              className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
+            >
+              {t('gameEdit.select')}
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-brand-500">游戏宣传视频文件的本地路径</p>
         </div>
 
         <div>

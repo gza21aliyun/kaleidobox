@@ -33,7 +33,8 @@ type Game struct {
 	RelatedGames      string           `json:"related_games"`       //格式"local:123;bangumi:333" local代表Game.Id,其他都是sourceType
 	UseLocaleEmulator bool             `json:"use_locale_emulator"` // 是否使用 Locale Emulator 转区启动
 	UseMagpie         bool             `json:"use_magpie"`          // 是否使用 Magpie 超分辨率缩放
-
+	GetchuId          string           `json:"getchu_id"`
+	PvPath            string           `json:"pv_path"`
 }
 
 type GameEntity struct {

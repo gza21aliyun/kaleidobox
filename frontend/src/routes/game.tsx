@@ -9,6 +9,7 @@ import { DeleteGame, GetGameByID, SelectCoverImage, SelectGameExecutable, Select
 import { StartGameWithTracking } from "../../wailsjs/go/service/StartService";
 import { AddToCategoryModal } from "../components/modal/AddToCategoryModal";
 import { ConfirmModal } from "../components/modal/ConfirmModal";
+import { VideoPlayModal } from "../components/modal/VideoPlayModal";
 import { GameBackupPanel } from "../components/panel/GameBackupPanel";
 import { GameEditPanel } from "../components/panel/GameEditPanel";
 import { GameLaunchPanel } from "../components/panel/GameLaunchPanel";
@@ -50,6 +51,7 @@ function GameDetailPage() {
   const [activeTab, setActiveTab] = useState("intro");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [allCategories, setAllCategories] = useState<vo.CategoryVO[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isInitialMount = useRef(true);
@@ -548,6 +550,16 @@ function GameDetailPage() {
                 {t('game.buttons.launchGame')}
               </button>
 
+              {game.pv_path && (
+                <button
+                  onClick={() => setIsVideoModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-all duration-300 px-4 py-1.5 text-sm font-medium"
+                >
+                  <div className="i-mdi-play-circle-outline text-lg" />
+                  播放视频
+                </button>
+              )}
+
               <div className="h-6 w-px bg-brand-200 dark:bg-brand-700" />
               {" "}
               {/* 分隔线 */}
@@ -765,6 +777,11 @@ function GameDetailPage() {
         onSave={handleSaveCategories}
       />
 
+      <VideoPlayModal
+        isOpen={isVideoModalOpen}
+        gameId={game?.id || ""}
+        onClose={() => setIsVideoModalOpen(false)}
+      />
 
     </div>
   );

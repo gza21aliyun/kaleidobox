@@ -131,6 +131,49 @@ func main() {
 						return
 					}
 
+					// 处理视频流请求
+					if strings.HasPrefix(r.URL.Path, "/api/video/") {
+						// 提取游戏ID
+						gameID := strings.TrimPrefix(r.URL.Path, "/api/video/")
+						applog.LogInfof(appCtx, "VideoStreamHandler: received request for gameID: %s", gameID)
+
+						if gameID != "" && gameService != nil {
+							applog.LogInfof(appCtx, "VideoStreamHandler: gameService is available, processing request")
+							// 获取视频路径
+							videoPath, err := gameService.GetVideoStream(gameID)
+							if err != nil {
+								applog.LogErrorf(appCtx, "VideoStreamHandler: failed to get video stream: %v", err)
+								http.Error(w, err.Error(), http.StatusNotFound)
+								return
+							}
+
+							applog.LogInfof(appCtx, "VideoStreamHandler: got video path: %s", videoPath)
+
+							// 根据文件扩展名设置正确的 Content-Type
+							ext := strings.ToLower(filepath.Ext(videoPath))
+							contentType := "video/mp4"
+							switch ext {
+							case ".mp4":
+								contentType = "video/mp4"
+							case ".avi":
+								contentType = "video/avi"
+							case ".mpg", ".mpeg":
+								contentType = "video/mpeg"
+							case ".wmv":
+								contentType = "video/x-ms-wmv"
+							}
+
+							applog.LogInfof(appCtx, "VideoStreamHandler: serving video with Content-Type: %s", contentType)
+							w.Header().Set("Content-Type", contentType)
+							http.ServeFile(w, r, videoPath)
+							return
+						} else {
+							applog.LogWarningf(appCtx, "VideoStreamHandler: invalid request - gameID: %s, gameService: %v", gameID, gameService != nil)
+						}
+						http.Error(w, "Invalid video request", http.StatusBadRequest)
+						return
+					}
+
 					next.ServeHTTP(w, r)
 				})
 			},

@@ -85,24 +85,29 @@ function RootLayout() {
 
   // 保存和恢复滚动位置
   useEffect(() => {
-    // 恢复新路由的滚动位置
-    const savedPosition = scrollPositions.current[location.pathname];
-    if (mainContentRef.current && savedPosition !== undefined) {
-      // 使用 requestAnimationFrame 确保 DOM 已更新
-      requestAnimationFrame(() => {
-        mainContentRef.current!.scrollTop = savedPosition;
-      });
-    } else if (mainContentRef.current) {
-      // 如果没有保存的位置，滚动到顶部
-      mainContentRef.current.scrollTop = 0;
-    }
-
     // 组件卸载时保存滚动位置
     return () => {
       if (mainContentRef.current) {
         scrollPositions.current[location.pathname] = mainContentRef.current.scrollTop;
       }
     };
+  }, [location.pathname]);
+
+  // 延迟恢复滚动位置，确保内容已加载
+  useEffect(() => {
+    // 恢复新路由的滚动位置
+    const savedPosition = scrollPositions.current[location.pathname];
+    if (mainContentRef.current && savedPosition !== undefined) {
+      // 使用 setTimeout 确保内容已加载
+      const timer = setTimeout(() => {
+        mainContentRef.current!.scrollTop = savedPosition;
+      }, 300);
+
+      return () => clearTimeout(timer);
+    } else if (mainContentRef.current) {
+      // 如果没有保存的位置，滚动到顶部
+      mainContentRef.current.scrollTop = 0;
+    }
   }, [location.pathname]);
 
   // 监听滚动事件，实时更新当前路由的滚动位置

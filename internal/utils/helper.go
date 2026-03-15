@@ -326,6 +326,9 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, exclu
 }
 
 func getGameNameAlternative(searchName string) string {
+	if IsCamelCase(searchName) {
+		return CamelCaseToSpaces(searchName)
+	}
 	var name = searchName
 	if strings.Contains(searchName, "／") {
 		name = strings.ReplaceAll(searchName, "／", "/")
@@ -492,4 +495,40 @@ func RemoveString(tagStr1, tagStr2 string) string {
 	}
 
 	return strings.Join(uniqueTags, ",")
+}
+
+func IsCamelCase(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	// 检查是否以小写字母开头
+	if s[0] < 'a' || s[0] > 'z' {
+		return false
+	}
+	// 检查是否包含大写字母
+	hasUpperCase := false
+	for _, c := range s {
+		if c >= 'A' && c <= 'Z' {
+			hasUpperCase = true
+		}
+		// 检查是否包含非字母字符
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+			return false
+		}
+	}
+	return hasUpperCase
+}
+
+func CamelCaseToSpaces(s string) string {
+	if len(s) == 0 {
+		return ""
+	}
+	var result []rune
+	for i, c := range s {
+		if i > 0 && c >= 'A' && c <= 'Z' {
+			result = append(result, ' ')
+		}
+		result = append(result, c)
+	}
+	return string(result)
 }

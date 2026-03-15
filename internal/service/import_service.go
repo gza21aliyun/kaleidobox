@@ -880,7 +880,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 	// 按名称和路径分别建立索引，用于不同维度的去重检查
 	existingNames := make(map[string]string) // name -> id (用于检查同名但不同路径的情况)
 	existingPaths := make(map[string]string) // path -> name (用于检查同一路径)
-	rs := []models.Game{}
+	// rs := []models.Game{}
 	for _, g := range existingGames {
 		if g.Name != "" {
 			existingNames[strings.ToLower(g.Name)] = g.ID
@@ -891,6 +891,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 	}
 
 	for i, candidate := range candidates {
+		applog.LogInfof(s.ctx, "BatchImportGames 00: i:%d name:%s\n", i, candidate.SearchName)
 		if !candidate.IsSelected {
 			continue
 		}
@@ -901,11 +902,13 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 				applog.LogWarningf(s.ctx, "BatchImportGames: path already exists for game %s, skipping: %s", existingName, candidate.SelectedExe)
 				result.Skipped++
 				result.SkippedNames = append(result.SkippedNames, candidate.SearchName+" (路径已存在: "+existingName+")")
-				rs = append(rs, existingGames[i])
+				// rs = append(rs, existingGames[i])
+				applog.LogWarningf(s.ctx, "BatchImportGames 05:")
 				continue
 			}
 		}
 
+		applog.LogWarningf(s.ctx, "BatchImportGames 06:")
 		// 确定最终的游戏名（优先使用匹配后的元数据名称）
 		gameName := candidate.SearchName
 		if candidate.MatchedGame != nil && candidate.MatchedGame.Name != "" {
@@ -916,18 +919,19 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		// 注意：同名但路径不同的游戏允许导入（可能是不同版本/安装位置）
 		if existingID, exists := existingNames[strings.ToLower(gameName)]; exists {
 			// 检查是否是同一路径（完全重复的情况）
-			for j, g := range existingGames {
+			for _, g := range existingGames {
 				if g.ID == existingID && g.Path == candidate.SelectedExe {
 					applog.LogWarningf(s.ctx, "BatchImportGames: game already exists with same path, skipping: %s", gameName)
 					result.Skipped++
 					result.SkippedNames = append(result.SkippedNames, gameName+" (已存在)")
-					rs = append(rs, existingGames[j])
+					// rs = append(rs, existingGames[j])
 					continue
 				}
 			}
 			// 同名但路径不同，允许导入，但记录日志
 			applog.LogInfof(s.ctx, "BatchImportGames: importing duplicate name %s with different path: %s", gameName, candidate.SelectedExe)
 		}
+		applog.LogWarningf(s.ctx, "BatchImportGames 07:")
 
 		// 构建游戏对象
 		var game models.Game
@@ -949,11 +953,12 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		game.UpdatedAt = time.Now()
 		game.Tags = ""
 		game.CachedAt = time.Now()
-		rs = append(rs, game)
+		result.Games = append(result.Games, game)
 		s.SearchVideoPath(&game)
 
 		// 保存游戏（图片会在后台异步下载）
 		if err := s.gameService.AddGame(game); err != nil {
+			applog.LogWarningf(s.ctx, "BatchImportGames 08:")
 			applog.LogErrorf(s.ctx, "BatchImportGames: failed to add game %s: %v", gameName, err)
 			result.Failed++
 			result.FailedNames = append(result.FailedNames, gameName)
@@ -966,10 +971,26 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 			existingPaths[candidate.SelectedExe] = gameName
 		}
 		result.Success++
+		applog.LogWarningf(s.ctx, "BatchImportGames 10:")
 	}
-	result.Games = rs
+	// result.Games = rs
 
 	return result, nil
+}
+
+func (s *ImportService) SearchVideoPaths(games []models.Game) ([]models.Game, error) {
+	newGames := []models.Game{}
+	for _, game := range games {
+		if game.PvPath == "" {
+			err := s.SearchVideoPath(&game)
+			if err == nil {
+				s.gameService.UpdateGame(game)
+			}
+		}
+		newGames = append(newGames, game)
+
+	}
+	return newGames, nil
 }
 
 func (s *ImportService) SearchVideoPath(game *models.Game) error {

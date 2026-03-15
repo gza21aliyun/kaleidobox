@@ -505,7 +505,13 @@ var ffmpegProcessMutex sync.Mutex
 // handleVideoStreamRequest 处理视频流请求
 func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameService *service.GameService, ctx context.Context) {
 	// 定义ffmpeg路径
-	ffmpegPath := `C:\temp\projects\lunabox\build\bin\ffmpeg.exe`
+	dir, err := utils.GetDataDir()
+	if err != nil {
+		applog.LogErrorf(ctx, "VideoStreamHandler: failed to get data dir: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ffmpegPath := fmt.Sprintf(`%s\ffmpeg.exe`, dir)
 
 	// 提取游戏ID
 	gameID := strings.TrimPrefix(r.URL.Path, "/api/video/")
@@ -522,6 +528,25 @@ func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameServic
 		}
 
 		applog.LogInfof(ctx, "VideoStreamHandler: got video path: %s", videoPath)
+
+		// 检查文件后缀是否为.mp4
+		if strings.ToLower(filepath.Ext(videoPath)) == ".mp4" {
+			applog.LogInfof(ctx, "VideoStreamHandler: direct serving mp4 file: %s", videoPath)
+			// 直接提供MP4文件，不进行转码
+			w.Header().Set("Content-Type", "video/mp4")
+			w.Header().Set("Content-Disposition", "inline")
+			w.Header().Set("Accept-Ranges", "bytes")
+			http.ServeFile(w, r, videoPath)
+			applog.LogInfof(ctx, "VideoStreamHandler: served mp4 file directly")
+			return
+		}
+
+		if _, err := os.Stat(ffmpegPath); err != nil {
+			//ffmpeg不存在
+			applog.LogError(ctx, "VideoStreamHandler: ffmpeg not found")
+			return
+
+		}
 
 		// 检查缓存中是否已有转换后的视频
 		videoCacheMutex.Lock()
@@ -546,9 +571,10 @@ func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameServic
 			videoCacheMutex.Unlock()
 			applog.LogInfof(ctx, "VideoStreamHandler: cached video file not found, removing from cache")
 		}
+		var tempFile *os.File
 
 		// 创建临时文件来存储转换后的视频
-		tempFile, err := os.CreateTemp("", "video_*.mp4")
+		tempFile, err = os.CreateTemp("", "video_*.mp4")
 		if err != nil {
 			applog.LogErrorf(ctx, "VideoStreamHandler: failed to create temp file: %v", err)
 			http.Error(w, "Failed to process video", http.StatusInternalServerError)

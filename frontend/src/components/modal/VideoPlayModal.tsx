@@ -64,7 +64,7 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-      <div className="relative w-full max-w-4xl max-h-[80vh]">
+      <div className="relative w-full max-w-6xl max-h-[90vh]">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-colors"

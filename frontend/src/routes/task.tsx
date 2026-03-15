@@ -1,6 +1,7 @@
 import { models } from "../../wailsjs/go/models";
 import { createRoute } from "@tanstack/react-router";
 import { PauseTask, CancelTask, ResumeTask } from "../../wailsjs/go/service/TaskService";
+import { SearchVideoPaths } from "../../wailsjs/go/service/ImportService";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { useTranslation } from 'react-i18next';
@@ -43,10 +44,27 @@ function TaskPage() {
     setTasks(tasks.filter((t) => t.id !== taskId));
   };
 
+  const handleSearchVideoPaths = async () => {
+    try {
+      const { games, setGames } = useAppStore.getState();
+      const updatedGames = await SearchVideoPaths(games);
+      setGames(updatedGames);
+    } catch (error) {
+      console.error("Failed to search video paths:", error);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-8xl mx-auto p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('task.title')}</h1>
+        <button
+          onClick={handleSearchVideoPaths}
+          className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+          title={t('task.actions.searchVideo')}
+        >
+          为游戏搜索视频
+        </button>
       </div>
 
       {tasks.length > 0 ? (

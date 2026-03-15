@@ -238,7 +238,7 @@ func getTitles(searchName string) (mainT string, subT string, number string) {
 	// 检查是否包含有效的分隔符（除了纯空格）
 	// num := -1
 	// numStr := ""
-	hasValidSeparator := regexp.MustCompile(`[－\-~～]`).MatchString(searchName)
+	hasValidSeparator := regexp.MustCompile(`[－\-~～　]`).MatchString(searchName)
 
 	if !hasValidSeparator {
 		// 没有有效分隔符，整个字符串作为主标题处理
@@ -366,6 +366,20 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(searchName, "Ｄ") {
 		name = strings.ReplaceAll(searchName, "Ｄ", "D")
 	}
+	if strings.Contains(searchName, "Ｓ") {
+		name = strings.ReplaceAll(searchName, "Ｓ", "S")
+	}
+
+	if strings.Contains(searchName, "3") {
+		name = strings.ReplaceAll(searchName, "3", "III")
+	}
+	if strings.Contains(searchName, "2") {
+		name = strings.ReplaceAll(searchName, "2", "II")
+	}
+	if strings.Contains(searchName, "Ⅱ") {
+		name = strings.ReplaceAll(searchName, "Ⅱ", "II")
+	}
+
 	for strings.HasSuffix(name, "〇") {
 		name = strings.TrimSuffix(name, "〇")
 	}

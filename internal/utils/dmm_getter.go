@@ -493,6 +493,9 @@ func (g *DmmInfoGetter) GetRelatedGames(makerId string) (string, error) {
 }
 func combineCharacters(gameEntity models.GameEntity) models.GameEntity {
 	worksMap := gameEntity.WorksMap
+	if worksMap == nil {
+		worksMap = make(map[enums.StaffRole][]models.Work)
+	}
 	charactors := worksMap[enums.Charactor]
 	cvs := worksMap[enums.CV]
 	newCvs := []models.Work{}

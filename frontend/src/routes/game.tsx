@@ -653,7 +653,7 @@ function GameDetailPage() {
                 onClick={() => OpenBrowser(getDlsiteUrl())}
                 className="px-4 py-2 bg-success-500 text-white rounded hover:bg-success-600 transition-colors"
               >
-                {t('game.buttons.eroscape')}
+                DlSite
               </button>
             )}
           </div>

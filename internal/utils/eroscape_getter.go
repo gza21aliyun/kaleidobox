@@ -208,7 +208,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl bool, fn I
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
 		applog.InfoLogSaveAppLog("games found:%d\n", len(potentialGames))
-		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP"}, func(t1 struct {
+		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
 			Title  string
 			GameId string
 		}) string {

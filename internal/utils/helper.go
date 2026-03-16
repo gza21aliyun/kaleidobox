@@ -326,10 +326,20 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, exclu
 }
 
 func getGameNameAlternative(searchName string) string {
-	if IsCamelCase(searchName) {
-		return CamelCaseToSpaces(searchName)
-	}
+
 	var name = searchName
+	for strings.HasSuffix(name, "〇") {
+		name = strings.TrimSuffix(name, "〇")
+	}
+	for strings.HasSuffix(name, "！") {
+		name = strings.TrimSuffix(name, "！")
+	}
+
+	fmt.Printf("try00 IsCamelCase")
+	if IsCamelCase(name) {
+		fmt.Printf("try IsCamelCase")
+		return CamelCaseToSpaces(name)
+	}
 	if strings.Contains(searchName, "／") {
 		name = strings.ReplaceAll(searchName, "／", "/")
 	}
@@ -381,10 +391,6 @@ func getGameNameAlternative(searchName string) string {
 	}
 	if strings.Contains(searchName, "Ⅱ") {
 		name = strings.ReplaceAll(searchName, "Ⅱ", "II")
-	}
-
-	for strings.HasSuffix(name, "〇") {
-		name = strings.TrimSuffix(name, "〇")
 	}
 
 	name = strings.TrimSuffix(name, "％")

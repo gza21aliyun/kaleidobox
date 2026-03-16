@@ -6,7 +6,7 @@ import { OpenLocalPath } from "../../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useState, useEffect } from "react";
 import { ScreenshotHotkeyModal } from "../modal/ScreenshotHotkeyModal";
-import { ImageBackupCard } from "../card/ImageCard";
+import { ImageBackupCard, ImageCard } from "../card/ImageCard";
 import { arrayMapString } from "../utils/Utility";
 import { useTranslation } from 'react-i18next';
 import { BetterButton } from "../ui/BetterButton";
@@ -57,10 +57,10 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       setLoading(true);
       // 这里应该调用获取游戏截图的API
       // 暂时使用空数组
-      let rs = await FetchImages(game.id, 0, 3);
+      let rs = await FetchImages(game.id, 0, 3, false);
       console.log("获取游戏截图成功:", rs);
       setScreenshots(rs ?? []);
-      let imgs = await FetchImages(game.id, 0, 2);
+      let imgs = await FetchImages(game.id, 0, 2, false);
       setImages(imgs ?? []);
     } catch (error) {
       console.error("加载截图失败:", error);
@@ -197,8 +197,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
             </div>
           <div className="grid grid-cols-3 gap-2">
             {galleryImages.map((image, index) => (
-                <ImageBackupCard
-                  imageBackup={image}
+                <ImageCard
+                  url={image.url}
                   key={image.url}
                   />
               ))}

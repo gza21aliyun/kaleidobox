@@ -4,50 +4,20 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 
-interface ImageCardProps {
-  url: string;
-  className?: string;
-  alt?: string;
-}
-export function ImageCard({
-    url,
-    className,
-    alt
-}: ImageCardProps) {
-    const [imageUrl, setImageUrl] = useState("");
 
-    useEffect(() => {
-        GetImageBackupByUrl(url).then((res) => {
-            if (res.local_path !== "") {
-                setImageUrl(getLocalPath(res.local_path));
-            } else if (res.url !== "") {
-                setImageUrl(res.url);
-            }
-        });
-        return () => {
-            setImageUrl("");
-         };
-    }, [url]);
-
-
-
-    return (
-        <div className="image-card">
-            { imageUrl === "" ? (<p>Loading...</p>) : 
-            ( <img src={imageUrl} alt="Image"
-                className={className}
-             /> )}
-            
-        </div>
-    );
-}
 
 interface ImageBackupProps {
   imageBackup: models.ImageBackup;
+  className?: string | undefined;
+  alt?: string;
+  style?: React.CSSProperties | undefined;
+  draggable?: boolean | undefined;
+  referrerPolicy?: React.HTMLAttributeReferrerPolicy | undefined;  
+    onDragStart?: React.DragEventHandler | undefined;
 }
 
 export function ImageBackupCard({
-    imageBackup
+    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
@@ -92,8 +62,21 @@ export function ImageBackupCard({
         <>
             <div className="image-card cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setIsModalOpen(true)}>
                 { imageBackup.local_path !== "" ? 
-                (<img src={getImageUrl()} alt="Image" />) : 
-                ( <img src={imageBackup.url} alt="Image" /> )}
+                (<img src={getImageUrl()} 
+                alt={alt || "Image"}
+                className={className}
+                style={style}
+                draggable={false}
+                onDragStart={onDragStart}
+                referrerPolicy={referrerPolicy}
+                 />) : 
+                ( <img src={imageBackup.url} alt={alt || "Image"}
+                    className={className}
+                    style={style}         
+                    draggable={false}
+                    onDragStart={onDragStart}
+                    referrerPolicy={referrerPolicy}       
+                /> )}
                 
             </div>
 
@@ -144,3 +127,60 @@ function getLocalPath(localPath: string)  {
         const path = `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`
         return path;
     }
+
+
+interface ImageCardProps {
+  url: string;
+  className?: string;
+  alt?: string;
+  style?: React.CSSProperties;
+  draggable?: boolean | undefined;
+  referrerPolicy?: React.HTMLAttributeReferrerPolicy | undefined;  
+    onDragStart?: React.DragEventHandler | undefined;
+}
+export function ImageCard({
+    url,
+    className,
+    alt,
+    style,
+    draggable,
+    referrerPolicy,
+    onDragStart
+}: ImageCardProps) {
+    const [imageBackup, setImageBackup] = useState<models.ImageBackup | null>(null);
+
+    useEffect(() => {
+        GetImageBackupByUrl(url, true).then((res) => {
+            setImageBackup(res);
+        });
+        return () => {
+            setImageBackup(null);
+         };
+    }, [url]);
+
+
+    if (!imageBackup) {
+        return <img alt={alt}
+        className={className}
+        style={style}
+        draggable={draggable}
+        onDragStart={onDragStart}
+        referrerPolicy={referrerPolicy}
+         />;
+    }
+
+
+
+    return (
+        <ImageBackupCard 
+            imageBackup={imageBackup} 
+            alt={alt}
+            className={className}
+            style={style}
+            draggable={draggable}
+            onDragStart={onDragStart}
+            referrerPolicy={referrerPolicy}
+            />
+            
+    );
+}

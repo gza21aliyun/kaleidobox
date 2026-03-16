@@ -205,7 +205,7 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 
 		cover := e.DOM.Find("table#soft_table > tbody > tr").First().Find("td a img").AttrOr("src", "")
 		// e.DOM.Find("table#soft_table > tbody > tr").First().Find("td > a > img").AttrOr("href", "")
-		game.CoverURL = "https://www.getchu.com" + cover
+		game.CoverURL = "https://www.getchu.com" + strings.ReplaceAll(cover, "/rc", "/c")
 
 		fmt.Println("开始获取Getchu cover 22 \n" + cover)
 		datablock := e.DOM.Find("table#soft_table > tbody > tr").Eq(1).Find("th > table > tbody > tr")
@@ -285,7 +285,7 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 		// fmt.Printf("chars 26:\n%s\n", chars)
 
 		e.DOM.Find("div.item-Samplecard-container img").Each(func(i int, s *goquery.Selection) {
-			image := "https://www.getchu.com" + s.AttrOr("src", "")
+			image := "https://www.getchu.com" + strings.ReplaceAll(s.AttrOr("src", ""), "_s.jpg", ".jpg")
 			game.Images = MergeStrings(game.Images, image)
 		})
 

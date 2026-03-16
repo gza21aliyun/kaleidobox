@@ -1038,9 +1038,9 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 
 	case enums.Getchu:
 		fmt.Println("Fetching metadata from getchu")
-		dlsiteGetter := utils.NewGetchuInfoGetter()
+		getchuGetter := utils.NewGetchuInfoGetter()
 		game.GetchuId = req.ID
-		gameEntity, e = dlsiteGetter.FetchMetadataById(req)
+		gameEntity, e = getchuGetter.FetchMetadataById(req)
 	}
 	game = gameEntity.Game
 	if req.IsOverwrite && req.ShouldFetchTags {

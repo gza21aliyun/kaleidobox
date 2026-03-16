@@ -135,7 +135,7 @@ func (s *ImageService) CreateOrUpdateForUrlsStr(urlStr string) error {
 
 func (s *ImageService) CreateOrUpdateImageUrl(url string) error {
 	// 首先尝试查询是否存在该记录
-	existing, err := s.GetImageBackupByUrl(url)
+	existing, err := s.GetImageBackupByUrl(url, false)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (s *ImageService) CreateOrUpdateImageUrl(url string) error {
 
 func (s *ImageService) CreateOrUpdateImageBackup(imageBackup models.ImageBackup) error {
 	// 首先尝试查询是否存在该记录
-	existing, err := s.GetImageBackupByUrl(imageBackup.Url)
+	existing, err := s.GetImageBackupByUrl(imageBackup.Url, false)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,8 @@ func (s *ImageService) CreateOrUpdateImageBackup(imageBackup models.ImageBackup)
 }
 
 // GetImageBackupByUrl 根据 Url 查询 ImageBackup 记录
-func (s *ImageService) GetImageBackupByUrl(url string) (*models.ImageBackup, error) {
+func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.ImageBackup, error) {
+	fmt.Printf("GetImageBackupByUrl url: %s\n", url)
 	query := `
 		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
 		FROM image_backups
@@ -200,6 +201,14 @@ func (s *ImageService) GetImageBackupByUrl(url string) (*models.ImageBackup, err
 		}
 		return nil, err
 	}
+	if s.config.AutoDownloadImages && down && imageBackup.LocalPath == "" {
+		newList, err := s.DownloadImageBackups([]models.ImageBackup{imageBackup})
+		return &newList[0], err
+	}
+	// else {
+	// 	go s.DownloadImageBackups([]models.ImageBackup{imageBackup})
+	// }
+
 	return &imageBackup, nil
 }
 
@@ -247,7 +256,7 @@ func (s *ImageService) DeleteImageBackup(url string) error {
 	return err
 }
 
-func (s *ImageService) FetchImages(id string, subjectType int, imageType int) ([]models.ImageBackup, error) {
+func (s *ImageService) FetchImages(id string, subjectType int, imageType int, download bool) ([]models.ImageBackup, error) {
 	_, err := s.CountImageBackups()
 	// applog.LogInfof(s.ctx, "FetchImages start, count:%d, err:%v\n", count, err)
 	// query := fmt.Sprintf(`
@@ -260,20 +269,23 @@ func (s *ImageService) FetchImages(id string, subjectType int, imageType int) ([
 		FROM image_backups
 		WHERE subject_id = ? AND subject_type = ? AND image_type = ?
 	`
-	rs, err := s.FetchImageBackups(query, id, subjectType, imageType)
+	rs, err := s.FetchImageBackups(query, id, subjectType, imageType, download)
 	// applog.LogInfof(s.ctx, "FetchImages count:%d\n", len(rs))
 	return rs, err
 }
 
 func (s *ImageService) FetchImage(id string, subjectType int, imageType int) (models.ImageBackup, error) {
-	list, err := s.FetchImages(id, subjectType, imageType)
+	list, err := s.FetchImages(id, subjectType, imageType, false)
 	if err != nil {
 		return models.ImageBackup{}, err
 	}
 	if len(list) == 0 {
 		return models.ImageBackup{}, errors.New("not found")
 	}
-	go s.DownloadImageBackups(list)
+	if s.config.AutoDownloadImages {
+		newList, err := s.DownloadImageBackups(list)
+		return newList[0], err
+	}
 	return list[0], nil
 }
 
@@ -283,10 +295,10 @@ func (s *ImageService) ListImageBackups() ([]models.ImageBackup, error) {
 		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
 		FROM image_backups
 	`
-	return s.FetchImageBackups(query, "", 0, 0)
+	return s.FetchImageBackups(query, "", 0, 0, false)
 }
 
-func (s *ImageService) FetchImageBackups(query string, id string, subjectType int, imageType int) ([]models.ImageBackup, error) {
+func (s *ImageService) FetchImageBackups(query string, id string, subjectType int, imageType int, download bool) ([]models.ImageBackup, error) {
 	var err error
 	var rows *sql.Rows
 	if id == "" {
@@ -317,7 +329,10 @@ func (s *ImageService) FetchImageBackups(query string, id string, subjectType in
 		}
 		imageBackups = append(imageBackups, imageBackup)
 	}
-	go s.DownloadImageBackups(imageBackups)
+	if s.config.AutoDownloadImages && download {
+		return s.DownloadImageBackups(imageBackups)
+	}
+	// go s.DownloadImageBackups(imageBackups)
 	return imageBackups, nil
 }
 
@@ -375,19 +390,21 @@ func (s *ImageService) CountImageBackups() (int, error) {
 // 	return imageBackups, nil
 // }
 
-func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
+func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) ([]models.ImageBackup, error) {
+	newList := []models.ImageBackup{}
 	if !s.config.AutoDownloadImages {
-		return nil
+		return list, nil
 	}
 	if len(list) == 0 {
-		return nil
+		return list, nil
 	}
 	for _, imageBackup := range list {
-		if imageBackup.LocalPath != "" {
+		if imageBackup.LocalPath != "" || imageBackup.Url == "" {
 			continue
 		}
 		path, err := utils.GetDataDir()
 		if err != nil {
+			newList = append(newList, imageBackup)
 			continue
 		}
 		path = fmt.Sprintf(`%s\images`, path)
@@ -395,6 +412,7 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
 		if err != nil {
 			err := os.MkdirAll(path, os.ModePerm)
 			if err != nil {
+				newList = append(newList, imageBackup)
 				continue
 			}
 		}
@@ -403,6 +421,7 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
 		if err != nil {
 			err := os.MkdirAll(path, os.ModePerm)
 			if err != nil {
+				newList = append(newList, imageBackup)
 				continue
 			}
 		}
@@ -413,20 +432,23 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
 			applog.LogErrorf(s.ctx, "下载图片3 %s, url:%s, 失败：%v", fileName, imageBackup.Url, err)
 			// 清理下载失败的文件
 			os.Remove(fileName)
+			newList = append(newList, imageBackup)
 			continue
 		}
-		err = s.UpdateImageBackup(&models.ImageBackup{
+		newIb := models.ImageBackup{
 			Url:         imageBackup.Url,
 			LocalPath:   fileName,
 			SubjectId:   imageBackup.SubjectId,
 			SubjectType: imageBackup.SubjectType,
 			ImageType:   imageBackup.ImageType,
-		})
+		}
+		err = s.UpdateImageBackup(&newIb)
 		if err == nil {
 			applog.InfoLogSaveAppLog("下载图片 %s 成功：%s", imageBackup.Url, fileName)
 		}
+		newList = append(newList, newIb)
 	}
-	return nil
+	return newList, nil
 }
 
 func (s *ImageService) DownloadImages() error {
@@ -436,7 +458,7 @@ func (s *ImageService) DownloadImages() error {
 		FROM image_backups
 		WHERE local_path = '' OR local_path IS NULL
 	`
-	list, err := s.FetchImageBackups(query, "", 0, 0)
+	list, err := s.FetchImageBackups(query, "", 0, 0, false)
 	if err != nil {
 		return err
 	}
@@ -587,7 +609,7 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 	var err error = nil
 	for _, image := range strings.Split(gameEntity.Game.Images, ",") {
 		fmt.Printf("图库2：%s\n", image)
-		backup, _ := s.GetImageBackupByUrl(image)
+		backup, _ := s.GetImageBackupByUrl(image, false)
 		if backup != nil && backup.Url != "" {
 			continue
 		}
@@ -603,7 +625,7 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 		}
 		err = s.CreateImageBackup(*backup)
 	}
-	cover, _ := s.GetImageBackupByUrl(gameEntity.Game.CoverURL)
+	cover, _ := s.GetImageBackupByUrl(gameEntity.Game.CoverURL, false)
 	if cover == nil || cover.Url == "" {
 		cover = &models.ImageBackup{
 			Url:         gameEntity.Game.CoverURL,
@@ -634,11 +656,44 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 }
 
 func DownloadImage(url, fileName string) error {
-	resp, err := http.Get(url)
+	// 创建 HTTP 客户端
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return fmt.Errorf("stopped after 10 redirects")
+			}
+			return nil
+		},
+	}
+
+	// 创建请求
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("创建请求失败：%w", err)
+	}
+
+	// 设置请求头，伪装成从网站页面访问
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", "image/webp,image/apng,image/*,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "ja-JP,ja;q=0.9,en-US;q=0.8")
+
+	// 关键：设置 Referer 来绕过防盗链
+	referer := determineReferer(url)
+	if referer != "" {
+		req.Header.Set("Referer", referer)
+	}
+
+	// 执行请求
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("下载图片失败：%w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("HTTP 403 Forbidden - 可能是防盗链限制，Referer: %s", referer)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HTTP 请求失败，状态码：%d", resp.StatusCode)
@@ -646,12 +701,54 @@ func DownloadImage(url, fileName string) error {
 
 	destFile, err := os.Create(fileName)
 	if err != nil {
-		return err
+		return fmt.Errorf("创建文件失败：%w", err)
 	}
 	defer destFile.Close()
 
 	if _, err := io.Copy(destFile, resp.Body); err != nil {
-		return err
+		return fmt.Errorf("写入文件失败：%w", err)
 	}
+
 	return nil
+}
+
+// determineReferer 根据图片 URL 确定应该使用的 Referer
+func determineReferer(imageURL string) string {
+	// Getchu
+	if strings.Contains(imageURL, "getchu.com") {
+		return "https://www.getchu.com/"
+	}
+
+	// DMM/DMM GAMES
+	if strings.Contains(imageURL, "dmm.co.jp") || strings.Contains(imageURL, "dmm.com") {
+		return "https://www.dmm.com/"
+	}
+
+	// MGStage
+	if strings.Contains(imageURL, "mgstage.com") {
+		return "https://www.mgstage.com/"
+	}
+
+	// Digiket
+	if strings.Contains(imageURL, "digiket.com") {
+		return "https://www.digiket.com/"
+	}
+
+	// DLsite
+	if strings.Contains(imageURL, "dl.site") || strings.Contains(imageURL, "dlsite.com") {
+		return "https://www.dlsite.com/"
+	}
+
+	// FANZA
+	if strings.Contains(imageURL, "fanza.jp") || strings.Contains(imageURL, "fanza.com") {
+		return "https://www.fanza.jp/"
+	}
+
+	// 默认返回一个通用的 Referer（如果是日本网站）
+	if strings.Contains(imageURL, ".jp") {
+		return "https://www.google.co.jp/"
+	}
+
+	// 其他情况不设置 Referer
+	return ""
 }

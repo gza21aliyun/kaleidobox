@@ -72,7 +72,7 @@ function CharactorPage() {
 
     useEffect(() => {
       if (workId) {
-        FetchImages(workId, 3, 1).then((res) => {
+        FetchImages(workId, 3, 1, true).then((res) => {
           setImages(res ?? []);
           setLoading(false);
         }).catch((err) => {

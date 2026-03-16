@@ -8,7 +8,7 @@ import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { GameCard } from "../card/GameCard";
-import { ImageBackupCard } from "../card/ImageCard";
+import { ImageBackupCard, ImageCard } from "../card/ImageCard";
 import { arrayFind, arrayMapString, joinString } from "../utils/Utility";
 
 interface GameEditFormProps {
@@ -24,7 +24,7 @@ const CharactorImages = ({ workId }: { workId: string }) => {
 
   useEffect(() => {
     if (workId) {
-      FetchImages(workId, 3, 1).then((res) => {
+      FetchImages(workId, 3, 1, true).then((res) => {
         setImages(res ?? []);
         setLoading(false);
       }).catch((err) => {
@@ -134,8 +134,8 @@ export function GameIntroPanel({
                                         {/* 角色图片 */}
                                         {charactor.charactor_image && (
                                             <div className="md:col-span-2">
-                                                <img 
-                                                    src={charactor.charactor_image} 
+                                                <ImageCard 
+                                                    url={charactor.charactor_image} 
                                                     alt={charactor.charactor_name}
                                                     className="w-40 h-60 object-contain rounded-lg"
                                                     style={{ objectFit: 'cover', objectPosition: 'center top' }}

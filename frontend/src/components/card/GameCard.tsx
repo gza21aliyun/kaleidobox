@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { enums } from "../../../wailsjs/go/models";
 import { formatLocalDate } from "../../utils/time";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
+import { ImageCard } from "./ImageCard";
 
 // ── 高亮工具：将文本中匹配 query 的部分高亮显示 ──────────────────────────────
 function HighlightText({ text, query }: { text: string; query: string }) {
@@ -111,12 +112,11 @@ export function GameCard({
         
         <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-brand-200 dark:bg-brand-700">
           {game.cover_url ? (
-            <img
-              src={game.cover_url}
+            <ImageCard
+              url={game.cover_url}
               alt={game.name}
               referrerPolicy="no-referrer"
               className="h-full w-full object-cover"
-              draggable="false"
               onDragStart={e => e.preventDefault()}
             />
           ) : (
@@ -203,12 +203,11 @@ export function GameCard({
       <div className="relative aspect-[3/3.6] w-full overflow-hidden bg-brand-200 dark:bg-brand-700">
         {game.cover_url
           ? (
-              <img
-                src={game.cover_url}
+              <ImageCard
+                url={game.cover_url}
                 alt={game.name}
                 referrerPolicy="no-referrer"
-                className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
-                draggable="false"
+                className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
                 onDragStart={e => e.preventDefault()}
               />
             )

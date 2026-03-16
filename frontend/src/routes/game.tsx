@@ -25,6 +25,7 @@ import { GameIntroPanel } from "../components/panel/GameIntroPanel";
 import { ReviewPanel } from "../components/panel/ReviewPanel";
 import { OpenBrowser } from "../../wailsjs/go/service/ImportService"; 
 import { useTranslation } from 'react-i18next';
+import { ImageBackupCard, ImageCard } from "../components/card/ImageCard";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -521,12 +522,11 @@ function GameDetailPage() {
         <div className="relative w-60 flex-shrink-0 rounded-lg overflow-hidden shadow-lg bg-brand-200 dark:bg-brand-800">
           {game.cover_url
             ? (
-                <img
-                  src={game.cover_url}
+                <ImageCard
+                  url={game.cover_url}
                   alt={game.name}
                   className="w-full h-auto block"
                   referrerPolicy="no-referrer"
-                  draggable="false"
                   onDragStart={e => e.preventDefault()}
                 />
               )

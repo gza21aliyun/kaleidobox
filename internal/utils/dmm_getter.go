@@ -134,7 +134,7 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, fn IdFunction) (models.Game,
 			id := linkParts[len(linkParts)-2]
 			game.Name = gameFound.Title
 			game.SourceID = id
-			game.SourceType = enums.Eroscape
+			game.SourceType = enums.Dmm
 			game.EroscapeId = id
 		}
 		// for _, gameFound := range potentialGames {

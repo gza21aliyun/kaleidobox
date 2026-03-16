@@ -72,13 +72,15 @@ func CreateCollector(domain string) *colly.Collector {
 		cookie4 := &http.Cookie{Name: "adultchecked", Value: "1"}
 		cookie5 := &http.Cookie{Name: "locale", Value: "ja-jp"}
 		cookie6 := &http.Cookie{Name: "localesuggested", Value: "true"}
+		cookie7 := &http.Cookie{Name: "getchu_adalt_flag", Value: "getchu.com"}
 
 		// 将所有cookie组合成一个字符串
-		cookies := fmt.Sprintf("%s=%s; %s=%s; %s=%s, %s=%s",
+		cookies := fmt.Sprintf("%s=%s; %s=%s; %s=%s; %s=%s; %s=%s",
 			cookie3.Name, cookie3.Value,
 			cookie4.Name, cookie4.Value,
 			cookie5.Name, cookie5.Value,
 			cookie6.Name, cookie6.Value,
+			cookie7.Name, cookie7.Value,
 		)
 
 		r.Headers.Set("Cookie", cookies)
@@ -488,7 +490,24 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 				}
 			}
 			fmt.Printf("dmm id:%s\n", game.DmmId)
+		}
 
+		dlsite := e.DOM.Find("div#bottom_inter_links_main li:contains('DLsite') > a").AttrOr("href", "")
+		if dlsite != "" {
+			linkParts := strings.Split(dlsite, "/")
+			if len(linkParts) > 1 {
+				id := strings.ReplaceAll(linkParts[len(linkParts)-1], ".html", "")
+				game.DlsiteId = id
+			}
+		}
+
+		getchu := e.DOM.Find("div#bottom_inter_links_main li:contains('Getchu') > a").AttrOr("href", "")
+		if getchu != "" {
+			linkParts := strings.Split(dlsite, "/")
+			if len(linkParts) > 1 {
+				id := linkParts[len(linkParts)-1]
+				game.GetchuId = id
+			}
 		}
 
 		// 提取标签

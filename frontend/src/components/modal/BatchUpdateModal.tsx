@@ -250,6 +250,9 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
       if (source === enums.SourceType.DLSITE) {
         oldGame.dlsite_id = game.dlsite_id
       }
+      if (source === enums.SourceType.GETCHU) {
+        oldGame.getchu_id = game.getchu_id
+      }
       oldGame.images = game.images
       oldGame.tags = game.tags
       oldGame.release_at = game.release_at
@@ -357,6 +360,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                           { value: enums.SourceType.DMM, label: "DMM" },
                           { value: enums.SourceType.EROSCAPE, label: "批评空间" },
                           { value: enums.SourceType.DLSITE, label: "DlSite" },
+                          { value: enums.SourceType.GETCHU, label: "Getchu" },
                         ]}
                         className="min-w-[120px] w-[150px]"
                       />

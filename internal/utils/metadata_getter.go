@@ -205,6 +205,13 @@ func NewDlsiteInfoGetter() *DlsiteInfoGetter {
 	}
 }
 
+func NewGetchuInfoGetter() *GetchuInfoGetter {
+	return &GetchuInfoGetter{
+		client:  &http.Client{},
+		timeout: 10 * time.Second,
+	}
+}
+
 var _ Getter = (*YmgalInfoGetter)(nil)
 
 const (

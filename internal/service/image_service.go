@@ -410,7 +410,7 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) error {
 		fileName := fmt.Sprintf(`%s\%s%s`, path, uuid.New().String(), ext)
 		err = DownloadImage(imageBackup.Url, fileName)
 		if err != nil {
-			applog.LogErrorf(s.ctx, "下载图片3 %s 失败：%v", fileName, err)
+			applog.LogErrorf(s.ctx, "下载图片3 %s, url:%s, 失败：%v", fileName, imageBackup.Url, err)
 			// 清理下载失败的文件
 			os.Remove(fileName)
 			continue

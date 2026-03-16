@@ -504,6 +504,8 @@ func (s *GameService) GetGamesByRelatedGames(gameIdsStr string) ([]models.Game, 
 			query = fmt.Sprintf("%s WHERE eroscape_id = '%s'", s.GetQueryBase(), id)
 		} else if source == string(enums.Bangumi) {
 			query = fmt.Sprintf("%s WHERE bangumi_id = '%s'", s.GetQueryBase(), id)
+		} else if source == string(enums.Getchu) {
+			query = fmt.Sprintf("%s WHERE getchu_id = '%s'", s.GetQueryBase(), id)
 		}
 		rs, _ = s.GetGamesByQuery(query)
 		games = append(games, rs...)
@@ -925,6 +927,17 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 
 	go func() {
 		defer wg.Done()
+		getchuGetter := utils.NewGetchuInfoGetter()
+		getchu, _ := getchuGetter.FetchMetadataByName2(name)
+		if getchu != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dlsite, Game: getchu})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
 		eroscapeGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
 		eroscape, _ := eroscapeGetter.FetchMetadataByName2(name)
 		if eroscape != (models.Game{}) {
@@ -1022,6 +1035,12 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		// if req.IsOverwrite && req.ShouldFetchTags {
 		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 		// }
+
+	case enums.Getchu:
+		fmt.Println("Fetching metadata from getchu")
+		dlsiteGetter := utils.NewGetchuInfoGetter()
+		game.GetchuId = req.ID
+		gameEntity, e = dlsiteGetter.FetchMetadataById(req)
 	}
 	game = gameEntity.Game
 	if req.IsOverwrite && req.ShouldFetchTags {
@@ -1273,6 +1292,9 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			} else if taskData.Req.Source == enums.Dlsite && strings.TrimSpace(ngame.DlsiteId) != "" {
 				id = ngame.DlsiteId
 				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
+			} else if taskData.Req.Source == enums.Getchu && strings.TrimSpace(ngame.DlsiteId) != "" {
+				id = ngame.GetchuId
+				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
 			}
 
 			taskData.Req.ID = id
@@ -1322,6 +1344,13 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 					dlsiteGetter := utils.NewDlsiteInfoGetter()
 					updatedGame, err = dlsiteGetter.FetchMetadataByName2(ngame.SearchName)
+					// updatedGame = dmm
+				} else if taskData.Req.Source == enums.Getchu {
+					getchuGetter := utils.NewGetchuInfoGetter()
+					updatedGame, err = getchuGetter.FetchMetadataByName2(ngame.SearchName)
+
+					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
+
 					// updatedGame = dmm
 				} else {
 					// log.Printf("TaskFunc 26 fetch for game %s", ngame.Name)

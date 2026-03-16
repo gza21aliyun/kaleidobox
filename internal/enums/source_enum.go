@@ -11,7 +11,8 @@ const (
 	Ymgal    SourceType = "ymgal"
 	Dmm      SourceType = "dmm"
 	Eroscape SourceType = "批评空间"
-	Dlsite   SourceType = "Dlsite"
+	Dlsite   SourceType = "dlsite"
+	Getchu   SourceType = "getchu"
 )
 
 var AllSourceTypes = []struct {
@@ -25,6 +26,7 @@ var AllSourceTypes = []struct {
 	{Dmm, "DMM"},
 	{Eroscape, "EROSCAPE"},
 	{Dlsite, "DLSITE"},
+	{Getchu, "GETCHU"},
 }
 
 func (s SourceType) MarshalJSON() ([]byte, error) {

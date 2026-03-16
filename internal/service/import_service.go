@@ -643,6 +643,8 @@ func (s *ImportService) stringToSourceType(sourceType string) enums.SourceType {
 		return enums.Dmm
 	case "eroscape":
 		return enums.Eroscape
+	case "getchu":
+		return enums.Getchu
 	default:
 		return enums.Local
 	}
@@ -842,6 +844,7 @@ func (s *ImportService) FetchMetadataForCandidate(searchName string) (vo.BatchIm
 		{utils.NewDmmInfoGetter(), enums.Dmm, ""},
 		{utils.NewDlsiteInfoGetter(), enums.Dlsite, ""},
 		{utils.NewYmgalInfoGetter(), enums.Ymgal, ""},
+		{utils.NewYmgalInfoGetter(), enums.Getchu, ""},
 		{utils.NewVNDBInfoGetter(), enums.VNDB, s.config.VNDBAccessToken},
 	}
 

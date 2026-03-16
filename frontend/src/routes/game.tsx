@@ -640,10 +640,18 @@ function GameDetailPage() {
                 {t('game.buttons.eroscape')}
               </button>
             )}
+            {game.getchu_id && (
+              <button
+                onClick={() => OpenBrowser(`https://www.getchu.com/item/${game.getchu_id}/`)}
+                className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition-colors"
+              >
+                {t('game.buttons.getchu')}
+              </button>
+            )}
             {game.dlsite_id && (
               <button
                 onClick={() => OpenBrowser(getDlsiteUrl())}
-                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+                className="px-4 py-2 bg-success-500 text-white rounded hover:bg-success-600 transition-colors"
               >
                 {t('game.buttons.eroscape')}
               </button>

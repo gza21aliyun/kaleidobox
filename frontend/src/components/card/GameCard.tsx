@@ -116,7 +116,7 @@ export function GameCard({
               url={game.cover_url}
               alt={game.name}
               referrerPolicy="no-referrer"
-              className="h-full w-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover object-center"
               onDragStart={e => e.preventDefault()}
             />
           ) : (
@@ -131,7 +131,7 @@ export function GameCard({
           )}
         </div>
 
-        <div className="min-w-0 flex-1 grid grid-cols-[1fr_1fr] gap-x-4 gap-y-1">
+        <div className="min-w-0 flex-1 grid gap-x-4 gap-y-1">
           <div className="min-w-0">
             <h3 className="truncate text-sm font-bold text-brand-900 dark:text-white" title={game.name}>
               <HighlightText text={game.name} query={searchQuery} />
@@ -139,8 +139,6 @@ export function GameCard({
             <p className="truncate text-xs text-brand-500 dark:text-brand-400" title={companyDisplay}>
               <HighlightText text={companyDisplay} query={searchQuery} />
             </p>
-          </div>
-          <div className="min-w-0">
             {game.search_name && (
               <p className="truncate text-xs text-brand-400 dark:text-brand-500" title={game.search_name}>
                 <span className="text-brand-300 dark:text-brand-600">Search: </span>
@@ -154,6 +152,8 @@ export function GameCard({
               </p>
             )}
           </div>
+          {/* {} */}
+          
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">

@@ -301,12 +301,30 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 			if charNameSize == 1 {
 				// charactorName = strings.TrimSpace(charaNameTextBlock[0])
 			} else {
-				charaNameBlock.Each(func(i int, s *goquery.Selection) {
+				charaNameBlock.Each(func(i int, ss *goquery.Selection) {
+					if charNameSize == 3 && i == 2 {
+						cnb := strings.Split(ss.Text(), "CV：")
+						if len(cnb) > 0 {
+							charactorName = cnb[0]
+							// fmt.Printf("cnbt:%s\n", cnbt)
+
+						}
+					}
 					if s.Is("charalist") {
-						charactorName = strings.ReplaceAll(s.Text(), " ", "")
+						charactorName = ss.Text()
 					}
 
 				})
+			}
+			if strings.Contains(charactorName, "（") {
+				cnb2 := strings.Split(charactorName, "（")
+				if len(cnb2) > 0 {
+					charactorName = cnb2[0]
+				}
+			}
+
+			if strings.Contains(charactorName, " ") {
+				charactorName = strings.ReplaceAll(charactorName, " ", "")
 			}
 			staffName := ""
 			if len(charaNameTextBlock) > 1 {

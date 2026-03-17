@@ -46,9 +46,8 @@ function TaskPage() {
 
   const handleSearchVideoPaths = async () => {
     try {
-      const { games, setGames } = useAppStore.getState();
-      const updatedGames = await SearchVideoPaths(games);
-      setGames(updatedGames);
+      const { games } = useAppStore.getState();
+      await SearchVideoPaths(games);
     } catch (error) {
       console.error("Failed to search video paths:", error);
     }

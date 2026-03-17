@@ -181,6 +181,9 @@ const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
       const index = newGames.indexOf(game);
       newGames[index] = newGame;
       useAppStore.getState().setGames(newGames);
+    } else {
+      // 如果游戏不在当前列表中，添加它
+      useAppStore.getState().setGames([...currentGames, newGame]);
     }
   }
   
@@ -194,6 +197,11 @@ const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
   } else {
     useAppStore.getState().setTasks([...currentTasks, task]);
   }
+  
+  // 当视频路径搜索任务完成时，刷新游戏列表以确保所有更新都被包含
+  // if (task.status === enums.TaskStatus.COMPLETED && task.item_id == "" && task.type === enums.TaskType.VIDEO_PATHS) {
+  //   useAppStore.getState().fetchGames().catch(console.error);
+  // }
 });
 
 // 在应用退出时取消事件监听

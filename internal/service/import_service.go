@@ -44,17 +44,19 @@ type ImportService struct {
 	config         *appconf.AppConfig
 	gameService    *GameService
 	sessionService *SessionService
+	taskService    *TaskService // 添加任务服务引用
 }
 
 func NewImportService() *ImportService {
 	return &ImportService{}
 }
 
-func (s *ImportService) Init(ctx context.Context, db *sql.DB, config *appconf.AppConfig, gameService *GameService) {
+func (s *ImportService) Init(ctx context.Context, db *sql.DB, config *appconf.AppConfig, gameService *GameService, taskService *TaskService) {
 	s.ctx = ctx
 	s.db = db
 	s.config = config
 	s.gameService = gameService
+	s.taskService = taskService
 }
 
 // SetSessionService SetStartService 设置 SessionService（用于导入游玩记录）
@@ -957,7 +959,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		game.Tags = ""
 		game.CachedAt = time.Now()
 		result.Games = append(result.Games, game)
-		s.SearchVideoPath(&game)
+		// s.SearchVideoPath(&game)
 
 		// 保存游戏（图片会在后台异步下载）
 		if err := s.gameService.AddGame(game); err != nil {
@@ -977,23 +979,71 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		applog.LogWarningf(s.ctx, "BatchImportGames 10:")
 	}
 	// result.Games = rs
+	go s.SearchVideoPaths(result.Games)
 
 	return result, nil
 }
 
-func (s *ImportService) SearchVideoPaths(games []models.Game) ([]models.Game, error) {
-	newGames := []models.Game{}
-	for _, game := range games {
-		if game.PvPath == "" {
-			err := s.SearchVideoPath(&game)
-			if err == nil {
-				s.gameService.UpdateGame(game)
-			}
-		}
-		newGames = append(newGames, game)
-
+func (s *ImportService) SearchVideoPaths(games []models.Game) error {
+	var uuid = uuid.New().String()
+	s.taskService.RegisterTaskFunction(uuid, s.createSearchVideoTaskFunction())
+	taskData := map[string]interface{}{
+		"games": games,
+		"delay": 1000,
 	}
-	return newGames, nil
+	return s.taskService.StartTask("game_updates", uuid, 1000, enums.VideoPaths, len(games), taskData)
+}
+
+// 创建视频搜索任务函数
+func (s *ImportService) createSearchVideoTaskFunction() TaskFunction {
+	return func(ctx context.Context, data string, updateProgress func(completed int, total int,
+		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error {
+		// 定义结构来解组任务数据
+		var taskData struct {
+			Games []models.Game `json:"games"`
+			Delay int64         `json:"delay"`
+		}
+
+		if err := json.Unmarshal([]byte(data), &taskData); err != nil {
+			return fmt.Errorf("解析任务数据失败: %v", err)
+		}
+		updateProgress(0, len(taskData.Games), "开始搜索视频路径",
+			"", "", enums.Started, nil)
+
+		// 实现视频搜索的核心逻辑
+		for index, game := range taskData.Games {
+			// 检查是否被取消（通过上下文检查）
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+
+			updateProgress(index, len(taskData.Games), fmt.Sprintf("搜索游戏视频: %s", game.Name),
+				"", game.ID, enums.Initial, nil)
+
+			if game.PvPath == "" {
+				err := s.SearchVideoPath(&game)
+				if err == nil {
+					s.gameService.UpdateGame(game)
+					updateProgress(index, len(taskData.Games), fmt.Sprintf("找到视频: %s", game.Name),
+						"", game.ID, enums.Completed, game)
+				} else {
+					updateProgress(index, len(taskData.Games), fmt.Sprintf("未找到视频: %s", game.Name),
+						err.Error(), game.ID, enums.Error, nil)
+				}
+			} else {
+				updateProgress(index, len(taskData.Games), fmt.Sprintf("视频已存在: %s", game.Name),
+					"", game.ID, enums.Completed, game)
+			}
+
+			time.Sleep(time.Millisecond * 100)
+		}
+
+		// 标记完成
+		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏视频搜索完成", "", "", enums.Completed, nil)
+		return nil
+	}
 }
 
 func (s *ImportService) SearchVideoPath(game *models.Game) error {

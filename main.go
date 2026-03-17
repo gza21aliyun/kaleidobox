@@ -297,6 +297,7 @@ func main() {
 				runtime.Quit(ctx)
 			})
 			applog.SetLogAll(config.LogAll)
+			taskService.Init(ctx, db, config) // 初始化任务服务
 			gameService.Init(ctx, db, config)
 			aiService.Init(ctx, db, config)
 			backupService.Init(ctx, db, config)
@@ -305,11 +306,10 @@ func main() {
 			sessionService.Init(ctx, db, config)
 			startService.Init(ctx, db, config)
 			categoryService.Init(ctx, db, config)
-			importService.Init(ctx, db, config, gameService)
+			importService.Init(ctx, db, config, gameService, taskService)
 			versionService.Init(ctx)
 			templateService.Init(ctx, db, config)
 			updateService.Init(ctx, configService)
-			taskService.Init(ctx, db, config) // 初始化任务服务
 			staffService.Init(ctx, db, config)
 			charactorService.Init(ctx, db, config)
 			tagService.Init(ctx, db, config)

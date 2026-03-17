@@ -8,6 +8,7 @@ const (
 	Staffs     TaskType = "工作人员"
 	Images     TaskType = "图片"
 	Relations  TaskType = "关系"
+	VideoPaths TaskType = "视频路径"
 )
 
 var AllTaskTypes = []struct {
@@ -19,4 +20,5 @@ var AllTaskTypes = []struct {
 	{Staffs, "STAFFS"},
 	{Images, "IMAGES"},
 	{Relations, "RELATIONS"},
+	{VideoPaths, "VIDEO_PATHS"},
 }

@@ -113,8 +113,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       {/* 截图板块 */}
       {true && (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div className="font-semibold text-brand-900 dark:text-white">{t('gameGallery.screenshots')}</div>
+          <div className="flex items-center gap-2">
+            <div className="font-semibold text-brand-900 dark:text-white">{t('gameGallery.screenshots')}{`(${screenshots.length})`}</div>
             {hasFolder && (
                     <BetterButton
                       onClick={async () => {

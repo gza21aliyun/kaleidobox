@@ -8,6 +8,7 @@ import (
 	"lunabox/internal/vo"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ type DMMSearchResponse struct {
 }
 
 var _ Getter = (*DmmInfoGetter)(nil)
+var _ Reviewer = (*DmmInfoGetter)(nil)
 
 // DMMSearchResponseBody 响应体
 type DMMSearchResponseBody struct {
@@ -65,6 +67,38 @@ type DMMCardProduct struct {
 	IsReserve             bool   `json:"isReserve"`
 	PriorityProductID     string `json:"priorityProductId"`
 	FloorProductID        string `json:"floorProductId"`
+}
+
+// DMMReviewResponse DMM 评论响应
+type DMMReviewResponse struct {
+	Error *string               `json:"error"`
+	Body  DMMReviewResponseBody `json:"body"`
+}
+
+// DMMReviewResponseBody 评论响应体
+type DMMReviewResponseBody struct {
+	Page       int         `json:"page"`
+	Sort       string      `json:"sort"`
+	MaxPage    int         `json:"maxPage"`
+	Limit      int         `json:"limit"`
+	ReviewList []DMMReview `json:"reviewList"`
+}
+
+// DMMReview 评论信息
+type DMMReview struct {
+	ReviewId         string `json:"reviewId"`
+	Title            string `json:"title"`
+	Comment          string `json:"comment"`
+	IsExposure       bool   `json:"isExposure"`
+	DisplayShopName  string `json:"displayShopName"`
+	Score            int    `json:"score"`
+	ReviewerName     string `json:"reviewerName"`
+	ReviewerUrl      string `json:"reviewerUrl"`
+	ReleaseDate      string `json:"releaseDate"`
+	IsPurchased      bool   `json:"isPurchased"`
+	PublicReviewerId string `json:"publicReviewerId"`
+	EvaluateCount    int    `json:"evaluateCount"`
+	YesCount         int    `json:"yesCount"`
 }
 
 func (b DmmInfoGetter) FetchMetadataByName(name string, totken string) (models.Game, error) {
@@ -536,4 +570,47 @@ func combineCharacters(gameEntity models.GameEntity) models.GameEntity {
 	fmt.Printf("角色人数02：%d, data: %v\n", len(newCharactors), worksMap[enums.CV])
 	return gameEntity
 
+}
+
+func (g *DmmInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, error) {
+	gameReview := models.GameReview{}
+
+	reviewUrl := fmt.Sprintf("https://dlsoft.dmm.co.jp/ajax/v1/review/%s/?page=1&sort=value_desc&limit=100",
+		id)
+	fmt.Println(reviewUrl)
+	resp3, err := getResp(*g.client, reviewUrl, "")
+	if err != nil || resp3 == nil {
+		fmt.Println("error FetchWorks 12: %v", err)
+	}
+	if resp3 == nil {
+		fmt.Println("resp3 is  nil")
+		return gameReview, err
+	}
+	var res DMMReviewResponse
+	if err := json.NewDecoder(resp3.Body).Decode(&res); err != nil {
+		// fmt.Println("BangumiInfoGetter FetchMetadata 05 error: %v", err)
+		resp3.Body.Close()
+		return gameReview, err
+	} else {
+		resp3.Body.Close()
+	}
+	for _, review := range res.Body.ReviewList {
+		date, _ := time.Parse("2006/01/02", review.ReleaseDate)
+		fmt.Printf("date:%s\n", review.ReleaseDate)
+		gameReview.Reviews = append(gameReview.Reviews, models.Review{
+			Id:          review.ReviewId,
+			Content:     strings.ReplaceAll(review.Comment, "<br />", ""),
+			Title:       review.Title,
+			Points:      strconv.Itoa(review.Score),
+			TotalPoints: "5",
+			Reviewer:    review.ReviewerName,
+			Date:        date,
+		})
+	}
+
+	return gameReview, nil
+}
+
+func (g *DmmInfoGetter) FetchReviewDetail(review models.Review, gameId, token string) (models.Review, error) {
+	return models.Review{}, nil
 }

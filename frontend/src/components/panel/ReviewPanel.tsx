@@ -15,14 +15,32 @@ interface ReviewPanelProps {
 }
 
 const sourceTypeOptions = [
-  { value: enums.SourceType.EROSCAPE || "批评空间", label: "批评空间" },
   { value: enums.SourceType.BANGUMI || "bangumi", label: "Bangumi" },
+  { value: enums.SourceType.DMM || "Dmm", label: "Dmm" },
+  { value: enums.SourceType.EROSCAPE || "批评空间", label: "批评空间" },
   { value: enums.SourceType.DLSITE || "Dlsite", label: "Dlsite" },
 ];
 
 export function ReviewPanel({ game }: ReviewPanelProps) {
   const [gameReview, setGameReview] = useState<models.GameReview | null>(null);
-  const [selectedSourceType, setSelectedSourceType] = useState<enums.SourceType>(game.source_type);
+
+  const getSource = () => {
+    if (game.bangumi_id !== "") {
+      return enums.SourceType.BANGUMI;
+    }
+    if (game.dmm_id !== "") {
+      return enums.SourceType.DMM;
+    }
+    if (game.dlsite_id !== "") {
+      return enums.SourceType.DLSITE;
+    }
+    if (game.eroscape_id !== "") {
+      return enums.SourceType.EROSCAPE;
+    }
+    return null;
+  }
+
+  const [selectedSourceType, setSelectedSourceType] = useState<enums.SourceType | null>(getSource);
   const [loading, setLoading] = useState(true);
   const [loadingReviewDetail, setLoadingReviewDetail] = useState<string | null>(null);
   const [showSourceDropdown, setShowSourceDropdown] = useState(false);
@@ -30,7 +48,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   const [hasNextPage, setHasNextPage] = useState(false);
   const config = useAppStore(state => state.config);
 
-  console.log("review 00")
+  console.log("review 00", game)
 
   const getGameId = () => {
     if (selectedSourceType == enums.SourceType.EROSCAPE) {
@@ -41,6 +59,8 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
       return game.dmm_id;
     } else if (selectedSourceType == enums.SourceType.DLSITE) {
       return game.dlsite_id;
+    } else if (selectedSourceType == enums.SourceType.BANGUMI) {
+      return game.bangumi_id;
     }
     return ""
   }
@@ -52,6 +72,8 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
       return true;
     } else if (game.bangumi_id !== "" && option.value === enums.SourceType.BANGUMI) {
       return true;
+    } else if (game.dmm_id !== "" && option.value === enums.SourceType.DMM) {
+      return true;
     }
     return false;
   })
@@ -60,7 +82,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
     try {
       setLoading(true);
       var gameId = getGameId(); 
-      if (gameId == "") {
+      if (gameId == "" || selectedSourceType == null) {
         return;
       }
 
@@ -83,14 +105,14 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   };
 
   useEffect(() => {
-    setSelectedSourceType(game.source_type);
+    setSelectedSourceType(getSource);
     setCurrentPage(1);
     console.log("game:", game);
     // OpenBrowser(`https://bgm.tv/subject/${game.bangumi_id}/comments`)
   }, [game]);
 
   useEffect(() => {
-    if (selectedSourceType == enums.SourceType.EROSCAPE || selectedSourceType == enums.SourceType.DLSITE) {
+    if (selectedSourceType == enums.SourceType.EROSCAPE || selectedSourceType == enums.SourceType.DLSITE || selectedSourceType == enums.SourceType.DMM) {
       loadReviews();
     } else if (selectedSourceType == enums.SourceType.BANGUMI) {
       setLoading(false)
@@ -109,7 +131,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   console.log("review 01")
 
   const handleLoadMore = async (review: models.Review, sourceId: string) => {
-    if (sourceId == "") return;
+    if (sourceId == "" || selectedSourceType == null) return;
     try {
       setLoadingReviewDetail(review.id);
       const detailReview = await LoadDetailReview(review, sourceId, selectedSourceType);
@@ -138,7 +160,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   };
 
   const getSourceTypeLabel = (sourceType: enums.SourceType) => {
-    const option = sourceTypeOptions.find(opt => opt.value === sourceType);
+    const option = filteredSourceTypeOptions.find(opt => opt.value === sourceType);
     return option?.label || sourceType;
   };
 
@@ -226,6 +248,10 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
     );
   };
 
+  if (selectedSourceType == null) {
+    return null;
+  }
+
   if (loading && !gameReview) {
     return (
       <div className="review-panel flex items-center justify-center h-64">
@@ -249,7 +275,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
           
           {showSourceDropdown && (
             <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-brand-800 rounded-lg shadow-lg border border-brand-200 dark:border-brand-700 z-10">
-              {sourceTypeOptions.map(option => (
+              {filteredSourceTypeOptions.map(option => (
                 <button
                   key={option.value}
                   onClick={() => handleSourceTypeChange(option.value)}

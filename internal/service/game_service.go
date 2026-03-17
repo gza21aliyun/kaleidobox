@@ -1522,6 +1522,9 @@ func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType,
 	} else if sourceType == enums.Dlsite {
 		esReviewer := utils.NewDlsiteInfoGetter()
 		return esReviewer.FetchReviews(id, "", page)
+	} else if sourceType == enums.Dmm {
+		dmmReviewer := utils.NewDmmInfoGetter()
+		return dmmReviewer.FetchReviews(id, "", page)
 	}
 	return models.GameReview{}, nil
 }

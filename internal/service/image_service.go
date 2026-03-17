@@ -400,6 +400,7 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) ([]models
 	}
 	for _, imageBackup := range list {
 		if imageBackup.LocalPath != "" || imageBackup.Url == "" {
+			newList = append(newList, imageBackup)
 			continue
 		}
 		path, err := utils.GetDataDir()

@@ -503,9 +503,9 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 
 		getchu := e.DOM.Find("div#bottom_inter_links_main li:contains('Getchu') > a").AttrOr("href", "")
 		if getchu != "" {
-			linkParts := strings.Split(dlsite, "/")
+			linkParts := strings.Split(getchu, "/?id=")
 			if len(linkParts) > 1 {
-				id := linkParts[len(linkParts)-1]
+				id := linkParts[1]
 				game.GetchuId = id
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"io"
 	"lunabox/internal/applog"
 	"lunabox/internal/cli"
 	"lunabox/internal/cli/ipc"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -532,11 +534,36 @@ func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameServic
 		// 检查文件后缀是否为.mp4
 		if strings.ToLower(filepath.Ext(videoPath)) == ".mp4" {
 			applog.LogInfof(ctx, "VideoStreamHandler: direct serving mp4 file: %s", videoPath)
-			// 直接提供MP4文件，不进行转码
+
+			// 打开文件
+			file, err := os.Open(videoPath)
+			if err != nil {
+				applog.LogErrorf(ctx, "VideoStreamHandler: failed to open mp4 file: %v", err)
+				http.Error(w, "Failed to open video file", http.StatusInternalServerError)
+				return
+			}
+			defer file.Close()
+
+			// 获取文件信息
+			fileInfo, err := file.Stat()
+			if err != nil {
+				applog.LogErrorf(ctx, "VideoStreamHandler: failed to get file info: %v", err)
+				http.Error(w, "Failed to get file info", http.StatusInternalServerError)
+				return
+			}
+
+			// 设置响应头
 			w.Header().Set("Content-Type", "video/mp4")
 			w.Header().Set("Content-Disposition", "inline")
 			w.Header().Set("Accept-Ranges", "bytes")
-			http.ServeFile(w, r, videoPath)
+			w.Header().Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
+
+			// 流式复制文件内容
+			if _, err := io.Copy(w, file); err != nil {
+				applog.LogErrorf(ctx, "VideoStreamHandler: failed to copy file content: %v", err)
+				// 不要返回错误，因为可能是客户端断开连接导致的
+			}
+
 			applog.LogInfof(ctx, "VideoStreamHandler: served mp4 file directly")
 			return
 		}

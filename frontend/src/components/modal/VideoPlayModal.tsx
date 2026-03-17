@@ -13,15 +13,22 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
   const [videoUrl, setVideoUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  const toggleMaximize = () => {
+    setIsMaximized(!isMaximized);
+  };
 
   useEffect(() => {
     if (isOpen && gameId) {
+      setIsMaximized(false); // 打开弹窗时重置最大化状态
       fetchVideoStream();
     } else if (!isOpen && gameId) {
       // 关闭弹窗时清理视频缓存
       cleanupVideoCache();
       setVideoUrl('');
       setError('');
+      setIsMaximized(false); // 关闭弹窗时重置最大化状态
     }
   }, [isOpen, gameId]);
 
@@ -64,16 +71,25 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-      <div className="relative w-full max-w-6xl max-h-[90vh]">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-colors"
-          aria-label={t('common.close')}
-        >
-          <div className="i-mdi-close text-xl" />
-        </button>
+      <div className={`relative w-full ${isMaximized ? 'max-w-none max-h-none' : 'max-w-6xl max-h-[90vh]'}`}>
+        <div className="absolute top-4 right-4 z-10 flex space-x-15">
+          <button
+            onClick={toggleMaximize}
+            className="w-12 h-12 flex items-center justify-center rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-colors"
+            aria-label={isMaximized ? '恢复大小' : '放大'}
+          >
+            <span className={`text-2xl text-white ${isMaximized ? 'i-mdi-arrow-collapse-all' : 'i-mdi-arrow-expand-all'}`} />
+          </button>
+          <button
+            onClick={onClose}
+            className="w-12 h-12 flex items-center justify-center rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-colors"
+            aria-label={t('common.close')}
+          >
+            <span className="i-mdi-close text-2xl text-white" />
+          </button>
+        </div>
 
-        <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+        <div className={`relative ${isMaximized ? 'w-full h-[90vh]' : 'aspect-video'} bg-black rounded-lg overflow-hidden`}>
           {isLoading ? (
             <div className="w-full h-full flex items-center justify-center text-white">
               <div className="i-mdi-loading text-4xl animate-spin" />

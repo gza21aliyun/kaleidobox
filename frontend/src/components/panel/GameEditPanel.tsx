@@ -1,6 +1,6 @@
 import type { models } from "../../../wailsjs/go/models";
 import { toast } from "react-hot-toast";
-import { OpenLocalPath, SelectGameExecutable } from "../../../wailsjs/go/service/GameService";
+import { OpenLocalPath, SelectFile } from "../../../wailsjs/go/service/GameService";
 import { BetterButton } from "../ui/BetterButton";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -173,7 +173,7 @@ export function GameEditPanel({
               type="button"
               onClick={async () => {
                 try {
-                  const selection = await SelectGameExecutable();
+                  const selection = await SelectFile("视频文件", "*.exe;*.bat;*.cmd;*.lnk");
                   if (selection) {
                     onGameChange({ ...game, pv_path: selection } as models.Game);
                   }

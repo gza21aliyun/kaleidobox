@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { enums, models, vo } from "../../../wailsjs/go/models";
 import { AddGame, FetchMetadata, FetchMetadataByName, SelectCoverImageWithTempID,
-   SelectGameExecutable, SelectGameExecutable2 } from "../../../wailsjs/go/service/GameService";
+   SelectGameExecutable } from "../../../wailsjs/go/service/GameService";
 import { useAppStore } from "../../store";
 import { BetterSelect } from "../ui/BetterSelect";
 import i18next from "../../i18n/i18n";
@@ -50,11 +50,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
   const handleSelectExecutable = async () => {
     try {
       var path = "";
-      if (config && config.new_folder_chooser) {
-        path = await SelectGameExecutable();    
-      } else {
-        path = await SelectGameExecutable2();
-      }
+      path = await SelectGameExecutable(); 
       
       if (path) {
         setExecutablePath(path);

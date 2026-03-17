@@ -59,13 +59,21 @@ func (s *GameService) Init(ctx context.Context, db *sql.DB, config *appconf.AppC
 	s.config = config
 }
 
-func (s *GameService) SelectGameExecutable() (string, error) {
+func (s *GameService) SelectFile(display, exts string) (string, error) {
+	if s.config.NewFolderChooser {
+		return s.SelectFile1(display, exts)
+	} else {
+		return s.SelectFile2(display, exts)
+	}
+}
+
+func (s *GameService) SelectFile1(display, exts string) (string, error) {
 	selection, err := runtime.OpenFileDialog(s.ctx, runtime.OpenDialogOptions{
 		Title: "Select Game Executable",
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "Executables",
-				Pattern:     "*.exe;*.bat;*.cmd;*.lnk",
+				DisplayName: display,
+				Pattern:     exts,
 			},
 			{
 				DisplayName: "All Files",
@@ -79,15 +87,15 @@ func (s *GameService) SelectGameExecutable() (string, error) {
 	return selection, err
 }
 
-func (s *GameService) SelectGameExecutable2() (string, error) {
-	psScript := `
+func (s *GameService) SelectFile2(display, exts string) (string, error) {
+	psScript := fmt.Sprintf(`
 		$PSDefaultParameterValues['Out-File:Encoding'] = 'UTF8'
 		[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 		Add-Type -AssemblyName System.Windows.Forms
 
 		$dialog = New-Object System.Windows.Forms.OpenFileDialog
 		$dialog.Title = "Select Game Executable"
-		$dialog.Filter = "Executables (*.exe, *.bat, *.cmd, *.lnk)|*.exe;*.bat;*.cmd;*.lnk|All Files (*.*)|*.*"
+		$dialog.Filter = "Executables (%s)|%s|All Files (*.*)|*.*"
 		$dialog.CheckFileExists = $true
 		$dialog.CheckPathExists = $true
 
@@ -97,7 +105,7 @@ func (s *GameService) SelectGameExecutable2() (string, error) {
 			# 直接输出路径，避免编码问题
 			Write-Host $path
 		}
-		`
+		`, exts, exts)
 
 	cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-NonInteractive", "-Command", psScript)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -125,6 +133,10 @@ func (s *GameService) SelectGameExecutable2() (string, error) {
 	}
 
 	return selection, nil
+}
+
+func (s *GameService) SelectGameExecutable() (string, error) {
+	return s.SelectFile("Executables", "*.exe;*.bat;*.cmd;*.lnk")
 }
 
 func (s *GameService) AddGame(game models.Game) error {

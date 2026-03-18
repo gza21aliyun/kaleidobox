@@ -448,21 +448,54 @@ function LibraryPage() {
         onViewModeChange={setViewMode}
         batchActions={( 
           <>
-            {/* 选择模式下的确认按钮 */}
+            {/* 选择模式下的确认和取消按钮 */}
             {selectMode && (
-              <button
-                type="button"
-                onClick={handleSelectComplete}
-                disabled={filterSelectedIds.length === 0}
-                title={t('library.buttons.confirmSelection')}
-                className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
-                            bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
-                            rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-success-600 dark:text-success-400
-                            ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <div className="i-mdi-check-circle-outline text-lg" />
-                {t('library.buttons.confirmSelection')}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleSelectComplete}
+                  disabled={filterSelectedIds.length === 0}
+                  title={t('library.buttons.confirmSelection')}
+                  className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
+                              bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
+                              rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-success-600 dark:text-success-400
+                              ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="i-mdi-check-circle-outline text-lg" />
+                  {t('library.buttons.confirmSelection')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    console.log("Cancel button clicked, returnPath:", returnPath);
+                    if (returnPath) {
+                      try {
+                        const returnUrl = new URL(returnPath);
+                        console.log("Navigate to:", returnUrl.pathname);
+                        // 使用对象形式的参数调用 navigate
+                        navigate({
+                          to: returnUrl.pathname,
+                          search: returnUrl.search
+                        });
+                      } catch (error) {
+                        console.error("Invalid returnPath:", error);
+                        // 如果 returnPath 无效，使用首页
+                        navigate({ to: '/' });
+                      }
+                    } else {
+                      // 如果没有 returnPath，使用首页
+                      navigate({ to: '/' });
+                    }
+                  }}
+                  title={t('common.cancel')}
+                  className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
+                              bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
+                              rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-error-600 dark:text-error-400`}
+                >
+                  <div className="i-mdi-close-circle-outline text-lg" />
+                  {t('common.cancel')}
+                </button>
+              </>
             )}
             {/* 非选择模式下的批量操作 */}
             {!selectMode && (

@@ -1,18 +1,21 @@
 import type { models, service } from "../../../wailsjs/go/models";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useAppStore } from "../../store"
 import { enums, vo } from "../../../wailsjs/go/models";
+import { AddGamesToCategories, GetCategories } from "../../../wailsjs/go/service/CategoryService";
 
 import { FetchMetadata, FetchMetadataByName, GetGamesByIdsStr } from "../../../wailsjs/go/service/GameService";
 import {
   BatchImportGames,
+  BatchImportGamesSearch,
   ScanLibraryDirectory,
   SelectLibraryDirectory,
   SelectLibraryDirectory2,
   BatchImportGamesFolderLnk,
 } from "../../../wailsjs/go/service/ImportService";
 import { BetterSelect } from "../ui/BetterSelect";
+import { BetterSwitch } from "../ui/BetterSwitch";
 
 interface BatchImportModalProps {
   isOpen: boolean;
@@ -44,10 +47,13 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
   const [importResult, setImportResult] = useState<service.ImportResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0, gameName: "" });
+  const [selectedCategoryVo, setSelectedCategoryVo] = useState<vo.CategoryVO | null>(null);
+  const [isSearchFolder, setIsSearchFolder] = useState(true);
   const { config } = useAppStore();
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);
+  const categoryVos = useRef<vo.CategoryVO[]>([]);
 
   // 手动选择弹窗状态
   const [showManualSelect, setShowManualSelect] = useState(false);
@@ -56,6 +62,19 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
   const [isSearching, setIsSearching] = useState(false);
   const [manualId, setManualId] = useState("");
   const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const vos = await GetCategories();
+        categoryVos.current = vos || [];
+      }
+      catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   if (!isOpen)
     return null;
@@ -132,10 +151,16 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
         console.log("importCandidates:", importCandidates)
 
         // var rs = await BatchImportGames(importCandidates)
-        BatchImportGames(importCandidates).then((res) => { 
+        BatchImportGamesSearch(importCandidates, isSearchFolder).then((res) => {          
           resetAndClose()
           console.log("res:", res)
-          onOpenUpdate(res.games)
+          onOpenUpdate(res.games) 
+          if (res.games && res.games.length > 0 && selectedCategoryVo?.id) {
+            AddGamesToCategories(res.games.map(g => g.id), [selectedCategoryVo.id])
+              .then(() => {
+                
+              })
+          }
         
         })
       
@@ -261,9 +286,12 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
           return candidate;
         });
 
-      const result = await BatchImportGames(importCandidates);
+      const result = await BatchImportGamesSearch(importCandidates, isSearchFolder);
       setImportResult(result);
       setStep("result");
+      if (result.games && result.games.length > 0 && selectedCategoryVo?.id) {
+            await AddGamesToCategories(result.games.map(g => g.id), [selectedCategoryVo.id]);
+          }
 
       if (result.success > 0) {
         toast.success(`成功导入 ${result.success} 个游戏`);
@@ -394,6 +422,35 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
               批量导入游戏库
             </h2>
+            {step == "preview" && (
+              <>
+                
+                <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        加入收藏分类
+                      </label>
+                <BetterSelect
+                          value={selectedCategoryVo?.id ?? ""}
+                          onChange={(value) => {
+                            setSelectedCategoryVo(categoryVos.current.find(c => c.id === value) || null);
+                          
+                          }}
+                          options={categoryVos.current.map(c => ({ value: c.id, label: c.name }))}
+                          className="min-w-[200px] w-[150px]"
+                        />
+                  <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                        搜索文件夹
+                      </label>
+                  <BetterSwitch
+                    checked={isSearchFolder}
+                    onCheckedChange={(c) => {
+                      setIsSearchFolder(c);
+                    }}
+                    id="isSearchFolder"
+                  />
+                
+              </>
+            )}
+            
           </div>
           <button
             onClick={resetAndClose}

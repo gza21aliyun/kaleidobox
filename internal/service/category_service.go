@@ -142,6 +142,7 @@ func (s *CategoryService) AddGameToCategory(gameID, categoryID string) error {
 }
 
 func (s *CategoryService) AddGamesToCategories(gameIDs []string, categoryIDs []string) error {
+	fmt.Printf("AddGamesToCategories: gameIDs=%v, categoryIDs=%v\n", gameIDs, categoryIDs)
 	gameIDs = utils.UniqueNonEmptyStrings(gameIDs)
 	categoryIDs = utils.UniqueNonEmptyStrings(categoryIDs)
 	if len(gameIDs) == 0 || len(categoryIDs) == 0 {

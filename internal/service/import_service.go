@@ -869,6 +869,17 @@ func (s *ImportService) FetchMetadataForCandidate(searchName string) (vo.BatchIm
 	return result, nil
 }
 
+func (s *ImportService) BatchImportGamesSearch(candidates []vo.BatchImportCandidate, isSearch bool) (ImportResult, error) {
+	rs, err := s.BatchImportGames(candidates)
+	if err == nil {
+		if isSearch {
+			go s.SearchVideoPaths(rs.Games)
+		}
+	}
+	return rs, err
+
+}
+
 // BatchImportGames 批量导入游戏
 func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (ImportResult, error) {
 	result := ImportResult{
@@ -978,8 +989,6 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		result.Success++
 		applog.LogWarningf(s.ctx, "BatchImportGames 10:")
 	}
-	// result.Games = rs
-	go s.SearchVideoPaths(result.Games)
 
 	return result, nil
 }

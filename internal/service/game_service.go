@@ -925,7 +925,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	var mu sync.Mutex
 
 	// 这里暂不处理任何错误，直接尝试从多个来源并发获取数据，空就是网络问题或未找到，不管它
-	wg.Add(6)
+	wg.Add(7)
 
 	go func() {
 		defer wg.Done()

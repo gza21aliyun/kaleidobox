@@ -1059,7 +1059,14 @@ func (s *ImportService) SearchVideoPath(game *models.Game) error {
 	// 获取游戏可执行文件所在的目录
 	folderPath := filepath.Dir(game.Path)
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
+	excludeExeKeywords := []string{
+		"unins", "setup", "config", "patch", "update", "crashpad",
+		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet",
+		"redistributable", "installer", "launcher_helper", "crashreporter",
+		"updater", "uninstall", "删除", "卸载",
+	}
 	var videoFiles []string
+	var exeFiles []string
 	var foundOPVideo string
 
 	// 递归搜索目录及其子目录
@@ -1071,10 +1078,11 @@ func (s *ImportService) SearchVideoPath(game *models.Game) error {
 		if !info.IsDir() {
 			// 检查文件扩展名是否为视频格式
 			ext := strings.ToLower(filepath.Ext(path))
+			fileName := strings.ToLower(filepath.Base(path))
 			for _, e := range exts {
 				if ext == e {
 					// 检查文件名是否包含 "op" 或 "openning"
-					fileName := strings.ToLower(filepath.Base(path))
+
 					if strings.Contains(fileName, "op") || strings.Contains(fileName, "openning") {
 						foundOPVideo = path
 						return filepath.SkipDir // 找到 OP 视频后停止搜索
@@ -1082,6 +1090,13 @@ func (s *ImportService) SearchVideoPath(game *models.Game) error {
 					// 添加到视频文件列表
 					videoFiles = append(videoFiles, path)
 					break
+				}
+			}
+			if ext == ".exe" {
+				// 检查文件名是否包含排除关键词
+				filePrefix := strings.ReplaceAll(fileName, filepath.Ext(path), "")
+				if !utils.ArrayContains(excludeExeKeywords, filePrefix) {
+					exeFiles = append(exeFiles, fileName)
 				}
 			}
 		}
@@ -1103,6 +1118,12 @@ func (s *ImportService) SearchVideoPath(game *models.Game) error {
 		applog.LogInfof(s.ctx, "SearchVideoPath: found video for game %s: %s", game.Name, videoFiles[0])
 	} else {
 		applog.LogInfof(s.ctx, "SearchVideoPath: no video found for game %s", game.Name)
+	}
+	if len(exeFiles) == 1 {
+		game.ProcessName = exeFiles[0]
+		applog.LogInfof(s.ctx, "SearchVideoPath: found exe for game %s: %s", game.Name, exeFiles[0])
+	} else {
+		applog.LogInfof(s.ctx, "SearchVideoPath: no exe found for game %s", game.Name)
 	}
 
 	return nil

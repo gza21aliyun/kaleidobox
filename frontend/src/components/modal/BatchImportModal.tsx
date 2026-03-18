@@ -438,7 +438,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                           className="min-w-[200px] w-[150px]"
                         />
                   <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
-                        搜索文件夹
+                        搜索视频和EXE
                       </label>
                   <BetterSwitch
                     checked={isSearchFolder}

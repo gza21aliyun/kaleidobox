@@ -463,6 +463,15 @@ func searchNameByRegex2[T1 any](slice1 []T1, searchName string, excludeWords []s
 	return &result[0]
 }
 
+func ArrayContains(arr []string, str string) bool {
+	for _, item := range arr {
+		if item == str {
+			return true
+		}
+	}
+	return false
+}
+
 func removeAllChar(str string, char string) string {
 	rs := str
 	for _, c := range char {

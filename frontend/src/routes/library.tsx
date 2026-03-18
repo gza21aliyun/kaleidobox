@@ -1,6 +1,6 @@
 import { models } from "../../wailsjs/go/models";
 import type { ImportSource } from "../components/modal/GameImportModal";
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { GetGames } from "../../wailsjs/go/service/GameService";
 import { ListTags } from "../../wailsjs/go/service/TagService";
@@ -48,6 +48,7 @@ export const Route = createRoute({
 
 function LibraryPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { games, gamesLoading, fetchGames, setGames } = useAppStore();
   const [tagsLoaded, setTagsLoaded] = useState<Map<string, models.Tag[]>>(new Map())
   const [showSkeleton, setShowSkeleton] = useState(false);
@@ -91,6 +92,10 @@ function LibraryPage() {
     const savedViewMode = localStorage.getItem('libraryViewMode');
     return (savedViewMode as "list" | "small" | "large") || "small";
   });
+  
+  // 选择返回模式
+  const [selectMode, setSelectMode] = useState(false);
+  const [returnPath, setReturnPath] = useState("/");
   
 
   
@@ -181,7 +186,7 @@ function LibraryPage() {
     });
 
 
-  // 获取URL参数中的标签
+  // 获取URL参数中的标签和选择模式
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tagsParam = urlParams.get('tags');
@@ -192,6 +197,18 @@ function LibraryPage() {
       console.log("tagsParam 02", tag);
       setTags([tag]);
       setFilterExpanded(false)
+    }
+    
+    // 检查是否为选择模式
+    const selectModeParam = urlParams.get('selectMode');
+    const returnPathParam = urlParams.get('returnPath');
+    if (selectModeParam === 'true' && returnPathParam) {
+      // 解码 returnPath
+      const decodedReturnPath = decodeURIComponent(returnPathParam);
+      console.log("Decoded returnPath:", decodedReturnPath);
+      setSelectMode(true);
+      setReturnPath(decodedReturnPath);
+      setBatchMode(true); // 自动启用批量选择模式
     }
   }, []);
 
@@ -228,6 +245,45 @@ function LibraryPage() {
 
   const handleClearSelection = () => {
     setSelectedGameIds([]);
+  };
+  
+  // 处理选择完成
+  const handleSelectComplete = () => {
+    if (selectMode && returnPath) {
+      // 将选中的游戏ID作为URL参数传递回原页面
+      const selectedGameIdsStr = selectedGameIds.join(',');
+      console.log("handleSelectComplete - selectedGameIdsStr:", selectedGameIdsStr);
+      console.log("handleSelectComplete - returnPath:", returnPath);
+      
+      // 确保 returnPath 是有效的URL
+      try {
+        const returnUrl = new URL(returnPath);
+        
+        // 使用对象形式的搜索参数
+        const searchObj: Record<string, string> = {};
+        // 保留原有的搜索参数
+        returnUrl.searchParams.forEach((value, key) => {
+          searchObj[key] = value;
+        });
+        // 添加 selectedGameIds 参数
+        searchObj.selectedGameIds = selectedGameIdsStr;
+        
+        console.log("handleSelectComplete - searchObj:", searchObj);
+        
+        // 使用对象形式的参数调用 navigate
+        navigate({
+          to: returnUrl.pathname,
+          search: searchObj
+        });
+      } catch (error) {
+        console.error("Invalid returnPath:", error);
+        // 如果 returnPath 无效，使用当前路径
+        navigate({ 
+          to: window.location.pathname, 
+          search: { selectedGameIds: selectedGameIdsStr } 
+        });
+      }
+    }
   };
 
   const statusConfig = {
@@ -390,72 +446,93 @@ function LibraryPage() {
         onClearSelection={handleClearSelection}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        batchActions={(
+        batchActions={( 
           <>
-            {/* 批量更新状态 */}
-            <BetterDropdownMenu
-              title={t('library.buttons.setStatus')}
-              align="end"
-              menuWidth="min-w-[130px]"
-              disabled={filterSelectedIds.length === 0}
-              trigger={(
-                <div
-                  title={t('library.buttons.batchUpdateStatus')}
+            {/* 选择模式下的确认按钮 */}
+            {selectMode && (
+              <button
+                type="button"
+                onClick={handleSelectComplete}
+                disabled={filterSelectedIds.length === 0}
+                title={t('library.buttons.confirmSelection')}
+                className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
+                            bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
+                            rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-success-600 dark:text-success-400
+                            ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <div className="i-mdi-check-circle-outline text-lg" />
+                {t('library.buttons.confirmSelection')}
+              </button>
+            )}
+            {/* 非选择模式下的批量操作 */}
+            {!selectMode && (
+              <>
+                {/* 批量更新状态 */}
+                <BetterDropdownMenu
+                  title={t('library.buttons.setStatus')}
+                  align="end"
+                  menuWidth="min-w-[130px]"
+                  disabled={filterSelectedIds.length === 0}
+                  trigger={( 
+                    <div
+                      title={t('library.buttons.batchUpdateStatus')}
+                      className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
+                                  bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
+                                  rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
+                                  ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <div className="i-mdi-tag-edit-outline text-lg" />
+                    </div>
+                  )}
+                  items={Object.entries(statusConfig).map(([key, cfg]) => ({
+                    key,
+                    label: cfg.label,
+                    icon: cfg.icon,
+                    pill: true,
+                    pillColor: cfg.color,
+                    onClick: () => handleBatchStatusUpdate(key),
+                  }))}
+                />
+                {/* 批量添加到收藏 */}
+                <button
+                  type="button"
+                  onClick={openBatchAddModal}
+                  disabled={filterSelectedIds.length === 0}
+                  title={t('library.buttons.batchAddToCollection')}
                   className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
                               bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
                               rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
                               ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  <div className="i-mdi-tag-edit-outline text-lg" />
-                </div>
-              )}
-              items={Object.entries(statusConfig).map(([key, cfg]) => ({
-                key,
-                label: cfg.label,
-                icon: cfg.icon,
-                pill: true,
-                pillColor: cfg.color,
-                onClick: () => handleBatchStatusUpdate(key),
-              }))}
-            />
-            {/* 批量添加到收藏 */}
-            <button
-              type="button"
-              onClick={openBatchAddModal}
-              disabled={filterSelectedIds.length === 0}
-              title={t('library.buttons.batchAddToCollection')}
-              className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
-                          bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
-                          rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
-                          ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <div className="i-mdi-folder-plus-outline text-lg" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {setIsBatchUpdateOpen(true)}}
-              disabled={filterSelectedIds.length === 0}
-              title={t('library.buttons.updateLibrary')}
-              className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
-                          bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
-                          rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
-                          ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <div className="i-mdi-folder-multiple text-lg" />
-            </button>
-            {/* 批量删除 */}
-            <button
-              type="button"
-              onClick={handleBatchDelete}
-              disabled={filterSelectedIds.length === 0}
-              title={t('library.buttons.batchDelete')}
-              className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
-                          bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
-                          rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-error-600 dark:text-error-400
-                          ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <div className="i-mdi-delete text-lg" />
-            </button>
+                  <div className="i-mdi-folder-plus-outline text-lg" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {setIsBatchUpdateOpen(true)}}
+                  disabled={filterSelectedIds.length === 0}
+                  title={t('library.buttons.updateLibrary')}
+                  className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
+                              bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
+                              rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
+                              ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="i-mdi-folder-multiple text-lg" />
+                </button>
+                {/* 批量删除 */}
+                <button
+                  type="button"
+                  onClick={handleBatchDelete}
+                  disabled={filterSelectedIds.length === 0}
+                  title={t('library.buttons.batchDelete')}
+                  className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
+                              bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
+                              rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-error-600 dark:text-error-400
+                              ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="i-mdi-delete text-lg" />
+                </button>
+              </>
+            )}
           </>
         )}
         actionButton={(

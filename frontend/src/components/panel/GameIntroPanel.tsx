@@ -3,18 +3,20 @@ import { appconf, enums, models } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
 import { tagMapForEach, workMapForEach, charactorsForEach, getCharactorIds } from "../utils/Utility";
-import { GetGamesByRelatedGames, GetGamesByBrand, AddRelatedGames } from "../../../wailsjs/go/service/GameService";
+import { GetGamesByRelatedGames, GetGamesByBrand, AddRelatedGames, DeleteRelatedGame } from "../../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { GameCard } from "../card/GameCard";
 import { ImageBackupCard, ImageCard } from "../card/ImageCard";
 import { arrayFind, arrayMapString, joinString } from "../utils/Utility";
+import { useAppStore } from "../../store";
 
 interface GameEditFormProps {
   game: models.Game;
   config?: appconf.AppConfig;
   onTagTaps: (tag: string) => void;
+  updateGame: (g: models.Game) => void;
 }
 
 const CharactorImages = ({ workId }: { workId: string }) => {
@@ -56,15 +58,64 @@ const CharactorImages = ({ workId }: { workId: string }) => {
 };
 
 export function GameIntroPanel({ 
-    game, config, onTagTaps }: GameEditFormProps) { 
+    game, config, onTagTaps, updateGame }: GameEditFormProps) { 
         const navigate = useNavigate();
         const { t } = useTranslation();
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const textareaRef = useRef<HTMLTextAreaElement>(null);
         const [relatedGames, setRelatedGames] = useState<models.Game[]>([])
-        const [brandGames, setBrandGames] = useState<models.Game[]>([])
+        const [brandGames, setBrandGames] = useState<models.Game[]>([])        
+        const { updateGameInGames } = useAppStore()
 
+        // 检查URL参数中是否有选中的游戏
+        useEffect(() => {
+            console.log("URL search:", window.location.search);
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedGameIds = urlParams.get('selectedGameIds');
+            console.log("selectedGameIds = ", selectedGameIds);
+            
+            // 尝试直接从 URL 字符串中提取 selectedGameIds
+            if (!selectedGameIds) {
+                const searchStr = window.location.search;
+                const match = searchStr.match(/selectedGameIds=([^&]+)/);
+                if (match) {
+                    const extractedIds = decodeURIComponent(match[1]);
+                    console.log("Extracted selectedGameIds:", extractedIds);
+                    processSelectedGames(extractedIds);
+                }
+            } else {
+                processSelectedGames(selectedGameIds);
+            }
+        }, [game, window.location.search]);
+        
+        // 处理选中的游戏
+        const processSelectedGames = (selectedGameIds: string) => {
+            console.log("Processing selectedGameIds:", selectedGameIds);
+            // 清除URL参数
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.delete('selectedGameIds');
+            window.history.replaceState({}, '', newUrl.toString());
+            
+            // 调用AddRelatedGames添加关联游戏
+            const gameIds = selectedGameIds.split(',');
+            console.log("gameIds = ", selectedGameIds);
+            if (gameIds.length > 0) {
+                // 构建游戏对象数组
+                console.log("selectedGames = ", selectedGameIds);
+                console.log("game = ", game);
+                AddRelatedGames(gameIds, game).then((res) => {
+                    console.log("AddRelatedGames response = ", res);
+                    // 更新关联游戏列表
+                    if (res) {
+                        updateGame(res);
+                        updateGameInGames(res);
 
+                    }
+                }).catch((err) => {
+                    console.error("Failed to add related games:", err);
+                });
+            }
+        };
 
         useEffect(() => { 
             console.log("01 GetWorksMapByGameId", game.id)
@@ -83,7 +134,9 @@ export function GameIntroPanel({
             GetGamesByBrand(game.company).then((res) => { 
                 setBrandGames(res || [])
             })
+            console.log("game.related_games = ", game.related_games)
             GetGamesByRelatedGames(game.related_games).then((res) => { 
+                console.log("GetGamesByRelatedGames:", res)
                 setRelatedGames(res || [])
             })
             
@@ -219,9 +272,34 @@ export function GameIntroPanel({
                             <GameCard key={g.id} 
                                 game={g}
                                 filteredGameIdsStr={arrayMapString(relatedGames, (g) => g.id)}
+                                onDelete={(g) => {
+                                    DeleteRelatedGame(g, game).then((res) => {
+                                        // 删除成功，刷新页面
+                                        updateGame(res)
+                                        updateGameInGames(res)
+                                    });
+
+                                }}
                                 />
                         ))}
-                        <div className="glass-card relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 flex items-center justify-center">
+                        <div 
+                            className="glass-card relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 flex items-center justify-center cursor-pointer"
+                            onClick={() => {
+                                // 导航到游戏库页面，开启选择模式
+                                const currentPath = window.location.href;
+                                console.log("Navigate to library with returnPath:", currentPath);
+                                // 对 returnPath 进行 URL 编码，确保特殊字符被正确处理
+                                const encodedReturnPath = encodeURIComponent(currentPath);
+                                console.log("Encoded returnPath:", encodedReturnPath);
+                                navigate({ 
+                                    to: `/library`, 
+                                    search: { 
+                                        selectMode: true, 
+                                        returnPath: encodedReturnPath 
+                                    }
+                                });
+                            }}
+                        >
                             <div className="flex flex-col items-center justify-center gap-2 p-4">
                                 <div className="i-mdi-plus-circle text-4xl text-brand-500 dark:text-brand-400" />
                                 <span className="text-sm font-medium text-brand-900 dark:text-white">{t('gameIntro.addRelatedGame')}</span>

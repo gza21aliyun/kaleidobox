@@ -525,31 +525,49 @@ func (s *GameService) GetGamesByRelatedGames(gameIdsStr string) ([]models.Game, 
 	return games, nil
 }
 
-func (s *GameService) AddRelatedGames(games []models.Game, game models.Game) ([]models.Game, error) {
-	if game.RelatedGames == "" {
-		return s.GetGamesByRelatedGames(game.RelatedGames)
-	}
+func (s *GameService) AddRelatedGames(gameIds []string, game models.Game) (models.Game, error) {
+	// if game.RelatedGames == "" {
+	// 	return s.GetGamesByRelatedGames(game.RelatedGames)
+	// }
 	gameIdsStr := game.RelatedGames
-	gameIds := strings.Split(gameIdsStr, ",")
+	oldIds := strings.Split(gameIdsStr, ",")
 	idMap := map[string]string{}
-	for _, s := range gameIds {
-		gs := strings.Split(s, ":")
-		if len(gs) != 2 {
+	for _, s := range oldIds {
+		// gs := strings.Split(s, ":")
+		// if len(gs) != 2 {
+		// 	continue
+		// }
+		if s == "" {
 			continue
 		}
-		idMap[gs[0]] = gs[1]
+		idMap[s] = s
 	}
-	for _, g := range games {
-		idMap[string(enums.Local)] = g.ID
+	for _, g := range gameIds {
+		if g == "" {
+			continue
+		}
+		s := string(enums.Local) + ":" + g
+		idMap[s] = s
 	}
-	gameIdsStr = ""
-	for k, v := range idMap {
-		gameIdsStr += fmt.Sprintf("%s:%s,", k, v)
+	newIdsStr := ""
+	for k, _ := range idMap {
+		newIdsStr += fmt.Sprintf("%s,", k)
 	}
-	gameIdsStr = strings.TrimSuffix(gameIdsStr, ",")
-	game.RelatedGames = gameIdsStr
+	newIdsStr = strings.TrimSuffix(newIdsStr, ",")
+	game.RelatedGames = newIdsStr
+
+	fmt.Println("AddRelatedGames:", game.RelatedGames)
 	s.UpdateGame(game)
-	return s.GetGamesByRelatedGames(game.RelatedGames)
+	return game, nil
+}
+
+func (s *GameService) DeleteRelatedGame(gameToDelete, game models.Game) (models.Game, error) {
+	fmt.Printf("before delete: %s\n", game.RelatedGames)
+	toRemove := fmt.Sprintf("%s:%s", string(enums.Local), gameToDelete.ID)
+	game.RelatedGames = utils.RemoveString(game.RelatedGames, toRemove)
+	fmt.Printf("after delete: %s\n", game.RelatedGames)
+	err := s.UpdateGame(game)
+	return game, err
 }
 
 func (s *GameService) GetGamesByBrand(brand string) ([]models.Game, error) {

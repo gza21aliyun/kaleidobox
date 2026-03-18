@@ -116,7 +116,7 @@ export function ImageBackupCard({
 }
 
 function getLocalPath(localPath: string)  {
-        console.log("local path 01:", localPath)
+        // console.log("local path 01:", localPath)
         if (!localPath) {
             return ""
         }

@@ -177,7 +177,7 @@ func (s *ImageService) CreateOrUpdateImageBackup(imageBackup models.ImageBackup)
 
 // GetImageBackupByUrl 根据 Url 查询 ImageBackup 记录
 func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.ImageBackup, error) {
-	fmt.Printf("GetImageBackupByUrl url: %s\n", url)
+	// fmt.Printf("GetImageBackupByUrl url: %s\n", url)
 	query := `
 		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
 		FROM image_backups

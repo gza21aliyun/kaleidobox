@@ -151,7 +151,8 @@
       "bulkImport": "批量导入",
       "importFromPotatoVN": "从 PotatoVN 导入",
       "importFromPlaynite": "从 Playnite 导入",
-      "confirmAdd": "添加"
+      "confirmAdd": "添加",
+      "confirmSelection": "确认选择"
     },
     "descriptions": {
       "manualAdd": "选择可执行文件并搜索元数据",
@@ -881,7 +882,8 @@
     "cv": "CV",
     "noCategories": "暂无分类标签",
     "relatedGames": "关联游戏",
-    "characterSummary":"角色介绍"
+    "characterSummary":"角色介绍",
+    "addRelatedGame": "添加关联游戏"
   },
   "gameLaunch": {
     "processMonitoring": "进程监控",

@@ -58,7 +58,7 @@ function GameDetailPage() {
   const isInitialMount = useRef(true);
   const originalGameData = useRef<models.Game | null>(null);
 
-  console.log("ids:", filteredGameIds)
+  // console.log("ids:", filteredGameIds)
 
   useEffect(() => {
         const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
@@ -751,7 +751,8 @@ function GameDetailPage() {
       {activeTab === "intro" && game && (
         <GameIntroPanel
           game={game}
-          onTagTaps={handleTagTaps}
+          onTagTaps={handleTagTaps}          
+          updateGame={setGame}
         />
       )}
 

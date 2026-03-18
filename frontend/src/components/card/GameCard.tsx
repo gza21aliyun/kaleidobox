@@ -40,6 +40,7 @@ interface GameCardProps {
   filteredGameIdsStr?: string[];
   /** 视图模式 */
   viewMode?: "list" | "small" | "large";
+  onDelete?: (game: models.Game) => void;
 }
 
 export function GameCard({
@@ -50,6 +51,7 @@ export function GameCard({
   searchQuery = "",
   filteredGameIdsStr = [],
   viewMode = "small",
+  onDelete
 }: GameCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -240,6 +242,18 @@ export function GameCard({
             >
               <div className="i-mdi-information-variant text-lg" />
             </button>
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(game);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/80 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-red-500/80 active:scale-95"
+                title={t('common.delete')}
+              >
+                <div className="i-mdi-delete text-lg" />
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -55,7 +55,7 @@ func createServices(t *testing.T) *Services {
 	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 	importServie := service.NewImportService()
-	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
+	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService, taskService)
 	startService := service.NewStartService()
 	startService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 
@@ -765,7 +765,7 @@ func TestGameService_DownloadSave(t *testing.T) {
 	tagService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 	importServie := service.NewImportService()
-	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService)
+	importServie.Init(context.WithValue(context.Background(), "test_mode", true), db, &config, gameService, taskService)
 
 	t.Run("import success", func(t *testing.T) {
 		getter := utils.NewSaveInfoGetter()
@@ -804,7 +804,7 @@ func createEroscapeGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 				return fmt.Errorf("月詠 角色图片为空")
 
 			}
-			imgs, err := services.ImageService.FetchImages(game.ID, 0, 2)
+			imgs, err := services.ImageService.FetchImages(game.ID, 0, 2, true)
 			if len(imgs) == 0 {
 				return fmt.Errorf("图片为空,length:%d\n", len(imgs))
 

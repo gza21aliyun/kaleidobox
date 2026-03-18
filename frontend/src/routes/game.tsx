@@ -44,7 +44,7 @@ function GameDetailPage() {
   const [ currentGameId, setCurrentGameId ] = useState(gameId);
   const search = useSearch({ strict: false }) as GameSearchParams; // 获取查询参数
   const filteredGameIds = search.filteredGameIdsStr || [];
-  const config = useAppStore(state => state.config);
+  const {config, updateGameInGames} = useAppStore();
   const setGames = useAppStore(state => state.setGames);
   const [game, setGame] = useState<models.Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -708,7 +708,10 @@ function GameDetailPage() {
       {activeTab === "edit" && game && (
         <GameEditPanel
           game={game}
-          onGameChange={setGame}
+          onGameChange={(g) => {
+            setGame(g)
+            updateGameInGames(g)
+          }}
           onDelete={handleDeleteGame}
           onSelectExecutable={handleSelectExecutable}
           onSelectSaveDirectory={handleSelectSaveDirectory}

@@ -238,7 +238,7 @@ func getTitles(searchName string) (mainT string, subT string, number string) {
 	// 检查是否包含有效的分隔符（除了纯空格）
 	// num := -1
 	// numStr := ""
-	hasValidSeparator := regexp.MustCompile(`[－\-~～　]`).MatchString(searchName)
+	hasValidSeparator := regexp.MustCompile(`[－\-~～　！]`).MatchString(searchName)
 
 	if !hasValidSeparator {
 		// 没有有效分隔符，整个字符串作为主标题处理
@@ -249,7 +249,7 @@ func getTitles(searchName string) (mainT string, subT string, number string) {
 
 	// 有有效分隔符，尝试分离主标题和副标题
 	// 使用非空格分隔符进行分割
-	separatorPattern := `[－\-~～]+`
+	separatorPattern := `[－\-~～　！]+`
 	parts := regexp.MustCompile(separatorPattern).Split(searchName, -1)
 
 	if len(parts) >= 2 {
@@ -508,7 +508,8 @@ func IsCamelCase(s string) bool {
 		return false
 	}
 	// 检查是否以小写字母开头
-	if s[0] < 'a' || s[0] > 'z' {
+	if s[0] < 'A' || s[0] > 'Z' {
+		fmt.Println("字符串不以小写字母开头")
 		return false
 	}
 	// 检查是否包含大写字母
@@ -519,6 +520,7 @@ func IsCamelCase(s string) bool {
 		}
 		// 检查是否包含非字母字符
 		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+			fmt.Println("字符串包含非字母字符")
 			return false
 		}
 	}

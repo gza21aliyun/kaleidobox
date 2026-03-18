@@ -415,7 +415,7 @@ function LibraryPage() {
   return (
     <div className={`space-y-6 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${gamesLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('library.title')}</h1>
+        <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('library.title')}({filteredGames.length})</h1>
       </div>
 
       <FilterBar

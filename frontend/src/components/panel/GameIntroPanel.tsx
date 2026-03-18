@@ -3,7 +3,7 @@ import { appconf, enums, models } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
 import { tagMapForEach, workMapForEach, charactorsForEach, getCharactorIds } from "../utils/Utility";
-import { GetGamesByRelatedGames, GetGamesByBrand } from "../../../wailsjs/go/service/GameService";
+import { GetGamesByRelatedGames, GetGamesByBrand, AddRelatedGames } from "../../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -62,6 +62,7 @@ export function GameIntroPanel({
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const textareaRef = useRef<HTMLTextAreaElement>(null);
         const [relatedGames, setRelatedGames] = useState<models.Game[]>([])
+        const [brandGames, setBrandGames] = useState<models.Game[]>([])
 
 
 
@@ -80,6 +81,9 @@ export function GameIntroPanel({
             
             })
             GetGamesByBrand(game.company).then((res) => { 
+                setBrandGames(res || [])
+            })
+            GetGamesByRelatedGames(game.related_games).then((res) => { 
                 setRelatedGames(res || [])
             })
             
@@ -208,14 +212,33 @@ export function GameIntroPanel({
                 </div>
 
                 {/* 关联游戏 */}
-                { relatedGames.length > 0 && (
+                <div className="mt-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('gameIntro.relatedGames')}</h3>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3">
+                        {relatedGames.filter((g) => g.id != game.id).map((g) => (
+                            <GameCard key={g.id} 
+                                game={g}
+                                filteredGameIdsStr={arrayMapString(relatedGames, (g) => g.id)}
+                                />
+                        ))}
+                        <div className="glass-card relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 flex items-center justify-center">
+                            <div className="flex flex-col items-center justify-center gap-2 p-4">
+                                <div className="i-mdi-plus-circle text-4xl text-brand-500 dark:text-brand-400" />
+                                <span className="text-sm font-medium text-brand-900 dark:text-white">{t('gameIntro.addRelatedGame')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 捅品牌游戏 */}
+                { brandGames.length > 0 && (
                     <div className="mt-4">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('gameIntro.relatedGames')}</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">同品牌游戏</h3>
                         <div className="grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3">
-                            {relatedGames.filter((g) => g.id != game.id).map((g) => (
+                            {brandGames.filter((g) => g.id != game.id).map((g) => (
                                 <GameCard key={g.id} 
                                     game={g}
-                                    filteredGameIdsStr={arrayMapString(relatedGames, (g) => g.id)}
+                                    filteredGameIdsStr={arrayMapString(brandGames, (g) => g.id)}
                                     />
                             ))}
                         </div>

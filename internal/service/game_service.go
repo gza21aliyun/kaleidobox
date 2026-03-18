@@ -525,6 +525,33 @@ func (s *GameService) GetGamesByRelatedGames(gameIdsStr string) ([]models.Game, 
 	return games, nil
 }
 
+func (s *GameService) AddRelatedGames(games []models.Game, game models.Game) ([]models.Game, error) {
+	if game.RelatedGames == "" {
+		return s.GetGamesByRelatedGames(game.RelatedGames)
+	}
+	gameIdsStr := game.RelatedGames
+	gameIds := strings.Split(gameIdsStr, ",")
+	idMap := map[string]string{}
+	for _, s := range gameIds {
+		gs := strings.Split(s, ":")
+		if len(gs) != 2 {
+			continue
+		}
+		idMap[gs[0]] = gs[1]
+	}
+	for _, g := range games {
+		idMap[string(enums.Local)] = g.ID
+	}
+	gameIdsStr = ""
+	for k, v := range idMap {
+		gameIdsStr += fmt.Sprintf("%s:%s,", k, v)
+	}
+	gameIdsStr = strings.TrimSuffix(gameIdsStr, ",")
+	game.RelatedGames = gameIdsStr
+	s.UpdateGame(game)
+	return s.GetGamesByRelatedGames(game.RelatedGames)
+}
+
 func (s *GameService) GetGamesByBrand(brand string) ([]models.Game, error) {
 	games := []models.Game{}
 	if brand == "" {

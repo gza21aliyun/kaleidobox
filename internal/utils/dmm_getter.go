@@ -243,11 +243,11 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 
 		// 提取公司信息
 		company := e.ChildText("div.productLayout__secondaryColumn div.contentsDetailTop__tableRow:contains('ブランド') div.contentsDetailTop__tableDataRight a")
-		companyLink := e.ChildAttr("div.productLayout__secondaryColumn div.contentsDetailTop__tableRow:contains('ブランド') div.contentsDetailTop__tableDataRight a", "href")
+		// companyLink := e.ChildAttr("div.productLayout__secondaryColumn div.contentsDetailTop__tableRow:contains('ブランド') div.contentsDetailTop__tableDataRight a", "href")
 
-		companyId := strings.ReplaceAll(strings.ReplaceAll(companyLink, "https://dlsoft.dmm.co.jp/list/?maker=", ""), "&sort=ranking", "")
-		relatedStr, err := b.GetRelatedGames(companyId)
-		game.RelatedGames = relatedStr
+		// companyId := strings.ReplaceAll(strings.ReplaceAll(companyLink, "https://dlsoft.dmm.co.jp/list/?maker=", ""), "&sort=ranking", "")
+		// relatedStr, err := b.GetRelatedGames(companyId)
+		// game.RelatedGames = relatedStr
 
 		game.Company = company
 

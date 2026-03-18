@@ -10,6 +10,15 @@ export function formatDuration(seconds: number): string {
   return `${minutes}分钟`;
 }
 
+export function formatDurationSimple(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}小时`;
+  }
+  return `${minutes}分钟`;
+}
+
 /**
  * 将秒数格式化为简短时间字符串 (Xh Ym)
  * TODO: i18n
@@ -104,6 +113,45 @@ export function formatLocalDate(timeString: any, timezone?: string, options?: In
     ...(timezone && { timeZone: timezone }),
     ...options,
   });
+}
+
+export function formatLastDateText(timeString: any): string {
+  const date = parseTime(timeString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSeconds < 0) {
+    return "未来";
+  }
+  
+  if (diffDays === 0) {
+    return "今天";
+  }
+  
+  if (diffDays === 1) {
+    return "昨天";
+  }
+  
+  if (diffDays < 7) {
+    return `${diffDays}天前`;
+  }
+  
+  const diffWeeks = Math.floor(diffDays / 7);
+  if (diffDays < 30) {
+    return `${diffWeeks}周前`;
+  }
+  
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffDays < 365) {
+    return `${diffMonths}个月前`;
+  }
+  
+  const diffYears = Math.floor(diffDays / 365);
+  return `${diffYears}年前`;
 }
 
 /**

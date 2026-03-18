@@ -1,11 +1,13 @@
-import type { models } from "../../../wailsjs/go/models";
+import type { models, vo } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { enums } from "../../../wailsjs/go/models";
-import { formatLocalDate } from "../../utils/time";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
 import { ImageCard } from "./ImageCard";
+import { useCallback, useEffect, useState } from "react";
+import { GetGameStats } from "../../../wailsjs/go/service/StatsService";
+import { formatDurationSimple, formatLastDateText, formatLocalDate } from "../../utils/time";
 
 // ── 高亮工具：将文本中匹配 query 的部分高亮显示 ──────────────────────────────
 function HighlightText({ text, query }: { text: string; query: string }) {
@@ -55,6 +57,34 @@ export function GameCard({
 }: GameCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [stats, setStats] = useState<vo.GameDetailStats | null>(null);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const statsData = await GetGameStats({
+        game_id: game.id,
+        dimension: enums.Period.ALL,
+        start_date: "",
+        end_date: "",
+      });
+      setStats(statsData);
+    }
+    catch (error) {
+      console.error("Failed to load game stats:", error);
+    }
+  }, [game]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await Promise.all([loadStats()]);
+      }
+      finally {
+        
+      }
+    };
+    loadData();
+  }, [loadStats]);
   
 
   const handleToggleSelect = (e: React.MouseEvent) => {
@@ -202,6 +232,19 @@ export function GameCard({
           <div className="i-mdi-check text-sm" />
         </button>
       )}
+      {stats && stats.total_play_time > 0 && (
+        <div className="absolute right-1 bottom-16 z-10 flex flex-col rounded-md bg-black/30 px-2 py-1 text-xs text-white/90 backdrop-blur-sm shadow-lg"> 
+          <div className="flex items-center whitespace-nowrap">
+            玩过{formatDurationSimple(stats.total_play_time)}
+          </div>
+          {stats.end_date && (
+            <div className="mt-0.5 flex items-center whitespace-nowrap border-t border-white/20 pt-0.5">
+              {formatLastDateText(stats.end_date)}玩过
+            </div>
+          )}
+        </div>
+      )}
+      
       <div className="relative aspect-[3/3.6] w-full overflow-hidden bg-brand-200 dark:bg-brand-700">
         {game.cover_url
           ? (

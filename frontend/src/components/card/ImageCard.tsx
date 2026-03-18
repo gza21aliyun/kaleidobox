@@ -160,13 +160,14 @@ export function ImageCard({
 
 
     if (!imageBackup) {
-        return <img alt={alt}
-        className={className}
-        style={style}
-        draggable={draggable}
-        onDragStart={onDragStart}
-        referrerPolicy={referrerPolicy}
-         />;
+        // return <img alt={alt}
+        // className={className}
+        // style={style}
+        // draggable={draggable}
+        // onDragStart={onDragStart}
+        // referrerPolicy={referrerPolicy}
+        //  />;
+        return null;
     }
 
 

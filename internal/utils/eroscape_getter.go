@@ -369,6 +369,10 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 
 			staffHref := b.GetBaseUrl() + s.Find("div.cv a").AttrOr("href", "")
 			work.StaffName = s.Find("div.cv a").Text()
+			if strings.Contains(work.StaffName, "(") {
+				parts := strings.Split(work.StaffName, "(")
+				work.StaffName = strings.TrimSpace(parts[0])
+			}
 			applog.InfoLogSaveAppLog("角色声优url : " + staffHref)
 			if charHref != "" {
 				parsedURL, err := url.Parse(staffHref)

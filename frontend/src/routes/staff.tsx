@@ -6,6 +6,7 @@ import { GetStaffById } from "../../wailsjs/go/service/StaffService";
 import { GetWorkGamesByStaffId } from "../../wailsjs/go/service/GameService";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
+import { ImageCard } from '../components/card/ImageCard';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -175,8 +176,8 @@ function StaffPage() {
                                 
                                 
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">   
-                    <img 
-                                    src={staff.image} 
+                    <ImageCard
+                                    url={staff.image} 
                                     className="w-16 h-32 object-cover rounded"
                                 />
                 </div>
@@ -270,22 +271,36 @@ function StaffPage() {
                             <tr 
                             key={index} 
                             className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600/50 cursor-pointer"
-                            onClick={() => {
-                                console.log(`跳转到游戏: ${work.game.name?.trim()}`);
-                                handleGameClick(work.game.id);
-                            }}
+                            // onClick={() => {
+                            //     console.log(`跳转到游戏: ${work.game.name?.trim()}`);
+                            //     handleGameClick(work.game.id);
+                            // }}
                             >
                             <td className="py-3 px-3">
                                 {work.game.cover_url && (
-                                <img 
-                                    src={work.game.cover_url} 
+                                <ImageCard
+                                    url={work.game.cover_url} 
                                     alt={`${work.game.name?.trim() || t('common.game')} ${t('common.cover')}`} 
                                     className="w-16 h-24 object-cover rounded"
                                 />
                                 )}
                             </td>
-                            <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-1/10">
-                                {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
+                            <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-1/10"
+                              // onClick={() => {
+                              //     console.log(`跳转到游戏: ${work.game.name?.trim()}`);
+                              //     handleGameClick(work.game.id);
+                              // }}
+                            >
+                                {/* {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`} */}
+                                <button
+                                    onClick={(e) => {
+                                      console.log(`跳转到游戏: ${work.game.name?.trim()}`);
+                                      handleGameClick(work.game.id);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                                  >
+                                     {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
+                                  </button>
                             </td>
                             <td className="py-3 px-3 w-1/20">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
@@ -304,8 +319,8 @@ function StaffPage() {
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (
                                 <td className="py-3 px-3">
                                 {work.work.charactor_image && (
-                                <img 
-                                    src={work.work.charactor_image} 
+                                <ImageCard
+                                    url={work.work.charactor_image} 
                                     className="w-12 h-24 object-cover rounded"
                                 />
                                 )}

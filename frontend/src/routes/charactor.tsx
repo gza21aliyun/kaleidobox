@@ -280,8 +280,8 @@ function CharactorPage() {
             {/* 角色图片 */}
             {charactor.image_path && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
-                <img
-                    src={charactor.image_path}
+                <ImageCard
+                    url={charactor.image_path}
                     alt={`${charactor.name} ${t('charactor.labels.characterImage')}`}
                     className="w-40 h-68 object-contain rounded mx-auto"
                 />
@@ -361,22 +361,31 @@ function CharactorPage() {
                           <tr
                             key={index}
                             className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600/50 cursor-pointer"
-                            onClick={() => {
-                              console.log(`跳转到游戏: ${work.game.name?.trim()}`);
-                              handleGameClick(work.game.id);
-                            }}
+                            // onClick={() => {
+                            //   console.log(`跳转到游戏: ${work.game.name?.trim()}`);
+                            //   handleGameClick(work.game.id);
+                            // }}
                           >
                             <td className="py-3 px-3 w-1/10">
                               {work.game.cover_url && (
-                                <img
-                                  src={work.game.cover_url}
+                                <ImageCard
+                                  url={work.game.cover_url}
                                   alt={`${work.game.name?.trim() || t('common.game')} ${t('common.cover')}`}
                                   className="w-24 h-40 object-cover rounded"
                                 />
                               )}
                             </td>
                             <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-1/10">
-                              {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
+                              {/* {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`} */}
+                              <button
+                                    onClick={(e) => {
+                                      console.log(`跳转到游戏: ${work.game.name?.trim()}`);
+                                      handleGameClick(work.game.id);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                                  >
+                                     {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
+                                  </button>
                             </td>
                             
                             <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">

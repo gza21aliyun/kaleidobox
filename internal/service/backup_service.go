@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
+	"lunabox/internal/migrations"
 	"lunabox/internal/models"
 	"lunabox/internal/service/cloudprovider"
 	"lunabox/internal/service/cloudprovider/onedrive"
@@ -1102,12 +1103,244 @@ func ExecuteFullDataRestore(config *appconf.AppConfig) (bool, error) {
 
 // ========== 数据库恢复（启动时调用）==========
 
+// migrateData 将数据从临时数据库迁移到新数据库
+func migrateData(tempDB, newDB *sql.DB) error {
+	// 迁移 users 表
+	if err := migrateTable(tempDB, newDB, "users"); err != nil {
+		return err
+	}
+
+	// 迁移 categories 表
+	if err := migrateTable(tempDB, newDB, "categories"); err != nil {
+		return err
+	}
+
+	// 迁移 games 表
+	if err := migrateTable(tempDB, newDB, "games"); err != nil {
+		return err
+	}
+
+	// 迁移 game_categories 表
+	if err := migrateTable(tempDB, newDB, "game_categories"); err != nil {
+		return err
+	}
+
+	// 迁移 play_sessions 表
+	if err := migrateTable(tempDB, newDB, "play_sessions"); err != nil {
+		return err
+	}
+
+	// 迁移 tasks 表
+	if err := migrateTable(tempDB, newDB, "tasks"); err != nil {
+		return err
+	}
+
+	// 迁移 charactors 表
+	if err := migrateTable(tempDB, newDB, "charactors"); err != nil {
+		return err
+	}
+
+	// 迁移 staffs 表
+	if err := migrateTable(tempDB, newDB, "staffs"); err != nil {
+		return err
+	}
+
+	// 迁移 works 表
+	if err := migrateTable(tempDB, newDB, "works"); err != nil {
+		return err
+	}
+
+	// 迁移 tags 表
+	if err := migrateTable(tempDB, newDB, "tags"); err != nil {
+		return err
+	}
+
+	// 迁移 image_backups 表
+	if err := migrateTable(tempDB, newDB, "image_backups"); err != nil {
+		return err
+	}
+
+	// 迁移 hotkeys 表
+	if err := migrateTable(tempDB, newDB, "hotkeys"); err != nil {
+		return err
+	}
+
+	// 迁移 connected_devices 表
+	if err := migrateTable(tempDB, newDB, "connected_devices"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// migrateTable 迁移单个表的数据
+func migrateTable(tempDB, newDB *sql.DB, tableName string) error {
+	// 获取临时表的列信息
+	tempColumns, err := getTableColumns(tempDB, tableName)
+	if err != nil {
+		// 表不存在，跳过
+		fmt.Printf("迁移表 %s: 临时表不存在或查询失败\n", tableName)
+		return nil
+	}
+
+	// 获取新表的列信息
+	newColumns, err := getTableColumns(newDB, tableName)
+	if err != nil {
+		return fmt.Errorf("获取新表 %s 列信息失败: %w", tableName, err)
+	}
+
+	// 找出两个表共有的列
+	commonColumns := []string{}
+	for _, col := range tempColumns {
+		for _, newCol := range newColumns {
+			if col == newCol {
+				commonColumns = append(commonColumns, col)
+				break
+			}
+		}
+	}
+
+	if len(commonColumns) == 0 {
+		// 没有共同列，跳过
+		fmt.Printf("迁移表 %s: 没有共同列\n", tableName)
+		return nil
+	}
+
+	// 构建列名字符串
+	columnsStr := strings.Join(commonColumns, ", ")
+	placeholders := make([]string, len(commonColumns))
+	for i := range commonColumns {
+		placeholders[i] = "?"
+	}
+	placeholdersStr := strings.Join(placeholders, ", ")
+
+	// 构建查询语句
+	selectQuery := fmt.Sprintf("SELECT %s FROM %s", columnsStr, tableName)
+	insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName, columnsStr, placeholdersStr)
+
+	fmt.Printf("迁移表 %s: 开始迁移，共有 %d 个共同列\n", tableName, len(commonColumns))
+
+	// 执行查询
+	rows, err := tempDB.Query(selectQuery)
+	if err != nil {
+		return fmt.Errorf("查询临时表 %s 数据失败: %w", tableName, err)
+	}
+	defer rows.Close()
+
+	// 准备插入语句
+	stmt, err := newDB.Prepare(insertQuery)
+	if err != nil {
+		return fmt.Errorf("准备插入语句失败: %w", err)
+	}
+	defer stmt.Close()
+
+	// 遍历结果并插入
+	count := 0
+	for rows.Next() {
+		// 动态创建参数切片
+		values := make([]interface{}, len(commonColumns))
+		valuePtrs := make([]interface{}, len(commonColumns))
+
+		for i := range commonColumns {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return fmt.Errorf("扫描数据失败: %w", err)
+		}
+
+		_, err := stmt.Exec(values...)
+		if err != nil {
+			return fmt.Errorf("插入数据失败: %w", err)
+		}
+
+		count++
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("遍历结果失败: %w", err)
+	}
+
+	fmt.Printf("迁移表 %s: 成功迁移 %d 条记录\n", tableName, count)
+
+	return nil
+}
+
+// getTableColumns 获取表的列名
+func getTableColumns(db *sql.DB, tableName string) ([]string, error) {
+	// 先检查表是否存在
+	tableExists := false
+	err := db.QueryRow("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?", tableName).Scan(&tableExists)
+	if err != nil {
+		// 尝试另一种方式检查表是否存在
+		_, err := db.Exec(fmt.Sprintf("SELECT 1 FROM %s LIMIT 1", tableName))
+		if err != nil {
+			return nil, fmt.Errorf("表 %s 不存在或无法访问: %w", tableName, err)
+		}
+	}
+
+	// 尝试使用 PRAGMA table_info 获取列信息
+	rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s)", tableName))
+	if err != nil {
+		// 如果 PRAGMA 失败，尝试使用 SELECT * 来获取列名
+		return getColumnsFromSelect(db, tableName)
+	}
+	defer rows.Close()
+
+	columns := []string{}
+	for rows.Next() {
+		var cid int
+		var name string
+		var typeStr string
+		var notnull int
+		var dfltValue interface{}
+		var pk int
+
+		if err := rows.Scan(&cid, &name, &typeStr, &notnull, &dfltValue, &pk); err != nil {
+			rows.Close()
+			// 扫描失败，尝试使用 SELECT * 来获取列名
+			return getColumnsFromSelect(db, tableName)
+		}
+
+		columns = append(columns, name)
+	}
+
+	if err := rows.Err(); err != nil {
+		// 遍历失败，尝试使用 SELECT * 来获取列名
+		return getColumnsFromSelect(db, tableName)
+	}
+
+	if len(columns) == 0 {
+		// 没有获取到列信息，尝试使用 SELECT * 来获取列名
+		return getColumnsFromSelect(db, tableName)
+	}
+
+	return columns, nil
+}
+
+// getColumnsFromSelect 通过执行 SELECT * 来获取表的列名
+func getColumnsFromSelect(db *sql.DB, tableName string) ([]string, error) {
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s LIMIT 1", tableName))
+	if err != nil {
+		return nil, fmt.Errorf("查询表 %s 失败: %w", tableName, err)
+	}
+	defer rows.Close()
+
+	schema, err := rows.Columns()
+	if err != nil {
+		return nil, fmt.Errorf("获取表 %s 列信息失败: %w", tableName, err)
+	}
+
+	return schema, nil
+}
+
 // ExecuteDBRestore 执行数据库恢复（在 OnStartup 中、打开数据库前调用）
 // 支持新格式（包含 database/ 和 covers/ 子目录）和旧格式（直接是数据库导出文件）
 func ExecuteDBRestore(config *appconf.AppConfig) (bool, error) {
 	if config.PendingDBRestore == "" {
 		return false, nil
 	}
+	fmt.Printf("ExecuteDBRestore start\n")
 
 	backupPath := config.PendingDBRestore
 
@@ -1117,22 +1350,28 @@ func ExecuteDBRestore(config *appconf.AppConfig) (bool, error) {
 		return false, fmt.Errorf("备份文件不存在: %s", backupPath)
 	}
 
+	fmt.Printf("ExecuteDBRestore start 01 \n")
+
 	dataDir, err := utils.GetDataDir()
 	if err != nil {
 		return false, err
 	}
 	dbPath := filepath.Join(dataDir, "lunabox.db")
+	fmt.Printf("ExecuteDBRestore start 02 \n")
 
 	tempDir := filepath.Join(dataDir, "backups", "database", "restore_temp")
 	os.RemoveAll(tempDir)
 	if err := os.MkdirAll(tempDir, 0755); err != nil {
 		return false, fmt.Errorf("创建临时目录失败: %w", err)
 	}
+	fmt.Printf("ExecuteDBRestore start 03 \n")
 
 	if err := utils.UnzipForRestore(backupPath, tempDir); err != nil {
 		os.RemoveAll(tempDir)
 		return false, fmt.Errorf("解压备份失败: %w", err)
 	}
+
+	fmt.Printf("ExecuteDBRestore start 04 \n")
 
 	// 检测备份格式：新格式有 database/ 子目录，旧格式直接是数据库文件
 	dbImportDir := tempDir
@@ -1146,20 +1385,87 @@ func ExecuteDBRestore(config *appconf.AppConfig) (bool, error) {
 	os.Remove(dbPath)
 	os.Remove(dbPath + ".wal")
 
-	db, err := sql.Open("duckdb", dbPath)
+	// 步骤1：创建临时数据库来读取备份数据
+	tempDBPath := filepath.Join(tempDir, "temp_backup.db")
+	os.Remove(tempDBPath)
+	os.Remove(tempDBPath + ".wal")
+
+	tempDB, err := sql.Open("duckdb", tempDBPath)
 	if err != nil {
 		os.RemoveAll(tempDir)
-		return false, fmt.Errorf("打开数据库失败: %w", err)
+		return false, fmt.Errorf("打开临时数据库失败: %w", err)
 	}
+
+	fmt.Printf("ExecuteDBRestore start 07 \n")
 
 	importPath := strings.ReplaceAll(dbImportDir, "\\", "/")
-	_, err = db.Exec(fmt.Sprintf("IMPORT DATABASE '%s'", importPath))
-	db.Close()
-
+	_, err = tempDB.Exec(fmt.Sprintf("IMPORT DATABASE '%s'", importPath))
 	if err != nil {
+		tempDB.Close()
 		os.RemoveAll(tempDir)
-		return false, fmt.Errorf("导入数据库失败: %w", err)
+		return false, fmt.Errorf("导入备份到临时数据库失败: %w", err)
 	}
+
+	// 日志：临时数据库导入后的数据量
+	fmt.Println("=== 临时数据库导入后的数据量 ===")
+	tableNames := []string{"users", "categories", "games", "game_categories", "play_sessions", "tasks", "charactors", "staffs", "works", "tags", "image_backups", "hotkeys", "connected_devices"}
+	for _, table := range tableNames {
+		var count int
+		err := tempDB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&count)
+		if err == nil {
+			fmt.Printf("临时数据库表 %s: %d 条记录\n", table, count)
+		} else {
+			fmt.Printf("临时数据库表 %s: 不存在或查询失败\n", table)
+		}
+	}
+
+	fmt.Printf("ExecuteDBRestore start 08 \n")
+
+	// 步骤2：创建新的数据库结构
+	newDB, err := sql.Open("duckdb", dbPath)
+	if err != nil {
+		tempDB.Close()
+		os.RemoveAll(tempDir)
+		return false, fmt.Errorf("打开新数据库失败: %w", err)
+	}
+
+	fmt.Printf("ExecuteDBRestore start 09 \n")
+
+	// 初始化新的表结构
+	if err := migrations.InitSchema(newDB); err != nil {
+		tempDB.Close()
+		newDB.Close()
+		os.RemoveAll(tempDir)
+		return false, fmt.Errorf("初始化新数据库结构失败: %w", err)
+	}
+
+	fmt.Printf("ExecuteDBRestore start 10 \n")
+
+	// 步骤3：迁移数据
+	if err := migrateData(tempDB, newDB); err != nil {
+		tempDB.Close()
+		newDB.Close()
+		os.RemoveAll(tempDir)
+		return false, fmt.Errorf("迁移数据失败: %w", err)
+	}
+
+	// 日志：正式数据库迁移后的数据量
+	fmt.Println("=== 正式数据库迁移后的数据量 ===")
+	for _, table := range tableNames {
+		var count int
+		err := newDB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&count)
+		if err == nil {
+			fmt.Printf("正式数据库表 %s: %d 条记录\n", table, count)
+		} else {
+			fmt.Printf("正式数据库表 %s: 查询失败\n", table)
+		}
+	}
+
+	fmt.Printf("ExecuteDBRestore start 11 \n")
+
+	// 关闭数据库
+	tempDB.Close()
+	newDB.Close()
 
 	// 恢复 covers 文件夹（如果备份中包含）
 	if coversBackupDir != "" {
@@ -1173,6 +1479,7 @@ func ExecuteDBRestore(config *appconf.AppConfig) (bool, error) {
 			}
 		}
 	}
+	fmt.Printf("ExecuteDBRestore start 13 \n")
 
 	os.RemoveAll(tempDir)
 

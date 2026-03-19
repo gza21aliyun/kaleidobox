@@ -250,8 +250,12 @@ func main() {
 				restored, restoreErr := service.ExecuteDBRestore(config)
 				if restoreErr != nil {
 					appLogger.Error("fail to restore database: " + restoreErr.Error())
+					fmt.Printf("fail to restore database: %v\n", restoreErr)
 				} else if restored {
 					appLogger.Info("database restored successfully")
+					configService.SafeQuit()
+					runtime.Quit(ctx)
+					return
 				}
 			}
 

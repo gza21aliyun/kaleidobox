@@ -28,6 +28,7 @@ type Services struct {
 	ImportService    *service.ImportService
 	ImageService     *service.ImageService
 	StartService     *service.StartService
+	BackupService    *service.BackupService
 	config           appconf.AppConfig
 }
 
@@ -44,6 +45,8 @@ func createServices(t *testing.T) *Services {
 	imageService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	taskService := service.NewTaskService()
 	taskService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
+	backupService := service.NewBackupService()
+	backupService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	charactorService := service.NewCharactorService()
 	charactorService.Init(context.WithValue(context.Background(), "test_mode", true), db, &config)
 	staffService := service.NewStaffService()
@@ -69,6 +72,7 @@ func createServices(t *testing.T) *Services {
 		ImportService:    importServie,
 		ImageService:     imageService,
 		StartService:     startService,
+		BackupService:    backupService,
 		config:           config,
 	}
 	return &services

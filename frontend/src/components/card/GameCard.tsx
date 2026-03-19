@@ -6,8 +6,10 @@ import { enums } from "../../../wailsjs/go/models";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
 import { ImageCard } from "./ImageCard";
 import { useCallback, useEffect, useState } from "react";
-import { GetGameStats } from "../../../wailsjs/go/service/StatsService";
+import { GetGameStats, GetGameEndDate } from "../../../wailsjs/go/service/StatsService";
 import { formatDurationSimple, formatLastDateText, formatLocalDate } from "../../utils/time";
+import { arrayFind } from "../../components/utils/Utility";
+import { time } from "react-i18next/icu.macro";
 
 // ── 高亮工具：将文本中匹配 query 的部分高亮显示 ──────────────────────────────
 function HighlightText({ text, query }: { text: string; query: string }) {
@@ -58,6 +60,7 @@ export function GameCard({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [stats, setStats] = useState<vo.GameDetailStats | null>(null);
+  // const [endDate, setEndDate] = useState<Date | null>(null);
 
   const loadStats = useCallback(async () => {
     try {
@@ -67,7 +70,12 @@ export function GameCard({
         start_date: "",
         end_date: "",
       });
-      setStats(statsData);
+          
+      const end_date = await GetGameEndDate(game.id);
+      if (stats) {
+        stats.end_date = formatLastDateText(end_date) ?? ""
+      }      
+      setStats(statsData);  
     }
     catch (error) {
       console.error("Failed to load game stats:", error);

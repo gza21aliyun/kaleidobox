@@ -4,15 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
 	"lunabox/internal/enums"
+	"lunabox/internal/models"
 	"lunabox/internal/vo"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -102,6 +105,61 @@ func (s *StatsService) FetchImageAsBase64(url string) (string, error) {
 	return fmt.Sprintf("data:%s;base64,%s", contentType, base64Data), nil
 }
 
+func (s *StatsService) GetCurrentSession(gameId string) (*models.PlaySession, error) {
+	// var sessions []models.PlaySession = []models.PlaySession{}
+	// 查询所有未完成的会话（duration == 0 表示未完成）
+	rows, err := s.db.QueryContext(
+		s.ctx,
+		`SELECT id, game_id, start_time, pid, process_name FROM play_sessions WHERE duration = 0 AND game_id = ?`,
+		gameId,
+	)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "CleanupUnfinishedSessions: failed to query unfinished sessions: %v", err)
+		return nil, fmt.Errorf("查询未完成会话失败: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var session models.PlaySession
+		if err := rows.Scan(&session.ID, &session.GameID, &session.StartTime, &session.Pid, &session.ProcessName); err != nil {
+			applog.LogErrorf(s.ctx, "CleanupUnfinishedSessions: failed to scan session: %v", err)
+			continue
+		}
+		// sessions = append(sessions, session)
+		return &session, nil
+	}
+	return nil, errors.New("读取未完成游戏记录失败")
+}
+
+func (s *StatsService) GetGameEndDate(gameId string) (time.Time, error) {
+	session, err := s.GetCurrentSession(gameId)
+	// if err != nil {
+	// 	return time.Now(), err
+	// }
+	if session != nil {
+		return time.Now(), nil
+	}
+	rows, err := s.db.QueryContext(
+		s.ctx,
+		`SELECT COALESCE(MAX(end_time::DATE), current_date) FROM play_sessions WHERE game_id = ?`,
+		gameId,
+	)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "CleanupUnfinishedSessions: failed to query unfinished sessions: %v", err)
+		return time.Now(), fmt.Errorf("查询未完成会话失败: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var endTime time.Time
+		if err := rows.Scan(&endTime); err != nil {
+			applog.LogErrorf(s.ctx, "CleanupUnfinishedSessions: failed to scan session: %v", err)
+			continue
+		}
+		// sessions = append(sessions, session)
+		return endTime, nil
+	}
+	return time.Now(), errors.New("未找到未完成会话")
+}
+
 func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats, error) {
 	var stats vo.GameDetailStats
 	stats.Dimension = string(req.Dimension)
@@ -150,6 +208,7 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 		seriesEnd = fmt.Sprintf("'%s'::DATE", endDate)
 		stats.StartDate = startDate
 		stats.EndDate = endDate
+		fmt.Printf("GetGameStats 01 gameId:%s\n", req.GameID)
 	} else {
 		startDateExpr = startDate
 		endDateExpr = endDate
@@ -158,12 +217,14 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 		// 获取实际日期范围用于显示
 		var actualStart, actualEnd string
 		if req.Dimension == enums.All {
-			err := s.db.QueryRowContext(s.ctx, "SELECT COALESCE(MIN(start_time::DATE), current_date), current_date FROM play_sessions WHERE game_id = ?", req.GameID).Scan(&actualStart, &actualEnd)
+			err := s.db.QueryRowContext(s.ctx, "SELECT COALESCE(MIN(start_time::DATE), current_date), COALESCE(MAX(end_time::DATE), current_date) FROM play_sessions WHERE game_id = ?", req.GameID).Scan(&actualStart, &actualEnd)
+			fmt.Printf("GetGameStats 02 gameId:%s， end：%s\n", req.GameID, actualEnd)
 			if err == nil {
 				stats.StartDate = actualStart
 				stats.EndDate = actualEnd
 			}
 		} else {
+			fmt.Printf("GetGameStats 03: gameId:%s SELECT %s, %s\n", req.GameID, startDateExpr, endDateExpr)
 			err := s.db.QueryRowContext(s.ctx, fmt.Sprintf("SELECT %s, %s", startDateExpr, endDateExpr)).Scan(&actualStart, &actualEnd)
 			if err == nil {
 				stats.StartDate = actualStart

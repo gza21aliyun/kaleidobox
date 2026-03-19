@@ -6,6 +6,7 @@ import { useAppStore } from "../store";
 import { formatDuration, formatLocalDateTime } from "../utils/time";
 import { Route as rootRoute } from "./__root";
 import { useTranslation } from 'react-i18next';
+import { ImageCard } from "../components/card/ImageCard";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -102,12 +103,11 @@ function HomePage() {
         {/* 仅在未启用自定义背景或未选择隐藏游戏封面时显示 */}
         {(!config?.background_enabled || !config?.background_hide_game_cover) && (
           <div className="absolute inset-0">
-            <img
-              src={lastPlayed.game.cover_url}
+            <ImageCard
+              url={lastPlayed.game.cover_url}
               alt=""
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
-              draggable="false"
               onDragStart={e => e.preventDefault()}
             />
             {/* 整体柔和遮罩 - 浅色模式用浅色，深色模式用深色 */}

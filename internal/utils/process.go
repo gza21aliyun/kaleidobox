@@ -14,26 +14,28 @@ import (
 )
 
 const (
-	SYNCHRONIZE               = 0x00100000
-	WAIT_OBJECT_0             = 0
-	STILL_ACTIVE              = 259
-	WAIT_TIMEOUT              = 258
-	WAIT_FAILED               = 0xFFFFFFFF
-	INFINITE                  = 0xFFFFFFFF
-	PROCESS_QUERY_INFORMATION = 0x0400
-	TH32CS_SNAPPROCESS        = 0x00000002
-	TH32CS_SNAPMODULE         = 0x00000008
-	MAX_PATH                  = 260
+	SYNCHRONIZE                       = 0x00100000
+	WAIT_OBJECT_0                     = 0
+	STILL_ACTIVE                      = 259
+	WAIT_TIMEOUT                      = 258
+	WAIT_FAILED                       = 0xFFFFFFFF
+	INFINITE                          = 0xFFFFFFFF
+	PROCESS_QUERY_INFORMATION         = 0x0400
+	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+	TH32CS_SNAPPROCESS                = 0x00000002
+	TH32CS_SNAPMODULE                 = 0x00000008
+	MAX_PATH                          = 260
 )
 
 var (
-	kernel32                     = syscall.NewLazyDLL("kernel32.dll")
-	procOpenProcess              = kernel32.NewProc("OpenProcess")
-	procWaitForSingleObject      = kernel32.NewProc("WaitForSingleObject")
-	procCloseHandle              = kernel32.NewProc("CloseHandle")
-	procCreateToolhelp32Snapshot = kernel32.NewProc("CreateToolhelp32Snapshot")
-	procProcess32First           = kernel32.NewProc("Process32FirstW")
-	procProcess32Next            = kernel32.NewProc("Process32NextW")
+	kernel32                       = syscall.NewLazyDLL("kernel32.dll")
+	procOpenProcess                = kernel32.NewProc("OpenProcess")
+	procWaitForSingleObject        = kernel32.NewProc("WaitForSingleObject")
+	procCloseHandle                = kernel32.NewProc("CloseHandle")
+	procCreateToolhelp32Snapshot   = kernel32.NewProc("CreateToolhelp32Snapshot")
+	procProcess32First             = kernel32.NewProc("Process32FirstW")
+	procProcess32Next              = kernel32.NewProc("Process32NextW")
+	procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
 )
 
 // ProcessInfo 进程信息
@@ -217,7 +219,7 @@ func GetProcessPIDByName(processName string, path string) (uint32, error) {
 
 		// 不区分大小写比较
 		if strings.EqualFold(exeName, targetName) {
-			processPath, err := getProcessPath(pe32.ProcessID)
+			processPath, err := GetProcessPath(pe32.ProcessID)
 			applog.InfoLogSaveAppLog("processPath:%s, %v", processPath, err)
 			if path == processPath {
 				applog.InfoLogSaveAppLog("processName:%s found, paths are same", processName, err)
@@ -461,6 +463,68 @@ var (
 
 // GetRunningProcessesWithPPID 获取系统中正在运行的进程列表（包含完整路径）
 func GetRunningProcessesWithPPID() ([]NewProcessInfo, error) {
+	fmt.Println("GetRunningProcessesWithPPID")
+	systemProcesses := map[string]bool{
+		"system":                      true,
+		"registry":                    true,
+		"smss.exe":                    true,
+		"csrss.exe":                   true,
+		"wininit.exe":                 true,
+		"services.exe":                true,
+		"lsass.exe":                   true,
+		"winlogon.exe":                true,
+		"fontdrvhost.exe":             true,
+		"dwm.exe":                     true,
+		"svchost.exe":                 true,
+		"sihost.exe":                  true,
+		"taskhostw.exe":               true,
+		"explorer.exe":                true,
+		"runtimebroker.exe":           true,
+		"searchhost.exe":              true,
+		"startmenuexperiencehost.exe": true,
+		"textinputhost.exe":           true,
+		"ctfmon.exe":                  true,
+		"conhost.exe":                 true,
+		"dllhost.exe":                 true,
+		"spoolsv.exe":                 true,
+		"searchindexer.exe":           true,
+		"securityhealthservice.exe":   true,
+		"securityhealthsystray.exe":   true,
+		"smartscreen.exe":             true,
+		"applicationframehost.exe":    true,
+		"windowsterminal.exe":         true,
+		"cmd.exe":                     true,
+		"powershell.exe":              true,
+		"pwsh.exe":                    true,
+		"taskmgr.exe":                 true,
+		"systemsettings.exe":          true,
+		"lockapp.exe":                 true,
+		"shellexperiencehost.exe":     true,
+		"wudfhost.exe":                true,
+		"dashost.exe":                 true,
+		"wmiprvse.exe":                true,
+		"mpcmdrun.exe":                true,
+		"audiodg.exe":                 true,
+		"unsecapp.exe":                true,
+		"msedgewebview2.exe":          true,
+		"msedge.exe":                  true,
+		"chrome.exe":                  true,
+		"firefox.exe":                 true,
+		"code.exe":                    true,
+		"notepad.exe":                 true,
+		"trae cn.exe":                 true,
+		"trae.exe":                    true,
+		"qq.exe":                      true,
+		"maxthon.exe":                 true,
+		"lunabox.exe":                 true,
+		"clash-core-service.exe":      true,
+		"searchprotocolhost.exe":      true,
+		"aggregatorhost.exe":          true,
+		"vmware-hostd.exe":            true,
+		"zerotier-one_x64.exe":        true,
+		"vm3dservice.exe":             true,
+		"msdtc.exe":                   true,
+	}
 	// 创建进程快照
 	snapshot, _, err := procCreateToolhelp32Snapshot.Call(
 		uintptr(TH32CS_SNAPPROCESS),
@@ -499,6 +563,15 @@ func GetRunningProcessesWithPPID() ([]NewProcessInfo, error) {
 			}
 			continue
 		}
+		// if systemProcesses[exeName] {
+		// 	// continue
+		// }
+		if v, has := systemProcesses[strings.ToLower(exeName)]; has && v {
+			if !getNextProcess(snapshot, &pe32) {
+				break
+			}
+			continue
+		}
 
 		// 获取进程路径
 		// path, err := getProcessPath(pe32.ProcessID)
@@ -530,11 +603,119 @@ func getNextProcess(snapshot uintptr, pe32 *PROCESSENTRY32W) bool {
 	return ret != 0
 }
 
-// getProcessPath 获取指定 PID 进程的完整路径
-func getProcessPath(pid uint32) (string, error) {
+// GetProcessPath 获取指定 PID 进程的完整路径
+// ... existing code ...
+
+// GetProcessPath 获取指定 PID 进程的完整路径
+// GetProcessPath 获取指定 PID 进程的完整路径
+// GetProcessPath 获取指定 PID 进程的完整路径
+func GetProcessPath(pid uint32) (string, error) {
+	// 方法 1: 尝试使用 WMI 查询（最安全，但较慢）
+	// 方法 2: 使用 QueryFullProcessImageNameW（快速，但对某些进程会失败）
+	// 由于 WMI 在 Go 中需要额外依赖，我们采用保守策略：
+	// 只对可信进程使用 QueryFullProcessImageNameW
+
+	// 先检查是否是系统关键进程，如果是则直接返回空
+	if isProtectedSystemProcess(pid) {
+		applog.InfoLogSaveAppLog("Skipping protected system process PID %d", pid)
+		return "", fmt.Errorf("protected system process")
+	}
+
+	// 使用 QueryFullProcessImageNameW
+	handle, _, openErr := procOpenProcess.Call(
+		uintptr(PROCESS_QUERY_LIMITED_INFORMATION),
+		0,
+		uintptr(pid),
+	)
+	if handle == 0 {
+		applog.InfoLogSaveAppLog("Failed to open process %d: %v", pid, openErr)
+		return "", fmt.Errorf("failed to open process %d: %w", pid, openErr)
+	}
+	defer procCloseHandle.Call(handle)
+
+	var buf [syscall.MAX_PATH]uint16
+	size := uintptr(len(buf))
+	ret, _, errno := procQueryFullProcessImageNameW.Call(
+		handle,
+		0,
+		uintptr(unsafe.Pointer(&buf[0])),
+		size,
+	)
+
+	if ret != 0 {
+		path := syscall.UTF16ToString(buf[:])
+		if path != "" {
+			return path, nil
+		}
+	}
+
+	applog.InfoLogSaveAppLog("QueryFullProcessImageNameW failed for PID %d: errno=%d", pid, errno)
+	return "", fmt.Errorf("failed to get process path")
+}
+
+// isProtectedSystemProcess 检查是否是受保护的系统进程
+func isProtectedSystemProcess(pid uint32) bool {
+	// 获取进程快照来检查进程名
+	snapshot, _, _ := procCreateToolhelp32Snapshot.Call(
+		uintptr(TH32CS_SNAPPROCESS),
+		0,
+	)
+	if snapshot == uintptr(syscall.InvalidHandle) {
+		return false
+	}
+	defer procCloseHandle.Call(snapshot)
+
+	var pe32 PROCESSENTRY32W
+	pe32.Size = uint32(unsafe.Sizeof(pe32))
+
+	ret, _, _ := procProcess32First.Call(snapshot, uintptr(unsafe.Pointer(&pe32)))
+	if ret == 0 {
+		return false
+	}
+
+	for {
+		if pe32.ProcessID == pid {
+			exeName := syscall.UTF16ToString(pe32.ExeFile[:])
+			lowerName := strings.ToLower(exeName)
+
+			// 这些进程通常会导致访问违规
+			protectedProcesses := []string{
+				"clash-core-service.exe",
+				"searchprotocolhost.exe",
+				"aggregatorhost.exe",
+				"vmware-hostd.exe",
+				"system",
+				"registry",
+				"smss.exe",
+				"csrss.exe",
+				"wininit.exe",
+				"services.exe",
+				"lsass.exe",
+				"winlogon.exe",
+			}
+
+			for _, protected := range protectedProcesses {
+				if lowerName == protected {
+					return true
+				}
+			}
+			return false
+		}
+
+		ret, _, _ := procProcess32Next.Call(snapshot, uintptr(unsafe.Pointer(&pe32)))
+		if ret == 0 {
+			break
+		}
+	}
+
+	return false
+}
+
+// getProcessPathByModule 使用模块快照获取进程路径（回退方法）
+func getProcessPathByModule(pid uint32) (string, error) {
 	// 创建模块快照
 	snapshot, _, err := procCreateToolhelp32Snapshot.Call(
-		uintptr(TH32CS_SNAPMODULE),
+		uintptr(TH32CS_SNAPMODULE|TH32CS_SNAPPROCESS),
 		uintptr(pid),
 	)
 	if snapshot == uintptr(syscall.InvalidHandle) {
@@ -546,11 +727,15 @@ func getProcessPath(pid uint32) (string, error) {
 	me32.Size = uint32(unsafe.Sizeof(me32))
 
 	// 获取第一个模块（通常是可执行文件）
-	ret, _, _ := procModule32First.Call(snapshot, uintptr(unsafe.Pointer(&me32)))
+	ret, _, errno := procModule32First.Call(snapshot, uintptr(unsafe.Pointer(&me32)))
 	if ret == 0 {
-		return "", fmt.Errorf("failed to get first module for PID %d", pid)
+		return "", fmt.Errorf("failed to get first module for PID %d, errno: %d", pid, errno)
 	}
 
 	// 返回模块路径
-	return syscall.UTF16ToString(me32.SzExePath[:]), nil
+	path := syscall.UTF16ToString(me32.SzExePath[:])
+	if path == "" {
+		return "", fmt.Errorf("got empty path for PID %d", pid)
+	}
+	return path, nil
 }

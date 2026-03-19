@@ -352,6 +352,7 @@ func main() {
 			systrayQuit = make(chan struct{})
 			systrayReady = make(chan struct{})
 			go systray.Run(onSystrayReady, onSystrayExit)
+			go startService.CleanupSessionsOnStart()
 
 			// 等待托盘初始化完成，避免竞态条件
 			<-systrayReady

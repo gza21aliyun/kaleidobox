@@ -73,7 +73,9 @@ func SchemaQueries() []string {
 			game_id TEXT,
 			start_time TIMESTAMPTZ,
 			end_time TIMESTAMPTZ,
-			duration INTEGER
+			duration INTEGER,
+			pid INTEGER,
+		    process_name TEXT
 		)`,
 		// 新增 Task 表
 		`CREATE TABLE IF NOT EXISTS tasks (

@@ -7,6 +7,7 @@ import (
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
 	"lunabox/internal/models"
+	"lunabox/internal/utils"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,13 +36,15 @@ func (s *SessionService) CreatePendingSession(gameID string, startTime time.Time
 
 	_, err := s.db.ExecContext(
 		s.ctx,
-		`INSERT INTO play_sessions (id, game_id, start_time, end_time, duration)
-		 VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO play_sessions (id, game_id, start_time, end_time, duration, pid, process_name)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		sessionID,
 		gameID,
 		startTime,
 		startTime, // 临时占位，等游戏结束后更新
 		0,         // 初始时长为 0
+		0,
+		"",
 	)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "CreatePendingSession: failed to create session: %v", err)
@@ -80,13 +83,15 @@ func (s *SessionService) AddPlaySession(gameID string, startTime time.Time, dura
 
 	_, err = s.db.ExecContext(
 		s.ctx,
-		`INSERT INTO play_sessions (id, game_id, start_time, end_time, duration)
-		 VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO play_sessions (id, game_id, start_time, end_time, duration, pid, process_name)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		session.ID,
 		session.GameID,
 		session.StartTime,
 		session.EndTime,
 		session.Duration,
+		session.Pid,
+		session.ProcessName,
 	)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "AddPlaySession: failed to insert play session: %v", err)
@@ -101,7 +106,7 @@ func (s *SessionService) AddPlaySession(gameID string, startTime time.Time, dura
 func (s *SessionService) GetPlaySessions(gameID string) ([]models.PlaySession, error) {
 	rows, err := s.db.QueryContext(
 		s.ctx,
-		`SELECT id, game_id, start_time, COALESCE(end_time, start_time), duration 
+		`SELECT id, game_id, start_time, COALESCE(end_time, start_time), duration, pid, process_name 
 		 FROM play_sessions 
 		 WHERE game_id = ? 
 		 ORDER BY start_time DESC`,
@@ -116,7 +121,8 @@ func (s *SessionService) GetPlaySessions(gameID string) ([]models.PlaySession, e
 	var sessions []models.PlaySession
 	for rows.Next() {
 		var session models.PlaySession
-		if err := rows.Scan(&session.ID, &session.GameID, &session.StartTime, &session.EndTime, &session.Duration); err != nil {
+		if err := rows.Scan(&session.ID, &session.GameID, &session.StartTime, &session.EndTime,
+			&session.Duration, &session.Pid, &session.ProcessName); err != nil {
 			applog.LogErrorf(s.ctx, "GetPlaySessions: failed to scan play session: %v", err)
 			return nil, fmt.Errorf("读取游玩记录失败: %w", err)
 		}
@@ -153,10 +159,12 @@ func (s *SessionService) UpdatePlaySession(session models.PlaySession) error {
 
 	result, err := s.db.ExecContext(
 		s.ctx,
-		`UPDATE play_sessions SET start_time = ?, end_time = ?, duration = ? WHERE id = ?`,
+		`UPDATE play_sessions SET start_time = ?, end_time = ?, duration = ?, pid = ?, process_name = ? WHERE id = ?`,
 		session.StartTime,
 		endTime,
 		session.Duration,
+		session.Pid,
+		session.ProcessName,
 		session.ID,
 	)
 	if err != nil {
@@ -176,6 +184,33 @@ func (s *SessionService) UpdatePlaySession(session models.PlaySession) error {
 	return nil
 }
 
+func (s *SessionService) UpdateProcess(sessionId, processName string, pid int) error {
+	// 重新计算结束时间
+
+	result, err := s.db.ExecContext(
+		s.ctx,
+		`UPDATE play_sessions SET pid = ?, process_name = ? WHERE id = ?`,
+		pid,
+		processName,
+		sessionId,
+	)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "UpdatePlaySession: failed to update play session: %v", err)
+		return fmt.Errorf("更新游玩记录失败: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("游玩记录不存在: %s", sessionId)
+	}
+
+	applog.LogInfof(s.ctx, "UpdatePlaySession: updated play session %s", sessionId)
+	return nil
+}
+
 // BatchAddPlaySessions 批量添加游玩记录（用于导入）
 func (s *SessionService) BatchAddPlaySessions(sessions []models.PlaySession) error {
 	if len(sessions) == 0 {
@@ -189,14 +224,14 @@ func (s *SessionService) BatchAddPlaySessions(sessions []models.PlaySession) err
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(s.ctx,
-		`INSERT INTO play_sessions (id, game_id, start_time, end_time, duration) VALUES (?, ?, ?, ?, ?)`)
+		`INSERT INTO play_sessions (id, game_id, start_time, end_time, duration, pid, process_name) VALUES (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		return fmt.Errorf("准备语句失败: %w", err)
 	}
 	defer stmt.Close()
 
 	for _, session := range sessions {
-		_, err = stmt.ExecContext(s.ctx, session.ID, session.GameID, session.StartTime, session.EndTime, session.Duration)
+		_, err = stmt.ExecContext(s.ctx, session.ID, session.GameID, session.StartTime, session.EndTime, session.Duration, session.Pid, session.ProcessName)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "BatchAddPlaySessions: failed to insert session: %v", err)
 			return fmt.Errorf("插入游玩记录失败: %w", err)
@@ -215,28 +250,30 @@ func (s *SessionService) BatchAddPlaySessions(sessions []models.PlaySession) err
 // 对于 duration == 0 的会话：
 // - 如果实际时长 < 60 秒，删除记录
 // - 如果实际时长 >= 60 秒，更新 end_time 和 duration
-func (s *SessionService) CleanupUnfinishedSessions() error {
+func (s *SessionService) CleanupUnfinishedSessions(isEnd bool) ([]models.PlaySession, error) {
+
+	var newSessions []models.PlaySession = []models.PlaySession{}
 	// 查询所有未完成的会话（duration == 0 表示未完成）
 	rows, err := s.db.QueryContext(
 		s.ctx,
-		`SELECT id, game_id, start_time FROM play_sessions WHERE duration = 0`,
+		`SELECT id, game_id, start_time, pid, process_name FROM play_sessions WHERE duration = 0`,
 	)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "CleanupUnfinishedSessions: failed to query unfinished sessions: %v", err)
-		return fmt.Errorf("查询未完成会话失败: %w", err)
+		return newSessions, fmt.Errorf("查询未完成会话失败: %w", err)
 	}
 	defer rows.Close()
 
-	type unfinishedSession struct {
-		ID        string
-		GameID    string
-		StartTime time.Time
-	}
+	// type unfinishedSession struct {
+	// 	ID        string
+	// 	GameID    string
+	// 	StartTime time.Time
+	// }
 
-	var sessions []unfinishedSession
+	var sessions []models.PlaySession
 	for rows.Next() {
-		var session unfinishedSession
-		if err := rows.Scan(&session.ID, &session.GameID, &session.StartTime); err != nil {
+		var session models.PlaySession
+		if err := rows.Scan(&session.ID, &session.GameID, &session.StartTime, &session.Pid, &session.ProcessName); err != nil {
 			applog.LogErrorf(s.ctx, "CleanupUnfinishedSessions: failed to scan session: %v", err)
 			continue
 		}
@@ -245,7 +282,7 @@ func (s *SessionService) CleanupUnfinishedSessions() error {
 
 	if len(sessions) == 0 {
 		applog.LogInfof(s.ctx, "CleanupUnfinishedSessions: no unfinished sessions found")
-		return nil
+		return newSessions, nil
 	}
 
 	applog.LogInfof(s.ctx, "CleanupUnfinishedSessions: found %d unfinished sessions", len(sessions))
@@ -256,8 +293,9 @@ func (s *SessionService) CleanupUnfinishedSessions() error {
 
 	for _, session := range sessions {
 		duration := int(endTime.Sub(session.StartTime).Seconds())
+		isGameRunning := utils.IsProcessRunningByNamePid(uint32(session.Pid), session.ProcessName)
 
-		if duration < 60 {
+		if duration < 60 || (!isGameRunning && !isEnd) {
 			// 时长小于 60 秒，删除记录
 			_, err := s.db.ExecContext(s.ctx, "DELETE FROM play_sessions WHERE id = ?", session.ID)
 			if err != nil {
@@ -282,8 +320,18 @@ func (s *SessionService) CleanupUnfinishedSessions() error {
 				applog.LogDebugf(s.ctx, "Updated unfinished session %s (duration: %d seconds)", session.ID, duration)
 			}
 		}
+		fmt.Printf("isGameRunning:%v, isEnd:%v, gameId:%s\n", isGameRunning, isEnd, session.GameID)
+		if isGameRunning {
+			newSession := models.PlaySession{GameID: session.GameID, StartTime: time.Now(), Pid: session.Pid,
+				ProcessName: session.ProcessName, ID: uuid.New().String()}
+			s.BatchAddPlaySessions([]models.PlaySession{newSession})
+			if !isEnd {
+				newSessions = append(newSessions, newSession)
+			}
+
+		}
 	}
 
 	applog.LogInfof(s.ctx, "CleanupUnfinishedSessions: deleted %d short sessions, updated %d sessions", deleted, updated)
-	return nil
+	return newSessions, nil
 }

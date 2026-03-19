@@ -15,10 +15,18 @@ type TrackingSession struct {
 	SessionID          string
 	GameID             string
 	ProcessID          uint32
+	ProcessName        string
 	StartTime          time.Time
 	cancel             context.CancelFunc
 	accumulatedSeconds int // 累加的活跃秒数
 	mu                 sync.Mutex
+}
+
+type GameProcess struct {
+	ProcessName string
+	ProcessID   uint32
+	Path        string
+	GameId      string
 }
 
 // ActiveTimeTracker 活跃时间追踪服务
@@ -39,11 +47,23 @@ func NewActiveTimeTracker(ctx context.Context, db *sql.DB) *ActiveTimeTracker {
 	}
 }
 
+func (s *ActiveTimeTracker) UpdateTracking(gameID string, processID uint32, processName string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	session, ok := s.sessions[gameID]
+	if ok {
+		session.ProcessID = processID
+		session.ProcessName = processName
+		s.sessions[gameID] = session
+		applog.LogInfof(s.ctx, "Updated tracking session for game %s: process ID %d, process name %s", gameID, processID, processName)
+	}
+}
+
 // StartTracking 开始追踪指定游戏的活跃游玩时间
 // sessionID: play_session 记录 ID
 // processID: 游戏进程 ID
 // returns: 追踪会话 ID 和可能的错误
-func (s *ActiveTimeTracker) StartTracking(sessionID string, gameID string, processID uint32) (string, error) {
+func (s *ActiveTimeTracker) StartTracking(sessionID string, gameID string, processID uint32, processName string) (string, error) {
 	applog.LogInfof(s.ctx, "StartTracking 00")
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -61,11 +81,12 @@ func (s *ActiveTimeTracker) StartTracking(sessionID string, gameID string, proce
 	applog.LogInfof(s.ctx, "StartTracking 02")
 
 	session := &TrackingSession{
-		SessionID: sessionID,
-		GameID:    gameID,
-		ProcessID: processID,
-		StartTime: time.Now(),
-		cancel:    cancel,
+		SessionID:   sessionID,
+		GameID:      gameID,
+		ProcessID:   processID,
+		ProcessName: processName,
+		StartTime:   time.Now(),
+		cancel:      cancel,
 	}
 	s.sessions[gameID] = session
 	applog.LogInfof(s.ctx, "StartTracking 03")
@@ -265,4 +286,20 @@ func (s *ActiveTimeTracker) StopAllTracking() map[string]int {
 	log.Printf("[ActiveTimeTracker] Stopped all tracking, cleaned up %d sessions", len(result))
 
 	return result
+}
+
+func (s *ActiveTimeTracker) GetGameProcesses() []GameProcess {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	processes := []GameProcess{}
+	for _, session := range s.sessions {
+		process := GameProcess{
+			GameId: session.GameID,
+			// Path:        session.Path,
+			ProcessID:   session.ProcessID,
+			ProcessName: session.ProcessName,
+		}
+		processes = append(processes, process)
+	}
+	return processes
 }

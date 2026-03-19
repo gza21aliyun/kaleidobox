@@ -44,7 +44,7 @@ type StartService struct {
 	// 进程选择相关
 	pendingProcessSelect   map[string]chan string // gameID -> channel，用于接收用户选择的进程名
 	pendingProcessSelectMu sync.RWMutex
-	gamesLaunched          map[uint32]GameProcess
+	gamesLaunched          map[uint32]GameProcess //跟activeTimeTracker里的sessions不同，那个只有开启了前台检测才会记下
 }
 
 type GameProcess struct {
@@ -64,6 +64,11 @@ func (s *StartService) getSessionGames() []GameProcess {
 	return rs
 
 }
+
+// func (s *StartService) getSessionGames() []timer.GameProcess {
+// 	return s.activeTimeTracker.GetGameProcesses()
+
+// }
 
 func NewStartService() *StartService {
 	return &StartService{
@@ -292,7 +297,7 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 
 	// 启动活跃时间追踪（如果启用）
 	if s.config.RecordActiveTimeOnly {
-		_, err := s.activeTimeTracker.StartTracking(sessionID, gameID, actualProcessID)
+		_, err := s.activeTimeTracker.StartTracking(sessionID, gameID, actualProcessID, actualProcessName)
 		if err != nil {
 			applog.LogWarningf(s.ctx, "Failed to start active time tracking: %v, %s", err, actualProcessName)
 		}
@@ -301,6 +306,9 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 		// go s.DetectProcessSavePath(actualProcessID)
 		//todo 存档检测
 	}
+
+	fmt.Printf("start tracking pid:%d, pName:%s\n", actualProcessID, actualProcessName)
+	s.sessionService.UpdateProcess(sessionID, actualProcessName, int(actualProcessID))
 
 	// 根据情况选择监控方式
 	if needExternalMonitor {
@@ -368,9 +376,11 @@ func (s *StartService) promptUserToSelectProcess(sessionID string, gameID string
 	// 保存用户选择的进程名
 	s.updateGameProcessName(gameID, selectedProcess)
 
+	s.sessionService.UpdateProcess(sessionID, selectedProcess, int(pid))
+
 	// 启动活跃时间追踪（如果启用）
 	if s.config.RecordActiveTimeOnly {
-		_, err := s.activeTimeTracker.StartTracking(sessionID, gameID, pid)
+		_, err := s.activeTimeTracker.StartTracking(sessionID, gameID, pid, selectedProcess)
 		if err != nil {
 			applog.LogWarningf(s.ctx, "Failed to start active time tracking: %v", err)
 		}
@@ -568,13 +578,57 @@ func (s *StartService) CleanupPendingSessions() {
 
 	// 3. 清理数据库中未完成的会话
 	if s.sessionService != nil {
-		err := s.sessionService.CleanupUnfinishedSessions()
+		_, err := s.sessionService.CleanupUnfinishedSessions(true)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "Failed to cleanup unfinished sessions: %v", err)
 		} else {
 			applog.LogInfof(s.ctx, "Successfully cleaned up unfinished sessions")
 		}
 	}
+}
+
+func (s *StartService) CleanupSessionsOnStart() error {
+	ps, err := s.sessionService.CleanupUnfinishedSessions(false)
+	for _, p := range ps {
+		s.activeTimeTracker.StartTracking(p.ID, p.GameID, uint32(p.Pid), p.ProcessName)
+	}
+
+	// processes, err := utils.GetRunningProcessesWithPPID()
+	// if err != nil {
+	// 	return fmt.Errorf("获取运行中的进程失败: %w", err)
+	// }
+	// games, err := s.gameService.GetGames()
+	// if err != nil {
+	// 	return fmt.Errorf("获取游戏列表失败: %w", err)
+	// }
+	// for _, process := range processes {
+	// 	processPath, err := utils.GetProcessPath(process.PID)
+	// 	fmt.Printf("CleanupSessionsOnStart name:%s, processPath: %s\n", process.Name, processPath)
+	// 	if err != nil || processPath == "" {
+	// 		continue
+	// 	}
+	// 	for _, game := range games {
+	// 		gameProcessPath := game.GetProcessPath()
+	// 		if gameProcessPath == "" {
+	// 			continue
+	// 		}
+	// 		if processPath == gameProcessPath && processPath != "" {
+	// 			session := models.PlaySession{
+	// 				ID:          uuid.New().String(),
+	// 				GameID:      game.ID,
+	// 				StartTime:   time.Now(),
+	// 				Pid:         int(process.PID),
+	// 				ProcessName: process.Name,
+	// 			}
+	// 			s.sessionService.BatchAddPlaySessions([]models.PlaySession{session})
+	// 			s.activeTimeTracker.StartTracking(session.ID, game.ID, uint32(process.PID), process.Name)
+
+	// 			break
+	// 		}
+	// 	}
+
+	// }
+	return err
 }
 
 // autoBackupGameSave 自动备份游戏存档
@@ -779,7 +833,7 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 
 	var queryTimeRangeSeconds int = 20
 
-	processName, processPath, err := getProcessInfo(pid)
+	processName, processPath, err := utils.GetProcessInfo(pid)
 	if err != nil {
 		return "", fmt.Errorf("获取进程信息失败：%w", err)
 	}
@@ -949,27 +1003,6 @@ func (s *StartService) DetectProcessSavePath(pid uint32) (string, error) {
 	}
 
 	return "", fmt.Errorf("未检测到进程 %d 的存档文件", pid)
-}
-
-func getProcessInfo(pid uint32) (string, string, error) {
-	// ... existing code ...
-	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_INFORMATION|windows.PROCESS_VM_READ, false, pid)
-	if err != nil {
-		return "", "", err
-	}
-	defer windows.CloseHandle(handle)
-
-	var path [windows.MAX_PATH]uint16
-	size := uint32(len(path))
-	err = windows.QueryFullProcessImageName(handle, 0, &path[0], &size)
-	if err != nil {
-		return "", "", err
-	}
-
-	processPath := windows.UTF16ToString(path[:size])
-	processName := filepath.Base(processPath)
-
-	return processName, processPath, nil
 }
 
 // formatChangeType 格式化文件变更类型

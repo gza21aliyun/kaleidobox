@@ -3,9 +3,12 @@ package utils
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
 // CheckIfProcessRunning 检查指定进程是否正在运行
@@ -92,4 +95,36 @@ func OpenBrowser(url string) error {
 	exe := exec.Command(cmd, args...)
 	exe.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	return exe.Start()
+}
+
+func GetProcessInfo(pid uint32) (string, string, error) {
+	// ... existing code ...
+	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_INFORMATION|windows.PROCESS_VM_READ, false, pid)
+	if err != nil {
+		return "", "", err
+	}
+	defer windows.CloseHandle(handle)
+
+	var path [windows.MAX_PATH]uint16
+	size := uint32(len(path))
+	err = windows.QueryFullProcessImageName(handle, 0, &path[0], &size)
+	if err != nil {
+		return "", "", err
+	}
+
+	processPath := windows.UTF16ToString(path[:size])
+	processName := filepath.Base(processPath)
+
+	return processName, processPath, nil
+}
+
+func IsProcessRunningByNamePid(pid uint32, processName string) bool {
+	isGameRunning := false
+	if pid != 0 {
+		pName, _, err := GetProcessInfo(pid)
+		if err == nil && processName == pName && processName != "" {
+			isGameRunning = true
+		}
+	}
+	return isGameRunning
 }

@@ -2,6 +2,7 @@ package models
 
 import (
 	"lunabox/internal/enums"
+	"path/filepath"
 	"time"
 )
 
@@ -63,4 +64,13 @@ type ImageBackup struct {
 }
 
 type GameFilter struct {
+}
+
+func (g Game) GetProcessPath() string {
+	if g.ProcessName == "" {
+		return g.Path
+	}
+	dir := filepath.Dir(g.Path)
+	processPath := filepath.Join(dir, g.ProcessName)
+	return processPath
 }

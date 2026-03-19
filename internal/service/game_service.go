@@ -881,6 +881,8 @@ func (s *GameService) SelectCoverImage(gameID string) (string, error) {
 	}
 
 	coverPath, err := utils.SaveCoverImage(selection, gameID)
+	imageBackup := models.ImageBackup{Url: coverPath, LocalPath: coverPath, SubjectId: gameID, SubjectType: 0, ImageType: 0}
+	s.imageService.CreateOrUpdateImageBackup(imageBackup)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "failed to save cover image: %v", err)
 		return "", fmt.Errorf("failed to save cover image: %w", err)

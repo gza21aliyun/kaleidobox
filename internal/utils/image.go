@@ -14,6 +14,7 @@ import (
 
 	_ "image/gif"
 
+	"github.com/google/uuid"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 )
@@ -27,17 +28,21 @@ func SaveCoverImage(srcPath string, gameID string) (string, error) {
 	}
 
 	// 获取封面保存目录
-	coverDir := filepath.Join(appDir, "covers")
+	coverDir := filepath.Join(appDir, "images")
+	if err := os.MkdirAll(coverDir, os.ModePerm); err != nil {
+		return "", err
+	}
+	coverDir = filepath.Join(coverDir, gameID)
 	if err := os.MkdirAll(coverDir, os.ModePerm); err != nil {
 		return "", err
 	}
 
 	// 删除该 gameID 的旧封面文件（可能是不同扩展名）
-	oldExtensions := []string{".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
-	for _, ext := range oldExtensions {
-		oldPath := filepath.Join(coverDir, gameID+ext)
-		os.Remove(oldPath) // 忽略错误，文件可能不存在
-	}
+	// oldExtensions := []string{".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+	// for _, ext := range oldExtensions {
+	// 	oldPath := filepath.Join(coverDir, gameID+ext)
+	// 	os.Remove(oldPath) // 忽略错误，文件可能不存在
+	// }
 
 	// 获取源文件的扩展名
 	ext := filepath.Ext(srcPath)
@@ -46,7 +51,7 @@ func SaveCoverImage(srcPath string, gameID string) (string, error) {
 	}
 
 	// 生成目标文件名
-	destFileName := fmt.Sprintf("%s%s", gameID, ext)
+	destFileName := fmt.Sprintf("%s%s", uuid.New().String(), ext)
 	destPath := filepath.Join(coverDir, destFileName)
 
 	// 复制文件
@@ -67,7 +72,7 @@ func SaveCoverImage(srcPath string, gameID string) (string, error) {
 	}
 
 	// 返回相对路径或可访问的 URL
-	return fmt.Sprintf("/local/covers/%s", destFileName), nil
+	return destPath, nil
 }
 
 // ResolveCoverPath 解析封面图片路径

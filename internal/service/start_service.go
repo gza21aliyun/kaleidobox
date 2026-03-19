@@ -589,8 +589,10 @@ func (s *StartService) CleanupPendingSessions() {
 
 func (s *StartService) CleanupSessionsOnStart() error {
 	ps, err := s.sessionService.CleanupUnfinishedSessions(false)
-	for _, p := range ps {
-		s.activeTimeTracker.StartTracking(p.ID, p.GameID, uint32(p.Pid), p.ProcessName)
+	if s.config.RecordActiveTimeOnly {
+		for _, p := range ps {
+			s.activeTimeTracker.StartTracking(p.ID, p.GameID, uint32(p.Pid), p.ProcessName)
+		}
 	}
 
 	// processes, err := utils.GetRunningProcessesWithPPID()

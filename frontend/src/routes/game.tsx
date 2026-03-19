@@ -315,7 +315,9 @@ function GameDetailPage() {
     try {
       const coverUrl = await SelectCoverImage(game.id);
       if (coverUrl) {
-        setGame({ ...game, cover_url: coverUrl } as models.Game);
+        const newGame = { ...game, cover_url: coverUrl } as models.Game
+        setGame(newGame);
+        updateGameInGames(newGame)
       }
     }
     catch (error) {

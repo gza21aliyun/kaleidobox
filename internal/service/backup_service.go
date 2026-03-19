@@ -14,6 +14,7 @@ import (
 	"lunabox/internal/vo"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -1103,8 +1104,79 @@ func ExecuteFullDataRestore(config *appconf.AppConfig) (bool, error) {
 
 // ========== 数据库恢复（启动时调用）==========
 
+// 字段类型映射
+var fieldTypeMap map[string]map[string]string
+
+// initFieldTypeMap 初始化字段类型映射
+func initFieldTypeMap() {
+	fieldTypeMap = make(map[string]map[string]string)
+
+	// 解析 SchemaQueries() 中的表结构
+	queries := migrations.SchemaQueries()
+	for _, query := range queries {
+		// 提取表名
+		tableName := extractTableName(query)
+		if tableName == "" {
+			continue
+		}
+
+		// 提取字段信息
+		fields := extractFields(query)
+		fieldTypeMap[tableName] = fields
+	}
+}
+
+// extractTableName 从 CREATE TABLE 语句中提取表名
+func extractTableName(query string) string {
+	// 简单的正则匹配，提取表名
+	re := regexp.MustCompile(`CREATE TABLE IF NOT EXISTS\s+(\w+)\s*\(`)
+	matches := re.FindStringSubmatch(query)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
+
+// extractFields 从 CREATE TABLE 语句中提取字段信息
+func extractFields(query string) map[string]string {
+	fields := make(map[string]string)
+
+	// 提取括号内的内容
+	re := regexp.MustCompile(`\(([\s\S]*?)\)\s*$`)
+	matches := re.FindStringSubmatch(query)
+	if len(matches) <= 1 {
+		return fields
+	}
+
+	// 分割字段定义
+	fieldDefs := strings.Split(matches[1], ",")
+	for _, def := range fieldDefs {
+		def = strings.TrimSpace(def)
+		if def == "" || strings.HasPrefix(def, "PRIMARY KEY") {
+			continue
+		}
+
+		// 提取字段名和类型
+		parts := strings.Fields(def)
+		if len(parts) >= 2 {
+			fieldName := parts[0]
+			fieldType := parts[1]
+			// 处理复杂类型，如 TIMESTAMPTZ
+			if len(parts) > 2 && strings.HasSuffix(parts[1], "TZ") {
+				fieldType = parts[1] + " " + parts[2]
+			}
+			fields[fieldName] = fieldType
+		}
+	}
+
+	return fields
+}
+
 // migrateData 将数据从临时数据库迁移到新数据库
 func migrateData(tempDB, newDB *sql.DB) error {
+	// 初始化字段类型映射
+	initFieldTypeMap()
+
 	// 迁移 users 表
 	if err := migrateTable(tempDB, newDB, "users"); err != nil {
 		return err
@@ -1247,6 +1319,39 @@ func migrateTable(tempDB, newDB *sql.DB, tableName string) error {
 
 		if err := rows.Scan(valuePtrs...); err != nil {
 			return fmt.Errorf("扫描数据失败: %w", err)
+		}
+
+		// 处理 NULL 值，根据字段类型设置默认值
+		for i, value := range values {
+			if value == nil {
+				columnName := commonColumns[i]
+				// 从字段类型映射中获取字段类型
+				fieldType := ""
+				if tableFields, ok := fieldTypeMap[tableName]; ok {
+					if ft, ok := tableFields[columnName]; ok {
+						fieldType = ft
+					}
+				}
+
+				// 根据字段类型设置默认值
+				switch {
+				case strings.Contains(strings.ToLower(fieldType), "integer"):
+					// 整数类型，设置默认值 0
+					values[i] = 0
+				case strings.Contains(strings.ToLower(fieldType), "text"):
+					// 文本类型，设置默认值 ""
+					values[i] = ""
+				case strings.Contains(strings.ToLower(fieldType), "boolean"):
+					// 布尔类型，设置默认值 false
+					values[i] = false
+				case strings.Contains(strings.ToLower(fieldType), "timestamp"):
+					// 时间戳类型，设置默认值为 nil（保持 NULL）
+					values[i] = nil
+				default:
+					// 其他类型，默认设置为空字符串
+					values[i] = ""
+				}
+			}
 		}
 
 		_, err := stmt.Exec(values...)

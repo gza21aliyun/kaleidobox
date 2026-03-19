@@ -253,7 +253,6 @@ func main() {
 					fmt.Printf("fail to restore database: %v\n", restoreErr)
 				} else if restored {
 					appLogger.Info("database restored successfully")
-					configService.SafeQuit()
 					runtime.Quit(ctx)
 					return
 				}

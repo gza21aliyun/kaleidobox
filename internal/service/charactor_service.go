@@ -216,6 +216,7 @@ func (s *CharactorService) ListCharactors() ([]*models.Charactor, error) {
 	`
 	rows, err := s.db.QueryContext(s.ctx, query)
 	if err != nil {
+		fmt.Println("Error querying charactors:", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -240,6 +241,7 @@ func (s *CharactorService) ListCharactors() ([]*models.Charactor, error) {
 			&charactor.Sort,
 		)
 		if err != nil {
+			fmt.Println("ListCharactors 01 ", err)
 			return nil, err
 		}
 		charactor.SourceType = enums.SourceType(sourceType)

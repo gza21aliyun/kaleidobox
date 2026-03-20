@@ -409,6 +409,9 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(searchName, "Ⅱ") {
 		name = strings.ReplaceAll(searchName, "Ⅱ", "II")
 	}
+	if strings.Contains(searchName, "＋") {
+		name = strings.ReplaceAll(searchName, "＋", "+")
+	}
 
 	name = strings.TrimSuffix(name, "％")
 	fmt.Printf("getGameNameAlternative:%s\n", name)

@@ -163,19 +163,21 @@ export function GameIntroPanel({
 
                 <div className="mt-4">
                     <div className="font-semibold mb-2 text-brand-900 dark:text-white">{t('gameIntro.summary')}</div>
-                    <textarea
-                        ref={textareaRef}
-                        value={game.summary || t('gameIntro.noSummary')}
-                        disabled={true}
-                        className="w-full bg-transparent border-0 outline-none text-brand-600 dark:text-brand-400 text-sm leading-relaxed resize-none"
-                        style={{
-                            height: 'auto',
-                            overflow: 'hidden',
-                            resize: 'none',
-                            padding: 0,
-                            margin: 0
-                        }}
-                        />
+                    <div className="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/20 rounded-xl p-5 border border-brand-200 dark:border-brand-700 shadow-sm">
+                        <textarea
+                            ref={textareaRef}
+                            value={game.summary || t('gameIntro.noSummary')}
+                            disabled={true}
+                            className="w-full bg-transparent border-0 outline-none text-brand-600 dark:text-brand-400 text-sm leading-relaxed resize-none"
+                            style={{
+                                height: 'auto',
+                                overflow: 'hidden',
+                                resize: 'none',
+                                padding: 0,
+                                margin: 0
+                            }}
+                            />
+                    </div>
                 </div>
 
                 {/* 角色 */}
@@ -224,7 +226,7 @@ export function GameIntroPanel({
                                                 
                                                 {charactor.staff_name && (
                                                     <div>
-                                                        <span className="text-sm text-brand-600 dark:text-brand-400">{t('game.cv')}：</span>
+                                                        <span className="text-sm text-brand-600 dark:text-brand-400">{t('gameIntro.cv')}：</span>
                                                         <button
                                                             onClick={() => {
                                                                 if (charactor.staff_id) {

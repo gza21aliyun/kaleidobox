@@ -381,6 +381,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 					StaffName:     staffName,
 					SourceStaffId: sId,
 					SourceType:    enums.Dmm,
+					Sort:          i + 50,
 					GameName:      game.Name,
 				}
 				worksMap[work.Role] = append(worksMap[work.Role], work)

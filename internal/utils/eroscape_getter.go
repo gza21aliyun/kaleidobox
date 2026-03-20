@@ -724,6 +724,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 					StaffName:     staffName,
 					CharactorName: charactorName,
 					SourceStaffId: staffId,
+					Sort:          50 + i,
 					SourceType:    enums.Eroscape,
 				}
 				worksMap[work.Role] = append(worksMap[work.Role], work)

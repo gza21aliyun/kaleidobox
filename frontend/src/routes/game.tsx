@@ -647,7 +647,7 @@ function GameDetailPage() {
                 onClick={() => OpenBrowser(`https://www.getchu.com/item/${game.getchu_id}/`)}
                 className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition-colors"
               >
-                {t('game.buttons.getchu')}
+                Getchu
               </button>
             )}
             {game.dlsite_id && (

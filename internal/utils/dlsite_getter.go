@@ -942,6 +942,7 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 					StaffName:     staffName,
 					SourceStaffId: sId,
 					SourceType:    enums.Dlsite,
+					Sort:          i,
 					GameName:      game.Name,
 				}
 				worksMap[work.Role] = append(worksMap[work.Role], work)

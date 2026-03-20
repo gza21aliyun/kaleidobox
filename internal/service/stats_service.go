@@ -208,7 +208,7 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 		seriesEnd = fmt.Sprintf("'%s'::DATE", endDate)
 		stats.StartDate = startDate
 		stats.EndDate = endDate
-		fmt.Printf("GetGameStats 01 gameId:%s\n", req.GameID)
+		// fmt.Printf("GetGameStats 01 gameId:%s\n", req.GameID)
 	} else {
 		startDateExpr = startDate
 		endDateExpr = endDate
@@ -218,13 +218,13 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 		var actualStart, actualEnd string
 		if req.Dimension == enums.All {
 			err := s.db.QueryRowContext(s.ctx, "SELECT COALESCE(MIN(start_time::DATE), current_date), COALESCE(MAX(end_time::DATE), current_date) FROM play_sessions WHERE game_id = ?", req.GameID).Scan(&actualStart, &actualEnd)
-			fmt.Printf("GetGameStats 02 gameId:%s， end：%s\n", req.GameID, actualEnd)
+			// fmt.Printf("GetGameStats 02 gameId:%s， end：%s\n", req.GameID, actualEnd)
 			if err == nil {
 				stats.StartDate = actualStart
 				stats.EndDate = actualEnd
 			}
 		} else {
-			fmt.Printf("GetGameStats 03: gameId:%s SELECT %s, %s\n", req.GameID, startDateExpr, endDateExpr)
+			// fmt.Printf("GetGameStats 03: gameId:%s SELECT %s, %s\n", req.GameID, startDateExpr, endDateExpr)
 			err := s.db.QueryRowContext(s.ctx, fmt.Sprintf("SELECT %s, %s", startDateExpr, endDateExpr)).Scan(&actualStart, &actualEnd)
 			if err == nil {
 				stats.StartDate = actualStart

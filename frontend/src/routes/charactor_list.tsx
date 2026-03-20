@@ -5,6 +5,7 @@ import { ListCharactors } from "../../wailsjs/go/service/CharactorService";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from 'react-i18next';
+import { ImageCard } from "../components/card/ImageCard";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -114,7 +115,7 @@ function CharactorListPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-7 gap-4">
           {charactors.map((charactor) => (
             <div 
               key={charactor.id} 
@@ -123,8 +124,8 @@ function CharactorListPage() {
               {/* 角色图片 */}
               {charactor.image_path && (
                 <div className="flex-shrink-0">
-                  <img 
-                    src={charactor.image_path} 
+                  <ImageCard
+                    url={charactor.image_path} 
                     alt={charactor.name}
                     className="w-26 h-40 object-cover rounded-lg"
                     style={{ objectFit: 'cover', objectPosition: 'center top' }}

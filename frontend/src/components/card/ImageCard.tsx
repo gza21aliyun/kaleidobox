@@ -14,10 +14,11 @@ interface ImageBackupProps {
   draggable?: boolean | undefined;
   referrerPolicy?: React.HTMLAttributeReferrerPolicy | undefined;  
     onDragStart?: React.DragEventHandler | undefined;
+    onError?: React.ReactEventHandler | undefined;
 }
 
 export function ImageBackupCard({
-    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart
+    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
@@ -69,13 +70,15 @@ export function ImageBackupCard({
                 draggable={false}
                 onDragStart={onDragStart}
                 referrerPolicy={referrerPolicy}
+                onError={onError}
                  />) : 
                 ( <img src={imageBackup.url} alt={alt || "Image"}
                     className={className}
                     style={style}         
                     draggable={false}
                     onDragStart={onDragStart}
-                    referrerPolicy={referrerPolicy}       
+                    referrerPolicy={referrerPolicy}   
+                    onError={onError}    
                 /> )}
                 
             </div>
@@ -137,6 +140,7 @@ interface ImageCardProps {
   draggable?: boolean | undefined;
   referrerPolicy?: React.HTMLAttributeReferrerPolicy | undefined;  
     onDragStart?: React.DragEventHandler | undefined;
+    onError?: React.ReactEventHandler | undefined;
 }
 export function ImageCard({
     url,
@@ -145,7 +149,8 @@ export function ImageCard({
     style,
     draggable,
     referrerPolicy,
-    onDragStart
+    onDragStart,
+    onError
 }: ImageCardProps) {
     const [imageBackup, setImageBackup] = useState<models.ImageBackup | null>(null);
 
@@ -181,6 +186,7 @@ export function ImageCard({
             draggable={draggable}
             onDragStart={onDragStart}
             referrerPolicy={referrerPolicy}
+            onError={onError}
             />
             
     );

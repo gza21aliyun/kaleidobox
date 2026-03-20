@@ -1029,13 +1029,6 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		bgmGetter := utils.NewBangumiInfoGetter(s.config.BangumiSearchCn)
 		gameEntity, e = bgmGetter.FetchMetadataReq(req, s.config.BangumiAccessToken)
 		gameEntity, e = bgmGetter.FetchWorks(req, gameEntity, s.config.BangumiAccessToken)
-		// game = gameEntity.Game
-		// if req.IsOverwrite && req.ShouldFetchTags {
-		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		// }
-		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
-		// 	s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		// }
 
 	case enums.VNDB:
 		fmt.Println("Fetching metadata from VNDB")
@@ -1052,48 +1045,26 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		gameEntity, e = escGetter.FetchMetadataById(req)
 		gameEntity, e = escGetter.FetchCharactors(req, gameEntity)
 		gameEntity, e = escGetter.FetchImages(req, gameEntity)
-		if req.ShouldUnionFetch && gameEntity.Game.DmmId != "" {
-			newReq := vo.MetadataRequest{DbGameId: game.ID, ID: gameEntity.Game.DmmId, Source: enums.Dmm,
-				IsOverwrite: false}
-			dmmGetter := utils.NewDmmInfoGetter()
-			dmmGameEntity, _ := dmmGetter.FetchMetadataById(newReq)
-			game = gameEntity.Game
-			game.Summary = dmmGameEntity.Game.Summary
-			gameEntity.Game = game
-		}
-		// game = gameEntity.Game
-		// fmt.Println("发售日3：", game.ReleaseAt)
-		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
-		// 	s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		// }
-		// if req.IsOverwrite && req.ShouldFetchTags {
-		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
+		// if req.ShouldUnionFetch && gameEntity.Game.DmmId != "" {
+		// 	newReq := vo.MetadataRequest{DbGameId: game.ID, ID: gameEntity.Game.DmmId, Source: enums.Dmm,
+		// 		IsOverwrite: false}
+		// 	dmmGetter := utils.NewDmmInfoGetter()
+		// 	dmmGameEntity, _ := dmmGetter.FetchMetadataById(newReq)
+		// 	game = gameEntity.Game
+		// 	game.Summary = dmmGameEntity.Game.Summary
+		// 	gameEntity.Game = game
 		// }
 	case enums.Dmm:
 		fmt.Println("Fetching metadata from DMM")
 		dmmGetter := utils.NewDmmInfoGetter()
 		game.DmmId = req.ID
 		gameEntity, e = dmmGetter.FetchMetadataById(req)
-		// game = gameEntity.Game
-		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
-		// 	s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		// }
-		// if req.IsOverwrite && req.ShouldFetchTags {
-		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		// }
 
 	case enums.Dlsite:
 		fmt.Println("Fetching metadata from dlsite")
 		dlsiteGetter := utils.NewDlsiteInfoGetter()
 		game.DlsiteId = req.ID
 		gameEntity, e = dlsiteGetter.FetchMetadataById2(req)
-		// game = gameEntity.Game
-		// if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
-		// 	s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
-		// }
-		// if req.IsOverwrite && req.ShouldFetchTags {
-		// 	s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
-		// }
 
 	case enums.Getchu:
 		fmt.Println("Fetching metadata from getchu")
@@ -1101,6 +1072,7 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		game.GetchuId = req.ID
 		gameEntity, e = getchuGetter.FetchMetadataById(req)
 	}
+	s.UnionFetch(&gameEntity, req)
 	game = gameEntity.Game
 	if req.IsOverwrite && req.ShouldFetchTags {
 		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
@@ -1110,6 +1082,44 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 	}
 	s.imageService.SaveGameImages(gameEntity)
 	return game, e
+}
+
+func (s *GameService) UnionFetch(gameEntity *models.GameEntity, req vo.MetadataRequest) {
+	if !req.ShouldUnionFetch {
+		return
+	}
+	fetched := false
+	if req.Source != enums.Dmm && gameEntity.Game.DmmId != "" {
+		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: gameEntity.Game.DmmId, Source: enums.Dmm,
+			IsOverwrite: false}
+		dmmGetter := utils.NewDmmInfoGetter()
+		dmmGameEntity, _ := dmmGetter.FetchMetadataById(newReq)
+		game := gameEntity.Game
+		game.Summary = dmmGameEntity.Game.Summary
+		gameEntity.Game = game
+		fetched = true
+	}
+	if req.Source != enums.Getchu && gameEntity.Game.GetchuId != "" && !fetched {
+		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: gameEntity.Game.GetchuId, Source: enums.Getchu,
+			IsOverwrite: false}
+		getchuGetter := utils.NewGetchuInfoGetter()
+		getchuGameEntity, _ := getchuGetter.FetchMetadataById(newReq)
+		game := gameEntity.Game
+		game.Summary = getchuGameEntity.Game.Summary
+		gameEntity.Game = game
+		fetched = true
+	}
+	if req.Source != enums.Dlsite && gameEntity.Game.DlsiteId != "" && !fetched {
+		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: gameEntity.Game.DlsiteId, Source: enums.Dlsite,
+			IsOverwrite: false}
+		dlsiteGetter := utils.NewDlsiteInfoGetter()
+		dlsiteGameEntity, _ := dlsiteGetter.FetchMetadataById2(newReq)
+		game := gameEntity.Game
+		game.Summary = dlsiteGameEntity.Game.Summary
+		gameEntity.Game = game
+		fetched = true
+	}
+
 }
 
 func fetchFromLocal(id string) (models.Game, error) {

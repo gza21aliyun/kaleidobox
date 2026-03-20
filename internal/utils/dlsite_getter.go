@@ -769,10 +769,11 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 }
 
 func (b DlsiteInfoGetter) FetchMetadata(id string, token string) (models.Game, error) {
-	gameEntity, err := b.FetchMetadataById(vo.MetadataRequest{ID: id})
+	gameEntity, err := b.FetchMetadataById2(vo.MetadataRequest{ID: id})
 	return gameEntity.Game, err
 }
 
+// deprecated
 func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.GameEntity, error) {
 
 	fmt.Println("开始获取Dlsite游戏信息 36 " + request.Source)

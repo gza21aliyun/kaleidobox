@@ -53,7 +53,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);
-  const categoryVos = useRef<vo.CategoryVO[]>([]);
+  const categoryVos = useRef<(vo.CategoryVO|null)[]>([]);
 
   // 手动选择弹窗状态
   const [showManualSelect, setShowManualSelect] = useState(false);
@@ -68,6 +68,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
       try {
         const vos = await GetCategories();
         categoryVos.current = vos || [];
+        categoryVos.current = [null, ...categoryVos.current]
       }
       catch (error) {
         console.error("Failed to fetch categories:", error);
@@ -431,10 +432,10 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                 <BetterSelect
                           value={selectedCategoryVo?.id ?? ""}
                           onChange={(value) => {
-                            setSelectedCategoryVo(categoryVos.current.find(c => c.id === value) || null);
+                            setSelectedCategoryVo(categoryVos.current.find(c => c?.id === value) || null);
                           
                           }}
-                          options={categoryVos.current.map(c => ({ value: c.id, label: c.name }))}
+                          options={categoryVos.current.map(c => ({ value: c?.id ?? "", label: c?.name ?? "不加入分类" }))}
                           className="min-w-[200px] w-[150px]"
                         />
                   <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">

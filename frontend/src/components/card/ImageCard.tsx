@@ -153,29 +153,33 @@ export function ImageCard({
     onError
 }: ImageCardProps) {
     const [imageBackup, setImageBackup] = useState<models.ImageBackup | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        setLoading(true);
         GetImageBackupByUrl(url, true).then((res) => {
             setImageBackup(res);
+            setLoading(false);
+        }).catch(() => {
+            setLoading(false);
         });
         return () => {
             setImageBackup(null);
+            setLoading(false);
          };
     }, [url]);
 
-
-    if (!imageBackup) {
-        // return <img alt={alt}
-        // className={className}
-        // style={style}
-        // draggable={draggable}
-        // onDragStart={onDragStart}
-        // referrerPolicy={referrerPolicy}
-        //  />;
-        return null;
+    if (loading) {
+        return (
+            <div className="image-card-loading flex items-center justify-center bg-gray-100 rounded-md" style={{ ...style, minHeight: style?.height ? `${parseInt(style.height.toString()) * 3}px` : '120px' }}>
+                <div className="w-8 h-8 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+            </div>
+        );
     }
 
-
+    if (!imageBackup) {
+        return null;
+    }
 
     return (
         <ImageBackupCard 
@@ -188,6 +192,5 @@ export function ImageCard({
             referrerPolicy={referrerPolicy}
             onError={onError}
             />
-            
     );
 }

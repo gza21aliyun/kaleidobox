@@ -239,11 +239,14 @@ func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.Image
 func (s *ImageService) UpdateImageBackup(imageBackup *models.ImageBackup) error {
 	query := `
 		UPDATE image_backups
-		SET local_path = ?
+		SET local_path = ?, subject_id = ?, subject_type = ?, image_type = ?
 		WHERE url = ?
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		imageBackup.LocalPath,
+		imageBackup.SubjectId,
+		imageBackup.SubjectType,
+		imageBackup.ImageType,
 		imageBackup.Url,
 	)
 	return err
@@ -611,33 +614,45 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 	for _, image := range strings.Split(gameEntity.Game.Images, ",") {
 		fmt.Printf("图库2：%s\n", image)
 		backup, _ := s.GetImageBackupByUrl(image, false)
-		if backup != nil && backup.Url != "" {
-			continue
+		localPath := ""
+		if backup != nil {
+			localPath = backup.LocalPath
 		}
-		fmt.Printf("图库3：%s\n", image)
-		backup = &models.ImageBackup{
+		newBackup := models.ImageBackup{
 			Url:         image,
-			LocalPath:   "",
+			LocalPath:   localPath,
 			SubjectId:   gameEntity.Game.ID,
 			SubjectType: 0,
 			ImageType:   2,
 			CreatedAt:   time.Now(),
 			GameId:      gameEntity.Game.ID,
 		}
-		err = s.CreateImageBackup(*backup)
+		if backup != nil {
+			err = s.UpdateImageBackup(&newBackup)
+			continue
+		}
+		fmt.Printf("图库3：%s\n", image)
+
+		err = s.CreateImageBackup(newBackup)
 	}
 	cover, _ := s.GetImageBackupByUrl(gameEntity.Game.CoverURL, false)
-	if cover == nil || cover.Url == "" {
-		cover = &models.ImageBackup{
-			Url:         gameEntity.Game.CoverURL,
-			LocalPath:   "",
-			SubjectId:   gameEntity.Game.ID,
-			SubjectType: 0,
-			ImageType:   0,
-			CreatedAt:   time.Now(),
-			GameId:      gameEntity.Game.ID,
-		}
-		err = s.CreateImageBackup(*cover)
+	localCover := ""
+	if cover != nil {
+		localCover = cover.LocalPath
+	}
+	newCover := models.ImageBackup{
+		Url:         gameEntity.Game.CoverURL,
+		LocalPath:   localCover,
+		SubjectId:   gameEntity.Game.ID,
+		SubjectType: 0,
+		ImageType:   0,
+		CreatedAt:   time.Now(),
+		GameId:      gameEntity.Game.ID,
+	}
+	if cover == nil {
+		err = s.CreateImageBackup(newCover)
+	} else {
+		err = s.UpdateImageBackup(&newCover)
 	}
 	//works
 	// for _, work := range utils.MapToArray(gameEntity.WorksMap) {

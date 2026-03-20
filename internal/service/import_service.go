@@ -845,8 +845,8 @@ func (s *ImportService) FetchMetadataForCandidate(searchName string) (vo.BatchIm
 		{utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror), enums.Eroscape, ""},
 		{utils.NewDmmInfoGetter(), enums.Dmm, ""},
 		{utils.NewDlsiteInfoGetter(), enums.Dlsite, ""},
-		{utils.NewYmgalInfoGetter(), enums.Ymgal, ""},
-		{utils.NewYmgalInfoGetter(), enums.Getchu, ""},
+		{utils.NewYmgalInfoGetter(s.config.BangumiSearchCn), enums.Ymgal, ""},
+		{utils.NewGetchuInfoGetter(), enums.Getchu, ""},
 		{utils.NewVNDBInfoGetter(), enums.VNDB, s.config.VNDBAccessToken},
 	}
 

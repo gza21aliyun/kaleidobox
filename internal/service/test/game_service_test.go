@@ -906,6 +906,47 @@ func createGetchuGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 		}
 }
 
+func createYmgalGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
+	releaseAt, _ := time.Parse("2006-01-01", "2025-01-01")
+	game := models.Game{
+		ID:         "test-eroscape-001",
+		Name:       "测试游戏",
+		CoverURL:   "https://example.com/cover.jpg",
+		Company:    "测试公司",
+		Summary:    "这是一个测试游戏",
+		Path:       "C:\\Games\\TestGame\\game.exe",
+		SourceType: enums.Ymgal,
+		SourceID:   "31147",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		ReleaseAt:  releaseAt,
+		CachedAt:   time.Now(),
+	}
+	return game, func(oldGame models.Game, services Services) error {
+			_, err := services.GameService.GetGameByID(oldGame.ID)
+			if err != nil {
+				return fmt.Errorf("读取游戏错误 err:%v\n", err)
+			}
+			charactor, err := services.WorkService.GetWorkByStaff(oldGame.ID, "中村 繪里子")
+			game, err := services.GameService.GetGameByID(oldGame.ID)
+			fmt.Println("品牌：", game.Company)
+			if charactor.CharactorName != "小倉 朝日" {
+				return fmt.Errorf("错误：cv:中村 繪里子  小仓 朝日，c:%v", charactor)
+			}
+
+			return nil
+		}, vo.MetadataRequest{
+			ID:                    game.SourceID,
+			DbGameId:              game.ID,
+			ShouldFetchStaffs:     true,
+			ShouldFetchCharactors: true,
+			ShouldFetchTags:       true,
+			IsOverwrite:           true,
+			ShouldFetchImages:     true,
+			Source:                enums.Ymgal,
+		}
+}
+
 func createDlsiteGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 	releaseAt, _ := time.Parse("2006-01-01", "2025-01-01")
 	game := models.Game{
@@ -949,7 +990,7 @@ func TestGameService_BGArray(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
 		applog.SetMode(applog.ModeCLI)
-		game, checkFn, req := createGetchuGameCheck()
+		game, checkFn, req := createYmgalGameCheck()
 		services := createServices(t)
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)

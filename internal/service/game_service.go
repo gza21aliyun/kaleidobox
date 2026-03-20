@@ -953,7 +953,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 
 	go func() {
 		defer wg.Done()
-		ymgalGetter := utils.NewYmgalInfoGetter()
+		ymgalGetter := utils.NewYmgalInfoGetter(s.config.BangumiSearchCn)
 		ymgal, _ := ymgalGetter.FetchMetadataByName(name, "")
 		if ymgal != (models.Game{}) {
 			mu.Lock()
@@ -1036,8 +1036,9 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		game, e = vndbGetter.FetchMetadata(req.ID, s.config.VNDBAccessToken)
 	case enums.Ymgal:
 		fmt.Println("Fetching metadata from Ymgal")
-		ymgalGetter := utils.NewYmgalInfoGetter()
-		game, e = ymgalGetter.FetchMetadata(req.ID, "")
+		ymgalGetter := utils.NewYmgalInfoGetter(s.config.BangumiSearchCn)
+		gameEntity, e = ymgalGetter.FetchEntity(req, "")
+		game = gameEntity.Game
 	case enums.Eroscape:
 		fmt.Println("Fetching metadata from Eroscape")
 		escGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
@@ -1397,7 +1398,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 					updatedGame, err = vndbGetter.FetchMetadataByName(ngame.SearchName, s.config.VNDBAccessToken)
 				} else if taskData.Req.Source == enums.Ymgal {
 					// log.Printf("TaskFunc 23 fetch for game %s", ngame.Name)
-					ymgalGetter := utils.NewYmgalInfoGetter()
+					ymgalGetter := utils.NewYmgalInfoGetter(s.config.BangumiSearchCn)
 					updatedGame, err = ymgalGetter.FetchMetadataByName(ngame.SearchName, "")
 				} else if taskData.Req.Source == enums.Eroscape {
 					// log.Printf("TaskFunc 24 fetch for game %s", ngame.Name)

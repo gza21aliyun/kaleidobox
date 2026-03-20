@@ -12,4 +12,5 @@ export const sortOptions = [
   { label: "名称", value: "name" },
   { label: "添加时间", value: "created_at" },
   { label: "发售日期", value: "release_at" },
+  { label: "开发", value: "company" },
 ];

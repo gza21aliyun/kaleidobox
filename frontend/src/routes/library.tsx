@@ -57,7 +57,7 @@ function LibraryPage() {
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at">("created_at");
+  const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company"> ("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [tagsFilter, setTags] = useState<string[]>(() => {
@@ -181,6 +181,10 @@ function LibraryPage() {
           break;
         case "release_at":
           comparison = String(a.release_at || "").localeCompare(String(b.release_at || ""));
+          break;
+        case "company":
+          comparison = String(a.company || "").localeCompare(String(b.company || ""));
+          break;
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
@@ -423,7 +427,7 @@ function LibraryPage() {
         onSearchChange={setSearchQuery}
         searchPlaceholder={t('library.searchPlaceholder')}
         sortBy={sortBy}
-        onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at")}
+        onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at" | "company")}
         sortOptions={sortOptions}
         sortOrder={sortOrder}
         onSortOrderChange={setSortOrder}

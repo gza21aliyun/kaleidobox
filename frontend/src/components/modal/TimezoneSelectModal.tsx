@@ -78,7 +78,7 @@ export function TimezoneSelectModal({ isOpen, onConfirm }: TimezoneSelectModalPr
             onClick={handleConfirm}
             className="px-6 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow-sm shadow-primary-200 dark:shadow-none"
           >
-            确认并重启应用
+            {t('timezone.buttons.confirmAndRestart')}
           </button>
         </div>
       </div>

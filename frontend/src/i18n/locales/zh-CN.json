@@ -873,7 +873,16 @@
     "unknownCharacter": "未知角色",
     "staff": "工作人员 {{index}}",
     "categoryTags": "分类标签",
-    "noCategoryTags": "暂无分类标签"
+    "noCategoryTags": "暂无分类标签",
+    "tagInfo": "标签信息",
+    "tagName": "标签名称",
+    "category": "分类",
+    "searchGames": "搜索游戏",
+    "deleteTag": "删除标签",
+    "addTag": "添加标签",
+    "enterTagName": "输入标签名称",
+    "cancel": "取消",
+    "confirm": "确认"
   },
   "gameIntro": {
     "summary": "简介",
@@ -994,5 +1003,254 @@
     "checkFailed": "检查更新失败",
     "newVersionFound": "发现新版本",
     "latestVersion": "已是最新版本"
+  },
+  "filter": {
+    "modals": {
+      "chooseTag": {
+        "title": "选择标签"
+      },
+      "chooseTagGroup": {
+        "title": "选择标签分组"
+      }
+    },
+    "buttons": {
+      "selectAll": "全选",
+      "deselectAll": "取消全选"
+    },
+    "messages": {
+      "noTags": "暂无标签",
+      "noAvailableTagCategories": "没有可用的标签分类",
+      "noTagGroups": "暂无标签分组",
+      "canCreateTagGroupsFirst": "可以先为标签创建分组"
+    },
+    "labels": {
+      "containsTags": "包含 {{count}} 个标签"
+    }
+  },
+  "import": {
+    "modals": {
+      "gameImport": {
+        "playnite": {
+          "title": "从 Playnite 导入",
+          "fileDescription": "选择 Playnite 导出的 JSON 文件",
+          "fileHint": "支持通过 Playnite 导出脚本生成的游戏数据文件",
+          "buttonText": "选择 JSON 文件"
+        },
+        "potatovn": {
+          "title": "从 PotatoVN 导入",
+          "fileDescription": "选择 PotatoVN 导出的 ZIP 文件",
+          "fileHint": "支持包含 data.galgames.json 的 PotatoVN 备份文件",
+          "buttonText": "选择 ZIP 文件"
+        }
+      }
+    },
+    "labels": {
+      "willImport": "将导入",
+      "alreadyExists": "已存在",
+      "noPath": "无路径",
+      "skipNoPathGames": "跳过无路径的游戏",
+      "gameName": "游戏名称",
+      "developer": "开发商",
+      "status": "状态",
+      "willSkip": "将跳过",
+      "new": "新增",
+      "importedSuccessfully": "成功导入",
+      "skipped": "已跳过",
+      "importFailed": "导入失败",
+      "skippedGames": "跳过的游戏",
+      "failedGames": "导入失败的游戏"
+    },
+    "messages": {
+      "noPathGamesInfo": "有 {{count}} 个游戏没有本地路径，这些可能是网络游戏或已删除的游戏。",
+      "uncheckToImportNoPathGames": "取消勾选以导入这些游戏（不含启动路径）。",
+      "checkToSkipNoPathGames": "勾选此项将跳过这些游戏。",
+      "noGameDataFound": "未找到游戏数据",
+      "importingGames": "正在导入游戏...",
+      "importMayTakeTime": "这可能需要一些时间，请勿关闭窗口"
+    },
+    "buttons": {
+      "reselect": "重新选择",
+      "import": "导入 {{count}} 个游戏"
+    },
+    "toasts": {
+      "previewImportFailed": "预览导入内容失败",
+      "fileSelectionFailed": "选择文件失败",
+      "importSuccess": "成功导入 {{count}} 个游戏",
+      "importFailed": "导入失败"
+    }
+  },
+  "image": {
+    "modals": {
+      "cropper": {
+        "title": "裁剪背景图片"
+      }
+    },
+    "labels": {
+      "aspectRatio": "宽高比",
+      "currentWindow": "当前窗口 ({{width}}x{{height}})",
+      "free": "自由"
+    },
+    "buttons": {
+      "confirmCrop": "确认裁剪"
+    }
+  },
+  "password": {
+    "modals": {
+      "setBackupPassword": {
+        "title": "设置备份密码",
+        "description": "备份密码用于生成您的唯一用户ID和加密云端数据。",
+        "warning": "密码只能设置一次，设置后无法修改！",
+        "remember": "请务必牢记您的密码，遗忘将无法恢复云端备份。"
+      }
+    },
+    "labels": {
+      "enterPassword": "输入密码",
+      "confirmPassword": "确认密码"
+    },
+    "placeholders": {
+      "min6Characters": "至少6位字符",
+      "enterAgain": "再次输入密码"
+    },
+    "errors": {
+      "minLength": "密码长度至少为6位",
+      "passwordsDontMatch": "两次输入的密码不一致"
+    },
+    "buttons": {
+      "confirmSetting": "确定设置"
+    }
+  },
+  "process": {
+    "modals": {
+      "selectProcess": {
+        "title": "选择游戏进程",
+        "description": "检测到 {{exeName}} 已退出，如果你没有手动退出，代表你导入游戏的不是实际的运行进程，请选择实际运行的游戏进程"
+      }
+    },
+    "placeholders": {
+      "searchProcess": "搜索进程..."
+    },
+    "messages": {
+      "noMatchingProcesses": "未找到匹配的进程",
+      "noAvailableProcesses": "无可用进程"
+    },
+    "buttons": {
+      "refreshList": "刷新列表",
+      "confirmSelection": "确认选择"
+    },
+    "toasts": {
+      "failedToLoadProcesses": "获取进程列表失败",
+      "pleaseSelectProcess": "请选择一个进程",
+      "processMonitoringSet": "已设置监控进程: {{process}}",
+      "saveFailed": "保存失败，请重试"
+    }
+  },
+  "hotkey": {
+    "modals": {
+      "screenshot": {
+        "title": "设置截图快捷键",
+        "description": "为截图功能设置全局快捷键"
+      }
+    },
+    "labels": {
+      "deviceType": "设备类型",
+      "modifiers": "修饰键",
+      "key": "按键",
+      "combinationSupported": "支持组合键",
+      "singleKeyOnly": "仅支持单键",
+      "currentCombination": "当前组合键"
+    },
+    "placeholders": {
+      "pressKey": "请按下按键...",
+      "clickToSetOrType": "点击设置按键或直接输入",
+      "connectControllerFirst": "请连接手柄后点击设置"
+    },
+    "buttons": {
+      "stopListening": "停止监听",
+      "setKey": "设置按键"
+    },
+    "errors": {
+      "pleaseEnterKey": "请输入按键"
+    },
+    "names": {
+      "screenshot": "截图快捷键"
+    }
+  },
+  "tagGroup": {
+    "modals": {
+      "createGroup": {
+        "title": "创建标签分组"
+      },
+      "editGroup": {
+        "title": "编辑标签分组"
+      }
+    },
+    "labels": {
+      "groupName": "分组名称",
+      "selectTags": "选择标签 ({{count}} 个已选择)"
+    },
+    "placeholders": {
+      "enterGroupName": "输入分组名称"
+    },
+    "errors": {
+      "pleaseEnterGroupName": "请输入分组名称",
+      "groupNameExists": "分组名称已存在",
+      "pleaseSelectAtLeastOneTag": "请选择至少一个标签"
+    },
+    "buttons": {
+      "selectAll": "全选",
+      "deselectAll": "取消全选"
+    },
+    "toasts": {
+      "groupCreatedSuccessfully": "分组创建成功",
+      "groupUpdatedSuccessfully": "分组更新成功",
+      "failedToSaveGroup": "保存分组失败"
+    }
+  },
+  "template": {
+    "modals": {
+      "export": {
+        "title": "美化导出"
+      }
+    },
+    "labels": {
+      "selectTemplate": "选择模板",
+      "selectTemplateDescription": "选择一个模板来美化你的统计数据",
+      "author": "作者",
+      "version": "版本",
+      "builtin": "内置模板"
+    },
+    "messages": {
+      "renderingPreview": "正在渲染预览...",
+      "selectTemplateToPreview": "选择模板以预览效果",
+      "customTemplatesHint": "提示：你可以在模板目录中创建自定义 HTML 模板",
+      "exporting": "导出中..."
+    },
+    "buttons": {
+      "openTemplatesDir": "打开模板目录",
+      "exportImage": "导出图片"
+    },
+    "toasts": {
+      "failedToLoadTemplates": "加载模板列表失败",
+      "failedToRenderTemplate": "渲染模板失败",
+      "failedToExportImage": "导出图片失败",
+      "failedToOpenTemplatesDir": "打开模板目录失败"
+    }
+  },
+  "timezone": {
+    "modals": {
+      "selectTimezone": {
+        "title": "选择时区",
+        "description": "检测到您尚未配置时区。为了正确显示并记录游戏时长，请选择您所在的时区。"
+      }
+    },
+    "labels": {
+      "currentDetectedTimezone": "当前检测到的时区:"
+    },
+    "placeholders": {
+      "selectTimezone": "请选择时区"
+    },
+    "buttons": {
+      "confirmAndRestart": "确认并重启应用"
+    }
   }
 }

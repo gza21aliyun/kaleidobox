@@ -278,6 +278,23 @@ func getTitles(searchName string) (mainT string, subT string, number string) {
 	return mainTitle, "", numStr
 }
 
+func stringCharSplit(str string, split string) []string {
+	rs := []string{}
+	text := []rune{}
+	// rnSplit := []rune(split)
+	for _, r := range str {
+		if strings.Contains(split, string(r)) {
+			if len(text) > 0 {
+				rs = append(rs, string(text))
+			}
+		} else {
+			text = append(text, r)
+		}
+	}
+	return rs
+
+}
+
 func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, excludeWords []string, fn func(t1 T1) string) []T1 {
 	if len(slice1) == 0 {
 		return nil

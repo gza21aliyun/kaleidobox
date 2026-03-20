@@ -335,6 +335,7 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			fmt.Printf("身高:%s\n", work.Height)
 			sm, _ := s.Find("div.formal_explanation").Html()
 			work.WorkSummary = strings.ReplaceAll(strings.TrimSpace(sm), "<br/>", "\n")
+			work.WorkSummary = strings.ReplaceAll(work.WorkSummary, "\n\n", "\n")
 			work.Sort = i
 			applog.InfoLogSaveAppLog("角色经历 01: " + work.WorkSummary)
 			applog.InfoLogSaveAppLog("角色图像 01: " + work.CharactorImage)
@@ -705,7 +706,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		e.DOM.Find("table#creater_infomation_table tr#seiyu a").Each(func(i int, s *goquery.Selection) {
 			staffName := strings.TrimSpace(s.Text())
 			StaffUrl := s.AttrOr("href", "")
-			charactorName := strings.TrimSpace(s.Find("span").Text())
+			charactorName := strings.ReplaceAll(strings.TrimSpace(s.Find("span").Text()), " ", "")
 			if staffName != "" && StaffUrl != "" {
 				parsedURL, err := url.Parse(StaffUrl)
 				if err != nil {

@@ -106,20 +106,31 @@ func (b DmmInfoGetter) FetchMetadataByName(name string, totken string) (models.G
 }
 
 func (b DmmInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
-	game, err := b.FetchByNameImpl(name,
+	game, err := b.FetchByNameImpl(name, false,
 		func(request vo.MetadataRequest) (models.Game, error) {
 			fmt.Println("FetchMetadataByName 34")
 			gameEntity, err := b.FetchMetadataById(request)
 			return gameEntity.Game, err
 		})
+	if game.SourceID != "" {
+		game, err = b.FetchByNameImpl(name, true,
+			func(request vo.MetadataRequest) (models.Game, error) {
+				fmt.Println("FetchMetadataByName 34")
+				gameEntity, err := b.FetchMetadataById(request)
+				return gameEntity.Game, err
+			})
+	}
 	return game, err
 }
 
-func (b DmmInfoGetter) FetchByNameImpl(name string, fn IdFunction) (models.Game, error) {
+func (b DmmInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction) (models.Game, error) {
 	var url string = "https://dlsoft.dmm.co.jp/search/?service=pcgame&searchstr="
-	// mainTitle := getMainTitle(name)
-	// url += mainTitle
-	url += name
+	mainTitle, _, _ := getTitles(name)
+	if isAl {
+		mainTitle = getGameNameAlternative(mainTitle)
+	}
+	url += mainTitle
+	// url += name
 	var game = models.Game{}
 	c := CreateCollector("*dmm.co.jp")
 
@@ -376,63 +387,168 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 			}
 		})
 
+		// e.DOM.Find("div.detailGuide__sect div.detailGuide__box-chr").Each(func(i int, s *goquery.Selection) {
+
+		// 	charactorName := strings.ReplaceAll(strings.TrimSpace(s.Find("span.guide-lin-hgt").Text()), " ", "")
+		// 	fmt.Printf("char 06 %s\n", charactorName)
+		// 	parts := stringCharSplit((charactorName), "(（")
+		// 	if len(parts) > 0 {
+		// 		charactorName = parts[0]
+		// 	}
+		// 	boxText := strings.TrimSpace(s.Find("p").Eq(0).Text())
+		// 	fmt.Printf("boxtext 022:%s\n", boxText)
+		// 	lines := strings.Split(boxText, "\n")
+		// 	line1 := strings.TrimSpace(lines[0])
+		// 	height := ""
+		// 	measurements := ""
+		// 	if len(lines) > 1 {
+		// 		line2 := strings.TrimSpace(lines[len(lines)-1])
+		// 		line1 = strings.TrimSpace(lines[len(lines)-2])
+		// 		line2Parts := strings.Split(line2, "スリーサイズ：")
+		// 		if len(line2Parts) > 1 {
+		// 			height = strings.TrimSpace(strings.ReplaceAll(line2Parts[0], "身長：", ""))
+		// 			measurements = strings.TrimSpace(line2Parts[1])
+		// 			measurements = strings.TrimSpace(strings.Split(measurements, "特技")[0])
+		// 		}
+		// 	}
+		// 	staffBox := strings.Split(line1, "CV：")
+		// 	var staffName string = ""
+		// 	if len(staffBox) > 1 {
+		// 		staffName = strings.TrimSpace(staffBox[1])
+		// 	}
+
+		// 	newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool {
+		// 		fmt.Printf("boxtext 03:%s\n", it.StaffName)
+		// 		return it.StaffName == staffName
+		// 	})
+		// 	image := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
+		// 	summary, _ := s.Find("p").Eq(1).Html()
+
+		// 	summary = strings.ReplaceAll(strings.TrimSpace(summary), "<br/>", "\n")
+		// 	summary = strings.ReplaceAll(strings.TrimSpace(summary), "\n", "\n")
+
+		// 	if charactorName != "" {
+		// 		if newWork != nil {
+		// 			fmt.Printf("boxtext 01:%s\n", staffName)
+		// 			newWork.CharactorName = charactorName
+		// 			newWork.WorkSummary = summary
+		// 			newWork.CharactorImage = image
+		// 			newWork.Sort = i
+
+		// 		} else {
+		// 			fmt.Printf("boxtext 02:%s\n", staffName)
+		// 			work := models.Work{
+		// 				GameId:         game.ID,
+		// 				Role:           enums.Charactor,
+		// 				CharactorName:  charactorName,
+		// 				StaffName:      staffName,
+		// 				WorkSummary:    summary,
+		// 				CharactorImage: image,
+		// 				SourceType:     enums.Dmm,
+		// 				Sort:           i,
+		// 				GameName:       game.Name,
+		// 				Measurements:   measurements,
+		// 				Height:         height,
+		// 			}
+		// 			worksMap[work.Role] = append(worksMap[work.Role], work)
+		// 		}
+
+		// 	}
+		// })
+
+		// e.DOM.Find("div.guide-sect div.guide-box-chr").Each(func(i int, s *goquery.Selection) {
+		// 	hml, _ := s.Html()
+		// 	fmt.Printf("char 05 %s\n", hml)
+		// 	charactorName := strings.ReplaceAll(strings.TrimSpace(s.Find("span.guide-lin-hgt").Text()), " ", "")
+		// 	fmt.Printf("char 06 %s\n", charactorName)
+		// 	parts := stringCharSplit((charactorName), "(（")
+		// 	if len(parts) > 0 {
+		// 		charactorName = parts[0]
+		// 	}
+		// 	fmt.Printf("char 07 %s\n", charactorName)
+
+		// 	boxText := strings.TrimSpace(s.Find("p").Eq(0).Text())
+		// 	fmt.Printf("boxtext 022:%s\n", boxText)
+		// 	lines := strings.Split(boxText, "\n")
+		// 	line1 := strings.TrimSpace(lines[0])
+		// 	height := ""
+		// 	measurements := ""
+		// 	if len(lines) > 1 {
+		// 		line1 = strings.TrimSpace(lines[len(lines)-2])
+		// 		line2 := strings.TrimSpace(lines[len(lines)-1])
+		// 		line2Parts := strings.Split(line2, "スリーサイズ：")
+		// 		if len(line2Parts) > 1 {
+		// 			height = strings.TrimSpace(strings.ReplaceAll(line2Parts[0], "身長：", ""))
+		// 			measurements = strings.TrimSpace(line2Parts[1])
+		// 			measurements = strings.TrimSpace(strings.Split(measurements, "特技")[0])
+		// 			// if strings.Contains(measurements, "特技") {
+		// 			// }
+		// 		}
+		// 	}
+		// 	fmt.Printf("measurements 02:%s\n", measurements)
+		// 	staffBox := strings.Split(line1, "CV：")
+		// 	var staffName string = ""
+		// 	if len(staffBox) > 1 {
+		// 		staffName = strings.TrimSpace(staffBox[1])
+		// 	}
+
+		// 	newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool {
+		// 		fmt.Printf("boxtext 03:%s\n", it.StaffName)
+		// 		return it.StaffName == staffName
+		// 	})
+		// 	image := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
+		// 	summary, _ := s.Find("p").Eq(1).Html()
+
+		// 	summary = strings.ReplaceAll(strings.TrimSpace(summary), "<br/>", "\n")
+		// 	summary = strings.ReplaceAll(strings.TrimSpace(summary), "\n\n", "\n")
+
+		// 	if charactorName != "" {
+		// 		if newWork != nil {
+		// 			fmt.Printf("boxtext 01:%s\n", staffName)
+		// 			newWork.CharactorName = charactorName
+		// 			newWork.WorkSummary = summary
+		// 			newWork.CharactorImage = image
+		// 			newWork.Sort = i
+
+		// 		} else {
+		// 			fmt.Printf("boxtext 02:%s\n", staffName)
+		// 			work := models.Work{
+		// 				GameId:         game.ID,
+		// 				Role:           enums.Charactor,
+		// 				CharactorName:  charactorName,
+		// 				StaffName:      staffName,
+		// 				WorkSummary:    summary,
+		// 				CharactorImage: image,
+		// 				SourceType:     enums.Dmm,
+		// 				Sort:           i,
+		// 				GameName:       game.Name,
+		// 				Measurements:   measurements,
+		// 				Height:         height,
+		// 			}
+		// 			worksMap[work.Role] = append(worksMap[work.Role], work)
+		// 		}
+
+		// 	}
+		// })
+
 		e.DOM.Find("div.detailGuide__sect div.detailGuide__box-chr").Each(func(i int, s *goquery.Selection) {
-
-			charactorName := strings.ReplaceAll(strings.Split(strings.TrimSpace(s.Find("span.detailGuide__lin-hgt").Text()), "(")[0], " ", "")
-			boxText := strings.TrimSpace(s.Find("p").Eq(0).Text())
-			fmt.Printf("boxtext 022:%s\n", boxText)
-			lines := strings.Split(boxText, "\n")
-			line1 := strings.TrimSpace(lines[0])
-			height := ""
-			measurements := ""
-			if len(lines) > 1 {
-				line2 := strings.TrimSpace(lines[1])
-				line2Parts := strings.Split(line2, "スリーサイズ：")
-				if len(line2Parts) > 1 {
-					height = strings.TrimSpace(strings.ReplaceAll(line2Parts[0], "身長：", ""))
-					measurements = strings.TrimSpace(line2Parts[1])
-				}
+			work := extractCharactor(i, s, &gameEntity, game)
+			if work != nil {
+				worksMap[work.Role] = append(worksMap[work.Role], *work)
 			}
-			staffBox := strings.Split(line1, "CV：")
-			var staffName string = ""
-			if len(staffBox) > 1 {
-				staffName = strings.TrimSpace(staffBox[1])
+		})
+
+		e.DOM.Find("div.guide-sect div.guide-box-chr").Each(func(i int, s *goquery.Selection) {
+			work := extractCharactor(i, s, &gameEntity, game)
+			if work != nil {
+				worksMap[work.Role] = append(worksMap[work.Role], *work)
 			}
+		})
 
-			newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool {
-				fmt.Printf("boxtext 03:%s\n", it.StaffName)
-				return it.StaffName == staffName
-			})
-			image := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
-			summary, _ := s.Find("p").Eq(1).Html()
-
-			summary = strings.ReplaceAll(strings.TrimSpace(summary), "<br/>", "\n")
-
-			if charactorName != "" {
-				if newWork != nil {
-					fmt.Printf("boxtext 01:%s\n", staffName)
-					newWork.CharactorName = charactorName
-					newWork.WorkSummary = summary
-					newWork.CharactorImage = image
-
-				} else {
-					fmt.Printf("boxtext 02:%s\n", staffName)
-					work := models.Work{
-						GameId:         game.ID,
-						Role:           enums.Charactor,
-						CharactorName:  charactorName,
-						StaffName:      staffName,
-						WorkSummary:    summary,
-						CharactorImage: image,
-						SourceType:     enums.Dmm,
-						Sort:           i,
-						GameName:       game.Name,
-						Measurements:   measurements,
-						Height:         height,
-					}
-					worksMap[work.Role] = append(worksMap[work.Role], work)
-				}
-
+		e.DOM.Find("div.guide-guide-sect div.guide-guide-box-chr").Each(func(i int, s *goquery.Selection) {
+			work := extractCharactor(i, s, &gameEntity, game)
+			if work != nil {
+				worksMap[work.Role] = append(worksMap[work.Role], *work)
 			}
 		})
 
@@ -493,6 +609,113 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 
 	return gameEntity, nil
 }
+
+func extractCharactor(i int, s *goquery.Selection, gameEntity *models.GameEntity, game models.Game) *models.Work {
+	hml, _ := s.Html()
+	fmt.Printf("char 05 %s\n", hml)
+
+	boxText := strings.TrimSpace(s.Find("p").Eq(0).Text())
+	fmt.Printf("boxtext 022:%s\n", boxText)
+	lines := strings.Split(boxText, "\n")
+
+	line1Index := 0
+	line1 := strings.TrimSpace(lines[line1Index])
+	fmt.Printf("line1:%s\n", line1)
+	height := ""
+	measurements := ""
+	if len(lines) > 1 {
+
+		line1Index = len(lines) - 2
+		line1 = strings.TrimSpace(lines[line1Index])
+
+		fmt.Printf("line1 1:%s\n", line1)
+		line2 := strings.TrimSpace(lines[len(lines)-1])
+		line2Parts := strings.Split(line2, "スリーサイズ：")
+		if len(line2Parts) > 1 {
+			height = strings.TrimSpace(strings.ReplaceAll(line2Parts[0], "身長：", ""))
+			measurements = strings.TrimSpace(line2Parts[1])
+			measurements = strings.TrimSpace(strings.Split(measurements, "特技")[0])
+			measurements = strings.TrimSpace(strings.Split(measurements, "血液型")[0])
+			// if strings.Contains(measurements, "特技") {
+			// }
+		} else if len(line2Parts) == 1 {
+			measurements = strings.TrimSpace(line2Parts[0])
+			measurements = strings.TrimSpace(strings.Split(measurements, "特技")[0])
+			measurements = strings.TrimSpace(strings.Split(measurements, "血液型")[0])
+		}
+	}
+	fmt.Printf("measurements 02:%s\n", measurements)
+	charactorName := ""
+	var staffBox []string = []string{}
+	if strings.Contains(line1, "CV：") {
+		staffBox = strings.Split(line1, "CV：")
+	} else if strings.Contains(line1, "CV:") {
+		staffBox = strings.Split(line1, "CV:")
+	} else {
+		charactorName = strings.TrimSpace(line1)
+	}
+	var staffName string = ""
+
+	if len(staffBox) > 1 {
+		staffName = strings.TrimSpace(staffBox[1])
+		charactorName = strings.ReplaceAll(strings.TrimSpace(staffBox[0]), " ", "")
+	} else if len(staffBox) == 1 {
+		staffName = strings.TrimSpace(staffBox[0])
+		staffName = strings.ReplaceAll(staffName, "CV:", "")
+	}
+	if charactorName == "" && line1Index > 0 {
+		charactorName = strings.ReplaceAll(strings.TrimSpace(lines[line1Index-1]), " ", "")
+
+	}
+
+	fmt.Printf("char 06 %s\n", charactorName)
+	parts := stringCharSplit((charactorName), "(（")
+	if len(parts) > 0 {
+		charactorName = parts[0]
+	}
+	fmt.Printf("char 07 %s\n", charactorName)
+	fmt.Printf("char 08 %s\n", staffName)
+
+	newWork := Find(gameEntity.WorksMap[enums.CV], func(it models.Work) bool {
+		fmt.Printf("boxtext 03:%s\n", it.StaffName)
+		return it.StaffName == staffName
+	})
+	image := strings.TrimSpace(s.Find("img").AttrOr("src", ""))
+	summary, _ := s.Find("p").Eq(1).Html()
+
+	summary = strings.ReplaceAll(strings.TrimSpace(summary), "<br/>", "\n")
+	summary = strings.ReplaceAll(strings.TrimSpace(summary), "\n\n", "\n")
+
+	if charactorName != "" {
+		if newWork != nil {
+			fmt.Printf("boxtext 01:%s\n", staffName)
+			newWork.CharactorName = charactorName
+			newWork.WorkSummary = summary
+			newWork.CharactorImage = image
+			newWork.Sort = i
+
+		} else {
+			fmt.Printf("boxtext 02:%s\n", staffName)
+			work := models.Work{
+				GameId:         game.ID,
+				Role:           enums.Charactor,
+				CharactorName:  charactorName,
+				StaffName:      staffName,
+				WorkSummary:    summary,
+				CharactorImage: image,
+				SourceType:     enums.Dmm,
+				Sort:           i,
+				GameName:       game.Name,
+				Measurements:   measurements,
+				Height:         height,
+			}
+			return &work
+		}
+
+	}
+	return nil
+}
+
 func (g *DmmInfoGetter) GetRelatedGames(makerId string) (string, error) {
 	return "", nil
 	//由于根据品牌找游戏本地可请以做到，暂时不这么搞了

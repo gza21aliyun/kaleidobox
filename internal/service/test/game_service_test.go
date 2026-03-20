@@ -837,7 +837,7 @@ func createDmmGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 		Path:       "C:\\Games\\TestGame\\game.exe",
 		SourceType: enums.Dmm,
 		// SourceID:   "hobc_0509",
-		SourceID:  "views_0384",
+		SourceID:  "views_0468",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		ReleaseAt: releaseAt,
@@ -848,9 +848,9 @@ func createDmmGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 			if err != nil {
 				return fmt.Errorf("读取游戏错误 err:%v\n", err)
 			}
-			charactor, err := services.WorkService.GetWorkByStaff(oldGame.ID, "古都ことり")
-			if charactor.CharactorName != "朱鷺坂 アリス" {
-				return fmt.Errorf("错误：cv:古都ことり  朱鷺坂 アリス，c:%v", charactor)
+			charactor, err := services.WorkService.GetWorkByStaff(oldGame.ID, "百瀬ぽこ")
+			if charactor.CharactorName != "天上院愛華" {
+				return fmt.Errorf("错误：cv:百瀬ぽこ  天上院愛華，c:%v", charactor)
 			}
 
 			return nil
@@ -949,7 +949,7 @@ func TestGameService_BGArray(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
 		applog.SetMode(applog.ModeCLI)
-		game, checkFn, req := createGetchuGameCheck()
+		game, checkFn, req := createDmmGameCheck()
 		services := createServices(t)
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)

@@ -166,6 +166,9 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
         if (c.dlsite_id && c.dlsite_id.length > 0) {
             return false;
         }
+        if (c.getchu_id && c.getchu_id.length > 0) {
+            return false;
+         }
         return true;
     }
 
@@ -313,7 +316,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   // 已匹配包括自动匹配和手动匹配
   const matchedCount = matchedIds.length;
   const updatedCount = updatedIds.length;
-  const emptyFoundCount = candidates.filter(c => !isEmptyMatched(c)).length;
+  const emptyFoundCount = candidates.filter(c => isEmptyMatched(c)).length;
   const notFoundCount = candidates.filter(c => !isMatched(c, source)).length;
   const pendingCount = candidates.filter(c => selectedIds.includes(c.id) && !updatedIds.includes(c.id)).length;
 
@@ -528,7 +531,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                     className="flex-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors duration-200"
                     title="选取空匹配">
                       <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                        {notFoundCount}
+                        {emptyFoundCount}
                       </div>
                       <div className="text-sm text-orange-700 dark:text-orange-300">
                         空匹配

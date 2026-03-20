@@ -488,6 +488,9 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 						for i, part := range pathParts {
 							if part == "detail" && i+1 < len(pathParts) {
 								game.DmmId = pathParts[i+1]
+								if len(game.DmmId) < 5 {
+									game.DmmId = ""
+								}
 								break
 							}
 						}

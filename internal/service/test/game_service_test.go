@@ -877,7 +877,7 @@ func createGetchuGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 		Path:       "C:\\Games\\TestGame\\game.exe",
 		SourceType: enums.Getchu,
 		// SourceID:   "hobc_0509",
-		SourceID:  "1227981",
+		SourceID:  "431285",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		ReleaseAt: releaseAt,
@@ -949,7 +949,7 @@ func TestGameService_BGArray(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
 		applog.SetMode(applog.ModeCLI)
-		game, checkFn, req := createDmmGameCheck()
+		game, checkFn, req := createGetchuGameCheck()
 		services := createServices(t)
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)

@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/PuerkitoBio/goquery" // 添加 GoQuery 导入
 	"github.com/gocolly/colly/v2"    // 添加 Colly 导入
@@ -45,7 +46,7 @@ func (b GetchuInfoGetter) FetchMetadataByName2(name string) (models.Game, error)
 }
 
 func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction) (models.Game, error) {
-	var gUrl string = "https://www.getchu.com/php/search.phtml?genre=pc_soft&keyword_option_flag=1&search_keyword="
+	var gUrl string = "https://www.getchu.com/php/search.phtml?genre=pc_soft&search_keyword="
 	mainTitle, _, _ := getTitles(name)
 	// url += mainTitle
 	if isAl {
@@ -277,6 +278,14 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 			}
 			summary += story.Next().Text()
 		}
+		gdsIntro := e.DOM.Find("h3:contains('商品紹介')")
+		if gdsIntro.Length() > 0 {
+			if summary != "" {
+				summary += "\n"
+			}
+			summary += gdsIntro.Next().Text()
+		}
+
 		// summary = strings.ReplaceAll(summary, "<br/>", "\n")
 		// fmt.Printf("summary 25:\n%s\n", summary)
 		game.Summary = summary
@@ -291,21 +300,32 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 
 		e.DOM.Find("h3:contains('キャラクター')").Next().Find("td.chara-text").Each(func(i int, s *goquery.Selection) {
 			// parent := s.Parent
-			// fmt.Printf("parent 27:\n%s\n", parent)
+			// hml, _ := s.Find("h4.chara-name span").Html()
+			// fmt.Printf("parent 27:\n%s\n", hml)
 			charactorName := ""
 			charaNameBlock := s.Find("h4.chara-name span").Contents()
 			charaNameTextBlock := strings.Split(s.Find("h4.chara-name").Text(), "CV：")
 			var charNameSize = charaNameBlock.Length()
-			fmt.Printf("charNameSize:%d\n", charNameSize)
+			// fmt.Printf("charNameSize:%d\n", charNameSize)
+			// fmt.Printf("charaNameTextBlock 29 %s\n", JoinString(charaNameTextBlock, ",", func(t string) string { return t }))
 			charactorName = strings.TrimSpace(charaNameTextBlock[0])
 			if charNameSize == 1 {
 				// charactorName = strings.TrimSpace(charaNameTextBlock[0])
 			} else {
+				lastText := ""
 				charaNameBlock.Each(func(i int, ss *goquery.Selection) {
+					// fmt.Printf("char 06 i: %d,charname=%s,lasttext:%s, ss:=%s\n", i, charactorName, lastText, ss.Text())
 					if charNameSize == 3 && i == 2 {
 						cnb := strings.Split(ss.Text(), "CV：")
 						if len(cnb) > 0 {
-							charactorName = cnb[0]
+							if utf8.RuneCountInString(cnb[0]) > utf8.RuneCountInString(lastText) && lastText != "" {
+								charactorName = lastText
+								fmt.Printf("char 31 %s\n", charactorName)
+							} else {
+								charactorName = cnb[0]
+								// fmt.Printf("char 32,%d,%d %s\n", utf8.RuneCountInString(cnb[0]), utf8.RuneCountInString(lastText), charactorName)
+							}
+
 							// fmt.Printf("cnbt:%s\n", cnbt)
 
 						}
@@ -314,14 +334,22 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 						charactorName = ss.Text()
 					}
 
+					lastText = strings.TrimSpace(ss.Text())
+					// if charactorName == "" && strings.Contains(ss.Text(), "CV") {
+					// 	charactorName = lastText
+					// }
+
 				})
+
 			}
+			// fmt.Printf("char 29 %s\n", charactorName)
 			if strings.Contains(charactorName, "（") {
 				cnb2 := strings.Split(charactorName, "（")
 				if len(cnb2) > 0 {
 					charactorName = cnb2[0]
 				}
 			}
+			// fmt.Printf("char 30 %s\n", charactorName)
 
 			if strings.Contains(charactorName, " ") {
 				charactorName = strings.ReplaceAll(charactorName, " ", "")

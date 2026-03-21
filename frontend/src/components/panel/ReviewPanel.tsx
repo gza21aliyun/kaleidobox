@@ -7,6 +7,7 @@ import { formatLocalDate } from '../../utils/time';
 import { useAppStore } from '../../store';
 import i18next from '../../i18n/i18n';
 import { BetterButton } from '../ui/BetterButton';
+import { N } from '@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs';
 
 const t = i18next.t;
 
@@ -197,6 +198,38 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
     }
   };
 
+  const getAverageRating = () => {
+    if (!gameReview) return ["", "100"]
+    try {
+      var tp = 5;
+      var stp = 0;
+      var sap = 0;
+      for (var i = 0; i < (gameReview?.reviews?.length ?? 0); i++) {
+        var review = gameReview.reviews[i];        
+        
+        tp = Number(review.total_points);
+        if (isNaN(tp)) tp = 5;
+        var t = Number(review.total_points);
+        if (isNaN(t)) t = tp;
+        stp += t;
+        var a = Number(review.points);
+        if (isNaN(a)) a = 0;
+        sap += a;
+        console.log("point:" + a + " total:" + t);
+      }
+      if (stp == 0) {
+        console.log("stp == 0")
+        return ["", "100"]
+      }
+      console.log("stp: " + stp + " sap: " + sap)
+      return [(1.00 * sap / stp * tp).toFixed(4), tp.toString()]
+    } catch (error) {
+      console.log("getAverageRating err ", error)
+      return ["", "100"]
+    }
+    
+  };
+
   const renderPagination = () => {
     const pageNumbers = getPageNumbers();
     
@@ -290,13 +323,13 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
           )}
         </div>
 
-        {gameReview && gameReview.points && (
+        {gameReview && (
           <div className="flex items-center gap-4">
             <div className="text-center">
               <div className="text-sm text-brand-600 dark:text-brand-400">{t('reviews.overallScore') || '综合评分'}</div>
               <div className="text-3xl font-bold text-brand-700 dark:text-brand-300">
-                {gameReview.points}
-                <span className="text-lg text-brand-500 dark:text-brand-400">/{gameReview.total_points || '100'}</span>
+                {getAverageRating()[0]}
+                <span className="text-lg text-brand-500 dark:text-brand-400">/{getAverageRating()[1] || '100'}</span>
               </div>
             </div>
           </div>

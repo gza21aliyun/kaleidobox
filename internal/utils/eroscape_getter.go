@@ -822,14 +822,18 @@ func (b EroscapeInfoGetter) FetchReviews(id string, token string, page int) (mod
 				id = parts3[len(parts3)-1]
 
 			}
+			if points == "--" {
+				points = "0"
+			}
 			t, err := time.Parse("2006年01月02日15時04分05秒", timeStr)
 			review.Reviews = append(review.Reviews, models.Review{
-				Id:       id,
-				Points:   points,
-				Reviewer: name,
-				Content:  content,
-				Link:     link,
-				Date:     t,
+				Id:          id,
+				Points:      points,
+				TotalPoints: "100",
+				Reviewer:    name,
+				Content:     content,
+				Link:        link,
+				Date:        t,
 			})
 		})
 

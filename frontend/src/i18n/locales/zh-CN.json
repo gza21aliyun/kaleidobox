@@ -593,7 +593,10 @@
     "uploadedToCloud": "已上传到云端",
     "uploadFailed": "上传失败: {{error}}",
     "restoreFromCloud": "从云端恢复",
-    "confirmRestoreFromCloud": "确定要从云端恢复此备份吗？程序将退出并在下次启动时完成恢复。"
+    "confirmRestoreFromCloud": "确定要从云端恢复此备份吗？程序将退出并在下次启动时完成恢复。",
+    "import": "导入恢复",
+    "preparing": "正在准备...",
+    "fileError": "选择文件失败: {{error}}"
   },
   "session": {
     "toasts": {

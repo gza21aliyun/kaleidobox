@@ -9,6 +9,7 @@ import {
   ScheduleDBRestore,
   ScheduleDBRestoreFromCloud,
   UploadDBBackupToCloud,
+  SelectDBBackupRestorePath,
 } from "../../../wailsjs/go/service/BackupService";
 import { SafeQuit } from "../../../wailsjs/go/service/ConfigService";
 import { useAppStore } from "../../store";
@@ -192,6 +193,42 @@ export function DBBackupPanel() {
     });
   };
 
+  const handleImportDBBackup = async () => {
+    if (isDisabled)
+      return;
+
+    try {
+      // 调用后端打开文件选择对话框
+      const backupPath = await SelectDBBackupRestorePath();
+
+      if (!backupPath) {
+        return; // 用户取消
+      }
+
+      setConfirmConfig({
+        isOpen: true,
+        title: t("dbBackup.restoreDatabase"),
+        message: t("dbBackup.confirmRestore"),
+        type: "danger",
+        onConfirm: async () => {
+          setRestoringBackup(backupPath);
+          try {
+            await ScheduleDBRestore(backupPath);
+            toast.success(t("dbBackup.restoreScheduled"));
+            setTimeout(() => SafeQuit(), 1500);
+          }
+          catch (err: any) {
+            toast.error(t("dbBackup.scheduleRestoreFailed", { error: err }));
+            setRestoringBackup(null);
+          }
+        },
+      });
+    }
+    catch (err: any) {
+      toast.error(t("dbBackup.fileError", { error: err }));
+    }
+  };
+
   useEffect(() => {
     loadDBBackups();
   }, []);
@@ -219,14 +256,25 @@ export function DBBackupPanel() {
               {t("dbBackup.backupDescription")}
             </p>
           </div>
-          <button
-            onClick={handleCreateBackup}
-            disabled={isDisabled}
-            className="glass-btn-neutral px-4 py-2 bg-neutral-600 text-white rounded-md hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isBackingUp && <div className="i-mdi-loading animate-spin" />}
-            {isBackingUp ? t("dbBackup.backingUp") : t("dbBackup.backupNow")}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleCreateBackup}
+              disabled={isDisabled}
+              className="glass-btn-neutral px-4 py-2 bg-neutral-600 text-white rounded-md hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isBackingUp && <div className="i-mdi-loading animate-spin" />}
+              {isBackingUp ? t("dbBackup.backingUp") : t("dbBackup.backupNow")}
+            </button>
+            <button
+              onClick={handleImportDBBackup}
+              disabled={isDisabled}
+              className="glass-btn-neutral px-4 py-2 bg-warning-600 text-white rounded-md hover:bg-warning-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {restoringBackup !== null && <div className="i-mdi-loading animate-spin" />}
+              <div className="i-mdi-import text-xl" />
+              {restoringBackup !== null ? t("dbBackup.preparing") : t("dbBackup.import")}
+            </button>
+          </div>
         </div>
         {dbBackups?.last_backup_time && (
           <p className="text-xs text-brand-500 dark:text-brand-400">

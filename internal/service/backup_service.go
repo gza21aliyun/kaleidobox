@@ -81,6 +81,23 @@ func (s *BackupService) SelectBackupRestorePath() (string, error) {
 	return selection, err
 }
 
+// SelectDBBackupRestorePath 选择要恢复的数据库备份文件
+func (s *BackupService) SelectDBBackupRestorePath() (string, error) {
+	selection, err := runtime.OpenFileDialog(s.ctx, runtime.OpenDialogOptions{
+		Title: "选择要恢复的数据库备份文件",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "ZIP 压缩包 (*.zip)",
+				Pattern:     "*.zip",
+			},
+		},
+	})
+	if err != nil {
+		applog.LogErrorf(s.ctx, "failed to open file dialog: %v", err)
+	}
+	return selection, err
+}
+
 // ========== 云备份配置相关方法 ==========
 
 // SetupCloudBackup 设置云备份密码（只能设置一次）

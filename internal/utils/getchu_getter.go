@@ -306,16 +306,16 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 			charaNameBlock := s.Find("h4.chara-name span").Contents()
 			charaNameTextBlock := strings.Split(s.Find("h4.chara-name").Text(), "CV：")
 			var charNameSize = charaNameBlock.Length()
-			// fmt.Printf("charNameSize:%d\n", charNameSize)
-			// fmt.Printf("charaNameTextBlock 29 %s\n", JoinString(charaNameTextBlock, ",", func(t string) string { return t }))
+			fmt.Printf("charNameSize:%d\n", charNameSize)
+			fmt.Printf("charaNameTextBlock 29 %s\n", JoinString(charaNameTextBlock, ",", func(t string) string { return t }))
 			charactorName = strings.TrimSpace(charaNameTextBlock[0])
 			if charNameSize == 1 {
 				// charactorName = strings.TrimSpace(charaNameTextBlock[0])
 			} else {
 				lastText := ""
 				charaNameBlock.Each(func(i int, ss *goquery.Selection) {
-					// fmt.Printf("char 06 i: %d,charname=%s,lasttext:%s, ss:=%s\n", i, charactorName, lastText, ss.Text())
-					if charNameSize == 3 && i == 2 {
+					fmt.Printf("char 06 i: %d,charname=%s,lasttext:%s, ss:=%s\n", i, charactorName, lastText, ss.Text())
+					if strings.Contains(ss.Text(), "CV") {
 						cnb := strings.Split(ss.Text(), "CV：")
 						if len(cnb) > 0 {
 							if utf8.RuneCountInString(cnb[0]) > utf8.RuneCountInString(lastText) && lastText != "" {
@@ -323,7 +323,7 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 								fmt.Printf("char 31 %s\n", charactorName)
 							} else {
 								charactorName = cnb[0]
-								// fmt.Printf("char 32,%d,%d %s\n", utf8.RuneCountInString(cnb[0]), utf8.RuneCountInString(lastText), charactorName)
+								fmt.Printf("char 32,%d,%d %s\n", utf8.RuneCountInString(cnb[0]), utf8.RuneCountInString(lastText), charactorName)
 							}
 
 							// fmt.Printf("cnbt:%s\n", cnbt)
@@ -342,7 +342,7 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 				})
 
 			}
-			// fmt.Printf("char 29 %s\n", charactorName)
+			fmt.Printf("char 29 %s\n", charactorName)
 			if strings.Contains(charactorName, "（") {
 				cnb2 := strings.Split(charactorName, "（")
 				if len(cnb2) > 0 {
@@ -402,8 +402,11 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 			}
 			image := s.Parent().Find("td").Eq(2).Find("img").AttrOr("src", "")
 			if image != "" {
+				image = strings.ReplaceAll(image, "_s.jpg", ".jpg")
 				image = "https://www.getchu.com" + image
+				newWork.Images = image
 			}
+			fmt.Printf("chars 33 img:%s\n", image)
 			if measurementsBlock.Length() > 0 {
 				// fmt.Printf("measurementsBlock:%s\n full:%s\n", measurementsBlock.Text(), charTextBlock.Text())
 				measurementsBlock.Remove()

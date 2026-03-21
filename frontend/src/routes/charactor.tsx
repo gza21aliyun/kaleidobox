@@ -348,11 +348,11 @@ function CharactorPage() {
                       <tr className="border-b border-gray-200 dark:border-gray-600">
                         <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.cover')}</th>
                         <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.gameName')}</th>
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.gameSummary')}</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white max-xl:hidden">{t('charactor.tableHeaders.gameSummary')}</th>
                         <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.sourceType')}</th>
                         <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.characterImage')}</th>
                         <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.voiceActor')}</th>
-                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('charactor.tableHeaders.characterExperience')}</th>
+                        <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white max-lg:hidden">{t('charactor.tableHeaders.characterExperience')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -388,7 +388,7 @@ function CharactorPage() {
                                   </button>
                             </td>
                             
-                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
+                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6 max-xl:hidden">
                               {work.game.summary || '-'}
                             </td>
                             <td className="py-3 px-3 w-1/15">
@@ -415,7 +415,7 @@ function CharactorPage() {
                                 {work.work.staff_name || '-'}
                               </span>
                             </td>
-                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
+                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6 max-lg:hidden">
                               {work.work.work_summary || '-'}
                             </td>
                           </tr>

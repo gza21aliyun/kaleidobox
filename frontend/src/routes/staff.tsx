@@ -256,14 +256,14 @@ function StaffPage() {
                             <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.cover')}</th>
                             <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.gameName')}</th>
                             <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.role')}</th>
-                            <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.gameSummary')}</th>
+                            <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white max-xl:hidden">{t('staff.tableHeaders.gameSummary')}</th>
                             <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.sourceType')}</th>
                             {staff && staff.roles.includes(enums.StaffRole.CV) && 
                             (<th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.characterImage')}</th>)}
                             {staff && staff.roles.includes(enums.StaffRole.CV) && 
                             (<th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.characterName')}</th>)}
                             {staff && staff.roles.includes(enums.StaffRole.CV) && 
-                            (<th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.characterSummary')}</th>)}
+                            (<th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white max-lg:hidden">{t('staff.tableHeaders.characterSummary')}</th>)}
                         </tr>
                         </thead>
                         <tbody>
@@ -308,7 +308,7 @@ function StaffPage() {
                                 </span>
                             </td>
                             
-                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6">
+                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6 max-xl:hidden">
                                 {work.game.summary || '-'}
                             </td>
                             <td className="py-3 px-3">
@@ -341,7 +341,7 @@ function StaffPage() {
                                 </td>
                             )}
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (
-                                <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/7">
+                                <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/7 max-lg:hidden">
                                     <div className="whitespace-normal break-words">
                                         {work.work.work_summary || '-'}
                                     </div>

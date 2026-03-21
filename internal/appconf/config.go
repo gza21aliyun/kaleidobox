@@ -79,7 +79,7 @@ type AppConfig struct {
 	EroscapeUseMirror  bool   `json:"eroscape_use_mirror"`
 	NewFolderChooser   bool   `json:"new_folder_chooser"`
 	JoystickType       string `json:"joystick_type,omitempty"`
-	BangumiSearchCn    bool   `json:"bangumi_search_cn"`
+	SearchCn           bool   `json:"search_cn"`
 	AutoDownloadImages bool   `json:"auto_download_images"`
 	LogAll             bool   `json:"log_all"`
 }
@@ -149,7 +149,7 @@ func LoadConfig() (*AppConfig, error) {
 		NewFolderChooser:        true,
 		JoystickType:            "",
 		DetectTime:              60,
-		BangumiSearchCn:         false,
+		SearchCn:                false,
 		AutoDownloadImages:      true,
 		LogAll:                  false,
 	}

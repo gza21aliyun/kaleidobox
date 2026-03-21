@@ -58,17 +58,6 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
         <p className="text-xs text-brand-500 dark:text-brand-400">{t("basic.bangumiTokenHint")}</p>
       </div>
 
-      <div className="flex items-center justify-between p-2">
-        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          Bangumi优先作品中文名
-        </label>
-        <BetterSwitch
-          id="bangumi_search_cn"
-          checked={formData.bangumi_search_cn || false}
-          onCheckedChange={checked => onChange({ ...formData, bangumi_search_cn: checked } as appconf.AppConfig)}
-        />
-      </div>
-
       <div className="space-y-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("basic.vndbAccessToken")}</label>
         <input
@@ -80,7 +69,27 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
         />
       </div>
 
-      
+      <div className="flex items-center justify-between p-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+          搜索优先使用中文
+        </label>
+        <BetterSwitch
+          id="search_cn"
+          checked={formData.search_cn || false}
+          onCheckedChange={checked => onChange({ ...formData, search_cn: checked } as appconf.AppConfig)}
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+          自动下载图片
+        </label>
+        <BetterSwitch
+          id="auto_download_images"
+          checked={formData.auto_download_images || false}
+          onCheckedChange={checked => onChange({ ...formData, auto_download_images: checked } as appconf.AppConfig)}
+        />
+      </div>
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">

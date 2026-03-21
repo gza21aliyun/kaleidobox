@@ -841,11 +841,11 @@ func (s *ImportService) FetchMetadataForCandidate(searchName string) (vo.BatchIm
 		source enums.SourceType
 		token  string
 	}{
-		{utils.NewBangumiInfoGetter(s.config.BangumiSearchCn), enums.Bangumi, s.config.BangumiAccessToken},
+		{utils.NewBangumiInfoGetter(s.config.SearchCn), enums.Bangumi, s.config.BangumiAccessToken},
 		{utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror), enums.Eroscape, ""},
 		{utils.NewDmmInfoGetter(), enums.Dmm, ""},
 		{utils.NewDlsiteInfoGetter(), enums.Dlsite, ""},
-		{utils.NewYmgalInfoGetter(s.config.BangumiSearchCn), enums.Ymgal, ""},
+		{utils.NewYmgalInfoGetter(s.config.SearchCn), enums.Ymgal, ""},
 		{utils.NewGetchuInfoGetter(), enums.Getchu, ""},
 		{utils.NewVNDBInfoGetter(), enums.VNDB, s.config.VNDBAccessToken},
 	}

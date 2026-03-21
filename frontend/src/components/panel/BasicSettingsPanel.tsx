@@ -71,7 +71,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          搜索优先使用中文
+          搜刮中文源优先获取中文信息
         </label>
         <BetterSwitch
           id="search_cn"
@@ -82,7 +82,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          自动下载图片
+          自动下载图片到images目录，注意Getchu源的图片如果不下载会看不到
         </label>
         <BetterSwitch
           id="auto_download_images"
@@ -93,7 +93,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          日志全部写入app.log
+          更多日志写入app.log
         </label>
         <BetterSwitch
           id="log_all"

@@ -116,9 +116,9 @@ function SettingsPage() {
         <BasicSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('settings.languageSettings')} icon="i-mdi-translate" defaultOpen={true}>
+      {/* <CollapsibleSection title={t('settings.languageSettings')} icon="i-mdi-translate" defaultOpen={true}>
         <LanguageSettingsPanel formData={formData} onChange={handleFormChange} />
-      </CollapsibleSection>
+      </CollapsibleSection> */}
 
       <CollapsibleSection title={t('settings.appearance')} icon="i-mdi-palette" defaultOpen={false}>
         <BackgroundSettingsPanel formData={formData} onChange={handleFormChange} />

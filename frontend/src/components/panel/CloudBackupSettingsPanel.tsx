@@ -172,7 +172,7 @@ export function CloudBackupSettingsPanel({ formData, onChange }: CloudBackupSett
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("cloudBackup.s3Bucket")}</label>
-              <input type="text" name="s3_bucket" value={formData.s3_bucket || ""} onChange={handleChange} placeholder="lunabox-backup" className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white" />
+              <input type="text" name="s3_bucket" value={formData.s3_bucket || ""} onChange={handleChange} placeholder="kaleidobox-backup" className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white" />
             </div>
           </div>
           <div className="space-y-2">

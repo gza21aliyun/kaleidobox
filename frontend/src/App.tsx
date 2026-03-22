@@ -115,7 +115,7 @@ function App() {
     };
 
     // 缓存主题设置到 localStorage，供下次启动时预加载
-    localStorage.setItem("lunabox-theme", config.theme);
+    localStorage.setItem("kaleidobox-theme", config.theme);
 
     if (config.theme === "system") {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");

@@ -14,7 +14,7 @@ const getBrowserLanguage = () => {
 
 // 从localStorage获取用户选择的语言
 const getUserLanguage = () => {
-  return localStorage.getItem('lunabox-language') || getBrowserLanguage();
+  return localStorage.getItem('kaleidobox-language') || getBrowserLanguage();
 };
 
 const resources = {
@@ -45,7 +45,7 @@ i18next
 
 // 监听语言变化并保存到localStorage
 i18next.on('languageChanged', (lng) => {
-  localStorage.setItem('lunabox-language', lng);
+  localStorage.setItem('kaleidobox-language', lng);
 });
 
 export default i18next;

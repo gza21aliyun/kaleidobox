@@ -1,5 +1,5 @@
 @echo off
-REM LunaBox Build Script
+REM KaleidoBox Build Script
 REM Usage: build.bat [portable|installer|all] [version]
 
 setlocal enabledelayedexpansion
@@ -35,7 +35,7 @@ set "LDFLAGS_PORTABLE=%LDFLAGS_BASE% -X 'lunabox/internal/version.BuildMode=port
 set "LDFLAGS_INSTALLER=%LDFLAGS_BASE% -X 'lunabox/internal/version.BuildMode=installer'"
 
 echo ========================================
-echo LunaBox Build Script
+echo KaleidoBox Build Script
 echo Build Mode: %BUILD_MODE%
 echo Version: %VERSION%
 echo Commit: %GIT_COMMIT%
@@ -62,28 +62,28 @@ goto :done
 :build_portable
 echo [1/3] Building Portable GUI Version...
 echo ----------------------------------------
-wails build -ldflags "%LDFLAGS_PORTABLE%" -o lunabox-portable.exe
+wails build -ldflags "%LDFLAGS_PORTABLE%" -o kaleidobox-portable.exe
 if errorlevel 1 (
     echo ERROR: Portable GUI build failed!
     exit /b 1
 )
-echo Portable GUI build completed: build\bin\lunabox-portable.exe
+echo Portable GUI build completed: build\bin\kaleidobox-portable.exe
 echo.
 
 echo [2/3] Building CLI Version...
 echo ----------------------------------------
-go build -ldflags "%LDFLAGS_PORTABLE%" -o build\bin\lunabox-cli.exe ./cmd/lunacli
+go build -ldflags "%LDFLAGS_PORTABLE%" -o build\bin\kaleidobox-cli.exe ./cmd/lunacli
 if errorlevel 1 (
     echo ERROR: CLI build failed!
     exit /b 1
 )
-echo CLI build completed: build\bin\lunabox-cli.exe
+echo CLI build completed: build\bin\kaleidobox-cli.exe
 echo.
 
 REM Create portable ZIP package with both versions
-if exist "build\bin\lunabox-portable.exe" (
+if exist "build\bin\kaleidobox-portable.exe" (
     echo [3/3] Creating portable ZIP package...
-    set "TEMP_PKG_DIR=build\bin\LunaBox-Portable-%VERSION%"
+    set "TEMP_PKG_DIR=build\bin\KaleidoBox-Portable-%VERSION%"
     if exist "!TEMP_PKG_DIR!" rd /s /q "!TEMP_PKG_DIR!"
     mkdir "!TEMP_PKG_DIR!"
     mkdir "!TEMP_PKG_DIR!\backups"
@@ -91,31 +91,31 @@ if exist "build\bin\lunabox-portable.exe" (
     mkdir "!TEMP_PKG_DIR!\backgrounds"
     mkdir "!TEMP_PKG_DIR!\logs"
     
-    REM Copy GUI version as LunaBox.exe
-    copy "build\bin\lunabox-portable.exe" "!TEMP_PKG_DIR!\LunaBox.exe" >nul
+    REM Copy GUI version as KaleidoBox.exe
+    copy "build\bin\kaleidobox-portable.exe" "!TEMP_PKG_DIR!\KaleidoBox.exe" >nul
     
-    REM Copy CLI version as lunacli.exe
-    copy "build\bin\lunabox-cli.exe" "!TEMP_PKG_DIR!\lunacli.exe" >nul
+    REM Copy CLI version as kaleidocli.exe
+    copy "build\bin\kaleidobox-cli.exe" "!TEMP_PKG_DIR!\kaleidocli.exe" >nul
     
     REM Create README
-    echo LunaBox Portable v%VERSION% > "!TEMP_PKG_DIR!\README.txt"
+    echo KaleidoBox Portable v%VERSION% > "!TEMP_PKG_DIR!\README.txt"
     echo. >> "!TEMP_PKG_DIR!\README.txt"
     echo This package contains: >> "!TEMP_PKG_DIR!\README.txt"
-    echo   - LunaBox.exe  : GUI version (Double-click to launch) >> "!TEMP_PKG_DIR!\README.txt"
-    echo   - lunacli.exe  : CLI version (Use in terminal) >> "!TEMP_PKG_DIR!\README.txt"
+    echo   - KaleidoBox.exe  : GUI version (Double-click to launch) >> "!TEMP_PKG_DIR!\README.txt"
+    echo   - kaleidocli.exe  : CLI version (Use in terminal) >> "!TEMP_PKG_DIR!\README.txt"
     echo. >> "!TEMP_PKG_DIR!\README.txt"
     echo CLI Usage: >> "!TEMP_PKG_DIR!\README.txt"
-    echo   lunacli list >> "!TEMP_PKG_DIR!\README.txt"
-    echo   lunacli start ^<game-id^> >> "!TEMP_PKG_DIR!\README.txt"
-    echo   lunacli help >> "!TEMP_PKG_DIR!\README.txt"
+    echo   kaleidocli list >> "!TEMP_PKG_DIR!\README.txt"
+    echo   kaleidocli start ^<game-id^> >> "!TEMP_PKG_DIR!\README.txt"
+    echo   kaleidocli help >> "!TEMP_PKG_DIR!\README.txt"
     
-    if exist "build\bin\LunaBox-Portable-%VERSION%.zip" del "build\bin\LunaBox-Portable-%VERSION%.zip"
-    powershell -Command "Compress-Archive -Path '!TEMP_PKG_DIR!' -DestinationPath 'build\bin\LunaBox-Portable-%VERSION%.zip'"
+    if exist "build\bin\KaleidoBox-Portable-%VERSION%.zip" del "build\bin\KaleidoBox-Portable-%VERSION%.zip"
+    powershell -Command "Compress-Archive -Path '!TEMP_PKG_DIR!' -DestinationPath 'build\bin\KaleidoBox-Portable-%VERSION%.zip'"
     
     REM Clean up temp directory
     rd /s /q "!TEMP_PKG_DIR!"
     
-    echo Created: build\bin\LunaBox-Portable-%VERSION%.zip
+    echo Created: build\bin\KaleidoBox-Portable-%VERSION%.zip
 )
 echo.
 goto :eof
@@ -142,9 +142,9 @@ echo Installer GUI build completed!
 echo.
 
 REM Rename installer to include version
-if exist "build\bin\LunaBox-amd64-installer.exe" (
-    move /Y "build\bin\LunaBox-amd64-installer.exe" "build\bin\LunaBox-%VERSION%-Setup.exe" >nul
-    echo Created: build\bin\LunaBox-%VERSION%-Setup.exe
+if exist "build\bin\KaleidoBox-amd64-installer.exe" (
+    move /Y "build\bin\KaleidoBox-amd64-installer.exe" "build\bin\KaleidoBox-%VERSION%-Setup.exe" >nul
+    echo Created: build\bin\KaleidoBox-%VERSION%-Setup.exe
 )
 echo.
 goto :eof
@@ -155,10 +155,10 @@ echo Build completed successfully!
 echo ========================================
 echo.
 echo Output files:
-echo   - Portable: build\bin\LunaBox-Portable-%VERSION%.zip
-echo   - Installer: build\bin\LunaBox-%VERSION%-Setup.exe
+echo   - Portable: build\bin\KaleidoBox-Portable-%VERSION%.zip
+echo   - Installer: build\bin\KaleidoBox-%VERSION%-Setup.exe
 echo.
 echo Portable version: Data stored in program directory
-echo Installer version: Data stored in %%APPDATA%%\LunaBox
+echo Installer version: Data stored in %%APPDATA%%\KaleidoBox
 echo.
 endlocal

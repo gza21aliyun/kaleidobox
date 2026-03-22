@@ -46,7 +46,7 @@ func (s *BackupService) getCloudProvider() (cloudprovider.CloudStorageProvider, 
 // SelectBackupSavePath 选择全量备份保存路径
 func (s *BackupService) SelectBackupSavePath() (string, error) {
 	timestamp := time.Now().Format("2006-01-02T15-04-05")
-	defaultFileName := fmt.Sprintf("lunabox_full_%s.zip", timestamp)
+	defaultFileName := fmt.Sprintf("kaleidobox_full_%s.zip", timestamp)
 
 	selection, err := runtime.SaveFileDialog(s.ctx, runtime.SaveDialogOptions{
 		Title:           "选择全量备份保存位置",
@@ -640,7 +640,7 @@ func (s *BackupService) CreateDBBackup() (*vo.DBBackupInfo, error) {
 	// 创建临时打包目录，包含数据库导出和 covers
 	packDir := filepath.Join(backupDir, fmt.Sprintf("pack_%s", timestamp))
 	dbExportDir := filepath.Join(packDir, "database")
-	coversDestDir := filepath.Join(packDir, "covers")
+	coversDestDir := filepath.Join(packDir, "images")
 
 	if err := os.MkdirAll(dbExportDir, 0755); err != nil {
 		return nil, fmt.Errorf("创建临时目录失败: %w", err)
@@ -655,7 +655,7 @@ func (s *BackupService) CreateDBBackup() (*vo.DBBackupInfo, error) {
 	}
 
 	// 复制 covers 文件夹（如果存在）
-	coversSourceDir := filepath.Join(dataDir, "covers")
+	coversSourceDir := filepath.Join(dataDir, "images")
 	if _, err := os.Stat(coversSourceDir); err == nil {
 		if err := utils.CopyDir(coversSourceDir, coversDestDir); err != nil {
 			applog.LogWarningf(s.ctx, "CreateDBBackup: failed to copy covers: %v", err)
@@ -664,7 +664,7 @@ func (s *BackupService) CreateDBBackup() (*vo.DBBackupInfo, error) {
 	}
 
 	// 打包整个目录
-	backupFileName := fmt.Sprintf("lunabox_%s.zip", timestamp)
+	backupFileName := fmt.Sprintf("kaleidobox_%s.zip", timestamp)
 	backupPath := filepath.Join(backupDir, backupFileName)
 
 	_, err = utils.ZipDirectory(packDir, backupPath)
@@ -786,7 +786,7 @@ func (s *BackupService) CreateFullDataBackup(savePath string) error {
 	}
 
 	// 创建临时打包目录
-	tempDir, err := os.MkdirTemp("", "lunabox_full_backup_*")
+	tempDir, err := os.MkdirTemp("", "kaleidobox_full_backup_*")
 	if err != nil {
 		return fmt.Errorf("创建临时目录失败: %w", err)
 	}
@@ -815,7 +815,7 @@ func (s *BackupService) CreateFullDataBackup(savePath string) error {
 	}
 
 	// 复制关键数据目录
-	for _, dirName := range []string{"covers", "backgrounds", "logs"} {
+	for _, dirName := range []string{"images", "backgrounds", "logs"} {
 		srcDir := filepath.Join(dataDir, dirName)
 		if _, err := os.Stat(srcDir); err != nil {
 			continue
@@ -917,7 +917,7 @@ func (s *BackupService) GetCloudDBBackups() ([]vo.CloudBackupItem, error) {
 		return nil, err
 	}
 
-	return s.parseCloudBackupItems(keys, "lunabox_"), nil
+	return s.parseCloudBackupItems(keys, "kaleidobox_"), nil
 }
 
 // DownloadCloudDBBackup 从云端下载数据库备份
@@ -1052,9 +1052,9 @@ func ExecuteFullDataRestore(config *appconf.AppConfig) (bool, error) {
 	}
 
 	// 先恢复数据库
-	dbPath := filepath.Join(dataDir, "lunabox.db")
+	dbPath := filepath.Join(dataDir, "kaleidobox.db")
 	dbImportDir := filepath.Join(tempDir, "database")
-	rawDBPath := filepath.Join(tempDir, "lunabox.db")
+	rawDBPath := filepath.Join(tempDir, "kaleidobox.db")
 
 	os.Remove(dbPath)
 	os.Remove(dbPath + ".wal")
@@ -1478,7 +1478,7 @@ func ExecuteDBRestore(config *appconf.AppConfig) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	dbPath := filepath.Join(dataDir, "lunabox.db")
+	dbPath := filepath.Join(dataDir, "kaleidobox.db")
 	fmt.Printf("ExecuteDBRestore start 02 \n")
 
 	tempDir := filepath.Join(dataDir, "backups", "database", "restore_temp")
@@ -1501,7 +1501,7 @@ func ExecuteDBRestore(config *appconf.AppConfig) (bool, error) {
 	if _, err := os.Stat(filepath.Join(tempDir, "database")); err == nil {
 		// 新格式
 		dbImportDir = filepath.Join(tempDir, "database")
-		coversBackupDir = filepath.Join(tempDir, "covers")
+		coversBackupDir = filepath.Join(tempDir, "images")
 	}
 
 	os.Remove(dbPath)
@@ -1592,7 +1592,7 @@ func ExecuteDBRestore(config *appconf.AppConfig) (bool, error) {
 	// 恢复 covers 文件夹（如果备份中包含）
 	if coversBackupDir != "" {
 		if _, err := os.Stat(coversBackupDir); err == nil {
-			coversDestDir := filepath.Join(dataDir, "covers")
+			coversDestDir := filepath.Join(dataDir, "images")
 			// 先清空现有 covers 目录
 			os.RemoveAll(coversDestDir)
 			if err := utils.CopyDir(coversBackupDir, coversDestDir); err != nil {

@@ -110,7 +110,7 @@ func main() {
 	}
 
 	bootstrapErr := wails.Run(&options.App{
-		Title:     "LunaBox",
+		Title:     "KaleidoBox",
 		Logger:    appLogger,
 		LogLevel:  logger.INFO,
 		Width:     initWidth,
@@ -262,7 +262,7 @@ func main() {
 			if err != nil {
 				appLogger.Fatal(err.Error())
 			}
-			dbPath := filepath.Join(execPath, "lunabox.db")
+			dbPath := filepath.Join(execPath, "kaleidobox.db")
 			db, err = sql.Open("duckdb", dbPath)
 			if err != nil {
 				appLogger.Fatal(err.Error())
@@ -450,8 +450,8 @@ func main() {
 func onSystrayReady() {
 	// 先设置托盘的基本属性
 	systray.SetIcon(icon)
-	systray.SetTitle("LunaBox")
-	systray.SetTooltip("LunaBox")
+	systray.SetTitle("KaleidoBox")
+	systray.SetTooltip("KaleidoBox")
 
 	// 点击托盘图标时显示窗口
 	systray.SetOnClick(func(menu systray.IMenu) {
@@ -469,9 +469,9 @@ func onSystrayReady() {
 		}
 	})
 
-	mShow := systray.AddMenuItem("显示主窗口", "显示 LunaBox 主窗口")
+	mShow := systray.AddMenuItem("显示主窗口", "显示 KaleidoBox 主窗口")
 	systray.AddSeparator()
-	mQuit := systray.AddMenuItem("退出", "退出 LunaBox")
+	mQuit := systray.AddMenuItem("退出", "退出 KaleidoBox")
 
 	// energye/systray 使用 Click 方法设置回调，而不是 ClickedCh
 	mShow.Click(func() {

@@ -76,7 +76,7 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
 
       <div className={`p-4 ${bgEnabled ? "border-white/20 dark:border-white/10" : "border-brand-200 dark:border-brand-700"} flex ${isSidebarOpen ? "flex-row items-center justify-end gap-1" : "flex-col items-center gap-2"}`}>
         <div
-          onClick={() => BrowserOpenURL("https://github.com/Saramanda9988/LunaBox")}
+          onClick={() => BrowserOpenURL("https://github.com/gza21aliyun/kaleidobox")}
           className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 cursor-pointer select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10"
           title="GitHub"
           onDragStart={e => e.preventDefault()}

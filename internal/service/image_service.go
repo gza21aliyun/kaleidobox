@@ -735,6 +735,10 @@ func determineReferer(imageURL string) string {
 		return "https://www.getchu.com/"
 	}
 
+	if strings.Contains(imageURL, "gyutto.com") {
+		return "https://gyutto.com/"
+	}
+
 	// DMM/DMM GAMES
 	if strings.Contains(imageURL, "dmm.co.jp") || strings.Contains(imageURL, "dmm.com") {
 		return "https://www.dmm.com/"

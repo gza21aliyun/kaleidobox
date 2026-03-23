@@ -266,13 +266,18 @@
       "searchPlaceholder": "搜索游戏...",
       "removeFromCategory": "从收藏夹移除",
       "noGamesFound": "未找到匹配的游戏",
-      "noGamesInCategory": "这个收藏夹还没有游戏"
+      "noGamesInCategory": "这个收藏夹还没有游戏",
+      "systemCategoryCannotBatchDelete": "系统收藏夹不能批量删除"
     },
     "labels": {
       "system": "系统",
       "games": "个游戏",
       "batchRemove": "批量移除",
       "returnToList": "返回列表"
+    },
+    "actions": {
+      "editCategory": "编辑收藏夹",
+      "deleteCategory": "删除收藏夹"
     }
   },
   "game": {
@@ -1237,6 +1242,23 @@
       "failedToRenderTemplate": "渲染模板失败",
       "failedToExportImage": "导出图片失败",
       "failedToOpenTemplatesDir": "打开模板目录失败"
+    }
+  },
+  "tag": {
+    "labels": {
+      "containsCount": "包含 {{count}} 个标签"
+    },
+    "tags": {
+      "adultContent": "成人内容",
+      "spoiler": "剧透",
+      "blockModify": "禁止修改"
+    },
+    "actions": {
+      "editGroup": "编辑分组",
+      "deleteGroup": "删除分组"
+    },
+    "hints": {
+      "releaseToAdd": "释放以添加"
     }
   },
   "timezone": {

@@ -147,7 +147,7 @@ export function GameInfoPanel({
                             {workMapForEach(worksMap,(role, works) => (
                                 <div key={role} className="border-l-4 border-brand-500 pl-4">
                                     <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
-                                        {t(`staffRole.${role}`) || role.replace(/([A-Z])/g, ' $1').trim()}
+                                        {role.toString() || role.replace(/([A-Z])/g, ' $1').trim()}
                                     </h4>
                                     {works && works.length > 0 ? (
                                         <ul className="mt-2 flex flex-wrap gap-2">

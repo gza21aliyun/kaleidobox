@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="frontend/public/appicon.png" alt="LunaBox Logo" style="width:120px; height:120px; border-radius:16px;" />
+<img src="frontend/public/appicon.png" alt="KaleidoBox Logo" style="width:120px; height:120px; border-radius:16px;" />
 
-# LunaBox
+# KaleidoBox
 
 **轻量、快速、功能丰富的视觉小说管理与游玩统计工具**
 
@@ -12,49 +12,52 @@
 
 </div>
 
+##  项目介绍
+
+本项目是[![LunaBox](https://github.com/Saramanda9988/LunaBox)]的Fork，这里先感谢原项目的作者。这是本人第一次做Fork，有什么不合规的请大家指出。
+本项目跟原项目一样，主要是wails + go + react的结构，其实这些语言我都不太熟悉，所以本项目也是为了学习一下这些语言和架构，但实际没涉及到多少深层的东西。
+项目初衷是边学习的同时边满足自己在使用原项目和其他gal管理软件时的一些想实现的需求。最大的目的是大批量添加游戏的时候尽可能一次搜刮正确的数据，。其实对这品类的软件之前一直不知道有，知道两个月前在b站看到。
+之前管理gal是我的一个很大的问题，多次想过要不要做个软件去管理，不过一来不太熟悉桌面端的软件，二来懒。这次本来也只是想边学习的时候加一点小功能的，之后提request合并到原项目。
+但后来想加的东西越来越多，也曾试过想跟上主项目的提交，但主项目更新太快，每次更新都得重新修改代码，而且感觉方向也走得有点远了，所以就决定还是独立起来吧。
+
 
 ## ✨ 特性
 
-- **游戏分类管理** - 自定义分类，灵活管理游戏库
-- **游玩时长追踪** - 启动游戏自动追踪游玩时长
-- **极小的包体积** - 基于 Wails 构建，无需携带完整浏览器内核
-- **多维度统计** - 支持按日/周/月/年等多维度统计游玩数据，一键导出统计卡片分享保存
-- **AI 分析** - AI 分析游玩数据，生成个性化趣味报告
-- **便捷的数据导入** - 支持从 PotatoVN, Playnite中导入数据，支持选择文件夹批量导入游戏
-- **多渠道备份** - 支持本地备份, AWS S3、七牛云、阿里云 OSS 等兼容 S3 协议的存储服务与 OneDrive 云端备份
-- **隐私与安全** - 所有敏感数据均保存在本地中
+- **原项目特性** - 具体可看看原项目，这里主要说说新加的。
+- **日本数据源** - 能爬虫日本数据源，主要支持批评空间，Dmm，Getchu和Dlsite。主力是批评空间，DMM和Getchu发现不少游戏有专属的排版，这些可能拿不到正确的数据，请大家提出。DLSITE暂时支持pro和maniax，别的看看到时候有没需求。另外说一下，新建的特性还没时间适配VNDB。
+- **选择快捷方式文件夹批量加游戏** - 其实游戏文件夹大多数不包含准确的游戏名，所以通过这种方式来拿游戏名更加准确，而且支持特殊字符。有些游戏是在快捷方式里联动破解的，单纯启动exe不足够，这些现在也支持了。
+- **搜刮数据更新** - 原来的批量更新是添加游戏的时候搜刮的，这改版推崇先添加游戏再批量搜刮更新数据。同时搜几个源会使得数据混乱，这里也不推荐，但是分批次就问题不大。但原有的混合搜功能还在，但不支持搜角色，人物和图库。支持选择需要数据的选择，不过有些数据源可能多存了数据，有问题请提一下。
+- **分类标签** - 这个主要是根据批评空间的分类标签做的，其他数据源的时候除了品牌和和类型有专门分类，其他都会放其他。注意在过滤器中添加标签的时候，出现的游戏不是AND而是OR。支持自己创建标签分组。另外，由于有分类标签，游戏的很多属性的过滤就不再搞专门的过滤器了，直接用这个做过滤，如品牌。游戏系列也有一个专门的标签分类。
+- **角色和工作人员数据库** - 内置了角色和工作人员数据库，跟游戏关联，能互相跳转，有问题如明明同一个人物或工作人员出现在不同游戏，但点进去只看到一个游戏的，请报告一下。
+- **画廊** - 添加了画廊和截图功能，能看官方截图和自己截图，自己截图要使用设定的截图键，支持手柄。支持选择是否下载，但getchu源如果不选择自动下载会看不到图。自动下载的图片会按游戏分在不同文件夹，能直接打开。注意如果不同游戏用的同一个源或图片url相同，那么可能有问题。但封面没问题。
+- **手柄** - 支持简单的手柄映射和截图，暂时仅测试了DS4。其他的DUALSENSE，XINPUT和JOYCON还没试。
+- **评论** - 支持看批评空间，DLSITE,DMM的评论和评分，注意这个是实时加载的，批评空间支持看详细评论。bgm的评论接口好像是私有的，有知道怎么用的请介绍一下。现在暂时直接放网页链接。
+- **存档改进** - 加了能从诚也下载存档的功能，要先设定存档位置。关于存档位置，其实想做寻找存档位置的功能，看别的app的实现貌似也不是很准确。现在是做了个开管理员模式监控进程创建或修改文件的功能，但管理员模式下只支持管理员模式下创建的网络映射盘，其实自己用也觉得不方便，毕竟这种是甚至我的电脑里也显示不出来的。也想过通过品牌，不过这个是多对多的关系，不太好做。有建议请提一下。
+- **进程寻找改进** - 原来是要手动选进程，现在会先找exe，然后看子进程，绝大多数情况下不需要手动选进程。
+- **备份和恢复** - 添加数据库导入恢复的选项，可以选全量备份的zip。修复数据库升级后不支持的问题。
+- **多种小改进** - 游戏库能直接看游戏时间，游戏库增加了显示模式选择支持列表，小图，大图。
 
 ## 截图
 
-<details>
-<summary>点击展开更多自定义背景样式</summary>
-
-![主界面](screenshot/home-img.png)
-
-![库视图](screenshot/lib-img.png)
-
-![游戏详情](screenshot/game-img.png)
-
-</details>
-
-<details>
-<summary>点击查看统计导出海报模板</summary>
-
-![简约](screenshot/lunabox-stats-20260124-175553.png)
-
-![未来复古](screenshot/lunabox-stats-20260124-175602.png)
-
-![手账风](screenshot/lunabox-stats-20260124-175617.png)
-
-</details>
 
 应用中的部分截图（位于仓库的 `screenshot/` 目录）：
 
-![主界面](screenshot/home.png)
 
 ![库视图](screenshot/lib.png)
 
-![游戏详情](screenshot/game.png)
+![介绍](screenshot/intro.png)
+
+![信息](screenshot/info.png)
+
+![手柄](screenshot/joystick.png.png)
+
+![评论](screenshot/review.png)
+
+![标签](screenshot/tags.png)
+
+![更新](screenshot/games_update.png)
+联合搜主要给批评空间用，如果源是批评空间的时候，能同时获得dlsite，dmm，getchu的id。但批评空间本身没游戏介绍，如果获得这些id后就能从这些源把搜刮一次。简单来说，等同于搜刮一次后再以所有选项选否的形式再在dmm源搜刮一次。重匹配意思就是重新用名字来搜数据即使已经有源匹配id，否则如果有id的话就直接从详情页拉数据。
+
 
 ## 🛠️ 技术栈
 
@@ -75,7 +78,7 @@
 
 ### 从 Release 下载
 
-前往 [Releases](https://github.com/Saramanda9988/LunaBox/releases) 页面下载最新版本的安装包。
+前往 [Releases](https://github.com/gza21aliyun/kaleidobox/Releases) 页面下载最新版本的安装包。
 
 ### 从源码构建
 
@@ -87,6 +90,8 @@
 - [Wails CLI](https://wails.io/docs/gettingstarted/installation)
 - [msys2](https://www.msys2.org/)
 
+我自己是用msys2的ucrt64才装成功，用了几台pc，大部分都pnpm install失败，只能npm install，只有一台成功，不懂为啥。
+
 ```bash
 # 安装 Wails CLI
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
@@ -96,8 +101,8 @@ go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
 ```bash
 # 克隆项目
-git clone https://github.com/Saramanda9988/lunabox.git
-cd lunabox
+git clone https://github.com/gza21aliyun/kaleidobox.git
+cd kaleidobox
 
 # 安装前端依赖
 cd frontend && pnpm install && cd ..
@@ -113,28 +118,7 @@ wails build
 ```
 
 
-## 🚀 快速开始
 
-1. **添加游戏** - 点击添加按钮，选择游戏可执行文件或从其他平台导入
-2. **管理分类** - 创建自定义分类，将游戏归类整理
-3. **开始游玩** - 点击游戏卡片上的启动按钮，自动追踪游玩时长
-4. **查看统计** - 在统计页面查看你的游玩数据和图表
-5. **AI 分析** - 使用 AI 功能生成个性化游玩报告
-6. **导出分享** - 导出统计卡片，与朋友分享你的游戏历程
-
-
-## ⚙️ 配置
-
-### AI 配置
-
-在设置页面配置 AI 服务：
-
-| 配置项 | 说明 |
-|--------|------|
-| AI Provider | AI 服务提供商 (如 deepseek) |
-| Base URL | API 基础地址 |
-| API Key | API 密钥 |
-| Model | 模型名称 |
 
 ### 云备份配置
 
@@ -184,32 +168,17 @@ lunabox/
 
 ## 🗺️ RoadMap
 
-- [x] 自动更新检查与提示
+- [ ] 完善 i18n
 
-- [x] 完善日志系统
+- [ ] 支持搜索存档
 
-- [ ] 支持从ReinaManager中导入数据
-
-- [x] 支持自定义背景图片
-
-- [x] 更漂亮的默认首页，首页自定义
-
-- [ ] 支持 i18n
-
-- [ ] 自部署 docker 服务端
-
-- [ ] im 平台机器人插件
-
-- [x] 更多的统计导出模板
-
-- [ ] 更丰富的ai prompt预设
-
-- [x] 支持locale emulator等启动参数的游戏启动
+- [ ] 完善数据搜刮
 
 ## 😀 从开源到开源
 
 灵感来源:
 
+- [LunaBox](https://github.com/Saramanda9988/LunaBox) - Galgame 管理工具
 - [PotatoVN](https://github.com/GoldenPotato137/PotatoVN) - Galgame 管理工具
 - [ReinaManager](https://github.com/huoshen80/ReinaManager) - 一款轻量化的galgame和视觉小说管理工具
 - [Playnite](https://github.com/JosefNemec/Playnite) - an open source video game library manager with one simple goal: To provide a unified interface for all of your games.
@@ -221,6 +190,13 @@ lunabox/
 - [Bangumi](https://github.com/bangumi) - Bangumi番组计划
 - [VNDB](https://vndb.org/) - The Visual Novel Database
 - [月幕gal](https://www.ymgal.games/) - 请感受这绝妙的文艺体裁
+爬虫源
+- [批评空间](https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki) - 
+- [DMM PC游戏](https://dlsoft.dmm.co.jp/) - 
+- [GETCHU](https://www.getchu.com/top.html?gc=gc) - 
+- [DLSITE](https://www.dlsite.com/index.html) - 
+
+
 
 ## 📄 开源协议
 

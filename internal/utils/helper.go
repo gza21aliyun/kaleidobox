@@ -244,7 +244,7 @@ func getTitles(searchName string) (mainT string, subT string, number string) {
 		// 没有有效分隔符，整个字符串作为主标题处理
 		mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
 		mainTitle, numStr := extractLastNumberFromString(mainTitle)
-		return mainTitle, "", numStr
+		return handleMainTitle(mainTitle), "", numStr
 	}
 
 	// 有有效分隔符，尝试分离主标题和副标题
@@ -261,13 +261,13 @@ func getTitles(searchName string) (mainT string, subT string, number string) {
 			// 都不为空，构建成对匹配
 			mainTitle, numStr := extractLastNumberFromString(mainTitle)
 			if numStr != "" {
-				return mainTitle, subTitle, numStr
+				return handleMainTitle(mainTitle), subTitle, numStr
 			}
 			subTitle, numStr = extractLastNumberFromString(subTitle)
 			if numStr != "" {
-				return mainTitle, subTitle, numStr
+				return handleMainTitle(mainTitle), subTitle, numStr
 			}
-			return mainTitle, subTitle, ""
+			return handleMainTitle(mainTitle), subTitle, ""
 		}
 	}
 
@@ -275,7 +275,19 @@ func getTitles(searchName string) (mainT string, subT string, number string) {
 	mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
 	mainTitle, numStr := extractLastNumberFromString(mainTitle)
 
-	return mainTitle, "", numStr
+	return handleMainTitle(mainTitle), "", numStr
+}
+
+func handleMainTitle(mainTitle string) string {
+	title := mainTitle
+	lowTitle := strings.ToLower(mainTitle)
+	if strings.Contains(lowTitle, "chapter") {
+		parts := strings.Split(title, "chapter")
+		if len(parts) > 0 {
+			title = strings.TrimSpace(parts[0])
+		}
+	}
+	return title
 }
 
 func stringCharSplit(str string, split string) []string {

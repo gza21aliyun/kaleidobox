@@ -101,7 +101,7 @@ function SettingsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-4 text-brand-500">
         <div className="i-mdi-cog-outline text-6xl animate-spin-slow" />
-        <p className="text-xl">正在准备设置...</p>
+        <p className="text-xl">{t('settings.preparing')}</p>
       </div>
     );
   }
@@ -109,7 +109,7 @@ function SettingsPage() {
   return (
     <div className={`space-y-6 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-brand-900 dark:text-white">设置</h1>
+        <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('settings.title')}</h1>
       </div>
 
       <CollapsibleSection title={t('settings.basicConfig')} icon="i-mdi-database-settings" defaultOpen={true}>

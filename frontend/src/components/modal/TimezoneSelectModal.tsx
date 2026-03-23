@@ -59,15 +59,15 @@ export function TimezoneSelectModal({ isOpen, onConfirm }: TimezoneSelectModalPr
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-            当前检测到的时区:
+            {t('timezone.labels.currentDetectedTimezone')}
             {" "}
-            <span className="font-semibold text-primary-600 dark:text-primary-400">{browserTimezone || "未知"}</span>
+            <span className="font-semibold text-primary-600 dark:text-primary-400">{browserTimezone || t('timezone.labels.unknownTimezone')}</span>
           </label>
           <BetterSelect
             value={selectedTimezone}
             onChange={setSelectedTimezone}
             options={COMMON_TIMEZONES}
-            placeholder="请选择时区"
+            placeholder={t('timezone.placeholders.selectTimezone')}
             className="w-full"
           />
         </div>

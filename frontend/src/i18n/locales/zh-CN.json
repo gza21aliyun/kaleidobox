@@ -311,21 +311,23 @@
       "pleaseFillGameName": "请填写游戏名称"
     },
     "buttons": {
-      "addToCollection": "添加到收藏"
-    },
-    "labels": {
-      "source": "数据来源",
-      "developer": "开发",
-      "addedAt": "添加时间",
-      "releaseDate": "发售日期"
-    },
-    "buttons": {
+      "addToCollection": "添加到收藏",
       "launchGame": "启动游戏",
       "returnToLibrary": "返回库",
       "bangumi": "Bangumi",
       "ymgal": "夜幕Gal",
       "dmm": "DMM",
-      "eroscape": "批评空间"
+      "eroscape": "批评空间",
+      "playVideo": "播放视频",
+      "getchu": "Getchu",
+      "dlsite": "DlSite"
+    },
+    "labels": {
+      "source": "数据来源",
+      "developer": "开发",
+      "addedAt": "添加时间",
+      "releaseDate": "发售日期",
+      "noCover": "无封面"
     },
     "toasts": {
       "saveFailed": "保存失败",
@@ -564,7 +566,11 @@
     "followSystem": "跟随系统",
     "timezone": "时区",
     "timezoneHint": "用于正确显示和记录游戏时长,修改后请重启应用",
-    "minimizeToTray": "关闭窗口时最小化到系统托盘"
+    "minimizeToTray": "关闭窗口时最小化到系统托盘",
+    "searchChineseFirst": "搜刮中文源优先获取中文信息",
+    "autoDownloadImages": "自动下载图片到images目录，注意Getchu源的图片如果不下载会看不到",
+    "moreLogs": "更多日志写入app.log",
+    "newFolderChooser": "新式文件、文件夹选择器（美观但WIN11不能选网络映射盘）"
   },
   "dbBackup": {
     "databaseBackup": "数据库备份",
@@ -633,7 +639,15 @@
     "aiConfig": "AI 配置",
     "dbBackup": "数据库备份",
     "fullDataBackup": "全量数据备份",
-    "appUpdate": "应用更新"
+    "appUpdate": "应用更新",
+    "title": "设置",
+    "preparing": "正在准备设置...",
+    "madeWithContributors": "KaleidoBox made with Contributors.",
+    "versionInfo": {
+      "version": "版本",
+      "buildMode": "构建模式",
+      "builtAt": "构建时间"
+    }
   },
   "gameStatus": {
     "not_started": "未开始",
@@ -1269,7 +1283,8 @@
       }
     },
     "labels": {
-      "currentDetectedTimezone": "当前检测到的时区:"
+      "currentDetectedTimezone": "当前检测到的时区:",
+      "unknownTimezone": "未知"
     },
     "placeholders": {
       "selectTimezone": "请选择时区"

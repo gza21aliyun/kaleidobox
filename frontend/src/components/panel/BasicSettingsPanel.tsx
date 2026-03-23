@@ -71,7 +71,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          搜刮中文源优先获取中文信息
+          {t('basic.searchChineseFirst')}
         </label>
         <BetterSwitch
           id="search_cn"
@@ -82,7 +82,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          自动下载图片到images目录，注意Getchu源的图片如果不下载会看不到
+          {t('basic.autoDownloadImages')}
         </label>
         <BetterSwitch
           id="auto_download_images"
@@ -93,7 +93,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          更多日志写入app.log
+          {t('basic.moreLogs')}
         </label>
         <BetterSwitch
           id="log_all"
@@ -171,7 +171,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          新式文件、文件夹选择器（美观但WIN11不能选网络映射盘）
+          {t('basic.newFolderChooser')}
         </label>
         <BetterSwitch
           id="new_folder_chooser"

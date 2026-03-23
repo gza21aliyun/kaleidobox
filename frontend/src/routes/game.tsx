@@ -534,7 +534,7 @@ function GameDetailPage() {
               )
             : (
                 <div className="w-full h-64 flex items-center justify-center text-brand-400">
-                  No Cover
+                  {t('game.labels.noCover')}
                 </div>
               )}
         </div>
@@ -558,7 +558,7 @@ function GameDetailPage() {
                   className="flex items-center gap-1.5 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-all duration-300 px-4 py-1.5 text-sm font-medium"
                 >
                   <div className="i-mdi-play-circle-outline text-lg" />
-                  播放视频
+                  {t('game.buttons.playVideo')}
                 </button>
               )}
 
@@ -615,7 +615,7 @@ function GameDetailPage() {
                 onClick={() => OpenBrowser(`https://bgm.tv/subject/${game.bangumi_id}`)}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
               >
-                Bangumi
+                {t('game.buttons.bangumi')}
               </button>
             )}
             {game.ymgal_id && (
@@ -631,7 +631,7 @@ function GameDetailPage() {
                 onClick={() => OpenBrowser(`https://dlsoft.dmm.co.jp/detail/${game.dmm_id}/`)}
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
               >
-                Dmm
+                {t('game.buttons.dmm')}
               </button>
             )}
             {game.eroscape_id && (
@@ -647,7 +647,7 @@ function GameDetailPage() {
                 onClick={() => OpenBrowser(`https://www.getchu.com/item/${game.getchu_id}/`)}
                 className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition-colors"
               >
-                Getchu
+                {t('game.buttons.getchu')}
               </button>
             )}
             {game.dlsite_id && (
@@ -655,7 +655,7 @@ function GameDetailPage() {
                 onClick={() => OpenBrowser(getDlsiteUrl())}
                 className="px-4 py-2 bg-success-500 text-white rounded hover:bg-success-600 transition-colors"
               >
-                DlSite
+                {t('game.buttons.dlsite')}
               </button>
             )}
           </div>

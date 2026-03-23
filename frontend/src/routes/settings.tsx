@@ -154,7 +154,7 @@ function SettingsPage() {
 
       <div className="pt-4">
         <p className="text-xs text-brand-500 dark:text-brand-400">
-          Lunabox made with LunaRain_079 &amp; Contributors.
+          KaleidoBox made with Contributors.
         </p>
         {versionInfo && (
           <p className="text-xs text-brand-400 dark:text-brand-500 mt-1">

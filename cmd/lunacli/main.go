@@ -13,7 +13,7 @@ func main() {
 
 	if err := validateArgs(args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		fmt.Println("Usage: lunacli <command>")
+		fmt.Println("Usage: kaleidocli <command>")
 		os.Exit(1)
 	}
 
@@ -57,6 +57,6 @@ func runRemoteCommand(args []string) error {
 
 // printGuiNotRunningMessage 打印 GUI 未运行的消息
 func printGuiNotRunningMessage() {
-	fmt.Println("Error: LunaBox application is not running.")
-	fmt.Println("Please start LunaBox first to use CLI commands.")
+	fmt.Println("Error: KaleidoBox application is not running.")
+	fmt.Println("Please start KaleidoBox first to use CLI commands.")
 }

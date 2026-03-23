@@ -123,12 +123,12 @@ goto :eof
 :build_installer
 echo [1/2] Building CLI Version for Installer...
 echo ----------------------------------------
-go build -ldflags "%LDFLAGS_INSTALLER%" -o build\bin\lunacli.exe ./cmd/lunacli
+go build -ldflags "%LDFLAGS_INSTALLER%" -o build\bin\kaleidobox-cli.exe ./cmd/lunacli
 if errorlevel 1 (
     echo ERROR: CLI build for installer failed!
     exit /b 1
 )
-echo CLI build completed: build\bin\lunacli.exe
+echo CLI build completed: build\bin\kaleidobox-cli.exe
 echo.
 
 echo [2/2] Building Installer GUI Version...

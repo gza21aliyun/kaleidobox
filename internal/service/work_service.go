@@ -90,8 +90,11 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 			return err
 		}
 		work.StaffId = staff.Id
-		err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.StaffImage, SubjectId: staff.Id,
-			SubjectType: 2, CreatedAt: time.Now(), GameId: work.GameId})
+		if work.StaffImage != "" {
+			err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.StaffImage, SubjectId: staff.Id,
+				SubjectType: 2, CreatedAt: time.Now(), GameId: work.GameId})
+		}
+
 	}
 	// fmt.Println("11 CreateOrUpdateWorkStaffCharactor")
 	if work.CharactorName != "" {
@@ -103,8 +106,10 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 			return err
 		}
 		work.CharactorId = charactor.Id
-		err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.CharactorImage, SubjectId: charactor.Id,
-			SubjectType: 1, CreatedAt: time.Now(), GameId: work.GameId})
+		if work.CharactorImage != "" {
+			err = s.imageService.CreateOrUpdateImageBackup(models.ImageBackup{Url: work.CharactorImage, SubjectId: charactor.Id,
+				SubjectType: 1, CreatedAt: time.Now(), GameId: work.GameId})
+		}
 	}
 	// fmt.Println("12 CreateOrUpdateWorkStaffCharactor")
 	newWork := models.Work{}

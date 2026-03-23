@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
@@ -64,6 +64,7 @@ func (s *StaffService) CreateOrUpdateStaff(staffName string, gameId string, sour
 				staff.Roles = string(role)
 				staff.SourceStaffId = sourceStaffId
 				staff.Image = image
+				staff.OtherNames = staffName
 				// fmt.Println("21 create staff " + staff.Name)
 				err = s.CreateStaff(staff)
 				return staff, err
@@ -75,6 +76,7 @@ func (s *StaffService) CreateOrUpdateStaff(staffName string, gameId string, sour
 	if staff.Id != "" {
 
 		// fmt.Println("22 update staff " + staff.Name)
+		staff.OtherNames = utils.MergeStrings(staff.OtherNames, staffName)
 		staff.GameIds = utils.MergeStrings(staff.GameIds, gameId)
 		staff.Roles = utils.MergeStrings(staff.Roles, string(role))
 		err = s.UpdateStaff(staff)
@@ -137,20 +139,12 @@ func (s *StaffService) GetStaffBySource(sourceType enums.SourceType, sourceStaff
 		game_ids, summary, gender, image
 		FROM staffs
 		WHERE source_staff_id = ? AND source_type = `
-	if sourceType == enums.Bangumi {
-		query += `'BANGUMI'`
-	} else if sourceType == enums.Ymgal {
-		query += `'YMGAL'`
-	} else if sourceType == enums.VNDB {
-		query += `'VNDB'`
-	} else if sourceType == enums.Eroscape {
-		query += `'EROSCAPE'`
-	} else if sourceType == enums.Dmm {
-		query += `'DMM'`
-	} else {
-		return models.Staff{}, errors.New("Invalid source type")
+	query += fmt.Sprintf(`'%s'`, string(sourceType))
+	staff, err := s.GetStaffByQueryId(sourceStaffId, "", query)
+	if err != nil {
+		fmt.Printf("GetStaffBySource 04 query:%s error: %v", query, err)
 	}
-	return s.GetStaffByQueryId(sourceStaffId, "", query)
+	return staff, err
 }
 
 // GetStaffById 根据 ID 查询 Staff 记录
@@ -211,8 +205,8 @@ func (s *StaffService) GetStaffByQueryId(id1 string, id2 string, query string) (
 func (s *StaffService) UpdateStaff(staff models.Staff) error {
 	query := `
 		UPDATE staffs
-		SET name = ?, other_names = ?, roles = ?, source_staff_id = ?, source_type = ?, game_ids = ?, summary = ?, gender = ?
-		WHERE id = ?, image = ?
+		SET name = ?, other_names = ?, roles = ?, source_staff_id = ?, source_type = ?, game_ids = ?, summary = ?, gender = ?, image = ?
+		WHERE id = ?
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		staff.Name,
@@ -223,8 +217,8 @@ func (s *StaffService) UpdateStaff(staff models.Staff) error {
 		staff.GameIds,
 		staff.Summary,
 		staff.Gender,
-		staff.Id,
 		staff.Image,
+		staff.Id,
 	)
 	return err
 }

@@ -257,7 +257,7 @@ function StaffPage() {
                             <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.gameName')}</th>
                             <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.role')}</th>
                             <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white max-xl:hidden">{t('staff.tableHeaders.gameSummary')}</th>
-                            <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.sourceType')}</th>
+                            <th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white max-xl:hidden">{t('staff.tableHeaders.sourceType')}</th>
                             {staff && staff.roles.includes(enums.StaffRole.CV) && 
                             (<th className="text-left py-2 px-3 font-medium text-brand-900 dark:text-white">{t('staff.tableHeaders.characterImage')}</th>)}
                             {staff && staff.roles.includes(enums.StaffRole.CV) && 
@@ -276,7 +276,7 @@ function StaffPage() {
                             //     handleGameClick(work.game.id);
                             // }}
                             >
-                            <td className="py-3 px-3">
+                            <td className="py-3 px-3 w-[4%]">
                                 {work.game.cover_url && (
                                 <ImageCard
                                     url={work.game.cover_url} 
@@ -285,7 +285,7 @@ function StaffPage() {
                                 />
                                 )}
                             </td>
-                            <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-1/10"
+                            <td className="py-3 px-3 font-medium text-brand-900 dark:text-white w-[10%]"
                               // onClick={() => {
                               //     console.log(`跳转到游戏: ${work.game.name?.trim()}`);
                               //     handleGameClick(work.game.id);
@@ -302,22 +302,22 @@ function StaffPage() {
                                      {work.game.name?.trim() || `${t('common.unknown')}${t('common.game')}`}
                                   </button>
                             </td>
-                            <td className="py-3 px-3 w-1/20">
+                            <td className="py-3 px-3 w-[4%]">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
                                 {work.work.role || '-'}
                                 </span>
                             </td>
                             
-                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/6 max-xl:hidden">
+                            <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-[17%] max-xl:hidden">
                                 {work.game.summary || '-'}
                             </td>
-                            <td className="py-3 px-3">
+                            <td className="py-3 px-3  w-[4%] max-xl:hidden">
                                 <span className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                                 {work.work.source_type || t('common.unknown')}
                                 </span>
                             </td>
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (
-                                <td className="py-3 px-3">
+                                <td className="py-3 px-3 w-[4%]">
                                 {work.work.charactor_image && (
                                 <ImageCard
                                     url={work.work.charactor_image} 
@@ -327,7 +327,7 @@ function StaffPage() {
                             </td>
                             )}
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (
-                                <td className="py-3 px-3 text-brand-700 dark:text-brand-300">
+                                <td className="py-3 px-3 text-brand-700 dark:text-brand-300 w-[8%]">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation(); // 阻止事件冒泡
@@ -341,7 +341,7 @@ function StaffPage() {
                                 </td>
                             )}
                             {staff && staff.roles.includes(enums.StaffRole.CV) && (
-                                <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-2/7 max-lg:hidden">
+                                <td className="py-3 px-3 text-brand-600 dark:text-brand-400 font-mono text-xs w-[15%] max-lg:hidden">
                                     <div className="whitespace-normal break-words">
                                         {work.work.work_summary || '-'}
                                     </div>

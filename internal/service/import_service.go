@@ -1132,7 +1132,7 @@ func (s *ImportService) SearchVideoExePath(game *models.Game) error {
 func (s *ImportService) SearchVideoPathsManual(game *models.Game) ([]string, error) {
 	// 获取游戏可执行文件所在的目录
 	folderPath := filepath.Dir(game.Path)
-	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
+	exts := []string{".mp4", ".avi", ".mpg", ".wmv", ".m1v"}
 	var videoFiles []string
 
 	// 递归搜索目录及其子目录

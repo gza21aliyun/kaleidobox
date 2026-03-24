@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"lunabox/internal/applog"
@@ -187,9 +188,25 @@ func main() {
 						return
 					}
 
-					// 处理视频流请求
+					// 处理视频流请求（通过游戏ID）
 					if strings.HasPrefix(r.URL.Path, "/api/video/") {
 						handleVideoStreamRequest(w, r, gameService, appCtx)
+						return
+					}
+
+					// 处理视频流请求（通过直接视频路径）
+					if strings.HasPrefix(r.URL.Path, "/api/videoPath/") {
+						// 提取 base64 编码的视频路径
+						encodedPath := strings.TrimPrefix(r.URL.Path, "/api/videoPath/")
+						// 解码视频路径
+						videoPath, err := base64.StdEncoding.DecodeString(encodedPath)
+						if err != nil {
+							applog.LogErrorf(appCtx, "VideoPathHandler: failed to decode video path: %v", err)
+							http.Error(w, "Invalid video path", http.StatusBadRequest)
+							return
+						}
+						// 调用新的函数处理视频流
+						handleVideoPathStreamRequest(w, r, string(videoPath), appCtx)
 						return
 					}
 
@@ -505,17 +522,141 @@ func onSystrayExit() {
 var videoCacheMap = make(map[string]string)
 var videoCacheMutex sync.Mutex
 
-// handleVideoStreamRequest 处理视频流请求
-func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameService *service.GameService, ctx context.Context) {
+// handleVideoPathStreamRequest 处理视频路径的视频流请求
+func handleVideoPathStreamRequest(w http.ResponseWriter, r *http.Request, videoPath string, ctx context.Context) {
 	// 定义ffmpeg路径
 	dir, err := utils.GetDataDir()
 	if err != nil {
-		applog.LogErrorf(ctx, "VideoStreamHandler: failed to get data dir: %v", err)
+		applog.LogErrorf(ctx, "VideoPathStreamHandler: failed to get data dir: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ffmpegPath := fmt.Sprintf(`%s\ffmpeg.exe`, dir)
 
+	applog.LogInfof(ctx, "VideoPathStreamHandler: received request for video path: %s, User-Agent: %s", videoPath, r.UserAgent())
+
+	// 检查文件是否存在
+	if _, err := os.Stat(videoPath); os.IsNotExist(err) {
+		applog.LogErrorf(ctx, "VideoPathStreamHandler: video file not found: %s", videoPath)
+		http.Error(w, "Video file not found", http.StatusNotFound)
+		return
+	}
+
+	// 检查文件后缀是否为.mp4
+	if strings.ToLower(filepath.Ext(videoPath)) == ".mp4" {
+		applog.LogInfof(ctx, "VideoPathStreamHandler: direct serving mp4 file: %s", videoPath)
+
+		// 打开文件
+		file, err := os.Open(videoPath)
+		if err != nil {
+			applog.LogErrorf(ctx, "VideoPathStreamHandler: failed to open mp4 file: %v", err)
+			http.Error(w, "Failed to open video file", http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+
+		// 获取文件信息
+		fileInfo, err := file.Stat()
+		if err != nil {
+			applog.LogErrorf(ctx, "VideoPathStreamHandler: failed to get file info: %v", err)
+			http.Error(w, "Failed to get file info", http.StatusInternalServerError)
+			return
+		}
+
+		// 设置响应头
+		w.Header().Set("Content-Type", "video/mp4")
+		w.Header().Set("Content-Disposition", "inline")
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
+
+		// 流式复制文件内容
+		if _, err := io.Copy(w, file); err != nil {
+			applog.LogErrorf(ctx, "VideoPathStreamHandler: failed to copy file content: %v", err)
+			// 不要返回错误，因为可能是客户端断开连接导致的
+		}
+
+		applog.LogInfof(ctx, "VideoPathStreamHandler: served mp4 file directly")
+		return
+	}
+
+	if _, err := os.Stat(ffmpegPath); err != nil {
+		//ffmpeg不存在
+		applog.LogError(ctx, "VideoPathStreamHandler: ffmpeg not found")
+		return
+
+	}
+
+	// 为临时视频生成缓存键
+	cacheKey := fmt.Sprintf("path_%s", videoPath)
+
+	// 检查缓存中是否已有转换后的视频
+	videoCacheMutex.Lock()
+	cachedVideoPath, exists := videoCacheMap[cacheKey]
+	videoCacheMutex.Unlock()
+
+	if exists {
+		// 检查缓存文件是否存在
+		if _, err := os.Stat(cachedVideoPath); err == nil {
+			applog.LogInfof(ctx, "VideoPathStreamHandler: using cached video file: %s", cachedVideoPath)
+			// 使用http.ServeFile提供缓存的视频文件
+			w.Header().Set("Content-Type", "video/mp4")
+			w.Header().Set("Content-Disposition", "inline")
+			w.Header().Set("Accept-Ranges", "bytes")
+			http.ServeFile(w, r, cachedVideoPath)
+			applog.LogInfof(ctx, "VideoPathStreamHandler: served cached video file")
+			return
+		}
+		// 缓存文件不存在，删除缓存条目
+		videoCacheMutex.Lock()
+		delete(videoCacheMap, cacheKey)
+		videoCacheMutex.Unlock()
+		applog.LogInfof(ctx, "VideoPathStreamHandler: cached video file not found, removing from cache")
+	}
+	var tempFile *os.File
+
+	// 创建临时文件来存储转换后的视频
+	tempFile, err = os.CreateTemp("", "video_*.mp4")
+	if err != nil {
+		applog.LogErrorf(ctx, "VideoPathStreamHandler: failed to create temp file: %v", err)
+		http.Error(w, "Failed to process video", http.StatusInternalServerError)
+		return
+	}
+	tempFilePath := tempFile.Name()
+	tempFile.Close()
+
+	// 使用ffmpeg将视频转换为MP4格式并保存到临时文件
+	err = utils.ConvertVideoWithFFmpeg(ctx, ffmpegPath, videoPath, tempFilePath, cacheKey)
+	if err != nil {
+		applog.LogErrorf(ctx, "VideoPathStreamHandler: ffmpeg conversion failed: %v", err)
+		// 清理临时文件
+		os.Remove(tempFilePath)
+		http.Error(w, "Failed to process video", http.StatusInternalServerError)
+		return
+	}
+
+	applog.LogInfof(ctx, "VideoPathStreamHandler: ffmpeg conversion completed")
+
+	// 将转换后的视频路径加入缓存
+	videoCacheMutex.Lock()
+	videoCacheMap[cacheKey] = tempFilePath
+	videoCacheMutex.Unlock()
+	applog.LogInfof(ctx, "VideoPathStreamHandler: added video to cache: %s", tempFilePath)
+
+	// 使用http.ServeFile提供转换后的视频文件
+	// 这样浏览器可以一次性获取完整的视频文件，支持进度条拖动
+	w.Header().Set("Content-Type", "video/mp4")
+	w.Header().Set("Content-Disposition", "inline")
+	w.Header().Set("Accept-Ranges", "bytes")
+
+	applog.LogInfof(ctx, "VideoPathStreamHandler: serving video file")
+	http.ServeFile(w, r, tempFilePath)
+	applog.LogInfof(ctx, "VideoPathStreamHandler: video file served")
+
+	return
+}
+
+// handleVideoStreamRequest 处理视频流请求（通过游戏ID）
+func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameService *service.GameService, ctx context.Context) {
 	// 提取游戏ID
 	gameID := strings.TrimPrefix(r.URL.Path, "/api/video/")
 	applog.LogInfof(ctx, "VideoStreamHandler: received request for gameID: %s, User-Agent: %s", gameID, r.UserAgent())
@@ -531,114 +672,8 @@ func handleVideoStreamRequest(w http.ResponseWriter, r *http.Request, gameServic
 		}
 
 		applog.LogInfof(ctx, "VideoStreamHandler: got video path: %s", videoPath)
-
-		// 检查文件后缀是否为.mp4
-		if strings.ToLower(filepath.Ext(videoPath)) == ".mp4" {
-			applog.LogInfof(ctx, "VideoStreamHandler: direct serving mp4 file: %s", videoPath)
-
-			// 打开文件
-			file, err := os.Open(videoPath)
-			if err != nil {
-				applog.LogErrorf(ctx, "VideoStreamHandler: failed to open mp4 file: %v", err)
-				http.Error(w, "Failed to open video file", http.StatusInternalServerError)
-				return
-			}
-			defer file.Close()
-
-			// 获取文件信息
-			fileInfo, err := file.Stat()
-			if err != nil {
-				applog.LogErrorf(ctx, "VideoStreamHandler: failed to get file info: %v", err)
-				http.Error(w, "Failed to get file info", http.StatusInternalServerError)
-				return
-			}
-
-			// 设置响应头
-			w.Header().Set("Content-Type", "video/mp4")
-			w.Header().Set("Content-Disposition", "inline")
-			w.Header().Set("Accept-Ranges", "bytes")
-			w.Header().Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
-
-			// 流式复制文件内容
-			if _, err := io.Copy(w, file); err != nil {
-				applog.LogErrorf(ctx, "VideoStreamHandler: failed to copy file content: %v", err)
-				// 不要返回错误，因为可能是客户端断开连接导致的
-			}
-
-			applog.LogInfof(ctx, "VideoStreamHandler: served mp4 file directly")
-			return
-		}
-
-		if _, err := os.Stat(ffmpegPath); err != nil {
-			//ffmpeg不存在
-			applog.LogError(ctx, "VideoStreamHandler: ffmpeg not found")
-			return
-
-		}
-
-		// 检查缓存中是否已有转换后的视频
-		videoCacheMutex.Lock()
-		cachedVideoPath, exists := videoCacheMap[gameID]
-		videoCacheMutex.Unlock()
-
-		if exists {
-			// 检查缓存文件是否存在
-			if _, err := os.Stat(cachedVideoPath); err == nil {
-				applog.LogInfof(ctx, "VideoStreamHandler: using cached video file: %s", cachedVideoPath)
-				// 使用http.ServeFile提供缓存的视频文件
-				w.Header().Set("Content-Type", "video/mp4")
-				w.Header().Set("Content-Disposition", "inline")
-				w.Header().Set("Accept-Ranges", "bytes")
-				http.ServeFile(w, r, cachedVideoPath)
-				applog.LogInfof(ctx, "VideoStreamHandler: served cached video file")
-				return
-			}
-			// 缓存文件不存在，删除缓存条目
-			videoCacheMutex.Lock()
-			delete(videoCacheMap, gameID)
-			videoCacheMutex.Unlock()
-			applog.LogInfof(ctx, "VideoStreamHandler: cached video file not found, removing from cache")
-		}
-		var tempFile *os.File
-
-		// 创建临时文件来存储转换后的视频
-		tempFile, err = os.CreateTemp("", "video_*.mp4")
-		if err != nil {
-			applog.LogErrorf(ctx, "VideoStreamHandler: failed to create temp file: %v", err)
-			http.Error(w, "Failed to process video", http.StatusInternalServerError)
-			return
-		}
-		tempFilePath := tempFile.Name()
-		tempFile.Close()
-
-		// 使用ffmpeg将视频转换为MP4格式并保存到临时文件
-		err = utils.ConvertVideoWithFFmpeg(ctx, ffmpegPath, videoPath, tempFilePath, gameID)
-		if err != nil {
-			applog.LogErrorf(ctx, "VideoStreamHandler: ffmpeg conversion failed: %v", err)
-			// 清理临时文件
-			os.Remove(tempFilePath)
-			http.Error(w, "Failed to process video", http.StatusInternalServerError)
-			return
-		}
-
-		applog.LogInfof(ctx, "VideoStreamHandler: ffmpeg conversion completed")
-
-		// 将转换后的视频路径加入缓存
-		videoCacheMutex.Lock()
-		videoCacheMap[gameID] = tempFilePath
-		videoCacheMutex.Unlock()
-		applog.LogInfof(ctx, "VideoStreamHandler: added video to cache: %s", tempFilePath)
-
-		// 使用http.ServeFile提供转换后的视频文件
-		// 这样浏览器可以一次性获取完整的视频文件，支持进度条拖动
-		w.Header().Set("Content-Type", "video/mp4")
-		w.Header().Set("Content-Disposition", "inline")
-		w.Header().Set("Accept-Ranges", "bytes")
-
-		applog.LogInfof(ctx, "VideoStreamHandler: serving video file")
-		http.ServeFile(w, r, tempFilePath)
-		applog.LogInfof(ctx, "VideoStreamHandler: video file served")
-
+		// 调用新的函数处理视频流
+		handleVideoPathStreamRequest(w, r, videoPath, ctx)
 		return
 	} else {
 		applog.LogWarningf(ctx, "VideoStreamHandler: invalid request - gameID: %s, gameService: %v", gameID, gameService != nil)

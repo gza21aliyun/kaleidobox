@@ -10,6 +10,7 @@ import { StartGameWithTracking } from "../../wailsjs/go/service/StartService";
 import { AddToCategoryModal } from "../components/modal/AddToCategoryModal";
 import { ConfirmModal } from "../components/modal/ConfirmModal";
 import { VideoPlayModal } from "../components/modal/VideoPlayModal";
+import { VideoListPlayModal } from "../components/modal/VideoListPlayModal";
 import { GameBackupPanel } from "../components/panel/GameBackupPanel";
 import { GameEditPanel } from "../components/panel/GameEditPanel";
 import { GameLaunchPanel } from "../components/panel/GameLaunchPanel";
@@ -23,7 +24,7 @@ import { GameInfoPanel } from "../components/panel/GameInfoPanel";
 import { GameGalleryPanel } from "../components/panel/GameGalleryPanel"; // 新增导入
 import { GameIntroPanel } from "../components/panel/GameIntroPanel";
 import { ReviewPanel } from "../components/panel/ReviewPanel";
-import { OpenBrowser } from "../../wailsjs/go/service/ImportService"; 
+import { OpenBrowser, SearchVideoPathsManual } from "../../wailsjs/go/service/ImportService"; 
 import { useTranslation } from 'react-i18next';
 import { ImageBackupCard, ImageCard } from "../components/card/ImageCard";
 
@@ -53,6 +54,8 @@ function GameDetailPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isVideoListModalOpen, setIsVideoListModalOpen] = useState(false);
+  const [videoPaths, setVideoPaths] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<vo.CategoryVO[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isInitialMount = useRef(true);
@@ -439,6 +442,24 @@ function GameDetailPage() {
     }
   };
 
+  const handleSearchVideos = async () => {
+    if (!game) return;
+
+    try {
+      // 调用后端搜索视频路径
+      const paths = await SearchVideoPathsManual(game);
+      if (paths && paths.length > 0) {
+        setVideoPaths(paths);
+        setIsVideoListModalOpen(true);
+      } else {
+        toast.error(t('game.toasts.noVideosFound'));
+      }
+    } catch (error) {
+      console.error('Failed to search videos:', error);
+      toast.error(t('game.toasts.searchFailed'));
+    }
+  };
+
   const handleSelectProcessExecutable = async () => {
     try {
       const path = await SelectGameExecutable();
@@ -561,6 +582,16 @@ function GameDetailPage() {
                   {t('game.buttons.playVideo')}
                 </button>
               )}
+
+              <button
+                onClick={handleSearchVideos}
+                className="flex items-center gap-1.5 rounded-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition-all duration-300 px-4 py-1.5 text-sm font-medium"
+              >
+                <div className="i-mdi-video-search text-lg" />
+                搜索视频
+              </button>
+
+
 
               <div className="h-6 w-px bg-brand-200 dark:bg-brand-700" />
               {" "}
@@ -795,6 +826,25 @@ function GameDetailPage() {
         isOpen={isVideoModalOpen}
         gameId={game?.id || ""}
         onClose={() => setIsVideoModalOpen(false)}
+      />
+
+      <VideoListPlayModal
+        isOpen={isVideoListModalOpen}
+        videoPaths={videoPaths}
+        onClose={() => setIsVideoListModalOpen(false)}
+        onSelectVideo={async (videoPath) => {
+          // try {
+          //   if (game) {
+          //     const updatedGame = { ...game, pv_path: videoPath };
+          //     await UpdateGame(updatedGame);
+          //     setGame(updatedGame);
+          //     toast.success(t('game.toasts.videoUpdated'));
+          //   }
+          // } catch (error) {
+          //   console.error('Failed to update video path:', error);
+          //   toast.error(t('game.toasts.saveFailed'));
+          // }
+        }}
       />
 
     </div>

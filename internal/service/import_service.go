@@ -873,7 +873,7 @@ func (s *ImportService) BatchImportGamesSearch(candidates []vo.BatchImportCandid
 	rs, err := s.BatchImportGames(candidates)
 	if err == nil {
 		if isSearch {
-			go s.SearchVideoPaths(rs.Games)
+			go s.SearchVideoExePaths(rs.Games)
 		}
 	}
 	return rs, err
@@ -993,7 +993,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 	return result, nil
 }
 
-func (s *ImportService) SearchVideoPaths(games []models.Game) error {
+func (s *ImportService) SearchVideoExePaths(games []models.Game) error {
 	var uuid = uuid.New().String()
 	s.taskService.RegisterTaskFunction(uuid, s.createSearchVideoTaskFunction())
 	taskData := map[string]interface{}{
@@ -1032,7 +1032,7 @@ func (s *ImportService) createSearchVideoTaskFunction() TaskFunction {
 				"", game.ID, enums.Initial, nil)
 
 			if game.PvPath == "" {
-				err := s.SearchVideoPath(&game)
+				err := s.SearchVideoExePath(&game)
 				if err == nil {
 					s.gameService.UpdateGame(game)
 					updateProgress(index, len(taskData.Games), fmt.Sprintf("找到视频: %s", game.Name),
@@ -1055,7 +1055,7 @@ func (s *ImportService) createSearchVideoTaskFunction() TaskFunction {
 	}
 }
 
-func (s *ImportService) SearchVideoPath(game *models.Game) error {
+func (s *ImportService) SearchVideoExePath(game *models.Game) error {
 	// 获取游戏可执行文件所在的目录
 	folderPath := filepath.Dir(game.Path)
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
@@ -1127,6 +1127,36 @@ func (s *ImportService) SearchVideoPath(game *models.Game) error {
 	}
 
 	return nil
+}
+
+func (s *ImportService) SearchVideoPathsManual(game *models.Game) ([]string, error) {
+	// 获取游戏可执行文件所在的目录
+	folderPath := filepath.Dir(game.Path)
+	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
+	var videoFiles []string
+
+	// 递归搜索目录及其子目录
+	err := filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // 忽略无法访问的路径
+		}
+
+		if !info.IsDir() {
+			// 检查文件扩展名是否为视频格式
+			ext := strings.ToLower(filepath.Ext(path))
+			// fileName := strings.ToLower(filepath.Base(path))
+			for _, e := range exts {
+				if ext == e {
+					// 添加到视频文件列表
+					videoFiles = append(videoFiles, path)
+					break
+				}
+			}
+		}
+		return nil
+	})
+
+	return videoFiles, err
 }
 
 // ProcessDroppedPaths 处理拖拽导入的路径，支持文件夹和可执行文件

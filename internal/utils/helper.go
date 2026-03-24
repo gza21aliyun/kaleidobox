@@ -282,7 +282,7 @@ func handleMainTitle(mainTitle string) string {
 	title := mainTitle
 	lowTitle := strings.ToLower(mainTitle)
 	if strings.Contains(lowTitle, "chapter") {
-		parts := strings.Split(title, "chapter")
+		parts := strings.Split(lowTitle, "chapter")
 		if len(parts) > 0 {
 			title = strings.TrimSpace(parts[0])
 		}

@@ -1,7 +1,7 @@
 import { models } from "../../wailsjs/go/models";
 import { createRoute } from "@tanstack/react-router";
 import { PauseTask, CancelTask, ResumeTask } from "../../wailsjs/go/service/TaskService";
-import { SearchVideoPaths } from "../../wailsjs/go/service/ImportService";
+import { SearchVideoExePaths } from "../../wailsjs/go/service/ImportService";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { useTranslation } from 'react-i18next';
@@ -47,7 +47,7 @@ function TaskPage() {
   const handleSearchVideoPaths = async () => {
     try {
       const { games } = useAppStore.getState();
-      await SearchVideoPaths(games);
+      await SearchVideoExePaths(games);
     } catch (error) {
       console.error("Failed to search video paths:", error);
     }

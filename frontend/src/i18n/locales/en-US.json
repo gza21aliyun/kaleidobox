@@ -17,19 +17,60 @@
     "ok": "OK",
     "apply": "Apply",
     "language": "Language",
-    "noData": "No Data",
+    "noData": "No data",
     "retry": "Retry",
     "details": "Details",
     "settings": "Settings",
     "pleaseSelect": "Please select",
-    "gameStats": "Game Stats",
-    "launchConfig": "Launch Config",
+    "male": "Male",
+    "female": "Female",
+    "unknown": "Unknown",
+    "game": "Game",
+    "cover": "Cover",
+    "characterImage": "Character image",
+    "deleteSuccess": "Deletion successful",
+    "deleteFailed": "Deletion failed",
+    "previous": "Previous",
+    "next": "Next",
+    "gameStats": "Game stats",
+    "launchConfig": "Launch configuration",
     "backup": "Backup",
-    "gameInfo": "Game Info",
+    "gameInfo": "Game info",
     "gallery": "Gallery",
     "introduction": "Introduction",
-    "joystick": "Joystick",
-    "reviews": "Reviews"
+    "joystick": "Controller",
+    "reviews": "Reviews",
+    "deleteGame": "Delete game",
+    "confirmDelete": "Confirm deletion",
+    "back": "Back",
+    "none": "None",
+    "selectAll": "Select all",
+    "clear": "Clear",
+    "selected": "Selected",
+    "batchMode": "Batch selection",
+    "exitBatchMode": "Exit batch selection",
+    "select": "Select",
+    "cancelSelection": "Cancel selection",
+    "viewDetails": "View details",
+    "filter": {
+      "tags": "Tags",
+      "selectTags": "Select tags",
+      "selectGroup": "Select group",
+      "releaseDate": "Release date",
+      "clearFilters": "Clear all filters",
+      "ascending": "Ascending",
+      "descending": "Descending",
+      "noTags": "No tags",
+      "deleteCategory": "Delete category",
+      "collapse": "Collapse filters",
+      "expand": "Expand filters"
+    }
+  },
+  "topbar": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close"
   },
   "nav": {
     "home": "Home",
@@ -41,45 +82,108 @@
     "charactors": "Characters",
     "tags": "Tags"
   },
-  "topbar": {
-    "minimize": "Minimize",
-    "maximize": "Maximize",
-    "restore": "Restore",
-    "close": "Close"
+  "home": {
+    "welcomeBack": "Welcome back!",
+    "todayPlayTime": "Today's play time",
+    "noPlayRecords": "No play records yet",
+    "chooseGameToStart": "Go to the library and select a game to start",
+    "browseLibrary": "Browse library",
+    "nowPlaying": "Now playing...",
+    "lastPlayedAt": "Last played: {{time}}",
+    "totalPlayTime": "Total play time:",
+    "continuePlaying": "Continue playing",
+    "startingGame": "Starting {{name}}",
+    "startGameFailed": "Failed to start game"
   },
   "library": {
-    "title": "Library",
+    "title": "Game Library",
     "searchPlaceholder": "Search games...",
     "sortBy": "Sort by",
     "filterByStatus": "Filter by status",
-    "addGame": "Add Game",
-    "batchImport": "Batch Import",
-    "batchUpdate": "Batch Update",
+    "addGame": "Add game",
+    "batchImport": "Batch import",
+    "batchUpdate": "Batch update",
     "noGamesFound": "No games found",
-    "gamesCount": "{{count}} games"
+    "gamesCount": "{{count}} games",
+    "emptyState": {
+      "noGames": "No games",
+      "addSomeGames": "Add some GAL games to get started",
+      "noMatchingGames": "No matching games found"
+    },
+    "toasts": {
+      "batchUpdateSuccess": "Updated status of {{count}} games to \"{{label}}\"",
+      "batchAddToCollectionSuccess": "Added {{count}} games to collection",
+      "batchUpdateFailed": "Failed to update status in batch",
+      "loadCategoriesFailed": "Failed to load collections",
+      "batchAddFailed": "Failed to add in batch",
+      "batchDeleteSuccess": "Batch deletion successful",
+      "batchDeleteFailed": "Batch deletion failed"
+    },
+    "modals": {
+      "batchDeleteTitle": "Batch delete games",
+      "batchDeleteMessage": "Are you sure you want to delete the selected {{count}} games? This action will remove these games from the library but will not delete local game files.",
+      "batchAddToCollectionTitle": "Batch add to collection"
+    },
+    "gameStatus": {
+      "not_started": "Not started",
+      "playing": "Playing",
+      "completed": "Completed",
+      "on_hold": "On hold"
+    },
+    "toasts": {
+      "batchUpdateFailed": "Failed to update status in batch",
+      "loadCategoriesFailed": "Failed to load collections",
+      "batchAddFailed": "Failed to add in batch",
+      "batchDeleteSuccess": "Batch deletion successful",
+      "batchDeleteFailed": "Batch deletion failed"
+    },
+    "modals": {
+      "batchDeleteTitle": "Batch delete games",
+      "batchAddToCollectionTitle": "Batch add to collection"
+    },
+    "buttons": {
+      "setStatus": "Set as status",
+      "batchUpdateStatus": "Batch update status",
+      "batchAddToCollection": "Batch add to collection",
+      "updateLibrary": "Update library",
+      "batchDelete": "Batch delete",
+      "addManually": "Add manually",
+      "bulkImport": "Bulk import",
+      "importFromPotatoVN": "Import from PotatoVN",
+      "importFromPlaynite": "Import from Playnite",
+      "confirmAdd": "Add",
+      "confirmSelection": "Confirm selection"
+    },
+    "descriptions": {
+      "manualAdd": "Select executable and search metadata",
+      "bulkImport": "Scan game library directory for bulk addition",
+      "importPotatoVN": "Import ZIP file exported from PotatoVN",
+      "importPlaynite": "Import JSON file exported from Playnite",
+      "updateLibrary": "Select data source to update game library"
+    }
   },
   "stats": {
     "title": "Statistics",
-    "playTimeStats": "Play Time Statistics",
-    "gameCount": "Game Count",
-    "totalPlayTime": "Total Play Time",
-    "dailyAverage": "Daily Average",
+    "playTimeStats": "Play time statistics",
+    "gameCount": "Game count",
+    "totalPlayTime": "Total play time",
+    "dailyAverage": "Daily average play time",
     "toasts": {
-      "aiSummaryFailed": "AI summary failed, please check AI configuration",
-      "loadStatsFailed": "Failed to load statistics",
-      "selectDateRange": "Please select start and end date",
-      "dateRangeInvalid": "Start date must be earlier than end date"
+      "aiSummaryFailed": "AI summary failed, please check if AI configuration is correct",
+      "loadStatsFailed": "Failed to load statistics data",
+      "selectDateRange": "Please select start and end dates",
+      "dateRangeInvalid": "Start date must be before end date"
     },
     "labels": {
-      "totalPlayTimeHours": "Total Play Time (hours)",
+      "totalPlayTimeHours": "Total play time (hours)",
       "leaderboard": "Leaderboard",
-      "playTimeLeaderboard": "Play Time Leaderboard",
+      "playTimeLeaderboard": "Play time leaderboard",
       "noData": "No data",
-      "noMoreData": "No more ranking data",
-      "hours": "hours",
-      "beautifyExport": "Beautify Export",
-      "aiSummary": "AI Summary",
-      "libraryOverview": "Library Overview"
+      "noMoreData": "No more leaderboard data",
+      "hours": "Hours",
+      "beautifyExport": "Beautify export",
+      "aiSummary": "AI summary",
+      "libraryOverview": "Library overview"
     },
     "periods": {
       "week": "Week",
@@ -87,22 +191,22 @@
       "custom": "Custom"
     },
     "dateRange": {
-      "startDate": "Start Date",
-      "endDate": "End Date",
+      "startDate": "Start date",
+      "endDate": "End date",
       "apply": "Apply",
       "reset": "Reset"
     },
     "libraryStats": {
-      "allGames": "All Games in Library",
-      "totalSessions": "Total Play Sessions",
-      "totalDuration": "Total Play Duration",
-      "completedGames": "Completed Games"
+      "allGames": "All games in library",
+      "totalSessions": "Total play sessions",
+      "totalDuration": "Total play duration",
+      "completedGames": "Completed games count"
     },
     "summaryCards": {
-      "totalPlayCount": "Total Play Count",
-      "totalPlayDuration": "Total Play Duration",
-      "gamesPlayed": "Games Played",
-      "completedGames": "Completed Games"
+      "totalPlayCount": "Total play count",
+      "totalPlayDuration": "Total play duration",
+      "gamesPlayed": "Number of games played",
+      "completedGames": "Completed games"
     },
     "tableHeaders": {
       "rank": "Rank",
@@ -110,15 +214,42 @@
       "duration": "Duration"
     },
     "charts": {
-      "playTimeTrend": "Play Time Trend",
-      "frequentlyPlayedTrend": "Frequently Played Games Trend"
+      "playTimeTrend": "Play time trend",
+      "frequentlyPlayedTrend": "Frequently played trend"
     }
   },
   "categories": {
-    "title": "Categories",
-    "manageCategories": "Manage Categories",
+    "title": "Collections",
+    "manageCategories": "Manage categories",
     "noCategories": "No categories",
-    "addCategory": "Add Category"
+    "addCategory": "Add category",
+    "newCategory": "New collection",
+    "searchPlaceholder": "Search collections...",
+    "sortOptions": {
+      "name": "Name",
+      "gameCount": "Game count",
+      "createdAt": "Creation time",
+      "updatedAt": "Update time"
+    },
+    "modals": {
+      "deleteCategoryMessage": "Are you sure you want to delete collection \"{{name}}\"? This action cannot be undone.",
+      "batchDeleteMessage": "Are you sure you want to delete the selected {{count}} collections? This action cannot be undone."
+    },
+    "toasts": {
+      "loadCategoriesFailed": "Failed to load collections",
+      "createCategorySuccess": "Collection created successfully",
+      "createCategoryFailed": "Failed to create collection",
+      "updateCategorySuccess": "Collection updated",
+      "updateCategoryFailed": "Failed to update collection",
+      "deleteCategorySuccess": "Collection deleted",
+      "deleteCategoryFailed": "Failed to delete collection",
+      "batchDeleteSuccess": "Batch deletion successful",
+      "batchDeleteFailed": "Batch deletion failed"
+    },
+    "modals": {
+      "deleteCategoryTitle": "Delete collection",
+      "batchDeleteTitle": "Batch delete collections"
+    }
   },
   "category": {
     "toasts": {
@@ -127,7 +258,7 @@
       "removeFromCategoryFailed": "Failed to remove game from collection",
       "loadLibraryGamesFailed": "Failed to load all games in library",
       "addGameToCategoryFailed": "Failed to add game to collection",
-      "batchRemoveFailed": "Batch remove failed",
+      "batchRemoveFailed": "Failed to remove in batch",
       "batchRemoveSuccess": "Removed {{count}} games"
     },
     "messages": {
@@ -135,141 +266,99 @@
       "searchPlaceholder": "Search games...",
       "removeFromCategory": "Remove from collection",
       "noGamesFound": "No matching games found",
-      "noGamesInCategory": "No games in this collection yet"
+      "noGamesInCategory": "This collection has no games yet",
+      "systemCategoryCannotBatchDelete": "System collections cannot be batch deleted"
     },
     "labels": {
       "system": "System",
       "games": "games",
-      "batchRemove": "Batch Remove",
-      "returnToList": "Return to List"
-    }
-  },
-  "tagList": {
-    "title": "Tag List",
-    "searchPlaceholder": "Search tags...",
-    "stats": {
-      "found": "Found {{tags}} tags, {{groups}} groups"
+      "batchRemove": "Batch remove",
+      "returnToList": "Return to list"
     },
-    "hints": {
-      "dragToAdd": "Drag tags to groups on the right to add quickly"
-    },
-    "sections": {
-      "categories": "Tag Categories",
-      "groups": "Tag Groups"
-    },
-    "errors": {
-      "loadFailed": "Load failed"
-    },
-    "emptyState": {
-      "noGroups": "No groups yet",
-      "clickToCreate": "Click the button above to create"
-    },
-    "modals": {
-      "deleteGroupMessage": "Are you sure you want to delete the group \"{{name}}\"? This will remove the group association from all tags in this group."
-    },
-    "toasts": {
-      "loadTagGroupsFailed": "Failed to load tag and group data",
-      "loadTagsFailed": "Failed to load tag list",
-      "groupDeleteSuccess": "Group deleted successfully",
-      "groupDeleteFailed": "Failed to delete group",
-      "saveGroupFailed": "Failed to save group",
-      "tagAddedToGroup": "Tag \"{{tagName}}\" added to group \"{{targetGroup}}\"",
-      "dragAddTagFailed": "Failed to add tag by dragging",
-      "addTagToGroupFailed": "Failed to add tag to group"
-    },
-    "messages": {
-      "noMatchingTags": "No matching tags found",
-      "noTags": "No tags",
-      "tryOtherKeywords": "Please try other keywords",
-      "noTagsAdded": "No tags added yet",
-      "ungrouped": "Ungrouped"
+    "actions": {
+      "editCategory": "Edit collection",
+      "deleteCategory": "Delete collection"
     }
   },
   "game": {
     "status": {
-      "not_started": "Not Started",
-      "playing": "Playing", 
+      "not_started": "Not started",
+      "playing": "Playing",
       "completed": "Completed",
-      "on_hold": "On Hold"
+      "on_hold": "On hold"
     },
-    "details": "Game Details",
-    "playTime": "Play Time",
-    "lastPlayed": "Last Played",
-    "releaseDate": "Release Date"
-  },
-  "game": {
-    "status": {
-      "not_started": "Not Started",
-      "playing": "Playing", 
-      "completed": "Completed",
-      "on_hold": "On Hold"
-    },
-    "details": "Game Details",
-    "playTime": "Play Time",
-    "lastPlayed": "Last Played",
-    "releaseDate": "Release Date",
+    "details": "Game details",
+    "playTime": "Play time",
+    "lastPlayed": "Last played",
+    "releaseDate": "Release date",
     "toasts": {
       "loadGameFailed": "Failed to load game data",
-      "selectExecutableFailed": "Failed to select executable file",
+      "selectExecutableFailed": "Failed to select executable",
       "selectSavePathFailed": "Failed to select save path",
       "selectCoverFailed": "Failed to select cover image",
-      "remoteUpdateSuccess": "Successfully updated from remote",
+      "remoteUpdateSuccess": "Remote update successful",
       "statusUpdated": "Status updated",
       "statusUpdateFailed": "Failed to update status",
       "loadCategoriesFailed": "Failed to load collections",
       "collectionUpdated": "Collection updated",
       "updateCollectionFailed": "Failed to update collection",
       "selectFileFailed": "Failed to select file",
-      "saveFailed": "Save failed",
-      "remoteUpdateFailed": "Remote update failed",
-      "gameLaunchSuccess": "{{name}} launched successfully",
-      "gameLaunchFailed": "{{name}} failed to launch (unable to start)",
-      "gameLaunchFailedCheckLog": "{{name}} failed to launch, check logs for help",
       "openSystemSelectorFailed": "Failed to open system selector",
       "fetchMetadataFailed": "Failed to fetch metadata, please check network or token validity",
       "saveGameFailed": "Failed to save game",
-      "fetchMetadataByIdFailed": "Failed to fetch metadata by ID, please check network or token validity",
+      "fetchMetadataByIdFailed": "Failed to fetch metadata by id, please check network or token validity",
       "selectCoverImageFailed": "Failed to select cover image",
-      "pleaseFillGameName": "Please fill in the game name"
+      "pleaseFillGameName": "Please fill in game name"
     },
     "buttons": {
-      "addToCollection": "Add to Collection",
-      "launchGame": "Launch Game",
-      "returnToLibrary": "Return to Library",
+      "addToCollection": "Add to collection",
+      "launchGame": "Launch game",
+      "returnToLibrary": "Return to library",
       "bangumi": "Bangumi",
-      "ymgal": "YMGal",
+      "ymgal": "YM Gal",
       "dmm": "DMM",
-      "eroscape": "Eroscrape"
+      "eroscape": "Eroscape",
+      "playVideo": "Play video",
+      "getchu": "Getchu",
+      "dlsite": "DlSite"
     },
     "labels": {
-      "source": "Source",
+      "source": "Data source",
       "developer": "Developer",
-      "addedAt": "Added At",
-      "releaseDate": "Release Date"
+      "addedAt": "Added at",
+      "releaseDate": "Release date",
+      "noCover": "No cover"
+    },
+    "toasts": {
+      "saveFailed": "Save failed",
+      "remoteUpdateFailed": "Remote update failed",
+      "gameLaunchSuccess": "{{name}} launched successfully",
+      "gameLaunchFailed": "{{name}} failed to launch (could not start)",
+      "gameLaunchFailedCheckLog": "{{name}} failed to launch, check logs for help"
     },
     "modals": {
-      "deleteMessage": "Are you sure you want to delete the game \"{{name}}\"? This will remove the game from your library but will not delete local game files.",
+      "deleteMessage": "Are you sure you want to delete game \"{{name}}\"? This action will remove the game from the library but will not delete local game files.",
       "addGame": {
-        "title": "Add Game",
-        "selectExecutable": "Select Launcher",
-        "selectExecutablePlaceholder": "Please select an executable file",
-        "gameNameLabel": "Game Name *",
-        "manualAdd": "Manual Add",
-        "searchMetadata": "Search Metadata",
+        "title": "Add game",
+        "selectExecutable": "Select launcher",
+        "selectExecutablePlaceholder": "Please select an executable",
+        "gameNameLabel": "Game name *",
+        "manualAdd": "Add manually",
+        "searchMetadata": "Search metadata",
         "searching": "Searching...",
-        "whichResultExpected": "Which result is expected?",
+        "whichResultExpected": "Which result do you expect?",
         "from": "From",
-        "backToPreviousStep": "Back to Previous Step",
+        "backToPreviousStep": "Back to previous step",
         "noneOfThem": "None of them?",
-        "manualFill": "Manual Fill",
-        "inputIdSearch": "Search by ID",
-        "dataSource": "Data Source",
+        "manualFill": "Fill manually",
+        "inputIdSearch": "Enter id to search",
+        "dataSource": "Data source",
         "gameId": "Game ID",
         "gameIdPlaceholder": "Please enter game ID",
         "back": "Back",
         "confirm": "Confirm",
-        "manualFillInfo": "Fill in game information manually",
-        "coverImage": "Cover Image",
+        "manualFillInfo": "Fill game info manually",
+        "coverImage": "Cover image",
         "coverImagePlaceholder": "Enter image URL or select local image",
         "select": "Select",
         "coverImageHint": "Supports remote URL and local image selection",
@@ -283,38 +372,79 @@
       "gameNotFound": "Game not found"
     }
   },
+  "tagList": {
+    "title": "Tag list",
+    "searchPlaceholder": "Search tags...",
+    "stats": {
+      "found": "Found {{tags}} tags, {{groups}} groups in total"
+    },
+    "hints": {
+      "dragToAdd": "Drag tags to the right group to quickly add"
+    },
+    "sections": {
+      "categories": "Tag categories",
+      "groups": "Tag groups"
+    },
+    "toasts": {
+      "loadTagGroupsFailed": "Failed to load tag and group data",
+      "loadTagsFailed": "Failed to load tag list",
+      "groupDeleteSuccess": "Group deleted successfully",
+      "groupDeleteFailed": "Failed to delete group",
+      "saveGroupFailed": "Failed to save group",
+      "tagAddedToGroup": "Tag \"{{tagName}}\" has been added to group \"{{targetGroup}}\"",
+      "dragAddTagFailed": "Failed to add tag by drag",
+      "addTagToGroupFailed": "Failed to add tag to group"
+    },
+    "messages": {
+      "noMatchingTags": "No matching tags found",
+      "noTags": "No tags",
+      "tryOtherKeywords": "Please try other keywords",
+      "noTagsAdded": "No tags added yet",
+      "ungrouped": "Ungrouped"
+    },
+    "errors": {
+      "loadFailed": "Load failed"
+    },
+    "emptyState": {
+      "noGroups": "No groups",
+      "clickToCreate": "Click the button above to create"
+    },
+    "modals": {
+      "deleteGroupMessage": "Are you sure you want to delete group \"{{name}}\"? This will remove all tag-group associations for tags in this group."
+    }
+  },
   "staff": {
     "toasts": {
       "loadStaffFailed": "Failed to load staff information"
     },
     "titles": {
-      "staffDetails": "Staff Details",
-      "viewDetails": "View staff detailed information"
+      "staffDetails": "Staff details",
+      "viewDetails": "View staff details"
     },
     "labels": {
       "alias": "Alias",
-      "basicInfo": "Basic Information",
+      "basicInfo": "Basic info",
       "gender": "Gender",
       "source": "Source",
       "sourceId": "Source ID",
-      "careerInfo": "Career Information",
-      "summary": "Summary",
-      "participatedWorks": "Participated Works"
+      "careerInfo": "Career info",
+      "summary": "Biography",
+      "participatedWorks": "Participated works"
     },
     "tableHeaders": {
       "cover": "Cover",
-      "gameName": "Game Name",
+      "gameName": "Game name",
       "role": "Role",
-      "gameSummary": "Game Summary",
-      "sourceType": "Source Type",
-      "characterImage": "Character Image",
-      "characterName": "Character Name",
-      "characterSummary": "Character Summary"
+      "gameSummary": "Game introduction",
+      "sourceType": "Source",
+      "characterImage": "Character image",
+      "characterName": "Character name",
+      "characterSummary": "Character introduction"
     },
     "errors": {
-      "loadFailed": "Load Failed",
-      "notFound": "Staff Not Found",
-      "notFoundMessage": "The specified staff member does not exist"
+      "loadFailed": "Load failed",
+      "notFound": "Staff not found",
+      "notFoundMessage": "The specified staff does not exist"
     },
     "buttons": {
       "back": "Back"
@@ -325,31 +455,31 @@
       "loadCharactorFailed": "Failed to load character information"
     },
     "titles": {
-      "charactorDetails": "Character Details",
-      "viewDetails": "View character detailed information"
+      "charactorDetails": "Character details",
+      "viewDetails": "View character details"
     },
     "labels": {
       "alias": "Alias",
-      "basicInfo": "Basic Information",
+      "basicInfo": "Basic info",
       "gender": "Gender",
       "source": "Source",
       "sourceId": "Source ID",
-      "summary": "Character Summary",
-      "participatedWorks": "Participated Works",
-      "characterImage": "Character Image"
+      "summary": "Character introduction",
+      "participatedWorks": "Participated works",
+      "characterImage": "Character image"
     },
     "tableHeaders": {
       "cover": "Cover",
-      "gameName": "Game Name",
-      "gameSummary": "Game Summary",
-      "sourceType": "Source Type",
-      "characterImage": "Character Image",
-      "voiceActor": "Voice Actor",
-      "characterExperience": "Character Experience"
+      "gameName": "Game name",
+      "gameSummary": "Game introduction",
+      "sourceType": "Source",
+      "characterImage": "Character image",
+      "voiceActor": "Voice actor",
+      "characterExperience": "Character experience"
     },
     "errors": {
-      "loadFailed": "Load Failed",
-      "notFound": "Character Not Found",
+      "loadFailed": "Load failed",
+      "notFound": "Character not found",
       "notFoundMessage": "The specified character does not exist"
     },
     "buttons": {
@@ -357,23 +487,23 @@
     }
   },
   "charactorList": {
-    "title": "Character List",
+    "title": "Character list",
     "stats": {
-      "found": "Found {{count}} characters"
+      "found": "Found {{count}} characters in total"
     },
     "toasts": {
       "loadCharactorsFailed": "Failed to load character list"
     },
     "errors": {
-      "loadFailed": "Load Failed"
+      "loadFailed": "Load failed"
     },
     "emptyState": {
-      "noCharactors": "No Characters",
-      "noCharactorsMessage": "No character information has been added yet"
+      "noCharactors": "No characters",
+      "noCharactorsMessage": "No character information added yet"
     },
     "labels": {
       "alias": "Alias",
-      "gameCount": "Games"
+      "gameCount": "Game count"
     }
   },
   "ai": {
@@ -385,18 +515,18 @@
     "modelName": "Model Name",
     "systemPrompt": "System Prompt",
     "systemPromptPlaceholder": "Enter custom AI system prompt...",
-    "systemPromptDescription": "AI will generate statistical summaries based on this prompt. You can click the presets above to quickly fill in.",
+    "systemPromptDescription": "AI will generate statistical summaries based on this prompt. You can click the presets above to quickly fill.",
     "customOpenAI": "Custom (OpenAI compatible)"
   },
   "autoBackup": {
-    "autoBackupDbOnExit": "Auto backup database on app exit",
-    "autoBackupDbOnExitDescription": "Automatically create database backup when the app closes to protect your game library data",
-    "autoBackupSaveOnExit": "Auto backup game saves on game exit",
-    "autoBackupSaveOnExitDescription": "Automatically backup save directory when game process ends (save directory must be set first)",
+    "autoBackupDbOnExit": "Auto backup database on exit",
+    "autoBackupDbOnExitDescription": "Automatically create database backup when closing the app to protect your game library data",
+    "autoBackupSaveOnExit": "Auto backup saves on game exit",
+    "autoBackupSaveOnExitDescription": "Automatically backup save directory when game process ends (requires save path to be set first)",
     "autoUploadDbToCloud": "Auto upload database backup to cloud",
-    "autoUploadDbToCloudDescription": "Automatically upload to cloud storage after creating database backup (cloud backup must be enabled first)",
+    "autoUploadDbToCloudDescription": "Automatically upload to cloud storage after creating database backup (requires cloud backup to be enabled first)",
     "autoUploadSaveToCloud": "Auto upload game save backup to cloud",
-    "autoUploadSaveToCloudDescription": "Automatically upload to cloud storage after game exit and save backup (cloud backup must be enabled first)",
+    "autoUploadSaveToCloudDescription": "Automatically upload to cloud storage after game exit and save backup (requires cloud backup to be enabled first)",
     "localBackupRetention": "Local game backup retention count",
     "localBackupRetentionDescription": "Maximum number of backups to keep locally per game",
     "localDbBackupRetention": "Local database backup retention count",
@@ -404,12 +534,12 @@
   },
   "background": {
     "enableCustomBackground": "Enable custom background",
-    "enableCustomBackgroundDescription": "When enabled, a custom image will be used as the app background and the theme colors will be automatically adjusted",
+    "enableCustomBackgroundDescription": "When enabled, custom images will be used as app background and theme colors will be adjusted automatically",
     "hideHomeGameCover": "Hide home game cover",
     "hideHomeGameCoverDescription": "When custom background is enabled, hide the cover image of the last played game on the home page",
     "backgroundImage": "Background image",
     "noImageSelected": "No image selected",
-    "imageFormats": "Supports PNG, JPG, JPEG, GIF, WebP, BMP formats. You can crop the desired area after selection",
+    "imageFormats": "Supports PNG, JPG, JPEG, GIF, WebP, BMP formats. After selection, you can crop the desired area.",
     "preview": "Preview",
     "backgroundPreview": "Background preview",
     "effectPreview": "Effect preview",
@@ -419,64 +549,111 @@
     "maskOpacity": "Mask opacity",
     "transparent": "Transparent",
     "opaque": "Opaque",
-    "maskOpacityDescription": "Adjust the opacity of the mask layer in the content area. The lower the value, the more obvious the background image",
+    "maskOpacityDescription": "Adjust the opacity of the mask layer in the content area. Lower values make the background image more visible",
     "selectImageFailed": "Failed to select background image: {{error}}",
-    "cropSaveFailed": "Failed to crop and save: {{error}}"
+    "cropSaveFailed": "Failed to save crop: {{error}}"
   },
   "basic": {
     "bangumiAccessToken": "Bangumi Access Token",
     "vndbAccessToken": "VNDB Access Token",
-    "bangumiTokenHint": "Must be filled if you want to use Bangumi data source",
+    "bangumiTokenHint": "Please fill in if you want to use Bangumi data source",
     "dmmSwitch": "DMM Switch",
     "eroscapeSwitch": "Eroscape Switch",
-    "eroscapeUseMirror": "Eroscape Use Mirror",
+    "eroscapeUseMirror": "Use Eroscape mirror",
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "followSystem": "Follow System",
+    "followSystem": "Follow system",
     "timezone": "Timezone",
-    "timezoneHint": "Used to correctly display and record game duration, please restart the app after modification",
-    "minimizeToTray": "Minimize to system tray when closing window"
+    "timezoneHint": "Used to correctly display and record game time. Please restart the app after modification",
+    "minimizeToTray": "Minimize to system tray when closing window",
+    "searchChineseFirst": "Prioritize Chinese sources for Chinese information",
+    "autoDownloadImages": "Auto download images to images directory. Note: Getchu source images won't be visible if not downloaded",
+    "moreLogs": "More logs written to app.log",
+    "newFolderChooser": "New style file/folder selector (beautiful but can't select network mapped drives in WIN11)"
   },
   "dbBackup": {
-    "databaseBackup": "Database Backup",
-    "backupDescription": "Backup game library metadata, categories, play records and other application data",
-    "backupNow": "Backup Now",
+    "databaseBackup": "Database backup",
+    "backupDescription": "Backup game library metadata, categories, play records and other app data",
+    "backupNow": "Backup now",
     "backingUp": "Backing up...",
     "lastBackup": "Last backup",
-    "localBackups": "Local Backups",
+    "localBackups": "Local backups",
     "autoBackupEnabled": "Auto backup enabled",
     "size": "Size",
     "uploadToCloud": "Upload to cloud",
     "restoreThisBackup": "Restore this backup",
     "deleteBackup": "Delete backup",
     "noLocalBackups": "No local backup records",
-    "cloudBackups": "Cloud Backups",
+    "cloudBackups": "Cloud backups",
     "refreshCloudBackups": "Refresh cloud backup list",
     "noCloudBackups": "No cloud backup records",
     "cloudBackupNotEnabled": "Cloud backup not enabled",
-    "cloudBackupHint": "After configuring cloud backup above, you can sync the database to the cloud",
+    "cloudBackupHint": "After configuring cloud backup above, database can be synced to cloud",
     "backupSuccess": "Database backup successful",
     "backupSuccessAndUploaded": "Database backup successful and uploaded to cloud",
     "localBackupSuccess": "Local backup successful",
     "backupFailed": "Backup failed: {{error}}",
-    "restoreDatabase": "Restore Database",
+    "restoreDatabase": "Restore database",
     "confirmRestore": "Are you sure you want to restore to this backup? The program will exit and complete the restoration on next startup.",
-    "restoreScheduled": "Restoration scheduled, program is exiting...",
-    "scheduleRestoreFailed": "Failed to schedule restoration: {{error}}",
-    "confirmDelete": "Are you sure you want to delete this local backup? This operation cannot be undone.",
+    "restoreScheduled": "Restore scheduled, program will exit...",
+    "scheduleRestoreFailed": "Failed to schedule restore: {{error}}",
+    "confirmDelete": "Are you sure you want to delete this local backup? This action cannot be undone.",
     "backupDeleted": "Backup deleted",
-    "deleteFailed": "Deletion failed: {{error}}",
+    "deleteFailed": "Delete failed: {{error}}",
     "uploadedToCloud": "Uploaded to cloud",
     "uploadFailed": "Upload failed: {{error}}",
-    "restoreFromCloud": "Restore from Cloud",
-    "confirmRestoreFromCloud": "Are you sure you want to restore this backup from the cloud? The program will exit and complete the restoration on next startup."
+    "restoreFromCloud": "Restore from cloud",
+    "confirmRestoreFromCloud": "Are you sure you want to restore this backup from cloud? The program will exit and complete the restoration on next startup.",
+    "import": "Import restore",
+    "preparing": "Preparing...",
+    "fileError": "File selection failed: {{error}}"
+  },
+  "session": {
+    "toasts": {
+      "endTimeMustBeAfterStartTime": "End time must be after start time",
+      "playDurationMustBeGreaterThanZero": "Play duration must be greater than 0",
+      "endTimeCannotBeInFuture": "End time cannot be in the future",
+      "playSessionAddedSuccessfully": "Play session added successfully",
+      "failedToAddPlaySession": "Failed to add play session"
+    },
+    "modals": {
+      "addPlaySession": {
+        "title": "Add play session",
+        "description": "You can supplement records of past play times for more accurate total play time statistics.",
+        "startTime": "Start time",
+        "endTime": "End time",
+        "playDuration": "Play duration",
+        "adding": "Adding...",
+        "add": "Add"
+      }
+    }
+  },
+  "settings": {
+    "basicConfig": "Basic configuration",
+    "languageSettings": "Language settings",
+    "appearance": "Appearance settings",
+    "gameplay": "Gameplay configuration",
+    "cloudBackup": "Cloud backup configuration",
+    "autoBackup": "Auto backup",
+    "aiConfig": "AI configuration",
+    "dbBackup": "Database backup",
+    "fullDataBackup": "Full data backup",
+    "appUpdate": "App update",
+    "title": "Settings",
+    "preparing": "Preparing settings...",
+    "madeWithContributors": "KaleidoBox made with Contributors.",
+    "versionInfo": {
+      "version": "Version",
+      "buildMode": "Build mode",
+      "builtAt": "Build time"
+    }
   },
   "gameStatus": {
-    "not_started": "Not Started",
+    "not_started": "Not started",
     "playing": "Playing",
     "completed": "Completed",
-    "on_hold": "On Hold"
+    "on_hold": "On hold"
   },
   "period": {
     "day": "Day",
@@ -485,9 +662,9 @@
     "all": "All"
   },
   "promptType": {
-    "DEFAULT_SYSTEM": "Default System Prompt",
-    "MEOW_ZAKO": "Cat Girl Prompt",
-    "STRICT_TUTOR": "Strict Tutor Prompt"
+    "DEFAULT_SYSTEM": "Default system prompt",
+    "MEOW_ZAKO": "Cat girl prompt",
+    "STRICT_TUTOR": "Strict tutor prompt"
   },
   "sourceType": {
     "local": "Local",
@@ -495,16 +672,16 @@
     "vndb": "VNDB",
     "ymgal": "YM Gal",
     "dmm": "DMM",
-    "eroscape": "Eroscrape",
+    "eroscape": "Eroscape",
     "dlsite": "Dlsite"
   },
   "staffRole": {
     "STAFF": "Staff",
-    "CV": "Voice Actor",
+    "CV": "Voice actor",
     "SCENEARIO": "Scenario",
     "DIRECTOR": "Director",
-    "COMPOSER": "Music",
-    "CHARA_DESIGN": "Character Design",
+    "COMPOSER": "Composer",
+    "CHARA_DESIGN": "Character design",
     "CHARACTOR": "Character",
     "SINGER": "Singer",
     "ART": "Artist"
@@ -525,9 +702,9 @@
     "RELATIONS": "Relations"
   },
   "hotkeyAction": {
-    "START_GAME": "Start Game",
-    "STOP_GAME": "Stop Game",
-    "TOGGLE_PAUSE": "Toggle Pause",
+    "START_GAME": "Start game",
+    "STOP_GAME": "Stop game",
+    "TOGGLE_PAUSE": "Toggle pause",
     "SCREENSHOT": "Screenshot",
     "CUSTOM": "Custom"
   },
@@ -536,7 +713,7 @@
     "DUALSENSE": "PlayStation 5 DualSense",
     "DUALSHOCK4": "PlayStation 4 DualShock 4",
     "JOYCON": "Nintendo Switch Joy-Con",
-    "XINPUT": "Xbox Controller and Compatible Devices"
+    "XINPUT": "Xbox controller and compatible devices"
   },
   "modifierKey": {
     "CTRL": "Ctrl",
@@ -545,63 +722,63 @@
     "WIN": "Win"
   },
   "joystickButton": {
-    "A": "A Button",
-    "B": "B Button",
-    "X": "X Button",
-    "Y": "Y Button",
-    "LB": "Left Bumper",
-    "RB": "Right Bumper",
-    "LT": "Left Trigger",
-    "RT": "Right Trigger",
-    "BACK": "Back Button",
-    "START": "Start Button",
-    "LS": "Left Stick Click",
-    "RS": "Right Stick Click",
-    "DPAD_UP": "D-Pad Up",
-    "DPAD_DOWN": "D-Pad Down",
-    "DPAD_LEFT": "D-Pad Left",
-    "DPAD_RIGHT": "D-Pad Right",
-    "GUIDE": "Guide Button"
+    "A": "A button",
+    "B": "B button",
+    "X": "X button",
+    "Y": "Y button",
+    "LB": "Left shoulder button",
+    "RB": "Right shoulder button",
+    "LT": "Left trigger",
+    "RT": "Right trigger",
+    "BACK": "Back button",
+    "START": "Start button",
+    "LS": "Left stick press",
+    "RS": "Right stick press",
+    "DPAD_UP": "D-pad up",
+    "DPAD_DOWN": "D-pad down",
+    "DPAD_LEFT": "D-pad left",
+    "DPAD_RIGHT": "D-pad right",
+    "GUIDE": "Home button"
   },
   "cloudBackup": {
-    "enableCloudBackup": "Enable Cloud Backup",
+    "enableCloudBackup": "Enable cloud backup",
     "syncToCloudStorage": "Sync your data to cloud storage",
-    "cloudStorageProvider": "Cloud Storage Provider",
-    "s3CompatibleStorage": "S3 Compatible Storage",
-    "s3Config": "S3 Configuration",
-    "backupPassword": "Backup Password",
+    "cloudStorageProvider": "Cloud storage provider",
+    "s3CompatibleStorage": "S3 compatible storage",
+    "s3Config": "S3 configuration",
+    "backupPassword": "Backup password",
     "passwordSet": "Password set, User ID: {{userId}}...",
-    "setupBackupPassword": "Set Backup Password",
-    "usedForUserId": "Used to generate user ID",
-    "passwordImportant": "Important: Password can only be set once and cannot be changed, please remember it",
+    "setupBackupPassword": "Set backup password",
+    "usedForUserId": "Used to generate user identifier",
+    "passwordImportant": "Important: Password can only be set once and cannot be modified after setting. Please remember it.",
     "s3Endpoint": "S3 Endpoint",
     "s3Region": "Region",
     "s3Bucket": "Bucket",
     "accessKey": "Access Key",
     "secretKey": "Secret Key",
-    "testConnection": "Test Connection",
+    "testConnection": "Test connection",
     "testing": "Testing...",
-    "oneDriveConfig": "OneDrive Configuration",
+    "oneDriveConfig": "OneDrive configuration",
     "note": "Note",
-    "oneDriveNote1": "Default uses the Client ID provided by the project for easy out-of-the-box use",
-    "oneDriveNote2": "Your data is completely stored in your own OneDrive account's app folder, inaccessible to others",
-    "oneDriveNote3": "All sensitive data (such as Refresh Token) is stored locally and will not be uploaded to the cloud",
+    "oneDriveNote1": "By default, the Client ID provided by the project is used for out-of-the-box use",
+    "oneDriveNote2": "Your data is completely stored in the app folder of your own OneDrive account, and no one else can access it",
+    "oneDriveNote3": "All sensitive data is stored locally (such as Refresh Token) and will not be uploaded to the cloud",
     "oneDriveNote4": "The author is not responsible for any issues arising from using the default Client ID",
     "oneDriveNote5": "For higher security, you can customize the Client ID below",
     "clientId": "Client ID",
     "usingDefault": "Using default",
-    "customClientIdNote": "To customize, please register an app in",
-    "registerApp": "",
-    "authStatus": "Authorization Status",
+    "customClientIdNote": "To customize, please",
+    "registerApp": "register the app in",
+    "authStatus": "Authorization status",
     "authorized": "Authorized",
-    "revokeAuth": "Revoke Authorization",
+    "revokeAuth": "Revoke authorization",
     "authorizeOneDrive": "Authorize OneDrive",
     "waitingForAuth": "Waiting for authorization...",
-    "completeAuthInBrowser": "Please complete authorization in the browser, it will automatically return after success",
-    "retentionCount": "Backup Retention Count",
+    "completeAuthInBrowser": "Please complete authorization in the browser. You will automatically return after successful authorization.",
+    "retentionCount": "Backup retention count",
     "retentionDescription": "Maximum number of backups to keep per game in the cloud",
-    "passwordMinLength": "Password must be at least 6 characters",
-    "passwordMismatch": "Passwords do not match",
+    "passwordMinLength": "Password length must be at least 6 characters",
+    "passwordMismatch": "The two entered passwords do not match",
     "passwordSetupSuccess": "Password set successfully! User ID: {{userId}}...",
     "setupFailed": "Setup failed: {{error}}",
     "s3TestSuccess": "S3 connection test successful",
@@ -612,182 +789,195 @@
     "authFailed": "Authorization failed: {{error}}"
   },
   "fullDataBackup": {
-    "description": "Backup application configuration, database, covers and backgrounds, image cache, logs, and local backup directories",
+    "description": "Backup app configuration, database, covers and backgrounds, image cache, logs, and local backup directories",
     "note": "Note",
-    "warning": "Suitable for backing up before making major changes or migrating data between devices. Restoration will overwrite existing data, please proceed with caution.",
-    "export": "Export Backup",
-    "import": "Import Restore",
+    "warning": "Suitable for backing up before making major changes or migrating data between different devices. Restoring will overwrite existing data, please operate with caution.",
+    "export": "Export backup",
+    "import": "Import restore",
     "backingUp": "Packing...",
     "preparing": "Preparing...",
     "lastBackup": "Last backup time",
     "success": "Full data backup successful: {{path}}",
     "error": "Full backup failed: {{error}}",
-    "restoreTitle": "Restore Full Data",
-    "restoreMessage": "Are you sure you want to restore full data?\n\nBackup file: {{path}}\n\nThis will overwrite application configuration, database, and resource directories. The program will exit and restore on next startup.",
-    "scheduleSuccess": "Full restoration scheduled, program is exiting...",
-    "scheduleError": "Failed to schedule full restoration: {{error}}",
-    "fileError": "Failed to select file: {{error}}"
+    "restoreTitle": "Restore full data",
+    "restoreMessage": "Are you sure you want to restore full data?\n\nBackup file: {{path}}\n\nApp configuration, database, and resource directories will be overwritten. The program will exit and restore on next startup.",
+    "scheduleSuccess": "Full restore scheduled, program will exit...",
+    "scheduleError": "Failed to schedule full restore: {{error}}",
+    "fileError": "File selection failed: {{error}}"
   },
   "gameBackup": {
-    "title": "Save Backup",
+    "title": "Save backup",
     "savePath": "Save path: {{path}}",
     "setSavePath": "Please set the save path (file or folder) in the edit page first",
-    "setSavePathError": "Please set save path first",
-    "openBackupFolder": "Open Backup Folder",
-    "createBackup": "Backup Now",
+    "setSavePathError": "Please set the save path first",
+    "openBackupFolder": "Open backup folder",
+    "createBackup": "Backup now",
     "backingUp": "Backing up...",
     "createSuccess": "Backup created successfully",
     "createError": "Backup failed: {{error}}",
-    "downloadSave": "Download Save",
-    "overrideSave": "Override Save",
-    "openSaveFolder": "Open Save Folder",
+    "downloadSave": "Download save",
+    "overrideSave": "Override save",
+    "openSaveFolder": "Open save folder",
     "downloadSuccess": "Save downloaded: {{path}}",
     "overrideSuccess": "Save overridden",
     "downloadError": "Failed to download save: {{error}}",
-    "getGameError": "Failed to get game information: {{error}}",
-    "localBackups": "Local Backups",
+    "getGameError": "Failed to get game info: {{error}}",
+    "localBackups": "Local backups",
     "autoBackupEnabled": "Auto backup enabled",
     "noLocalBackups": "No local backup records",
     "size": "Size",
     "uploadToCloud": "Upload to cloud",
     "restoreBackup": "Restore backup",
     "deleteBackup": "Delete backup",
-    "restoreTitle": "Restore Save",
+    "restoreTitle": "Restore save",
     "restoreMessage": "Are you sure you want to restore to the backup from {{time}}? Current save will be overwritten.",
     "restoreSuccess": "Save restored",
     "restoreError": "Restore failed: {{error}}",
-    "deleteTitle": "Delete Backup",
-    "deleteMessage": "Are you sure you want to delete this local backup? This operation cannot be undone.",
+    "deleteTitle": "Delete backup",
+    "deleteMessage": "Are you sure you want to delete this local backup? This action cannot be undone.",
     "deleteSuccess": "Backup deleted",
-    "deleteError": "Deletion failed: {{error}}",
+    "deleteError": "Delete failed: {{error}}",
     "openFolderError": "Failed to open folder: {{error}}",
     "uploadSuccess": "Uploaded to cloud",
     "uploadError": "Upload failed: {{error}}",
-    "cloudBackups": "Cloud Backups",
+    "cloudBackups": "Cloud backups",
     "refreshCloudBackups": "Refresh cloud backup list",
     "noCloudBackups": "No cloud backup records",
     "restoreFromCloud": "Restore from cloud",
-    "restoreFromCloudTitle": "Restore from Cloud",
-    "restoreFromCloudMessage": "Are you sure you want to restore {{name}} from the cloud? Current save will be overwritten.",
+    "restoreFromCloudTitle": "Restore from cloud",
+    "restoreFromCloudMessage": "Are you sure you want to restore {{name}} from cloud? Current save will be overwritten.",
     "restoreFromCloudSuccess": "Save restored from cloud",
     "restoreFromCloudError": "Restore failed: {{error}}",
     "cloudBackupNotEnabled": "Cloud backup not enabled",
     "cloudBackupHint": "Go to settings page to configure cloud backup and sync saves to the cloud"
   },
   "gameEdit": {
-    "name": "Game Name",
-    "searchName": "Search Name",
-    "coverImage": "Cover Image",
+    "name": "Game name",
+    "searchName": "Search name",
+    "coverImage": "Cover image",
     "coverImagePlaceholder": "Enter image URL or select local image",
-    "selectImage": "Select Image",
-    "coverImageHint": "Supports remote URL and local image selection",
+    "selectImage": "Select image",
+    "coverImageHint": "Supports remote URL retrieval and local image selection",
     "developer": "Developer",
-    "gamePath": "Game Path",
-    "selectFile": "Select File",
-    "openLocation": "Open location in file manager",
+    "gamePath": "Game path",
+    "selectFile": "Select file",
+    "openLocation": "Open location in file explorer",
     "openPathError": "Failed to open path, file/directory may not exist",
-    "arguments": "Game Arguments",
-    "savePath": "Save Path",
+    "arguments": "Game arguments",
+    "savePath": "Save path",
     "savePathPlaceholder": "Select game save path (file or folder)",
     "select": "Select",
-    "savePathHint": "Backup functionality becomes available after setting save path (file or folder)",
+    "savePathHint": "After setting save path (file or folder), backup function can be used",
     "summary": "Summary",
-    "sourceType": "Source Type",
+    "sourceType": "Data source type",
     "none": "None",
-    "sourceId": "Source ID",
+    "sourceId": "Data source ID",
     "sourceIdPlaceholder": "Remote data source ID",
-    "updateFromRemote": "Update from Remote",
-    "updateFromSource": "Update from Source",
+    "updateFromRemote": "Update from remote",
+    "updateFromSource": "Update from source",
     "delete": "Delete"
   },
   "gameGallery": {
     "screenshots": "Screenshots",
-    "setHotkey": "Set Hotkey",
-    "editHotkey": "Edit Hotkey",
+    "setHotkey": "Set hotkey",
+    "editHotkey": "Edit hotkey",
     "loading": "Loading...",
     "noScreenshots": "No screenshots",
     "useHotkey": "Use hotkey {{hotkey}} to take screenshots",
     "gallery": "Gallery",
-    "openLocation": "Open location in file manager",
+    "openLocation": "Open location in file explorer",
     "openPathError": "Failed to open path, file/directory may not exist"
   },
   "gameInfo": {
-    "staffInfo": "Staff Information",
+    "staffInfo": "Staff information",
     "noStaffInfo": "No staff information",
     "noData": "No data",
     "unknownCharacter": "Unknown character",
     "staff": "Staff {{index}}",
-    "categoryTags": "Category Tags",
-    "noCategoryTags": "No category tags"
+    "categoryTags": "Category tags",
+    "noCategoryTags": "No category tags",
+    "tagInfo": "Tag information",
+    "tagName": "Tag name",
+    "category": "Category",
+    "searchGames": "Search games",
+    "deleteTag": "Delete tag",
+    "addTag": "Add tag",
+    "enterTagName": "Enter tag name",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   },
   "gameIntro": {
     "summary": "Summary",
     "noSummary": "No summary",
     "characters": "Characters",
     "cv": "CV",
-    "noCategories": "No category tags"
+    "noCategories": "No category tags",
+    "relatedGames": "Related games",
+    "characterSummary": "Character introduction",
+    "addRelatedGame": "Add related game"
   },
   "gameLaunch": {
-    "processMonitoring": "Process Monitoring",
+    "processMonitoring": "Process monitoring",
     "executable": "Executable",
-    "noGamePath": "No game path set",
-    "executableDescription": "LunaBox uses this executable to launch the game. This is the executable path you selected initially",
-    "actualGameProcess": "Actual Game Process",
-    "selectProcessFile": "Select Process File",
-    "processNameDescription": "Specify the actual game process name (including .exe suffix).\nIf not specified, LunaBox will try to monitor the executable path. If your previous selection was a launcher, you will need to manually specify this process in the selection box that appears after game startup.\nPre-filling here avoids manual selection every time you launch.",
-    "launchTools": "Launch Enhancement Tools",
-    "localeTool": "Locale Tool",
-    "localeEmulatorDescription": "Launch the game with Japanese environment simulation to resolve garbled text and region restrictions.",
+    "noGamePath": "Game path not set",
+    "executableDescription": "KaleidoBox uses this executable to launch the game. This is the executable path you initially selected",
+    "actualGameProcess": "Actual game process",
+    "selectProcessFile": "Select process file",
+    "processNameDescription": "Specify the actual game process name (including .exe suffix).\nCompatible with multiple games with the same exe name",
+    "launchTools": "Launch enhancement tools",
+    "localeTool": "Locale tool",
+    "localeEmulatorDescription": "Use Japanese environment emulation to launch games, solving garbled text and region restriction issues.",
     "localeEmulatorPathError": "Please configure Locale Emulator path in settings first",
     "localeEmulatorConfigHint": "Please configure LEProc.exe path in settings first",
-    "upscalingTool": "Upscaling Tool",
-    "magpieDescription": "Automatically starts Magpie for fullscreen super-resolution scaling after game launch.",
+    "upscalingTool": "Upscaling tool",
+    "magpieDescription": "Automatically start Magpie after game launch for full-screen super-resolution scaling.",
     "magpiePathError": "Please configure Magpie path in settings first",
     "magpieConfigHint": "Please configure Magpie.exe path in settings first"
   },
   "gameSettings": {
     "recordActiveTimeOnly": "Record only active play time",
-    "recordActiveTimeOnlyDescription": "When enabled, play time will only be recorded when the game window is in foreground focus. This provides more accurate statistics of actual play time, excluding afk and background running time.",
+    "recordActiveTimeOnlyDescription": "When enabled, play time will only be recorded when the game window is in foreground focus. This can more accurately count actual play time, excluding AFK and background running time.",
     "note": "Note",
-    "activeTimeNote1": "Enabling this option will record incomplete running time of the game process (excluding background time)",
+    "activeTimeNote1": "Enabling this option will record non-complete running time of game processes (excluding background time)",
     "activeTimeNote2": "Existing play records will not be affected by this setting",
-    "activeTimeNote3": "Some fullscreen games may affect the accuracy of focus detection",
+    "activeTimeNote3": "Some full-screen games may affect the accuracy of focus detection",
     "autoProcessDetection": "Auto process detection",
-    "autoProcessDetectionDescription": "When enabled, LunaBox will automatically prompt you to select the actual game process when the launcher process exits quickly.\nWhen disabled, it will directly use the saved process name or executable handle for monitoring, suitable for single-exe games or scenarios that don't require complex detection.",
-    "gameLaunchTools": "Game Launch Tools",
-    "localeEmulatorPath": "Locale Emulator Path",
+    "autoProcessDetectionDescription": "When enabled, it will try to automatically detect the actual process name. If it really can't find it when the launcher process exits quickly, KaleidoBox will automatically prompt you to select the actual game process.\nWhen disabled, it will not detect or prompt, which may lose game time and controller functionality",
+    "gameLaunchTools": "Game launch tools",
+    "localeEmulatorPath": "Locale Emulator path",
     "localeEmulatorPathPlaceholder": "Select LEProc.exe file path",
-    "localeEmulatorPathDescription": "After setting, you can enable Locale Emulator locale switching launch in the game edit interface",
+    "localeEmulatorPathDescription": "After setting, you can enable Locale Emulator region switching launch in the game edit interface",
     "localeEmulatorSelectError": "Failed to select Locale Emulator",
-    "magpiePath": "Magpie Path",
+    "magpiePath": "Magpie path",
     "magpiePathPlaceholder": "Select Magpie.exe file path",
     "magpiePathDescription": "After setting, you can enable Magpie super-resolution scaling launch in the game edit interface",
-    "magpieSelectError": "Failed to select Magpie"
+    "magpieSelectError": "Failed to select Magpie",
+    "detectTime": "Detection time (seconds)"
   },
   "gameStats": {
-    "loadStatsFailed": "Failed to load statistics",
-    "loadSessionsFailed": "Failed to load play sessions",
+    "loadStatsFailed": "Failed to load statistics data",
+    "loadSessionsFailed": "Failed to load play records",
     "deleteSuccess": "Delete successful",
     "deleteFailed": "Delete failed",
-    "playTimeMinutes": "Play Time (minutes)",
-    "totalPlayCount": "Total Play Count",
-    "todayPlayTime": "Today's Play Time",
-    "totalPlayTime": "Total Play Time",
+    "playTimeMinutes": "Game time (minutes)",
+    "totalPlayCount": "Total play count",
+    "todayPlayTime": "Today's game time",
+    "totalPlayTime": "Total time",
     "zeroMinutes": "0 minutes",
     "noPlayRecords": "No play records",
     "duration": "Duration",
     "deleteRecord": "Delete record",
-    "manualAdd": "Manual Add",
-    "deletePlaySession": "Delete Play Session",
-    "confirmDeleteMessage": "Are you sure you want to delete this play session? This action cannot be undone.",
-    "confirmDelete": "Confirm Delete"
+    "manualAdd": "Add manually",
+    "deletePlaySession": "Delete play session",
+    "confirmDeleteMessage": "Are you sure you want to delete this play record? This action cannot be undone.",
+    "confirmDelete": "Confirm delete"
   },
   "language": {
-    "selectApplicationLanguage": "Select the language for the application interface",
+    "selectApplicationLanguage": "Select application interface language",
     "switchingInstructions": "Language switching instructions",
-    "settingAutoSaved": "Language settings are automatically saved and will take effect on next startup",
-    "supportedLanguages": "Supports three languages: Chinese, English, and Japanese",
-    "someDataMayRemain": "Some game data may still display in its original language"
+    "settingAutoSaved": "Language settings will be automatically saved and take effect on next startup",
+    "supportedLanguages": "Supports Chinese, English, and Japanese languages",
+    "someDataMayRemain": "Some game data may still display in the original language"
   },
   "ps4": {
     "loadHotkeysFailed": "Failed to load hotkey configuration",
@@ -796,19 +986,19 @@
     "setButtonMapping": "Set {{button}} button mapping",
     "pressKeyToMap": "Please press the keyboard key you want to map to {{button}}",
     "waitingForKeyInput": "Waiting for key input...",
-    "enterKeyCode": "Or manually enter key code",
+    "enterKeyCode": "Or enter key code manually",
     "startKeyCapture": "Click to start key capture",
     "confirmMapping": "Confirm mapping"
   },
   "reviews": {
-    "dataSource": "Data Source",
-    "overallScore": "Overall Score",
+    "dataSource": "Data source",
+    "overallScore": "Overall score",
     "noData": "No review data",
     "loadFailed": "Failed to load reviews",
     "loadDetailFailed": "Failed to load review details",
-    "viewMore": "View More",
-    "previous": "Previous",
-    "next": "Next"
+    "viewMore": "View more",
+    "previous": "Previous page",
+    "next": "Next page"
   },
   "task": {
     "title": "Tasks",
@@ -828,12 +1018,279 @@
     }
   },
   "update": {
-    "checkOnStartup": "Check for updates on startup",
-    "checkOnStartupDescription": "Automatically check for new versions when the application starts (maximum once per day)",
+    "checkOnStartup": "Auto check for updates on startup",
+    "checkOnStartupDescription": "Automatically check for new versions when the app starts (maximum once per day)",
     "checkManually": "Check for updates manually",
     "checking": "Checking...",
     "checkFailed": "Failed to check for updates",
     "newVersionFound": "New version found",
     "latestVersion": "Already the latest version"
+  },
+  "filter": {
+    "modals": {
+      "chooseTag": {
+        "title": "Select tags"
+      },
+      "chooseTagGroup": {
+        "title": "Select tag groups"
+      }
+    },
+    "buttons": {
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all"
+    },
+    "messages": {
+      "noTags": "No tags",
+      "noAvailableTagCategories": "No available tag categories",
+      "noTagGroups": "No tag groups",
+      "canCreateTagGroupsFirst": "You can create groups for tags first"
+    },
+    "labels": {
+      "containsTags": "Contains {{count}} tags"
+    }
+  },
+  "import": {
+    "modals": {
+      "gameImport": {
+        "playnite": {
+          "title": "Import from Playnite",
+          "fileDescription": "Select JSON file exported from Playnite",
+          "fileHint": "Supports game data files generated by Playnite export scripts",
+          "buttonText": "Select JSON file"
+        },
+        "potatovn": {
+          "title": "Import from PotatoVN",
+          "fileDescription": "Select ZIP file exported from PotatoVN",
+          "fileHint": "Supports PotatoVN backup files containing data.galgames.json",
+          "buttonText": "Select ZIP file"
+        }
+      }
+    },
+    "labels": {
+      "willImport": "Will import",
+      "alreadyExists": "Already exists",
+      "noPath": "No path",
+      "skipNoPathGames": "Skip games without path",
+      "gameName": "Game name",
+      "developer": "Developer",
+      "status": "Status",
+      "willSkip": "Will skip",
+      "new": "New",
+      "importedSuccessfully": "Imported successfully",
+      "skipped": "Skipped",
+      "importFailed": "Import failed",
+      "skippedGames": "Skipped games",
+      "failedGames": "Failed games"
+    },
+    "messages": {
+      "noPathGamesInfo": "There are {{count}} games without local paths. These may be online games or deleted games.",
+      "uncheckToImportNoPathGames": "Uncheck to import these games (without launch path).",
+      "checkToSkipNoPathGames": "Check this option to skip these games.",
+      "noGameDataFound": "No game data found",
+      "importingGames": "Importing games...",
+      "importMayTakeTime": "This may take some time, please do not close the window"
+    },
+    "buttons": {
+      "reselect": "Reselect",
+      "import": "Import {{count}} games"
+    },
+    "toasts": {
+      "previewImportFailed": "Failed to preview import content",
+      "fileSelectionFailed": "File selection failed",
+      "importSuccess": "Successfully imported {{count}} games",
+      "importFailed": "Import failed"
+    }
+  },
+  "image": {
+    "modals": {
+      "cropper": {
+        "title": "Crop background image"
+      }
+    },
+    "labels": {
+      "aspectRatio": "Aspect ratio",
+      "currentWindow": "Current window ({{width}}x{{height}})",
+      "free": "Free"
+    },
+    "buttons": {
+      "confirmCrop": "Confirm crop"
+    }
+  },
+  "password": {
+    "modals": {
+      "setBackupPassword": {
+        "title": "Set backup password",
+        "description": "Backup password is used to generate your unique user ID and encrypt cloud data.",
+        "warning": "Password can only be set once and cannot be modified after setting!",
+        "remember": "Please remember your password. If you forget it, you will not be able to recover cloud backups."
+      }
+    },
+    "labels": {
+      "enterPassword": "Enter password",
+      "confirmPassword": "Confirm password"
+    },
+    "placeholders": {
+      "min6Characters": "At least 6 characters",
+      "enterAgain": "Enter password again"
+    },
+    "errors": {
+      "minLength": "Password length must be at least 6 characters",
+      "passwordsDontMatch": "The two entered passwords do not match"
+    },
+    "buttons": {
+      "confirmSetting": "Confirm setting"
+    }
+  },
+  "process": {
+    "modals": {
+      "selectProcess": {
+        "title": "Select game process",
+        "description": "{{exeName}} has been detected as exited. If you did not exit it manually, it means the game you imported is not the actual running process. Please select the actual running game process."
+      }
+    },
+    "placeholders": {
+      "searchProcess": "Search process..."
+    },
+    "messages": {
+      "noMatchingProcesses": "No matching processes found",
+      "noAvailableProcesses": "No available processes"
+    },
+    "buttons": {
+      "refreshList": "Refresh list",
+      "confirmSelection": "Confirm selection"
+    },
+    "toasts": {
+      "failedToLoadProcesses": "Failed to get process list",
+      "pleaseSelectProcess": "Please select a process",
+      "processMonitoringSet": "Process monitoring set: {{process}}",
+      "saveFailed": "Save failed, please try again"
+    }
+  },
+  "hotkey": {
+    "modals": {
+      "screenshot": {
+        "title": "Set screenshot hotkey",
+        "description": "Set global hotkey for screenshot functionality"
+      }
+    },
+    "labels": {
+      "deviceType": "Device type",
+      "modifiers": "Modifier keys",
+      "key": "Key",
+      "combinationSupported": "Supports key combinations",
+      "singleKeyOnly": "Only single key supported",
+      "currentCombination": "Current combination"
+    },
+    "placeholders": {
+      "pressKey": "Please press key...",
+      "clickToSetOrType": "Click to set key or type directly",
+      "connectControllerFirst": "Please connect controller before clicking to set"
+    },
+    "buttons": {
+      "stopListening": "Stop listening",
+      "setKey": "Set key"
+    },
+    "errors": {
+      "pleaseEnterKey": "Please enter key"
+    },
+    "names": {
+      "screenshot": "Screenshot hotkey"
+    }
+  },
+  "tagGroup": {
+    "modals": {
+      "createGroup": {
+        "title": "Create tag group"
+      },
+      "editGroup": {
+        "title": "Edit tag group"
+      }
+    },
+    "labels": {
+      "groupName": "Group name",
+      "selectTags": "Select tags ({{count}} selected)"
+    },
+    "placeholders": {
+      "enterGroupName": "Enter group name"
+    },
+    "errors": {
+      "pleaseEnterGroupName": "Please enter group name",
+      "groupNameExists": "Group name already exists",
+      "pleaseSelectAtLeastOneTag": "Please select at least one tag"
+    },
+    "buttons": {
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all"
+    },
+    "toasts": {
+      "groupCreatedSuccessfully": "Group created successfully",
+      "groupUpdatedSuccessfully": "Group updated successfully",
+      "failedToSaveGroup": "Failed to save group"
+    }
+  },
+  "template": {
+    "modals": {
+      "export": {
+        "title": "Beautify export"
+      }
+    },
+    "labels": {
+      "selectTemplate": "Select template",
+      "selectTemplateDescription": "Select a template to beautify your statistics",
+      "author": "Author",
+      "version": "Version",
+      "builtin": "Built-in template"
+    },
+    "messages": {
+      "renderingPreview": "Rendering preview...",
+      "selectTemplateToPreview": "Select template to preview effect",
+      "customTemplatesHint": "Hint: You can create custom HTML templates in the templates directory",
+      "exporting": "Exporting..."
+    },
+    "buttons": {
+      "openTemplatesDir": "Open templates directory",
+      "exportImage": "Export as image"
+    },
+    "toasts": {
+      "failedToLoadTemplates": "Failed to load template list",
+      "failedToRenderTemplate": "Failed to render template",
+      "failedToExportImage": "Failed to export image",
+      "failedToOpenTemplatesDir": "Failed to open templates directory"
+    }
+  },
+  "tag": {
+    "labels": {
+      "containsCount": "Contains {{count}} tags"
+    },
+    "tags": {
+      "adultContent": "Adult content",
+      "spoiler": "Spoiler",
+      "blockModify": "Block modification"
+    },
+    "actions": {
+      "editGroup": "Edit group",
+      "deleteGroup": "Delete group"
+    },
+    "hints": {
+      "releaseToAdd": "Release to add"
+    }
+  },
+  "timezone": {
+    "modals": {
+      "selectTimezone": {
+        "title": "Select timezone",
+        "description": "It has been detected that you have not configured a timezone. To correctly display and record game time, please select your timezone."
+      }
+    },
+    "labels": {
+      "currentDetectedTimezone": "Currently detected timezone:",
+      "unknownTimezone": "Unknown"
+    },
+    "placeholders": {
+      "selectTimezone": "Please select timezone"
+    },
+    "buttons": {
+      "confirmAndRestart": "Confirm and restart app"
+    }
   }
 }

@@ -146,31 +146,64 @@ func main() {
 						ffmpegProcessMap := utils.GetFFmpegProcessMap()
 						ffmpegProcessMutex := utils.GetFFmpegProcessMutex()
 						ffmpegProcessMutex.Lock()
-						if cmd, exists := ffmpegProcessMap[gameID]; exists {
-							applog.LogInfof(appCtx, "VideoCleanupHandler: terminating ffmpeg process for gameID: %s", gameID)
-							if err := cmd.Process.Kill(); err != nil {
-								applog.LogErrorf(appCtx, "VideoCleanupHandler: failed to kill ffmpeg process: %v", err)
-							} else {
-								applog.LogInfof(appCtx, "VideoCleanupHandler: killed ffmpeg process for gameID: %s", gameID)
+						// 如果提供了gameID，终止对应的进程
+						if gameID != "" {
+							if cmd, exists := ffmpegProcessMap[gameID]; exists {
+								applog.LogInfof(appCtx, "VideoCleanupHandler: terminating ffmpeg process for gameID: %s", gameID)
+								if err := cmd.Process.Kill(); err != nil {
+									applog.LogErrorf(appCtx, "VideoCleanupHandler: failed to kill ffmpeg process: %v", err)
+								} else {
+									applog.LogInfof(appCtx, "VideoCleanupHandler: killed ffmpeg process for gameID: %s", gameID)
+								}
+								// 从映射中删除进程
+								delete(ffmpegProcessMap, gameID)
 							}
-							// 从映射中删除进程
-							delete(ffmpegProcessMap, gameID)
+						} else {
+							// 如果没有提供gameID，终止所有进程
+							for id, cmd := range ffmpegProcessMap {
+								applog.LogInfof(appCtx, "VideoCleanupHandler: terminating ffmpeg process for id: %s", id)
+								if err := cmd.Process.Kill(); err != nil {
+									applog.LogErrorf(appCtx, "VideoCleanupHandler: failed to kill ffmpeg process: %v", err)
+								} else {
+									applog.LogInfof(appCtx, "VideoCleanupHandler: killed ffmpeg process for id: %s", id)
+								}
+							}
+							// 清空进程映射
+							for id := range ffmpegProcessMap {
+								delete(ffmpegProcessMap, id)
+							}
 						}
 						ffmpegProcessMutex.Unlock()
 
 						// 清理缓存
 						videoCacheMutex.Lock()
+						// 清理游戏ID相关的缓存
 						cachedVideoPath, exists := videoCacheMap[gameID]
 						if exists {
 							// 从缓存中删除条目
 							delete(videoCacheMap, gameID)
 							applog.LogInfof(appCtx, "VideoCleanupHandler: removed gameID from cache: %s", gameID)
 						}
+
+						// 清理所有视频路径相关的缓存（path_* 格式的键）
+						var pathsToDelete []string
+						var keysToDelete []string
+						for key, path := range videoCacheMap {
+							if strings.HasPrefix(key, "path_") {
+								pathsToDelete = append(pathsToDelete, path)
+								keysToDelete = append(keysToDelete, key)
+							}
+						}
+						for _, key := range keysToDelete {
+							delete(videoCacheMap, key)
+						}
 						videoCacheMutex.Unlock()
 
 						// 尝试删除缓存文件，添加重试机制
+						const maxRetries = 3
+
+						// 删除游戏ID相关的缓存文件
 						if exists && cachedVideoPath != "" {
-							const maxRetries = 3
 							for i := 0; i < maxRetries; i++ {
 								if err := os.Remove(cachedVideoPath); err != nil {
 									applog.LogErrorf(appCtx, "VideoCleanupHandler: attempt %d failed to remove cached video file: %v", i+1, err)
@@ -178,6 +211,20 @@ func main() {
 									time.Sleep(time.Second)
 								} else {
 									applog.LogInfof(appCtx, "VideoCleanupHandler: removed cached video file: %s", cachedVideoPath)
+									break
+								}
+							}
+						}
+
+						// 删除视频路径相关的缓存文件
+						for _, path := range pathsToDelete {
+							for i := 0; i < maxRetries; i++ {
+								if err := os.Remove(path); err != nil {
+									applog.LogErrorf(appCtx, "VideoCleanupHandler: attempt %d failed to remove video path cached file: %v", i+1, err)
+									// 等待一段时间后重试
+									time.Sleep(time.Second)
+								} else {
+									applog.LogInfof(appCtx, "VideoCleanupHandler: removed video path cached file: %s", path)
 									break
 								}
 							}

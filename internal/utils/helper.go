@@ -230,49 +230,86 @@ func extractLastNumberFromString(title string) (t string, n string) {
 	// 截取最后一个字符之前的部分
 	rsTitle = string(runes[:len(runes)-1])
 
-	fmt.Printf("extractLastNumberFromString 02 title:%s char:%c\n", rsTitle, lastChar)
+	fmt.Printf("extractLastNumberFromString num found title:%s char:%c\n", rsTitle, lastChar)
 	return rsTitle, rsStr
 }
 
 func getTitles(searchName string) (mainT string, subT string, number string) {
+	return getTitlesNum(searchName, false)
+
+}
+
+func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, number string) {
 	// 检查是否包含有效的分隔符（除了纯空格）
 	// num := -1
 	// numStr := ""
-	hasValidSeparator := regexp.MustCompile(`[－\-~～　！]`).MatchString(searchName)
+	hasValidSeparator := regexp.MustCompile(`[－\-~～　 ！]`).MatchString(searchName)
+	mainTitle := ""
 
 	if !hasValidSeparator {
 		// 没有有效分隔符，整个字符串作为主标题处理
-		mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
+		mainTitle = regexp.QuoteMeta(strings.TrimSpace(searchName))
 		mainTitle, numStr := extractLastNumberFromString(mainTitle)
 		return handleMainTitle(mainTitle), "", numStr
 	}
 
 	// 有有效分隔符，尝试分离主标题和副标题
 	// 使用非空格分隔符进行分割
-	separatorPattern := `[－\-~～　！]+`
+	separatorPattern := `[－\-~～]+`
 	parts := regexp.MustCompile(separatorPattern).Split(searchName, -1)
+	if len(parts) > 1 {
+		mainTitle = strings.TrimSpace(parts[0])
+
+		fmt.Printf("getTitlesNum 01:%s\n", mainTitle)
+	}
+	if mainTitle == "" {
+		mainTitle = searchName
+	}
+	if len(parts) < 2 {
+		hasNonEnglish := regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(mainTitle)
+		if onlyNum || hasNonEnglish {
+			separatorPattern = `[－\-~～　 ！]+`
+			fmt.Printf("getTitlesNum 02:\n")
+		} else {
+			separatorPattern = `[－\-~～　！]+`
+			fmt.Printf("getTitlesNum 03:\n")
+		}
+
+		parts = regexp.MustCompile(separatorPattern).Split(searchName, -1)
+
+	}
 
 	if len(parts) >= 2 {
 		// 成功分离出主标题和副标题
-		mainTitle := strings.TrimSpace(parts[0])
+		mainTitle = strings.TrimSpace(parts[0])
 		subTitle := strings.TrimSpace(parts[1])
-
+		numStr := ""
 		if mainTitle != "" && subTitle != "" {
-			// 都不为空，构建成对匹配
-			mainTitle, numStr := extractLastNumberFromString(mainTitle)
-			if numStr != "" {
-				return handleMainTitle(mainTitle), subTitle, numStr
+			for i, txt := range parts {
+				if i == 0 {
+					mainTitle, numStr = extractLastNumberFromString(txt)
+					if numStr != "" {
+						return handleMainTitle(mainTitle), subTitle, numStr
+					}
+				} else if i == 1 {
+					subTitle, numStr = extractLastNumberFromString(txt)
+					if numStr != "" {
+						return handleMainTitle(mainTitle), subTitle, numStr
+					}
+				} else {
+					_, numStr = extractLastNumberFromString(txt)
+					if numStr != "" {
+						return handleMainTitle(mainTitle), subTitle, numStr
+					}
+				}
+
 			}
-			subTitle, numStr = extractLastNumberFromString(subTitle)
-			if numStr != "" {
-				return handleMainTitle(mainTitle), subTitle, numStr
-			}
-			return handleMainTitle(mainTitle), subTitle, ""
+			return handleMainTitle(mainTitle), subTitle, numStr
 		}
 	}
 
 	// 默认情况：整个字符串作为主标题
-	mainTitle := regexp.QuoteMeta(strings.TrimSpace(searchName))
+	mainTitle = regexp.QuoteMeta(strings.TrimSpace(searchName))
 	mainTitle, numStr := extractLastNumberFromString(mainTitle)
 
 	return handleMainTitle(mainTitle), "", numStr
@@ -434,7 +471,7 @@ func getGameNameAlternative(searchName string) string {
 }
 
 func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
-	_, _, num := getTitles(searchName)
+	_, _, num := getTitlesNum(searchName, true)
 	type Result struct {
 		similarity float32
 		Value      T1
@@ -464,6 +501,20 @@ func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []st
 				similarity += 0.1
 			}
 		}
+		gameNum := ""
+		if num == "" {
+			_, _, gameNum = getTitlesNum(name, true)
+			if gameNum != "" {
+				similarity -= 0.1
+			}
+		}
+		if strings.Contains(searchName, "シナリオ") && strings.Contains(name, "シナリオ") {
+			similarity += 0.1
+		}
+		if strings.Contains(searchName, "DLC") && strings.Contains(name, "DLC") {
+			similarity += 0.1
+		}
+		fmt.Printf("searchNameByRegex title: %s, similarity:%0.4f, num:%s\n", name, similarity, gameNum)
 		results = append(results, Result{similarity: similarity, Value: item})
 	}
 	sort.Slice(results, func(i, j int) bool {

@@ -168,6 +168,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl bool, fn I
 	// url += mainTitle
 
 	url += mainTitle
+	fmt.Printf("searching %s\n", mainTitle)
 	c := CreateCollector(b.GetDomain())
 
 	var potentialGames []struct {
@@ -187,17 +188,18 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl bool, fn I
 		// link := gameUrl + gameId
 
 		if title != "" {
-			applog.InfoLogSaveAppLog("title:", title)
+			// applog.InfoLogSaveAppLog("title:", title)
 			// fmt.Println("href", href)
 			// fmt.Println("idParts:", idParts)
 			// fmt.Println("gameId:", gameId)
+			// fmt.Printf("game found %s\n", title)
 
 			potentialGames = append(potentialGames, struct {
 				Title string
 				// Link   string
 				GameId string
 			}{
-				Title: title,
+				Title: strings.TrimSuffix(title, "OHP"),
 				// Link:   e.Request.AbsoluteURL(link),
 				GameId: gameId,
 			})

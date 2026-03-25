@@ -671,7 +671,11 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 	return err
 }
 
-func DownloadImage(url, fileName string) error {
+func DownloadImage(imageUrl, fileName string) error {
+	url := imageUrl
+	if strings.HasPrefix(url, "//gyutto.com") {
+		url = strings.ReplaceAll(url, "//gyutto.com", "https://image.gyutto.com")
+	}
 	// 创建 HTTP 客户端
 	client := &http.Client{
 		Timeout: 30 * time.Second,

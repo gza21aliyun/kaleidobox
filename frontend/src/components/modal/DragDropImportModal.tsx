@@ -1,16 +1,20 @@
 import type { models, service } from "../../../wailsjs/go/models";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
 import { useTranslation } from 'react-i18next';
+import { useAppStore } from "../../store";
+import { AddGamesToCategories, GetCategories } from "../../../wailsjs/go/service/CategoryService";
 
 import { FetchMetadata, FetchMetadataByName } from "../../../wailsjs/go/service/GameService";
 import {
   BatchImportGames,
+  BatchImportGamesSearch,
   ProcessDroppedPaths,
   ProcessDroppedLnkPaths,
 } from "../../../wailsjs/go/service/ImportService";
 import { BetterSelect } from "../ui/BetterSelect";
+import { BetterSwitch } from "../ui/BetterSwitch";
 
 interface DragDropImportModalProps {
   isOpen: boolean;
@@ -44,9 +48,13 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
   const [_isLoading, setIsLoading] = useState(false);
   const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0, gameName: "" });
   const [hasProcessed, setHasProcessed] = useState(false);
+  const [selectedCategoryVo, setSelectedCategoryVo] = useState<vo.CategoryVO | null>(null);
+  const [isSearchFolder, setIsSearchFolder] = useState(true);
+  const { config } = useAppStore();
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);
+  const categoryVos = useRef<vo.CategoryVO[]>([]);
 
   // 手动选择弹窗状态
   const [showManualSelect, setShowManualSelect] = useState(false);
@@ -55,6 +63,19 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
   const [isSearching, setIsSearching] = useState(false);
   const [manualId, setManualId] = useState("");
   const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const vos = await GetCategories();
+        categoryVos.current = vos || [];
+      }
+      catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // 处理拖拽的路径
   const processDroppedPaths = async () => {
@@ -219,9 +240,13 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
           return candidate;
         });
 
-      const result = await BatchImportGames(importCandidates);
+      const result = await BatchImportGamesSearch(importCandidates, isSearchFolder);
       setImportResult(result);
       setStep("result");
+
+      if (result.games && result.games.length > 0 && selectedCategoryVo?.id) {
+        await AddGamesToCategories(result.games.map(g => g.id), [selectedCategoryVo.id]);
+      }
 
       if (result.success > 0) {
         toast.success(t('import.toasts.importSuccess', { count: result.success }));
@@ -348,6 +373,31 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
               {t('import.modals.dragDrop.title')}
             </h2>
+            {step == "preview" && (
+              <>
+                <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                  {t('batchImport.addToCollection')}
+                </label>
+                <BetterSelect
+                  value={selectedCategoryVo?.id ?? ""}
+                  onChange={(value) => {
+                    setSelectedCategoryVo(categoryVos.current.find(c => c.id === value) || null);
+                  }}
+                  options={categoryVos.current.map(c => ({ value: c.id, label: c.name }))}
+                  className="min-w-[200px] w-[150px]"
+                />
+                <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                  {t('batchImport.searchVideoAndExe')}
+                </label>
+                <BetterSwitch
+                  checked={isSearchFolder}
+                  onCheckedChange={(c) => {
+                    setIsSearchFolder(c);
+                  }}
+                  id="isSearchFolder"
+                />
+              </>
+            )}
           </div>
           <button
             type="button"
@@ -421,7 +471,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                 {candidates.length === 0
                   ? (
                       <div className="p-8 text-center text-brand-400">
-                        未检测到有效的游戏
+                        {t('import.modals.dragDrop.noValidGamesDetected')}
                       </div>
                     )
                   : (
@@ -628,7 +678,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
             <div className="py-12 text-center">
               <div className="i-mdi-loading animate-spin text-5xl mx-auto mb-4 text-primary-500" />
               <p className="text-lg text-brand-600 dark:text-brand-300">
-                正在导入游戏...
+                {t('import.modals.dragDrop.importingGames')}
               </p>
             </div>
           )}
@@ -642,7 +692,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                   <div className="text-2xl font-bold text-success-600 dark:text-success-400">
                     {importResult.success}
                   </div>
-                  <div className="text-sm text-success-700 dark:text-success-300">成功导入</div>
+                  <div className="text-sm text-success-700 dark:text-success-300">{t('import.modals.dragDrop.importedSuccessfully')}</div>
                 </div>
                 {importResult.skipped > 0 && (
                   <div className="flex-1 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 text-center">
@@ -650,7 +700,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                     <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                       {importResult.skipped}
                     </div>
-                    <div className="text-sm text-yellow-700 dark:text-yellow-300">已跳过</div>
+                    <div className="text-sm text-yellow-700 dark:text-yellow-300">{t('import.modals.dragDrop.skipped')}</div>
                   </div>
                 )}
                 {importResult.failed > 0 && (
@@ -659,7 +709,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                     <div className="text-2xl font-bold text-error-600 dark:text-error-400">
                       {importResult.failed}
                     </div>
-                    <div className="text-sm text-error-700 dark:text-error-300">导入失败</div>
+                    <div className="text-sm text-error-700 dark:text-error-300">{t('import.modals.dragDrop.importFailed')}</div>
                   </div>
                 )}
               </div>
@@ -667,7 +717,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
               {importResult.skipped_names && importResult.skipped_names.length > 0 && (
                 <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 p-4">
                   <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
-                    跳过的游戏:
+                    {t('import.modals.dragDrop.skippedGames')}
                   </h4>
                   <div className="max-h-[150px] overflow-y-auto">
                     <ul className="text-sm text-yellow-600 dark:text-yellow-300 space-y-1">
@@ -686,7 +736,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
               {importResult.failed_names && importResult.failed_names.length > 0 && (
                 <div className="rounded-lg border border-error-200 dark:border-error-800 p-4">
                   <h4 className="font-medium text-error-700 dark:text-error-400 mb-2">
-                    导入失败的游戏:
+                    {t('import.modals.dragDrop.failedGames')}
                   </h4>
                   <ul className="text-sm text-error-600 dark:text-error-300 space-y-1">
                     {importResult.failed_names.map(name => (
@@ -706,7 +756,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                   onClick={resetAndClose}
                   className="rounded-lg px-8 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
                 >
-                  完成
+                  {t('import.modals.dragDrop.complete')}
                 </button>
               </div>
             </div>
@@ -720,7 +770,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
           <div className="w-full max-w-2xl max-h-[80vh] rounded-xl bg-white shadow-2xl dark:bg-brand-800 flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-brand-200 dark:border-brand-700">
               <h3 className="text-lg font-bold text-brand-900 dark:text-white">
-                手动选择:
+                {t('import.modals.dragDrop.manualSelection')}:
                 {" "}
                 {candidates[manualSelectIndex].searchName}
               </h3>
@@ -735,9 +785,9 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
               {isSearching
                 ? (
                     <div className="py-8 text-center">
-                      <div className="i-mdi-loading animate-spin text-3xl mx-auto mb-2 text-primary-500" />
-                      <p className="text-brand-400">搜索中...</p>
-                    </div>
+                        <div className="i-mdi-loading animate-spin text-3xl mx-auto mb-2 text-primary-500" />
+                        <p className="text-brand-400">{t('import.modals.dragDrop.searching')}</p>
+                      </div>
                   )
                 : (
                     <>
@@ -769,12 +819,12 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                       </div>
 
                       {manualMatches.length === 0 && (
-                        <p className="text-center text-brand-400 py-4">未找到匹配结果</p>
+                        <p className="text-center text-brand-400 py-4">{t('import.modals.dragDrop.noMatchingResults')}</p>
                       )}
 
                       {/* 手动输入ID */}
                       <div className="border-t border-brand-200 dark:border-brand-700 pt-4 mt-4">
-                        <p className="text-sm text-brand-500 mb-3">通过 ID 查找:</p>
+                        <p className="text-sm text-brand-500 mb-3">{t('import.modals.dragDrop.searchById')}:</p>
                         <div className="flex gap-2">
                           <BetterSelect
                             value={manualSource}
@@ -790,7 +840,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                             type="text"
                             value={manualId}
                             onChange={e => setManualId(e.target.value)}
-                            placeholder="输入 ID"
+                            placeholder={t('import.modals.dragDrop.enterId')}
                             className="flex-1 rounded border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm dark:border-brand-600 dark:bg-brand-700"
                           />
                           <button
@@ -799,7 +849,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                             disabled={!manualId || isSearching}
                             className="rounded bg-primary-500 px-4 py-1.5 text-sm text-white hover:bg-primary-600 disabled:opacity-50"
                           >
-                            查找
+                            {t('import.modals.dragDrop.search')}
                           </button>
                         </div>
                       </div>
@@ -820,7 +870,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                         }}
                         className="w-full text-center text-sm text-brand-400 hover:text-brand-600 py-2"
                       >
-                        不匹配元数据，仅导入路径
+                        {t('import.modals.dragDrop.importPathOnly')}
                       </button>
                     </>
                   )}

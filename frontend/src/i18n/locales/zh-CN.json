@@ -1064,6 +1064,39 @@
           "fileDescription": "选择 PotatoVN 导出的 ZIP 文件",
           "fileHint": "支持包含 data.galgames.json 的 PotatoVN 备份文件",
           "buttonText": "选择 ZIP 文件"
+        },
+        "dragDrop": {
+          "title": "拖拽导入游戏",
+          "processingFiles": "正在处理文件...",
+          "fileCount": "共 {{count}} 个文件",
+          "detected": "已检测",
+          "matched": "已匹配",
+          "notFound": "未找到",
+          "pending": "待处理",
+          "searchName": "搜索名称",
+          "executable": "可执行文件",
+          "matchStatus": "匹配状态",
+          "action": "操作",
+          "matchMetadata": "匹配元数据",
+          "import": "导入 {{count}} 个游戏",
+          "matchingMetadata": "正在匹配元数据...",
+          "matchingNote": "可能需要一些时间，请耐心等待",
+          "stopMatching": "停止匹配",
+          "importingGames": "正在导入游戏...",
+          "importedSuccessfully": "成功导入",
+          "skipped": "已跳过",
+          "importFailed": "导入失败",
+          "skippedGames": "跳过的游戏:",
+          "failedGames": "导入失败的游戏:",
+          "complete": "完成",
+          "manualSelection": "手动选择",
+          "searching": "搜索中...",
+          "noMatchingResults": "未找到匹配结果",
+          "searchById": "通过 ID 查找",
+          "enterId": "输入 ID",
+          "search": "查找",
+          "importPathOnly": "不匹配元数据，仅导入路径",
+          "noValidGamesDetected": "未检测到有效的游戏"
         }
       }
     },
@@ -1365,6 +1398,6 @@
     "search": "搜索",
     "skipMetadata": "跳过元数据",
     "addToCollection": "添加到收藏",
-    "searchVideoAndExe": "搜索视频和可执行文件"
+    "searchVideoAndExe": "搜索视频和EXE"
   }
 }

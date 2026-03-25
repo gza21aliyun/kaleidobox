@@ -11,6 +11,9 @@ function RootLayout() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [showDragDropModal, setShowDragDropModal] = useState(false);
   const [droppedPaths, setDroppedPaths] = useState<string[]>([]);
+  const [isLnk, setIsLnk] = useState(false);
+  const [currentDropArea, setCurrentDropArea] = useState<'regular' | 'lnk' | null>(null);
+  const currentDropAreaRef = useRef<'regular' | 'lnk' | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const scrollPositions = useRef<Record<string, number>>({});
@@ -25,7 +28,9 @@ function RootLayout() {
     // 监听文件拖拽事件
     OnFileDrop((_x: number, _y: number, paths: string[]) => {
       setIsDragOver(false);
-      if (paths && paths.length > 0) {
+      if (paths && paths.length > 0 && currentDropAreaRef.current !== null) {
+        // 根据拖拽区域设置 isLnk
+        setIsLnk(currentDropAreaRef.current === 'lnk');
         setDroppedPaths(paths);
         setShowDragDropModal(true);
       }
@@ -51,6 +56,20 @@ function RootLayout() {
       // 检查是否包含文件
       if (e.dataTransfer?.types.includes("Files")) {
         setIsDragOver(true);
+
+        // 计算鼠标位置，判断当前在哪个区域
+        const regularArea = document.getElementById('regular-drop-area')?.getBoundingClientRect();
+        const lnkArea = document.getElementById('lnk-drop-area')?.getBoundingClientRect();
+        
+        let area: 'regular' | 'lnk' | null = null;
+        if (regularArea && e.clientY >= regularArea.top && e.clientY <= regularArea.bottom) {
+          area = 'regular';
+        } else if (lnkArea && e.clientY >= lnkArea.top && e.clientY <= lnkArea.bottom) {
+          area = 'lnk';
+        }
+        
+        setCurrentDropArea(area);
+        currentDropAreaRef.current = area;
       }
     };
 
@@ -58,6 +77,8 @@ function RootLayout() {
       // 只有当离开整个窗口时才隐藏遮罩
       if (e.relatedTarget === null) {
         setIsDragOver(false);
+        setCurrentDropArea(null);
+        currentDropAreaRef.current = null;
       }
     };
 
@@ -70,6 +91,7 @@ function RootLayout() {
         return;
       }
       setIsDragOver(false);
+      // 保持 currentDropAreaRef 的值不变，因为 OnFileDrop 会使用它
     };
 
     window.addEventListener("dragover", handleDragOver);
@@ -183,15 +205,35 @@ function RootLayout() {
       {/* 拖拽遮罩层 */}
       {isDragOver && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary-500/20 backdrop-blur-sm pointer-events-none">
-          <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white/90 dark:bg-brand-800/90 shadow-2xl border-2 border-dashed border-primary-500">
-            <div className="i-mdi-folder-upload text-6xl text-primary-500 animate-bounce" />
-            <div className="text-center">
-              <p className="text-xl font-bold text-brand-900 dark:text-white">
-                释放以导入游戏
-              </p>
-              <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
-                支持游戏文件夹和可执行文件
-              </p>
+          <div className="flex flex-col items-center gap-8 p-8 rounded-2xl bg-white/90 dark:bg-brand-800/90 shadow-2xl border-2 border-dashed border-primary-500 w-full max-w-2xl">
+            <div 
+              className={`flex flex-col items-center gap-4 w-full p-6 rounded-xl transition-all duration-200 ${currentDropArea === 'regular' ? 'bg-blue-100/80 dark:bg-blue-900/40 border-2 border-blue-500' : 'border-2 border-transparent'}`}
+              id="regular-drop-area"
+            >
+              <div className="i-mdi-folder-upload text-6xl text-blue-500 animate-bounce" />
+              <div className="text-center">
+                <p className="text-xl font-bold text-brand-900 dark:text-white">
+                  释放游戏文件夹或可执行文件
+                </p>
+                <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
+                  自动扫描文件夹中的 exe 文件
+                </p>
+              </div>
+            </div>
+            <div className="w-full border-t border-brand-200 dark:border-brand-700" />
+            <div 
+              className={`flex flex-col items-center gap-4 w-full p-6 rounded-xl transition-all duration-200 ${currentDropArea === 'lnk' ? 'bg-green-100/80 dark:bg-green-900/40 border-2 border-green-500' : 'border-2 border-transparent'}`}
+              id="lnk-drop-area"
+            >
+              <div className="i-mdi-folder-upload text-6xl text-green-500 animate-bounce" />
+              <div className="text-center">
+                <p className="text-xl font-bold text-brand-900 dark:text-white">
+                  释放快捷方式文件夹
+                </p>
+                <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
+                  从快捷方式文件夹导入游戏列表
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -201,6 +243,7 @@ function RootLayout() {
       <DragDropImportModal
         isOpen={showDragDropModal}
         droppedPaths={droppedPaths}
+        isLnk={isLnk}
         onClose={handleCloseDragDropModal}
         onImportComplete={handleImportComplete}
       />

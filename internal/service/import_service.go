@@ -1258,6 +1258,48 @@ func (s *ImportService) ProcessDroppedPaths(paths []string) ([]vo.BatchImportCan
 	return candidates, nil
 }
 
+// ProcessDroppedLnkPaths 处理拖拽导入的快捷方式路径，支持文件夹和 .lnk 文件
+// 返回候选游戏列表供前端展示和确认
+func (s *ImportService) ProcessDroppedLnkPaths(paths []string) ([]vo.BatchImportCandidate, error) {
+	var candidates []vo.BatchImportCandidate
+
+	for _, path := range paths {
+		info, err := os.Stat(path)
+		if err != nil {
+			applog.LogWarningf(s.ctx, "ProcessDroppedLnkPaths: failed to stat path %s: %v", path, err)
+			continue
+		}
+
+		if info.IsDir() {
+			// 处理文件夹：使用 BatchImportGamesFolderLnk 处理快捷方式文件夹
+			lnkCandidates, err := s.BatchImportGamesFolderLnk(path)
+			if err != nil {
+				applog.LogWarningf(s.ctx, "ProcessDroppedLnkPaths: failed to process lnk folder %s: %v", path, err)
+				continue
+			}
+			candidates = append(candidates, lnkCandidates...)
+		} else {
+			// 处理单个 .lnk 文件
+			lowerName := strings.ToLower(path)
+			if !strings.HasSuffix(lowerName, ".lnk") {
+				applog.LogInfof(s.ctx, "ProcessDroppedLnkPaths: skipping non-lnk file %s", path)
+				continue
+			}
+
+			// 处理单个 lnk 文件
+			candidate, err := s.ImportGamesLnk(path)
+			if err != nil {
+				applog.LogWarningf(s.ctx, "ProcessDroppedLnkPaths: failed to process lnk file %s: %v", path, err)
+				continue
+			}
+			candidates = append(candidates, candidate)
+		}
+	}
+
+	applog.LogInfof(s.ctx, "ProcessDroppedLnkPaths: processed %d paths, found %d candidates", len(paths), len(candidates))
+	return candidates, nil
+}
+
 func (s *ImportService) BatchImportGamesFolderLnk(dir string) ([]vo.BatchImportCandidate, error) {
 	var candidates []vo.BatchImportCandidate
 

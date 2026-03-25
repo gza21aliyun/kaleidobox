@@ -8,12 +8,14 @@ import { FetchMetadata, FetchMetadataByName } from "../../../wailsjs/go/service/
 import {
   BatchImportGames,
   ProcessDroppedPaths,
+  ProcessDroppedLnkPaths,
 } from "../../../wailsjs/go/service/ImportService";
 import { BetterSelect } from "../ui/BetterSelect";
 
 interface DragDropImportModalProps {
   isOpen: boolean;
   droppedPaths: string[];
+  isLnk: boolean;
   onClose: () => void;
   onImportComplete: () => void;
 }
@@ -27,13 +29,14 @@ interface LocalCandidate {
   selectedExe: string;
   searchName: string;
   isSelected: boolean;
+  isLnk: boolean;
   matchedGame: models.Game | null;
   matchSource: enums.SourceType | null;
   matchStatus: "pending" | "matched" | "not_found" | "error" | "manual";
   allMatches?: vo.GameMetadataFromWebVO[];
 }
 
-export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportComplete }: DragDropImportModalProps) {
+export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onImportComplete }: DragDropImportModalProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>("processing");
   const [candidates, setCandidates] = useState<LocalCandidate[]>([]);
@@ -63,7 +66,8 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
     setHasProcessed(true);
 
     try {
-      const processed = await ProcessDroppedPaths(droppedPaths);
+      const processed = isLnk ? await ProcessDroppedLnkPaths(droppedPaths) : await ProcessDroppedPaths(droppedPaths);
+      
       if (!processed || processed.length === 0) {
         toast.error(t('import.toasts.noValidGamesDetected'));
         onClose();
@@ -77,6 +81,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, onClose, onImportCom
         selectedExe: c.selected_exe,
         searchName: c.search_name,
         isSelected: true,
+        isLnk: isLnk,
         matchedGame: null,
         matchSource: null,
         matchStatus: "pending",

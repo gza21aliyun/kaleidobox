@@ -37,6 +37,10 @@ type AppConfig struct {
 	// OneDrive OAuth 配置
 	OneDriveClientID     string `json:"onedrive_client_id,omitempty"`     // OneDrive Client ID
 	OneDriveRefreshToken string `json:"onedrive_refresh_token,omitempty"` // OneDrive Refresh Token（OAuth 授权后获得）
+	// WebDav 配置
+	WebDavServer   string `json:"webdav_server,omitempty"`   // WebDav 服务器地址
+	WebDavUsername string `json:"webdav_username,omitempty"` // WebDav 用户名
+	WebDavPassword string `json:"webdav_password,omitempty"` // WebDav 密码
 	// 数据库备份
 	LastDBBackupTime   string `json:"last_db_backup_time,omitempty"`   // 上次数据库备份时间
 	PendingDBRestore   string `json:"pending_db_restore,omitempty"`    // 待恢复的数据库备份路径（重启后执行）
@@ -71,6 +75,7 @@ type AppConfig struct {
 	// Locale Emulator 和 Magpie 配置
 	LocaleEmulatorPath string `json:"locale_emulator_path,omitempty"` // Locale Emulator 可执行文件路径
 	MagpiePath         string `json:"magpie_path,omitempty"`          // Magpie 可执行文件路径
+	FfmpegPath         string `json:"ffmpeg_path,omitempty"`          // FFmpeg 可执行文件路径
 	// 进程检测配置
 	AutoDetectGameProcess bool `json:"auto_detect_game_process"` // 是否启用自动游戏进程检测（分阶段检测策略）
 	DetectTime            int  `json:"detect_time"`              // 进程检测时间,启动器不一定是自动型的，还有手动型的，用于提示用户快点按进游戏
@@ -144,6 +149,7 @@ func LoadConfig() (*AppConfig, error) {
 		BackgroundIsLight:       true,  // 默认是浅色调
 		LocaleEmulatorPath:      "",
 		MagpiePath:              "",
+		FfmpegPath:              "",
 		AutoDetectGameProcess:   true, // 默认启用自动检测，保持向后兼容
 		EroscapeUseMirror:       false,
 		NewFolderChooser:        true,

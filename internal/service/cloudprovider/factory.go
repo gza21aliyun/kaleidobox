@@ -6,6 +6,7 @@ import (
 	"lunabox/internal/appconf"
 	"lunabox/internal/service/cloudprovider/onedrive"
 	"lunabox/internal/service/cloudprovider/s3"
+	"lunabox/internal/service/cloudprovider/webdav"
 )
 
 // ProviderType 云存储提供商类型
@@ -14,6 +15,7 @@ type ProviderType string
 const (
 	ProviderS3       ProviderType = "s3"
 	ProviderOneDrive ProviderType = "onedrive"
+	ProviderWebDav   ProviderType = "webdav"
 )
 
 // NewCloudProvider 根据配置创建云存储提供商
@@ -27,6 +29,8 @@ func NewCloudProvider(ctx context.Context, config *appconf.AppConfig) (CloudStor
 		return newOneDriveProviderFromConfig(config)
 	case ProviderS3:
 		return newS3ProviderFromConfig(config)
+	case ProviderWebDav:
+		return newWebDavProviderFromConfig(config)
 	default:
 		return nil, fmt.Errorf("未知的云备份提供商: %s", config.CloudBackupProvider)
 	}
@@ -51,6 +55,15 @@ func newOneDriveProviderFromConfig(config *appconf.AppConfig) (*onedrive.OneDriv
 	})
 }
 
+// newWebDavProviderFromConfig 从配置创建 WebDav Provider
+func newWebDavProviderFromConfig(config *appconf.AppConfig) (*webdav.WebDavProvider, error) {
+	return webdav.NewWebDavProvider(webdav.WebDavConfig{
+		Server:   config.WebDavServer,
+		Username: config.WebDavUsername,
+		Password: config.WebDavPassword,
+	})
+}
+
 // TestConnection 测试云存储连接
 func TestConnection(ctx context.Context, providerType ProviderType, config *appconf.AppConfig) error {
 	switch providerType {
@@ -66,6 +79,16 @@ func TestConnection(ctx context.Context, providerType ProviderType, config *appc
 			return err
 		}
 		return provider.TestConnection(ctx)
+	case ProviderWebDav:
+		provider, err := newWebDavProviderFromConfig(config)
+		if err != nil {
+			return err
+		}
+		err = provider.TestConnection(ctx)
+		if err != nil {
+			fmt.Printf("TestConnection err: %v\n", err)
+		}
+		return err
 	default:
 		return fmt.Errorf("未知的云备份提供商: %s", providerType)
 	}
@@ -81,6 +104,8 @@ func IsConfigured(config *appconf.AppConfig) bool {
 		return config.OneDriveRefreshToken != "" && config.BackupUserID != ""
 	case ProviderS3:
 		return config.S3Endpoint != "" && config.S3AccessKey != "" && config.BackupUserID != ""
+	case ProviderWebDav:
+		return config.WebDavServer != "" && config.BackupUserID != ""
 	default:
 		return false
 	}

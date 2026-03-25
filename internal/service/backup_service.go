@@ -144,6 +144,11 @@ func (s *BackupService) TestOneDriveConnection(config appconf.AppConfig) error {
 	return cloudprovider.TestConnection(s.ctx, cloudprovider.ProviderOneDrive, &config)
 }
 
+// TestWebDavConnection 测试 WebDav 连接
+func (s *BackupService) TestWebDavConnection(config appconf.AppConfig) error {
+	return cloudprovider.TestConnection(s.ctx, cloudprovider.ProviderWebDav, &config)
+}
+
 // GetOneDriveAuthURL 获取 OneDrive 授权 URL
 func (s *BackupService) GetOneDriveAuthURL() string {
 	return onedrive.GetOneDriveAuthURL(s.config.OneDriveClientID)
@@ -488,8 +493,10 @@ func (s *BackupService) GetCloudGameBackups(gameID string) ([]vo.CloudBackupItem
 	}
 
 	listPath := provider.GetCloudPath(s.config.BackupUserID, fmt.Sprintf("saves/%s/", gameID))
+	fmt.Printf("GetCloudGameBackups:  %s\n", listPath)
 	keys, err := provider.ListObjects(s.ctx, listPath)
 	if err != nil {
+		fmt.Printf("GetCloudGameBackups err:%v\n", err)
 		return nil, err
 	}
 

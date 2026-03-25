@@ -572,13 +572,20 @@ var videoCacheMutex sync.Mutex
 // handleVideoPathStreamRequest 处理视频路径的视频流请求
 func handleVideoPathStreamRequest(w http.ResponseWriter, r *http.Request, videoPath string, ctx context.Context) {
 	// 定义ffmpeg路径
-	dir, err := utils.GetDataDir()
-	if err != nil {
-		applog.LogErrorf(ctx, "VideoPathStreamHandler: failed to get data dir: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	var ffmpegPath string
+	var err error
+	if config != nil && config.FfmpegPath != "" {
+		ffmpegPath = config.FfmpegPath
+	} else {
+		var dir string
+		dir, err = utils.GetDataDir()
+		if err != nil {
+			applog.LogErrorf(ctx, "VideoPathStreamHandler: failed to get data dir: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		ffmpegPath = fmt.Sprintf(`%s\ffmpeg.exe`, dir)
 	}
-	ffmpegPath := fmt.Sprintf(`%s\ffmpeg.exe`, dir)
 
 	applog.LogInfof(ctx, "VideoPathStreamHandler: received request for video path: %s, User-Agent: %s", videoPath, r.UserAgent())
 

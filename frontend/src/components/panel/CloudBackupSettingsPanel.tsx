@@ -1,7 +1,7 @@
 import type { appconf } from "../../../wailsjs/go/models";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { GetOneDriveAuthURL, SetupCloudBackup, StartOneDriveAuth, TestOneDriveConnection, TestS3Connection } from "../../../wailsjs/go/service/BackupService";
+import { GetOneDriveAuthURL, SetupCloudBackup, StartOneDriveAuth, TestOneDriveConnection, TestS3Connection, TestWebDavConnection } from "../../../wailsjs/go/service/BackupService";
 import { GetAppConfig } from "../../../wailsjs/go/service/ConfigService";
 import { BrowserOpenURL } from "../../../wailsjs/runtime";
 import { PasswordInputModal } from "../modal/PasswordInputModal";
@@ -18,6 +18,7 @@ interface CloudBackupSettingsProps {
 export function CloudBackupSettingsPanel({ formData, onChange }: CloudBackupSettingsProps) {
   const [testingS3, setTestingS3] = useState(false);
   const [testingOneDrive, setTestingOneDrive] = useState(false);
+  const [testingWebDav, setTestingWebDav] = useState(false);
   const [authorizingOneDrive, setAuthorizingOneDrive] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
@@ -78,6 +79,20 @@ export function CloudBackupSettingsPanel({ formData, onChange }: CloudBackupSett
     }
   };
 
+  const handleTestWebDav = async () => {
+    setTestingWebDav(true);
+    try {
+      await TestWebDavConnection(formData);
+      toast.success(t("cloudBackup.webDavTestSuccess"));
+    }
+    catch (err: any) {
+      toast.error(t("cloudBackup.webDavTestFailed", { error: err }));
+    }
+    finally {
+      setTestingWebDav(false);
+    }
+  };
+
   const handleOneDriveAuth = async () => {
     setAuthorizingOneDrive(true);
     try {
@@ -119,6 +134,7 @@ export function CloudBackupSettingsPanel({ formData, onChange }: CloudBackupSett
           options={[
             { value: "s3", label: t("cloudBackup.s3CompatibleStorage") },
             { value: "onedrive", label: "OneDrive" },
+            { value: "webdav", label: "WebDav" },
           ]}
         />
       </div>
@@ -278,6 +294,64 @@ export function CloudBackupSettingsPanel({ formData, onChange }: CloudBackupSett
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* WebDav 配置 */}
+      {formData.cloud_backup_provider === "webdav" && (
+        <div className="glass-card space-y-4 p-4 bg-brand-100 dark:bg-brand-800 rounded-lg">
+          <h3 className="text-sm font-medium text-brand-800 dark:text-brand-200">{t("cloudBackup.webDavConfig")}</h3>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("cloudBackup.backupPassword")}</label>
+            {formData.backup_password
+              ? (
+                  <div className="space-y-2">
+                    <div className="px-3 py-2 bg-brand-100 dark:bg-brand-700 border border-brand-300 dark:border-brand-600 rounded-md text-brand-600 dark:text-brand-300">
+                      ********
+                    </div>
+                    <p className="text-xs text-brand-500 dark:text-brand-400">
+                      <span className="text-success-600 dark:text-success-400">
+                        ✓ {t("cloudBackup.passwordSet", { userId: formData.backup_user_id?.substring(0, 8) })}
+                      </span>
+                    </p>
+                  </div>
+                )
+              : (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordModal(true)}
+                      className="glass-btn-neutral w-full px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                    >
+                      <span className="i-mdi-lock-plus text-lg" />
+                      {t("cloudBackup.setupBackupPassword")}
+                    </button>
+                    <p className="text-xs text-brand-500 dark:text-brand-400">
+                      {t("cloudBackup.usedForUserId")}
+                    </p>
+                    <p className="text-xs text-warning-600 dark:text-warning-400">
+                      {t("cloudBackup.passwordImportant")}
+                    </p>
+                  </div>
+                )}
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("cloudBackup.webDavServer")}</label>
+            <input type="text" name="webdav_server" value={formData.webdav_server || ""} onChange={handleChange} placeholder="https://webdav.example.com" className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("cloudBackup.webDavUsername")}</label>
+            <input type="text" name="webdav_username" value={formData.webdav_username || ""} onChange={handleChange} className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("cloudBackup.webDavPassword")}</label>
+            <input type="password" name="webdav_password" value={formData.webdav_password || ""} onChange={handleChange} className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white" />
+          </div>
+          <div className="flex justify-end">
+            <button type="button" onClick={handleTestWebDav} disabled={testingWebDav} className="glass-btn-neutral px-3 py-1.5 text-sm bg-brand-100 text-brand-700 rounded-md hover:bg-brand-200 dark:bg-brand-700 dark:text-brand-300 dark:hover:bg-brand-600 disabled:opacity-50">
+              {testingWebDav ? t("cloudBackup.testing") : t("cloudBackup.testConnection")}
+            </button>
+          </div>
         </div>
       )}
 

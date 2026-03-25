@@ -2,6 +2,7 @@ import type { appconf } from "../../../wailsjs/go/models";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useTranslation } from 'react-i18next';
+import { SelectFile } from "../../../wailsjs/go/service/GameService";
 
 interface BetterSelectOption {
   value: string;
@@ -42,6 +43,13 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
     const { name, value, type } = e.target;
     const newValue = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
     onChange({ ...formData, [name]: newValue } as appconf.AppConfig);
+  };
+
+  const handleFfmpegSelect = async () => {
+    const result = await SelectFile("FFmpeg.exe", "*.exe");
+    if (result) {
+      onChange({ ...formData, ffmpeg_path: result } as appconf.AppConfig);
+    }
   };
 
   return (
@@ -156,6 +164,26 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
           options={COMMON_TIMEZONES}
           placeholder={t("common.pleaseSelect")}
         />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">FFmpeg Path</label>
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            name="ffmpeg_path"
+            value={formData.ffmpeg_path || ""}
+            onChange={handleChange}
+            className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white"
+            placeholder="Path to ffmpeg.exe"
+          />
+          <button
+            onClick={handleFfmpegSelect}
+            className="px-3 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            Browse
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between p-2">

@@ -289,16 +289,20 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 				if i == 0 {
 					mainTitle, numStr = extractLastNumberFromString(txt)
 					if numStr != "" {
+						fmt.Printf("getTitlesNum 04:\n")
 						return handleMainTitle(mainTitle), subTitle, numStr
 					}
 				} else if i == 1 {
 					subTitle, numStr = extractLastNumberFromString(txt)
+
 					if numStr != "" {
+						fmt.Printf("getTitlesNum 05:\n")
 						return handleMainTitle(mainTitle), subTitle, numStr
 					}
 				} else {
 					_, numStr = extractLastNumberFromString(txt)
 					if numStr != "" {
+						fmt.Printf("getTitlesNum 06:\n")
 						return handleMainTitle(mainTitle), subTitle, numStr
 					}
 				}

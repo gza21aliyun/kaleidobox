@@ -787,7 +787,13 @@
     "oneDriveTestSuccess": "OneDrive 连接测试成功",
     "oneDriveTestFailed": "OneDrive 连接测试失败: {{error}}",
     "oneDriveAuthSuccess": "OneDrive 授权成功",
-    "authFailed": "授权失败: {{error}}"
+    "authFailed": "授权失败: {{error}}",
+    "webDavConfig": "WebDav 配置",
+    "webDavServer": "WebDav 服务器地址",
+    "webDavUsername": "WebDav 用户名",
+    "webDavPassword": "WebDav 密码",
+    "webDavTestSuccess": "WebDav 连接测试成功",
+    "webDavTestFailed": "WebDav 连接测试失败: {{error}}"
   },
   "fullDataBackup": {
     "description": "备份应用配置、数据库、封面与背景、图片缓存、日志及本地备份目录",

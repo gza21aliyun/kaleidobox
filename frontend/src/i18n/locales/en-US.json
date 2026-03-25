@@ -787,7 +787,13 @@
     "oneDriveTestSuccess": "OneDrive connection test successful",
     "oneDriveTestFailed": "OneDrive connection test failed: {{error}}",
     "oneDriveAuthSuccess": "OneDrive authorization successful",
-    "authFailed": "Authorization failed: {{error}}"
+    "authFailed": "Authorization failed: {{error}}",
+    "webDavConfig": "WebDav configuration",
+    "webDavServer": "WebDav server address",
+    "webDavUsername": "WebDav username",
+    "webDavPassword": "WebDav password",
+    "webDavTestSuccess": "WebDav connection test successful",
+    "webDavTestFailed": "WebDav connection test failed: {{error}}"
   },
   "fullDataBackup": {
     "description": "Backup app configuration, database, covers and backgrounds, image cache, logs, and local backup directories",

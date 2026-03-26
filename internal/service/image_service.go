@@ -201,7 +201,7 @@ func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.Image
 		}
 		return nil, err
 	}
-	if s.config.AutoDownloadImages && down && imageBackup.LocalPath == "" {
+	if s.config.AutoDownloadImages && down {
 		newList, err := s.DownloadImageBackups([]models.ImageBackup{imageBackup})
 		return &newList[0], err
 	}
@@ -402,9 +402,21 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) ([]models
 		return list, nil
 	}
 	for _, imageBackup := range list {
-		if imageBackup.LocalPath != "" || imageBackup.Url == "" {
+		if imageBackup.Url == "" {
 			newList = append(newList, imageBackup)
 			continue
+		}
+		if imageBackup.LocalPath != "" {
+			info, err := os.Stat(imageBackup.LocalPath)
+			if err != nil {
+				imageBackup.LocalPath = ""
+			} else if info.Size() > 3000 {
+				newList = append(newList, imageBackup)
+				continue
+			} else {
+				os.Remove(imageBackup.LocalPath)
+				imageBackup.LocalPath = ""
+			}
 		}
 		path, err := utils.GetDataDir()
 		if err != nil {
@@ -727,6 +739,18 @@ func DownloadImage(imageUrl, fileName string) error {
 
 	if _, err := io.Copy(destFile, resp.Body); err != nil {
 		return fmt.Errorf("写入文件失败：%w", err)
+	}
+	// 检查文件大小
+	fileInfo, err := destFile.Stat()
+	if err != nil {
+		return fmt.Errorf("获取文件信息失败：%w", err)
+	}
+	fileSize := fileInfo.Size()
+
+	// 可选：验证文件大小是否合理
+	if fileSize < 3000 {
+		defer os.Remove(fileName)
+		return fmt.Errorf("下载的文件大小小于3000字节，可能不是有效的图片文件")
 	}
 
 	return nil

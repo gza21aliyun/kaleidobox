@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
@@ -134,6 +135,9 @@ func (s *StaffService) GetStaffsByGameId(id string) ([]models.Staff, error) {
 }
 
 func (s *StaffService) GetStaffBySource(sourceType enums.SourceType, sourceStaffId string) (models.Staff, error) {
+	if sourceStaffId == "" {
+		return models.Staff{}, errors.New("sourceStaffId is empty")
+	}
 	query := `
 		SELECT id, name, other_names, roles, source_staff_id, source_type,
 		game_ids, summary, gender, image

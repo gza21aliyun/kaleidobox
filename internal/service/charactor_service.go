@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
@@ -56,6 +57,9 @@ func (s *CharactorService) CreateCharactor(charactor models.Charactor) error {
 }
 
 func (s *CharactorService) GetCharactorBySource(sourceType enums.SourceType, sourceCharactorId string) (models.Charactor, error) {
+	if sourceCharactorId == "" {
+		return models.Charactor{}, errors.New("Invalid source charactor id")
+	}
 	query := `
 		SELECT id, name, other_names, image_path, images, source_charactor_id, 
 		source_type, game_ids, summary, gender, measurements, height, sort

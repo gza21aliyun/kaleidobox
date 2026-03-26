@@ -14,7 +14,6 @@ import (
 
 	"github.com/PuerkitoBio/goquery" // 添加 GoQuery 导入
 	"github.com/gocolly/colly/v2"    // 添加 Colly 导入
-	"github.com/labstack/gommon/log"
 )
 
 type DmmInfoGetter struct {
@@ -553,8 +552,8 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 			}
 		})
 
-		jstr, _ := json.Marshal(worksMap)
-		log.Printf("worksMap: " + string(jstr))
+		// jstr, _ := json.Marshal(worksMap)
+		// log.Printf("worksMap: " + string(jstr))
 		gameEntity.WorksMap = worksMap
 
 	})

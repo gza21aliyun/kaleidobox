@@ -102,7 +102,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, totken string) (mod
 func (b EroscapeInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
 	applog.InfoLogSaveAppLog("FetchMetadataByNameFunc 00\n")
 	// mainTitle, num := getTitles(name)
-	game, err := b.FetchMetadataByNameFunc(name, false,
+	game, err := b.FetchMetadataByNameFunc(name, 0,
 		func(request vo.MetadataRequest) (models.Game, error) {
 			// fmt.Printf("FetchMetadataByNameFunc 01")
 			gameEntity, err := b.FetchMetadataById(request)
@@ -110,7 +110,7 @@ func (b EroscapeInfoGetter) FetchMetadataByName2(name string) (models.Game, erro
 			return gameEntity.Game, err
 		})
 	if game.SourceID == "" {
-		game, err = b.FetchMetadataByNameFunc(name, true,
+		game, err = b.FetchMetadataByNameFunc(name, 1,
 			func(request vo.MetadataRequest) (models.Game, error) {
 				// fmt.Printf("FetchMetadataByNameFunc 01")
 				gameEntity, err := b.FetchMetadataById(request)
@@ -118,7 +118,15 @@ func (b EroscapeInfoGetter) FetchMetadataByName2(name string) (models.Game, erro
 				return gameEntity.Game, err
 			})
 		// fmt.Printf("FetchMetadataByNameFunc Error fetching metadata:%v\n", err)
-		return game, err
+	}
+	if game.SourceID == "" {
+		game, err = b.FetchMetadataByNameFunc(name, 2,
+			func(request vo.MetadataRequest) (models.Game, error) {
+				// fmt.Printf("FetchMetadataByNameFunc 01")
+				gameEntity, err := b.FetchMetadataById(request)
+
+				return gameEntity.Game, err
+			})
 	}
 	return game, err
 }
@@ -147,7 +155,7 @@ func (b EroscapeInfoGetter) GetDomain() string {
 	return domain
 }
 
-func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl bool, fn IdFunction) (models.Game, error) {
+func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn IdFunction) (models.Game, error) {
 	log.Println("Fetching 01 metadata by name:", name)
 	log.Println("Fetching 02 metadata by name:", name)
 
@@ -156,14 +164,23 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl bool, fn I
 	var url string = b.GetBaseUrl() + searchPart
 	// var gameUrl = baseUrl + gamePart
 
-	mainTitle, _, _ := getTitles(name)
+	mainTitle, subtitle, _ := getTitles(name)
 	var game = models.Game{}
-	if isAl {
-		mainTitle = getGameNameAlternative(mainTitle)
+	if isAl == 1 {
+		alt := getGameNameAlternative(mainTitle)
+		if alt == mainTitle {
+			return game, errors.New("no game found")
+		}
+		mainTitle = alt
 		if mainTitle == "" {
 			fmt.Println("no game found")
 			return game, errors.New("no game found")
 		}
+	} else if isAl == 2 {
+		if subtitle == "" {
+			return game, errors.New("no game found")
+		}
+		mainTitle = subtitle
 	}
 	// url += mainTitle
 
@@ -298,6 +315,36 @@ func (b EroscapeInfoGetter) FetchImages(request vo.MetadataRequest, gameEntity m
 
 	// 等待收集完成
 	c.Wait()
+	if game.Images == "" {
+		imagesPart = "game_dlsite.php?game="
+		cUrl = b.GetBaseUrl() + imagesPart + request.ID
+		err = nil
+		game = gameEntity.Game
+		game.Images = ""
+
+		c.OnHTML("div#images div", func(e *colly.HTMLElement) {
+			// applog.InfoLogSaveAppLog("图库：", game.Images)
+			src := e.ChildAttr("img", "src")
+			if src != "" {
+				game.Images = MergeStrings(game.Images, src)
+			}
+		})
+
+		// 错误处理
+		c.OnError(func(r *colly.Response, err error) {
+			applog.ErrorLogSaveAppLog("Request error\n", err)
+		})
+
+		// 访问构建的 URL
+		err = c.Visit(cUrl)
+		if err != nil {
+			return gameEntity, err
+		}
+
+		// 等待收集完成
+		c.Wait()
+	}
+
 	gameEntity.Game = game
 
 	return gameEntity, err

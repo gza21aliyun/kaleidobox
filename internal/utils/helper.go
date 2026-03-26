@@ -200,7 +200,8 @@ func generateSearchRegex(searchName string) string {
 /**
  * 截取最后一个数字字符，包括全角
  */
-func extractLastNumberFromString(title string) (t string, n string) {
+func extractLastNumberFromString(titleN string) (t string, n string) {
+	title := strings.TrimSpace(titleN)
 	var rsTitle string = ""
 	var rsStr = ""
 
@@ -216,7 +217,7 @@ func extractLastNumberFromString(title string) (t string, n string) {
 	fmt.Printf("extractLastNumberFromString title:%s char:%c\n", title, lastChar)
 
 	// 使用 regexp2 支持 \u 转义
-	digitPattern := regexp2.MustCompile(`^[\u0030-\u0039\uFF10-\uFF19]$`, 0)
+	digitPattern := regexp2.MustCompile(`^[\u0030-\u0039\uFF10-\uFF19弐壱参]$`, 0)
 
 	match, _ := digitPattern.MatchString(lastCharStr)
 	if match {
@@ -243,7 +244,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	// 检查是否包含有效的分隔符（除了纯空格）
 	// num := -1
 	// numStr := ""
-	hasValidSeparator := regexp.MustCompile(`[－\-~～　 ！]`).MatchString(searchName)
+	hasValidSeparator := regexp.MustCompile(`[－\-~～　 ！\[]`).MatchString(searchName)
 	mainTitle := ""
 
 	if !hasValidSeparator {
@@ -268,10 +269,10 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	if len(parts) < 2 {
 		hasNonEnglish := regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(mainTitle)
 		if onlyNum || hasNonEnglish {
-			separatorPattern = `[－\-~～　 ！]+`
+			separatorPattern = `[－\-~～　 ！\[]+`
 			fmt.Printf("getTitlesNum 02:\n")
 		} else {
-			separatorPattern = `[－\-~～　！]+`
+			separatorPattern = `[－\-~～　！\[]+`
 			fmt.Printf("getTitlesNum 03:\n")
 		}
 
@@ -288,8 +289,9 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 			for i, txt := range parts {
 				if i == 0 {
 					mainTitle, numStr = extractLastNumberFromString(txt)
+					fmt.Printf("getTitlesNum 04:\n")
 					if numStr != "" {
-						fmt.Printf("getTitlesNum 04:\n")
+
 						return handleMainTitle(mainTitle), subTitle, numStr
 					}
 				} else if i == 1 {
@@ -446,11 +448,18 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(searchName, "Ｍ") {
 		name = strings.ReplaceAll(searchName, "Ｍ", "M")
 	}
+	if strings.Contains(searchName, "М") {
+		name = strings.ReplaceAll(searchName, "М", "M")
+	}
+
 	if strings.Contains(searchName, "Ｄ") {
 		name = strings.ReplaceAll(searchName, "Ｄ", "D")
 	}
 	if strings.Contains(searchName, "Ｓ") {
 		name = strings.ReplaceAll(searchName, "Ｓ", "S")
+	}
+	if strings.Contains(searchName, "Ｘ") {
+		name = strings.ReplaceAll(searchName, "Ｘ", "X")
 	}
 
 	if strings.Contains(searchName, "3") {
@@ -475,7 +484,7 @@ func getGameNameAlternative(searchName string) string {
 }
 
 func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
-	_, _, num := getTitlesNum(searchName, true)
+	mainTitle, _, num := getTitlesNum(searchName, true)
 	type Result struct {
 		similarity float32
 		Value      T1
@@ -505,13 +514,14 @@ func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []st
 				similarity += 0.1
 			}
 		}
-		gameNum := ""
+		gMainTitle, _, gameNum := getTitlesNum(name, true)
 		if num == "" {
-			_, _, gameNum = getTitlesNum(name, true)
+
 			if gameNum != "" {
 				similarity -= 0.1
 			}
 		}
+		similarity += 0.2 * edlib.JaroWinklerSimilarity(mainTitle, gMainTitle)
 		if strings.Contains(searchName, "シナリオ") && strings.Contains(name, "シナリオ") {
 			similarity += 0.1
 		}

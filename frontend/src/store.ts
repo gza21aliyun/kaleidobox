@@ -32,6 +32,7 @@ type AppState = {
   getAISummary: (dimension: string) => string | undefined;
   setGames: (games: models.Game[]) => void;
   updateGameInGames: (game: models.Game) => void;
+  updateGamesInGames: (games: models.Game[]) => void;
   // 任务列表全局状态
   tasks: models.TaskNotice[];
   setTasks: (tasks: models.TaskNotice[]) => void;
@@ -90,6 +91,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
     
+  },
+  updateGamesInGames: (games: models.Game[]) => {
+    const data = [...get().games];
+    games.forEach(game => {
+      const foundGame = arrayFind(data, g => g.id === game.id);
+      if (foundGame) {
+        const index = data.indexOf(foundGame);
+        if (index >= 0) {
+          data[index] = game;
+        }
+      }
+    });
+    set({ games: data });
   },
   updateConfig: async (config: appconf.AppConfig) => {
     try {

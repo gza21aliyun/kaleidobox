@@ -145,6 +145,7 @@
       "setStatus": "设为状态",
       "batchUpdateStatus": "批量更新状态",
       "batchAddToCollection": "批量添加到收藏",
+      "batchAddTags": "批量添加标签",
       "updateLibrary": "更新游戏库",
       "batchDelete": "批量删除",
       "addManually": "手动添加",
@@ -912,7 +913,16 @@
     "addTag": "添加标签",
     "enterTagName": "输入标签名称",
     "cancel": "取消",
-    "confirm": "确认"
+    "confirm": "确认",
+    "gamesSelected": "个游戏已选择",
+    "selectedTags": "已选标签",
+    "noTagsSelected": "暂无已选标签",
+    "addNewTag": "添加新标签",
+    "add": "添加",
+    "pleaseAddAtLeastOneTag": "请至少添加一个标签",
+    "noGamesSelected": "未选择游戏",
+    "tagsAddedSuccess": "已成功添加 {{count}} 个标签到 {{gameCount}} 个游戏",
+    "addTagsFailed": "添加标签失败"
   },
   "gameIntro": {
     "summary": "简介",

@@ -1595,15 +1595,32 @@ func (s *GameService) LoadDetailReview(review models.Review, gameId string, sour
 	return models.Review{}, nil
 }
 
-func (s *GameService) AddTagForGame(game models.Game, tag string) (models.Game, error) {
-	t, err := s.tagService.GetTagByName(tag)
-	if t == nil {
-		newTag := models.Tag{Name: tag, Category: models.TagCategoryCustom}
-		err = s.tagService.CreateTag(&newTag)
+func (s *GameService) AddTagForGame(game models.Game, tags []string) (models.Game, error) {
+	var err error = nil
+	for _, tag := range tags {
+		t, _ := s.tagService.GetTagByName(tag)
+		if t == nil {
+			newTag := models.Tag{Name: tag, Category: models.TagCategoryCustom}
+			err = s.tagService.CreateTag(&newTag)
+		}
+
+		game.Tags = utils.MergeStrings(game.Tags, tag)
 	}
-	game.Tags = utils.MergeStrings(game.Tags, tag)
 	err = s.UpdateGame(game)
 	return game, err
+}
+
+func (s *GameService) AddTagsForGames(games []models.Game, tags []string) ([]models.Game, error) {
+	newGames := []models.Game{}
+	for _, game := range games {
+		newGame, _ := s.AddTagForGame(game, tags)
+		// if err != nil {
+		// 	continue
+		// }
+		newGames = append(newGames, newGame)
+	}
+	fmt.Printf("AddTagsForGames gamesTags:%s, tags:%v\n", newGames[0].Tags, tags)
+	return newGames, nil
 }
 
 func (s *GameService) DeleteTagForGame(game models.Game, tag string) (models.Game, error) {

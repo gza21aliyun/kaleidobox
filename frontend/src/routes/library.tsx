@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 
 import { enums, vo } from "../../wailsjs/go/models";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
+import { AddTagModal } from "../components/modal/AddTagModal";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -72,6 +73,7 @@ function LibraryPage() {
   const [selectedGameIds, setSelectedGameIds] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<vo.CategoryVO[]>([]);
   const [isBatchCategoryModalOpen, setIsBatchCategoryModalOpen] = useState(false);
+  const [isBatchAddTagModalOpen, setIsBatchAddTagModalOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -341,6 +343,13 @@ function LibraryPage() {
     }
   };
 
+  const handleBatchAddTag = async (newGames: models.Game[]) => {
+    setSelectedGameIds([]);
+    setBatchMode(false);
+    setIsBatchAddTagModalOpen(false)
+    await fetchGames();
+  };
+
   const handleBatchDelete = () => {
     if (filterSelectedIds.length === 0)
       return;
@@ -530,6 +539,19 @@ function LibraryPage() {
                     onClick: () => handleBatchStatusUpdate(key),
                   }))}
                 />
+                {/* 批量添加标签 */}
+                <button
+                  type="button"
+                  onClick={() => setIsBatchAddTagModalOpen(true)}
+                  disabled={filterSelectedIds.length === 0}
+                  title={t('library.buttons.batchAddTags')}
+                  className={`glass-panel flex items-center gap-2 px-3 py-2 text-sm
+                              bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700
+                              rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300
+                              ${filterSelectedIds.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="i-mdi-tag-plus-outline text-lg" />
+                </button>
                 {/* 批量添加到收藏 */}
                 <button
                   type="button"
@@ -734,6 +756,13 @@ function LibraryPage() {
         isOpen={isBatchUpdateOpen}
         onClose={() => setIsBatchUpdateOpen(false)}
         onUpdateComplete={loadGames}
+        games={filterSelected}
+      />
+
+      <AddTagModal
+        isOpen={isBatchAddTagModalOpen}
+        onClose={() => setIsBatchAddTagModalOpen(false)}
+        onConfirm={handleBatchAddTag}
         games={filterSelected}
       />
 

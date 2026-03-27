@@ -461,6 +461,9 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(searchName, "Ｘ") {
 		name = strings.ReplaceAll(searchName, "Ｘ", "X")
 	}
+	if strings.Contains(searchName, "Ｗ") {
+		name = strings.ReplaceAll(searchName, "Ｗ", "W")
+	}
 
 	if strings.Contains(searchName, "3") {
 		name = strings.ReplaceAll(searchName, "3", "III")

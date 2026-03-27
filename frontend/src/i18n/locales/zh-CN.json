@@ -40,6 +40,7 @@
     "introduction": "介绍",
     "joystick": "手柄",
     "reviews": "评论",
+    "guide": "攻略",
     "deleteGame": "删除游戏",
     "confirmDelete": "确认删除",
     "back": "返回",
@@ -813,6 +814,11 @@
     "scheduleSuccess": "已安排全量恢复，程序即将退出...",
     "scheduleError": "安排全量恢复失败: {{error}}",
     "fileError": "选择文件失败: {{error}}"
+  },
+  "guide": {
+    "description": "查看游戏攻略内容",
+    "loadError": "加载攻略失败",
+    "noContent": "暂无攻略内容"
   },
   "gameBackup": {
     "title": "存档备份",

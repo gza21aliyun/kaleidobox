@@ -74,3 +74,12 @@ func (g Game) GetProcessPath() string {
 	processPath := filepath.Join(dir, g.ProcessName)
 	return processPath
 }
+
+type GuideContent struct {
+	Name     string
+	Link     string
+	Content  string
+	Text     string
+	SaveLink string
+	Source   enums.GuideSource
+}

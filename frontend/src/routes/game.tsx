@@ -24,6 +24,7 @@ import { GameInfoPanel } from "../components/panel/GameInfoPanel";
 import { GameGalleryPanel } from "../components/panel/GameGalleryPanel"; // 新增导入
 import { GameIntroPanel } from "../components/panel/GameIntroPanel";
 import { ReviewPanel } from "../components/panel/ReviewPanel";
+import { GuidePanel } from "../components/panel/GuidePanel";
 import { OpenBrowser, SearchVideoPathsManual } from "../../wailsjs/go/service/ImportService"; 
 import { useTranslation } from 'react-i18next';
 import { ImageBackupCard, ImageCard } from "../components/card/ImageCard";
@@ -700,7 +701,7 @@ function GameDetailPage() {
       <div className="border-b border-brand-200 dark:border-brand-700">
         <div className="flex justify-between items-center">
           <nav className="-mb-px flex space-x-8">
-            {["intro","stats", "edit", "launch", "backup", "info", "gallery", "joystick", "reviews"].map(tab => (
+            {["intro","stats", "edit", "launch", "backup", "info", "gallery", "joystick", "reviews", "guide"].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -720,6 +721,7 @@ function GameDetailPage() {
                 {tab === "intro" && t('common.introduction')}
                 {tab === "joystick" && t('common.joystick')}
                 {tab === "reviews" && t('common.reviews')}
+                {tab === "guide" && t('common.guide')}
               </button>
             ))}
           </nav>
@@ -802,6 +804,10 @@ function GameDetailPage() {
         <ReviewPanel
           game={game}
         />
+      )}
+
+      {activeTab === "guide" && (
+        <GuidePanel game={game} />
       )}
 
       <ConfirmModal

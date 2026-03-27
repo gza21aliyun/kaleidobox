@@ -41,3 +41,18 @@ func (s *SourceType) UnmarshalJSON(data []byte) error {
 	*s = SourceType(str)
 	return nil
 }
+
+type GuideSource string
+
+const (
+	Seiya GuideSource = "seiya"
+	Fool  GuideSource = "fool"
+)
+
+var AllGuideSources = []struct {
+	Value  GuideSource
+	TSName string
+}{
+	{Seiya, "SEIYA"},
+	{Fool, "FOOL"},
+}

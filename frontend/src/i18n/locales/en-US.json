@@ -40,6 +40,7 @@
     "introduction": "Introduction",
     "joystick": "Controller",
     "reviews": "Reviews",
+    "guide": "Guide",
     "deleteGame": "Delete game",
     "confirmDelete": "Confirm deletion",
     "back": "Back",
@@ -811,6 +812,11 @@
     "scheduleSuccess": "Full restore scheduled, program will exit...",
     "scheduleError": "Failed to schedule full restore: {{error}}",
     "fileError": "File selection failed: {{error}}"
+  },
+  "guide": {
+    "description": "View game guide content",
+    "loadError": "Failed to load guide",
+    "noContent": "No guide content available"
   },
   "gameBackup": {
     "title": "Save backup",

@@ -502,6 +502,7 @@ func main() {
 			enums.AllDeviceTypes,
 			enums.AllModifierKeys,
 			enums.AllHotkeyActionTypes,
+			enums.AllGuideSources,
 		},
 	})
 

@@ -629,6 +629,22 @@ func (s *BackupService) DownloadSave(game models.Game, isOverride bool) (string,
 	return getter.FetchSeiyaSave(game.Name, game.SavePath, isOverride)
 }
 
+func (s *BackupService) FetchGameGuide(game models.Game) (models.GuideContent, error) {
+	guide := models.GuideContent{}
+	if game.Name == "" {
+		return guide, fmt.Errorf("还没设置存档位置")
+	}
+	getter := utils.NewSaveInfoGetter()
+	guide, err := getter.FetchSeiyaGuide(game.SearchName, 0)
+	// if guide.Link == "" {
+	// 	guide, err = getter.FetchSeiyaGuide(game.Name, 1)
+	// }
+	// if guide.Link == "" {
+	// 	guide, err = getter.FetchSeiyaGuide(game.Name, 2)
+	// }
+	return guide, err
+}
+
 // ========== 数据库本地备份方法 ==========
 
 // CreateDBBackup 创建数据库备份（包含 covers 文件夹）

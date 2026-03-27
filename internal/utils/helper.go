@@ -261,7 +261,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	if len(parts) > 1 {
 		mainTitle = strings.TrimSpace(parts[0])
 
-		fmt.Printf("getTitlesNum 01:%s\n", mainTitle)
+		// fmt.Printf("getTitlesNum 01:%s\n", mainTitle)
 	}
 	if mainTitle == "" {
 		mainTitle = searchName
@@ -270,10 +270,10 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 		hasNonEnglish := regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(mainTitle)
 		if onlyNum || hasNonEnglish {
 			separatorPattern = `[－\-~～　 ！\[]+`
-			fmt.Printf("getTitlesNum 02:\n")
+			// fmt.Printf("getTitlesNum 02:\n")
 		} else {
 			separatorPattern = `[－\-~～　！\[]+`
-			fmt.Printf("getTitlesNum 03:\n")
+			// fmt.Printf("getTitlesNum 03:\n")
 		}
 
 		parts = regexp.MustCompile(separatorPattern).Split(searchName, -1)
@@ -289,7 +289,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 			for i, txt := range parts {
 				if i == 0 {
 					mainTitle, numStr = extractLastNumberFromString(txt)
-					fmt.Printf("getTitlesNum 04:\n")
+					// fmt.Printf("getTitlesNum 04:\n")
 					if numStr != "" {
 
 						return handleMainTitle(mainTitle), subTitle, numStr

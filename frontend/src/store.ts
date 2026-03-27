@@ -131,7 +131,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchGames: async () => {
     set({ gamesLoading: true });
     var page = 1;
-    var pageSize = 10;
+    var pageSize = 20;
     try {
       var gameList: models.Game[] = [];
       for (;;) { 

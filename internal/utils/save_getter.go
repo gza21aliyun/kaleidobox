@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"lunabox/internal/enums"
+	"lunabox/internal/models"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +19,7 @@ import (
 	"golang.org/x/text/transform"
 
 	// 添加 GoQuery 导入
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly/v2" // 添加 Colly 导入
 )
 
@@ -177,9 +180,172 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 	return gameLink, err
 }
 
+func (b SaveInfoGetter) FetchSeiyaGuide(name string, fetchType int) (models.GuideContent, error) {
+	guide := models.GuideContent{}
+	var url string = "https://seiya-saiga.com/game/kouryaku.html"
+	c := CreateCollector("*seiya-saiga.com")
+
+	var potentialGames []struct {
+		Title string
+		Link  string
+	}
+	gameName := ""
+	gameLink := ""
+	mainTitle, subtitle, _ := getTitles(name)
+	firstName := mainTitle
+	if fetchType == 1 {
+		firstName = getGameNameAlternative(firstName)
+	} else if fetchType == 2 && subtitle != "" {
+		firstName = subtitle
+	}
+
+	// 处理搜索结果页面中的游戏条目
+	c.OnHTML("div > table > tbody > tr > th table tbody tr", func(e *colly.HTMLElement) {
+		titles := e.ChildTexts("td b")
+		title := ""
+		if len(titles) > 0 {
+			title, _ = shiftJISToUTF8(titles[0])
+		}
+
+		link := "https://seiya-saiga.com/game/" + e.ChildAttr("a", "href")
+		// th := e.ChildText("th")
+		// // log.Print("OnHTML 网页列表 ：", e.Text)
+		// if th != "" {
+		// 	fmt.Println("th:", th)
+		// }
+
+		if link == "" || title == "" || strings.Contains(link, "#") || !strings.Contains(link, "game/") {
+			return
+		}
+
+		// if !strings.Contains(title, firstName) {
+		// 	return
+		// }
+		// fmt.Println("title:", title)
+
+		potentialGames = append(potentialGames, struct {
+			Title string
+			Link  string
+		}{
+			Title: title,
+			Link:  e.Request.AbsoluteURL(link),
+		})
+	})
+
+	// 在访问完搜索页面后进行过滤和处理
+	c.OnScraped(func(r *colly.Response) {
+		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
+			Title string
+			Link  string
+		}) string {
+			return t1.Title
+		})
+		if gameFound != nil {
+			gameName = gameFound.Title
+			gameLink = gameFound.Link
+		}
+
+	})
+
+	// 错误处理
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+	})
+
+	// 访问构建的 URL
+	err := c.Visit(url)
+	if err != nil {
+		return guide, fmt.Errorf("找不到游戏%s的攻略,err:%v", name, err)
+	}
+
+	// 等待收集完成
+	c.Wait()
+	if gameLink == "" {
+		return guide, fmt.Errorf("找不到游戏%s的攻略", name)
+	}
+
+	fmt.Printf("找到游戏‘%s’的攻略%s\n", gameName, gameLink)
+	guide, err = b.FetchSeiyaGuideContent(gameLink)
+
+	return guide, err
+}
+
+func (b SaveInfoGetter) FetchSeiyaGuideContent(link string) (models.GuideContent, error) {
+	guide := models.GuideContent{Link: link}
+	guide.Source = enums.Seiya
+	var err error = nil
+	c := CreateCollector("*seiya-saiga.com")
+	c.OnHTML("body > div > table > tbody > tr", func(e *colly.HTMLElement) {
+		s := e.DOM.Find("th > table").Eq(3)
+		s.Find("tr").Each(func(i int, ss *goquery.Selection) {
+			labels := ss.Find("label").Contents()
+			fonts := ss.Find("font").Contents()
+			bs := ss.Find("b").Contents()
+
+			if labels.Length() == 0 && fonts.Length() == 0 && bs.Length() == 0 {
+				ss.Remove()
+			}
+		})
+		g, _ := s.Html()
+		g = fmt.Sprintf(`<table border="1" bordercolor="#66ccff" bgcolor="#ffffff" height="40" width="800" cellspacing="0">
+        %s
+		</table>`, g)
+		// guide.Content, err = shiftJISToUTF8(hml)
+		guide.Content, err = eucToUTF8(g)
+		s2 := e.DOM.Find("th > table").Eq(2)
+		s2.Find("tr").Each(func(i int, ss *goquery.Selection) {
+			trText, _ := eucToUTF8(ss.Text())
+			if i == 0 || i == 1 || strings.Contains(trText, "攻略リンク") {
+				ss.Remove()
+			}
+		})
+		text, _ := s2.Html()
+		guide.Text, err = eucToUTF8(text)
+		guide.Text = strings.ReplaceAll(strings.ReplaceAll(guide.Text, "��", ""), "フルコンプセーブ", "")
+
+		// text, _ := shiftJISToUTF8(e.DOM.Text())
+		fmt.Printf("FetchSeiyaGuideContent:\n%s\n", guide.Text)
+		// guide.Text, err = shiftJISToUTF8(e.DOM.Text())
+
+		name, _ := eucToUTF8(e.DOM.Find("table").Eq(0).Find("th").Text())
+		guide.Name = name
+		fmt.Printf("FetchSeiyaGuideContent name: %s\n", name)
+
+	})
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+	})
+
+	// 访问构建的 URL
+	err = c.Visit(link)
+	if err != nil {
+		return guide, fmt.Errorf("找不到游戏%s的攻略,err:%v", link, err)
+	}
+
+	// 等待收集完成
+	c.Wait()
+
+	return guide, err
+
+}
+
 func shiftJISToUTF8(shiftJISData string) (string, error) {
 	// 创建 Shift-JIS 解码器
 	decoder := japanese.ShiftJIS.NewDecoder()
+
+	// 转换编码
+	reader := transform.NewReader(strings.NewReader(shiftJISData), decoder)
+	utf8Data, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+
+	return string(utf8Data), nil
+}
+
+func eucToUTF8(shiftJISData string) (string, error) {
+	// 创建 Shift-JIS 解码器
+	decoder := japanese.EUCJP.NewDecoder()
 
 	// 转换编码
 	reader := transform.NewReader(strings.NewReader(shiftJISData), decoder)

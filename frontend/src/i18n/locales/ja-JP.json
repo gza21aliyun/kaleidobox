@@ -40,6 +40,7 @@
     "introduction": "紹介",
     "joystick": "コントローラー",
     "reviews": "レビュー",
+    "guide": "ガイド",
     "deleteGame": "ゲームを削除",
     "confirmDelete": "削除を確認",
     "back": "戻る",
@@ -805,6 +806,11 @@
     "scheduleSuccess": "フル復元が予定されました。プログラムを終了します...",
     "scheduleError": "フル復元の予定に失敗しました: {{error}}",
     "fileError": "ファイルの選択に失敗しました: {{error}}"
+  },
+  "guide": {
+    "description": "ゲームガイドコンテンツを表示",
+    "loadError": "ガイドの読み込みに失敗",
+    "noContent": "ガイドコンテンツはありません"
   },
   "gameBackup": {
     "title": "セーブデータバックアップ",

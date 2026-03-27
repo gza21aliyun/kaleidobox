@@ -117,7 +117,7 @@ export function GameInfoPanel({
                 if (true) {
                     try {
                         updateGame(gs[0]);
-                        toast.success(t('game.toasts.tagAddSuccess' + ' ' + gs[0].tags));
+                        toast.success(t('game.toasts.tagAddSuccess'));
                         // 刷新标签列表
                         GetTagListByString(gs[0].tags).then((res) => {
                             console.log("tag res:", res)

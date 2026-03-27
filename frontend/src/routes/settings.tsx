@@ -12,6 +12,7 @@ import { FullDataBackupPanel } from "../components/panel/FullDataBackupPanel";
 import { GameSettingsPanel } from "../components/panel/GameSettingsPanel";
 import { LanguageSettingsPanel } from "../components/panel/LanguageSettingsPanel";
 import { UpdateSettingsPanel } from "../components/panel/UpdateSettingsPanel";
+import { VMPanel } from "../components/panel/VMPanel";
 import { SettingsSkeleton } from "../components/skeleton/SettingsSkeleton";
 import { CollapsibleSection } from "../components/ui/CollapsibleSection";
 import { useAppStore } from "../store";
@@ -138,6 +139,10 @@ function SettingsPage() {
 
       <CollapsibleSection title={t('settings.aiConfig')} icon="i-mdi-robot-happy" defaultOpen={false}>
         <AISettingsPanel formData={formData} onChange={handleFormChange} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="虚拟机设置" icon="i-mdi-server" defaultOpen={false}>
+        <VMPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
       <CollapsibleSection title={t('settings.dbBackup')} icon="i-mdi-database-refresh" defaultOpen={false}>

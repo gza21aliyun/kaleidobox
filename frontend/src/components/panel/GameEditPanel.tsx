@@ -191,6 +191,20 @@ export function GameEditPanel({
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
+            是否虚拟机内游戏
+          </label>
+          <div className="flex items-center">
+            <BetterSwitch
+              id="inside_vm"
+              checked={game.inside_vm || false}
+              onCheckedChange={checked => onGameChange({ ...game, inside_vm: checked } as models.Game)}
+            />
+            <span className="ml-2 text-sm text-brand-600 dark:text-brand-400">标记此游戏是否在虚拟机内运行</span>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
             {t('gameEdit.summary')}
           </label>
           <textarea

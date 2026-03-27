@@ -433,6 +433,10 @@ func main() {
 			}
 
 			// 从 configService 获取最新配置（避免使用启动时的旧配置覆盖文件）
+			if configService == nil {
+				appLogger.Error("app config service is nil ")
+				return
+			}
 			latestConfig, err := configService.GetAppConfig()
 			if err != nil {
 				appLogger.Error("failed to get latest config: " + err.Error())

@@ -36,6 +36,7 @@ type Game struct {
 	UseMagpie         bool             `json:"use_magpie"`          // 是否使用 Magpie 超分辨率缩放
 	GetchuId          string           `json:"getchu_id"`
 	PvPath            string           `json:"pv_path"`
+	InsideVm          bool             `json:"inside_vm"`
 }
 
 type GameEntity struct {

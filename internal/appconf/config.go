@@ -87,6 +87,12 @@ type AppConfig struct {
 	SearchCn           bool   `json:"search_cn"`
 	AutoDownloadImages bool   `json:"auto_download_images"`
 	LogAll             bool   `json:"log_all"`
+	// 虚拟机配置
+	VmrunPath  string `json:"vmrun_path,omitempty"`   // Vmrun.exe 路径
+	VmName     string `json:"vm_name,omitempty"`      // 虚拟机名称
+	VmUserName string `json:"vm_user_name,omitempty"` // 虚拟机用户名
+	VmPass     string `json:"vm_pass,omitempty"`      // 虚拟机密码
+	VmPath     string `json:"vm_path,omitempty"`      // 虚拟机配置文件路径
 }
 
 // getConfigPath 获取配置文件路径
@@ -158,6 +164,12 @@ func LoadConfig() (*AppConfig, error) {
 		SearchCn:                false,
 		AutoDownloadImages:      true,
 		LogAll:                  false,
+		// 虚拟机配置默认值
+		VmrunPath:  `C:\Program Files\VMware\VMware Workstation\vmrun.exe`,
+		VmName:     "",
+		VmUserName: "",
+		VmPass:     "",
+		VmPath:     "",
 	}
 
 	// 获取配置文件路径

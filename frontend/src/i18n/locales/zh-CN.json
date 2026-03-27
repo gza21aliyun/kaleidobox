@@ -294,6 +294,7 @@
     "lastPlayed": "上次游玩",
     "releaseDate": "发售日期",
     "toasts": {
+      "tagAddSuccess": "标签添加成功",
       "noVideosFound": "没有找到相关视频",
       "loadGameFailed": "加载游戏数据失败",
       "selectExecutableFailed": "选择可执行文件失败",

@@ -61,7 +61,8 @@ func SchemaQueries() []string {
 			use_magpie BOOLEAN DEFAULT FALSE,
 			process_name TEXT,
 			getchu_id TEXT,
-			pv_path TEXT
+			pv_path TEXT,
+			inside_vm BOOLEAN DEFAULT FALSE
 		)`,
 		`CREATE TABLE IF NOT EXISTS game_categories (
 			game_id TEXT,

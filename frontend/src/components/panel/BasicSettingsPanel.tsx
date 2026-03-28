@@ -1,8 +1,10 @@
-import type { appconf } from "../../../wailsjs/go/models";
+import type { appconf, models } from "../../../wailsjs/go/models";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useTranslation } from 'react-i18next';
 import { SelectFile } from "../../../wailsjs/go/service/GameService";
+import { GetAvailableDisplays } from "../../../wailsjs/go/service/StartService";
+import { useEffect, useState } from "react";
 
 interface BetterSelectOption {
   value: string;
@@ -39,6 +41,12 @@ interface BasicSettingsProps {
 
 export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
   const { t, i18n } = useTranslation();
+  const [displays, setDisplays] = useState<models.MonitorInfo[]>([]);
+
+  useEffect(() => {
+    GetAvailableDisplays().then(setDisplays).catch(console.error);
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const newValue = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
@@ -51,6 +59,14 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
       onChange({ ...formData, ffmpeg_path: result } as appconf.AppConfig);
     }
   };
+
+  const displayOptions: BetterSelectOption[] = [
+    { value: "", label: t("basic.defaultDisplay") },
+    ...displays.map(d => ({
+      value: d.device_name,
+      label: `${d.device_name}${d.is_primary ? ` (${t("basic.primaryDisplay")})` : ""}`
+    }))
+  ];
 
   return (
     <>
@@ -205,6 +221,17 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
           id="new_folder_chooser"
           checked={formData.new_folder_chooser || false}
           onCheckedChange={checked => onChange({ ...formData, new_folder_chooser: checked } as appconf.AppConfig)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("basic.displayName")}</label>
+        <BetterSelect
+          name="display_name"
+          value={formData.display_name || ""}
+          onChange={value => onChange({ ...formData, display_name: value } as appconf.AppConfig)}
+          options={displayOptions}
+          placeholder={t("common.pleaseSelect")}
         />
       </div>
     </>

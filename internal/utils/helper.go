@@ -397,6 +397,86 @@ func searchByRegex[T1 any](slice1 []T1, pattern string, searchName string, exclu
 	return result
 }
 
+// func getTransmittedMainTitle(searchName string) string {
+// 	runes := []rune(searchName)
+// 	titleRunes := []rune{}
+// 	lastLetterType := 0 //0半角英文字母 1全角英字 2半角数字 3全角数字 4汉字 5片假名 6平假名 7半角或全角控股 8其他
+// 	for i := 0; i < len(runes); i++ {
+// 		if i >= 4 {
+
+// 		} else {
+// 			titleRunes = append(titleRunes, runes[i])
+// 		}
+
+// 	}
+// 	return string(titleRunes)
+// }
+
+// ... existing code ...
+
+func getTransmittedMainTitle(searchName string) string {
+	runes := []rune(searchName)
+	titleRunes := []rune{}
+	lastLetterType := 0 //0半角英文字母 1全角英文字 2半角数字 3全角数字 4汉字 5片假名 6平假名 7半角或全角空格 8其他
+
+	for i := 0; i < len(runes); i++ {
+		currentChar := runes[i]
+		currentType := getCharType(currentChar)
+
+		if len(titleRunes) > 10 {
+			if len(titleRunes) > 0 {
+				lastChar := titleRunes[len(titleRunes)-1]
+				lastType := getCharType(lastChar)
+
+				if (lastType == 0 && currentType == 7) || (lastType == 7 && currentType == 0) {
+					break
+				}
+			}
+		}
+
+		if len(titleRunes) > 5 && lastLetterType != 0 && currentType != lastLetterType {
+			break
+		}
+
+		titleRunes = append(titleRunes, currentChar)
+		if currentType != 7 {
+			lastLetterType = currentType
+		}
+	}
+
+	return string(titleRunes)
+}
+
+func getCharType(r rune) int {
+	if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+		return 0 // 半角英文字母
+	}
+	if (r >= 'ａ' && r <= 'ｚ') || (r >= 'Ａ' && r <= 'Ｚ') {
+		return 1 // 全角英文字（实际使用中半角更常见）
+	}
+	if r >= '0' && r <= '9' {
+		return 2 // 半角数字
+	}
+	if r >= '０' && r <= '９' {
+		return 3 // 全角数字
+	}
+	if r >= '\u4e00' && r <= '\u9fff' {
+		return 4 // 汉字
+	}
+	if r >= '\u30a0' && r <= '\u30ff' {
+		return 5 // 片假名
+	}
+	if r >= '\u3040' && r <= '\u309f' {
+		return 6 // 平假名
+	}
+	if r == ' ' || r == '\u3000' {
+		return 7 // 半角或全角空格
+	}
+	return 8 // 其他
+}
+
+// ... existing code ...
+
 func getGameNameAlternative(searchName string) string {
 
 	var name = searchName
@@ -412,73 +492,76 @@ func getGameNameAlternative(searchName string) string {
 		fmt.Printf("try IsCamelCase")
 		return CamelCaseToSpaces(name)
 	}
-	if strings.Contains(searchName, "／") {
-		name = strings.ReplaceAll(searchName, "／", "/")
+	if strings.Contains(name, "／") {
+		name = strings.ReplaceAll(name, "／", "/")
 	}
-	if strings.Contains(searchName, "１") {
-		name = strings.ReplaceAll(searchName, "１", "1")
+	if strings.Contains(name, "１") {
+		name = strings.ReplaceAll(name, "１", "1")
 	}
-	if strings.Contains(searchName, "２") {
-		name = strings.ReplaceAll(searchName, "２", "2")
+	if strings.Contains(name, "２") {
+		name = strings.ReplaceAll(name, "２", "2")
 	}
-	if strings.Contains(searchName, "３") {
-		name = strings.ReplaceAll(searchName, "３", "3")
+	if strings.Contains(name, "３") {
+		name = strings.ReplaceAll(name, "３", "3")
 	}
-	if strings.Contains(searchName, "４") {
-		name = strings.ReplaceAll(searchName, "４", "4")
+	if strings.Contains(name, "４") {
+		name = strings.ReplaceAll(name, "４", "4")
 	}
-	if strings.Contains(searchName, "５") {
-		name = strings.ReplaceAll(searchName, "５", "5")
+	if strings.Contains(name, "５") {
+		name = strings.ReplaceAll(name, "５", "5")
 	}
-	if strings.Contains(searchName, "６") {
-		name = strings.ReplaceAll(searchName, "６", "6")
+	if strings.Contains(name, "６") {
+		name = strings.ReplaceAll(name, "６", "6")
 	}
-	if strings.Contains(searchName, "７") {
-		name = strings.ReplaceAll(searchName, "７", "7")
+	if strings.Contains(name, "７") {
+		name = strings.ReplaceAll(name, "７", "7")
 	}
-	if strings.Contains(searchName, "８") {
-		name = strings.ReplaceAll(searchName, "８", "8")
+	if strings.Contains(name, "８") {
+		name = strings.ReplaceAll(name, "８", "8")
 	}
-	if strings.Contains(searchName, "９") {
-		name = strings.ReplaceAll(searchName, "９", "9")
+	if strings.Contains(name, "９") {
+		name = strings.ReplaceAll(name, "９", "9")
 	}
-	if strings.Contains(searchName, "０") {
-		name = strings.ReplaceAll(searchName, "０", "0")
+	if strings.Contains(name, "０") {
+		name = strings.ReplaceAll(name, "０", "0")
 	}
-	if strings.Contains(searchName, "Ｍ") {
-		name = strings.ReplaceAll(searchName, "Ｍ", "M")
+	if strings.Contains(name, "Ｍ") {
+		name = strings.ReplaceAll(name, "Ｍ", "M")
 	}
-	if strings.Contains(searchName, "М") {
-		name = strings.ReplaceAll(searchName, "М", "M")
+	if strings.Contains(name, "М") {
+		name = strings.ReplaceAll(name, "М", "M")
 	}
-
-	if strings.Contains(searchName, "Ｄ") {
-		name = strings.ReplaceAll(searchName, "Ｄ", "D")
-	}
-	if strings.Contains(searchName, "Ｓ") {
-		name = strings.ReplaceAll(searchName, "Ｓ", "S")
-	}
-	if strings.Contains(searchName, "Ｘ") {
-		name = strings.ReplaceAll(searchName, "Ｘ", "X")
-	}
-	if strings.Contains(searchName, "Ｗ") {
-		name = strings.ReplaceAll(searchName, "Ｗ", "W")
+	if strings.Contains(name, "Ｊ") {
+		name = strings.ReplaceAll(name, "Ｊ", "J")
 	}
 
-	if strings.Contains(searchName, "3") {
-		name = strings.ReplaceAll(searchName, "3", "III")
+	if strings.Contains(name, "Ｄ") {
+		name = strings.ReplaceAll(name, "Ｄ", "D")
 	}
-	if strings.Contains(searchName, "2") {
-		name = strings.ReplaceAll(searchName, "2", "II")
+	if strings.Contains(name, "Ｓ") {
+		name = strings.ReplaceAll(name, "Ｓ", "S")
 	}
-	if strings.Contains(searchName, "Ⅱ") {
-		name = strings.ReplaceAll(searchName, "Ⅱ", "II")
+	if strings.Contains(name, "Ｘ") {
+		name = strings.ReplaceAll(name, "Ｘ", "X")
 	}
-	if strings.Contains(searchName, "＋") {
-		name = strings.ReplaceAll(searchName, "＋", "+")
+	if strings.Contains(name, "Ｗ") {
+		name = strings.ReplaceAll(name, "Ｗ", "W")
 	}
-	if strings.Contains(searchName, "＊") {
-		name = strings.ReplaceAll(searchName, "＊", "*")
+
+	if strings.Contains(name, "3") {
+		name = strings.ReplaceAll(name, "3", "III")
+	}
+	if strings.Contains(name, "2") {
+		name = strings.ReplaceAll(name, "2", "II")
+	}
+	if strings.Contains(name, "Ⅱ") {
+		name = strings.ReplaceAll(name, "Ⅱ", "II")
+	}
+	if strings.Contains(name, "＋") {
+		name = strings.ReplaceAll(name, "＋", "+")
+	}
+	if strings.Contains(name, "＊") {
+		name = strings.ReplaceAll(name, "＊", "*")
 	}
 
 	name = strings.TrimSuffix(name, "％")
@@ -486,7 +569,8 @@ func getGameNameAlternative(searchName string) string {
 	return name
 }
 
-func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {
+func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []string, fn func(t1 T1) string) *T1 {
+	searchName := strings.ToLower(searchNameO)
 	mainTitle, _, num := getTitlesNum(searchName, true)
 	type Result struct {
 		similarity float32
@@ -497,7 +581,7 @@ func searchNameByRegex[T1 any](slice1 []T1, searchName string, excludeWords []st
 	}
 	var results []Result
 	for _, item := range slice1 {
-		name := fn(item)
+		name := strings.ToLower(fn(item))
 		if name == searchName {
 			return &item
 		}

@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/bi-zone/etw"
@@ -190,6 +191,14 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 	}
 
 	cmd.Dir = filepath.Dir(path)
+	if s.config.DisplayName != "" {
+		_, err := s.GetDisplayByName(s.config.DisplayName)
+		if err == nil {
+			cmd.SysProcAttr = &syscall.SysProcAttr{
+				CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+			}
+		}
+	}
 
 	if err := cmd.Start(); err != nil {
 		applog.LogErrorf(s.ctx, "failed to start game: %v", err)
@@ -217,6 +226,14 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 
 	// 启动成功，返回 true 给前端
 	return true, nil
+}
+
+func (s *StartService) GetAvailableDisplays() ([]models.MonitorInfo, error) {
+	return utils.EnumDisplayMonitors()
+}
+
+func (s *StartService) GetDisplayByName(name string) (models.MonitorInfo, error) {
+	return utils.GetDisplayByName(name)
 }
 
 // detectAndMonitorProcess 检测实际游戏进程并开始监控
@@ -320,6 +337,22 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 
 	fmt.Printf("start tracking pid:%d, pName:%s\n", actualProcessID, actualProcessName)
 	s.sessionService.UpdateProcess(sessionID, actualProcessName, int(actualProcessID))
+
+	if s.config.DisplayName != "" {
+		monitor, err := utils.GetDisplayByName(s.config.DisplayName)
+		if err == nil {
+			time.Sleep(time.Millisecond * 500)
+			hwnds, err := utils.EnumWindowsByProcessID(actualProcessID)
+			if err == nil && len(hwnds) > 0 {
+				for _, hwnd := range hwnds {
+					err = utils.MoveWindowToMonitor(hwnd, monitor)
+					if err == nil {
+						fmt.Printf("move window to monitor:%s\n", monitor.DeviceName)
+					}
+				}
+			}
+		}
+	}
 
 	// 根据情况选择监控方式
 	if needExternalMonitor {
@@ -1073,6 +1106,7 @@ func (s *StartService) startGameInsideVm(gameID string) (bool, error) {
 	vmrunArgs = append(vmrunArgs, "runProgramInGuest")
 	vmrunArgs = append(vmrunArgs, s.config.VmPath)
 	vmrunArgs = append(vmrunArgs, "-noWait")
+	vmrunArgs = append(vmrunArgs, "-interactive")
 	vmrunArgs = append(vmrunArgs, "-activeWindow")
 	vmrunArgs = append(vmrunArgs, path)
 	if arguments != "" {

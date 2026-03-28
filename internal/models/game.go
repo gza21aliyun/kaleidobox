@@ -84,3 +84,13 @@ type GuideContent struct {
 	SaveLink string
 	Source   enums.GuideSource
 }
+
+type MonitorInfo struct {
+	Index      int    `json:"index"`
+	DeviceName string `json:"device_name"`
+	Left       int32  `json:"left"`
+	Top        int32  `json:"top"`
+	Right      int32  `json:"right"`
+	Bottom     int32  `json:"bottom"`
+	IsPrimary  bool   `json:"is_primary"`
+}

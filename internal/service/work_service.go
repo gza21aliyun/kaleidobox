@@ -100,7 +100,7 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 	if work.CharactorName != "" {
 		fmt.Printf("三围022：%s\n", work.Measurements)
 		charactor, err = s.charactorService.CreateOrUpdateCharactor(work.CharactorName, work.GameId, work.SourceGameId,
-			work.SourceType, work.SourceCharactorId, work.CharactorImage, work.WorkSummary, work.Measurements, work.Height, work.Sort)
+			work.SourceType, work.SourceCharactorId, work.CharactorImage, work.WorkSummary, work.Measurements, work.Height, work.Sort, work.StaffName)
 		if err != nil {
 			fmt.Println("06 CreateOrUpdateWorkStaffCharactor %s, %v", charactor.Name, err)
 			return err
@@ -113,10 +113,17 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 	}
 	// fmt.Println("12 CreateOrUpdateWorkStaffCharactor")
 	newWork := models.Work{}
-	if work.StaffName != "" {
+	if work.StaffName != "" && work.CharactorName == "" {
 		newWork, err = s.GetWorkByStaff(work.GameId, work.StaffName)
 		if err != nil && err != sql.ErrNoRows {
 			fmt.Println("获取员工工作出错 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)
+			return err
+		}
+	}
+	if newWork.Id == "" && work.CharactorName != "" && work.StaffName != "" {
+		newWork, err = s.GetWorkByCv(work.GameId, work.StaffName, work.CharactorName)
+		if err != nil && err != sql.ErrNoRows {
+			fmt.Println("获取员工工作出错2 CreateOrUpdateWorkStaffCharactor %s, %v", work.StaffName, err)
 			return err
 		}
 	}
@@ -257,6 +264,52 @@ func (s *WorkService) GetWorkByStaff(gameId, staffName string) (models.Work, err
 		WHERE game_id = ? AND staff_name = ?
 	`
 	return s.GetWorkByQueryIds(query, gameId, staffName)
+}
+
+func (s *WorkService) GetWorkByCv(gameId, staffName string, charactorName string) (models.Work, error) {
+	cName := charactorName
+	if strings.Contains(charactorName, "＝") {
+		cName = strings.Split(charactorName, "＝")[0]
+	}
+	query := `
+		SELECT w.id, w.game_id, w.staff_id, w.role, w.charactor_id, w.charactor_name, w.staff_name, w.work_summary, w.source_type, 
+		w.source_staff_id, w.source_charactor_id, w.source_game_id, w.images, w.game_name, w.game_cover, w.sort
+		FROM works w
+		JOIN charactors c ON w.charactor_id = c.id
+		WHERE array_contains(string_split(c.other_names, ','), ?) AND w.staff_name = ? AND w.game_id = ?
+	`
+	row := s.db.QueryRowContext(s.ctx, query, cName, staffName, gameId)
+
+	var work models.Work = models.Work{}
+	var sourceType string
+	var role string
+	err := row.Scan(
+		&work.Id,
+		&work.GameId,
+		&work.StaffId,
+		&role,
+		&work.CharactorId,
+		&work.CharactorName,
+		&work.StaffName,
+		&work.WorkSummary,
+		&sourceType,
+		&work.SourceStaffId,
+		&work.SourceCharactorId,
+		&work.SourceGameId,
+		&work.Images,
+		&work.GameName,
+		&work.CharactorImage,
+		&work.Sort,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return work, err // 未找到记录
+		}
+		return work, err
+	}
+	work.SourceType = enums.SourceType(sourceType)
+	work.Role = enums.StaffRole(role)
+	return work, nil
 }
 
 func (s *WorkService) GetWorkByStaffId(staffId string) (models.Work, error) {

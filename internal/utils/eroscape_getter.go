@@ -128,6 +128,15 @@ func (b EroscapeInfoGetter) FetchMetadataByName2(name string) (models.Game, erro
 				return gameEntity.Game, err
 			})
 	}
+	if game.SourceID == "" {
+		game, err = b.FetchMetadataByNameFunc(name, 3,
+			func(request vo.MetadataRequest) (models.Game, error) {
+				// fmt.Printf("FetchMetadataByNameFunc 01")
+				gameEntity, err := b.FetchMetadataById(request)
+
+				return gameEntity.Game, err
+			})
+	}
 	return game, err
 }
 
@@ -181,6 +190,8 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn Id
 			return game, errors.New("no game found")
 		}
 		mainTitle = subtitle
+	} else if isAl == 3 {
+		mainTitle = getTransmittedMainTitle(name)
 	}
 	// url += mainTitle
 
@@ -377,7 +388,7 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 			work.GameName = gameEntity.Game.Name
 			work.Role = enums.CV
 			work.CharactorImage = s.Find("div.character_image img").AttrOr("src", "")
-			work.CharactorName = strings.ReplaceAll(strings.TrimSpace(s.Find("div.character_name").Text()), " ", "")
+			work.CharactorName = strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(s.Find("div.character_name").Text()), " ", ""), "=", "＝")
 			work.Height = removeAllChar(s.Find("div.personal_data dl:contains('身長') dd").Eq(0).Text(), " \n")
 			work.Measurements = removeAllChar(s.Find("div.personal_data dl:contains('スリーサイズ') dd").Eq(0).Text(), " \n")
 			fmt.Printf("三围：%s\n", work.Measurements)
@@ -758,7 +769,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		e.DOM.Find("table#creater_infomation_table tr#seiyu a").Each(func(i int, s *goquery.Selection) {
 			staffName := strings.TrimSpace(s.Text())
 			StaffUrl := s.AttrOr("href", "")
-			charactorName := strings.ReplaceAll(strings.TrimSpace(s.Find("span").Text()), " ", "")
+			charactorName := strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(s.Find("span").Text()), " ", ""), "=", "＝")
 			if staffName != "" && StaffUrl != "" {
 				parsedURL, err := url.Parse(StaffUrl)
 				if err != nil {
@@ -784,13 +795,36 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 		})
 		cvWorks = worksMap[enums.CV]
 		e.DOM.Find("table#creater_infomation_table tr#seiyu span").Each(func(i int, s *goquery.Selection) {
-			charactorName := strings.TrimSpace(s.Text())
+			charactorName := strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(s.Text()), " ", ""), "=", "＝")
 			charactorName = strings.Trim(charactorName, "()")
 			if charactorName == "その他" {
 				charactorName = ""
 			}
 			if len(cvWorks) > i {
-				cvWorks[i].CharactorName = charactorName
+				if strings.Contains(charactorName, "、") {
+					names := strings.Split(charactorName, "、")
+					for ii, name := range names {
+						if ii > 0 {
+							work := models.Work{
+								GameId:        game.ID,
+								Role:          enums.CV,
+								StaffName:     cvWorks[i].StaffName,
+								CharactorName: name,
+								SourceStaffId: cvWorks[i].SourceStaffId,
+								Sort:          50 + i,
+								SourceType:    enums.Eroscape,
+							}
+							cvWorks = append(cvWorks, work)
+
+						} else {
+							cvWorks[i].CharactorName = name
+						}
+					}
+
+				} else {
+					cvWorks[i].CharactorName = charactorName
+				}
+
 			}
 
 		})

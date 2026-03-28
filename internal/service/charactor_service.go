@@ -8,9 +8,11 @@ import (
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
+	"strings"
 
 	"lunabox/internal/enums"
 
+	"github.com/dlclark/regexp2"
 	"github.com/google/uuid"
 )
 
@@ -69,17 +71,37 @@ func (s *CharactorService) GetCharactorBySource(sourceType enums.SourceType, sou
 	return s.GetCharactorByQueryId(sourceCharactorId, "", query)
 }
 
+func isUniqueCharactorName(name string) bool {
+	if strings.Contains(name, "＝") {
+		return true
+	}
+	pattern := regexp2.MustCompile(`\p{Han}`, 0)
+	match, _ := pattern.MatchString(name)
+	if match && len([]rune(name)) >= 4 {
+		return true
+	}
+	return false
+}
+
 func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId string, sourceId string,
 	sourceType enums.SourceType, sourceCharactorId string, charaImage string,
-	summary string, mearsurements string, height string, sort int) (models.Charactor, error) {
+	summary string, mearsurements string, height string, sort int, staffName string) (models.Charactor, error) {
 	charactor, err := s.GetCharactorBySource(sourceType, sourceCharactorId)
+	if charactor.Id == "" /*&& isUniqueCharactorName(charactorName)*/ {
+		charactor, err = s.GetCharactorByBothName(charactorName, staffName)
+	}
 	if err != nil || charactor.Id == "" {
 		if err == sql.ErrNoRows || charactor.Id == "" {
 			charactor, err = s.GetCharactorByGameIdAndName(gameId, charactorName)
 			if err != nil && err == sql.ErrNoRows || charactor.Id == "" {
 				id := uuid.New().String()
+				otherNames := charactorName
+				if strings.Contains(charactorName, "＝") {
+					otherNames = utils.MergeStrings(otherNames, strings.Split(charactorName, "＝")[0])
+				}
 				charactor = models.Charactor{
 					Name:              charactorName,
+					OtherNames:        otherNames,
 					GameIds:           gameId,
 					Id:                id,
 					SourceType:        sourceType,
@@ -92,10 +114,11 @@ func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId 
 					Sort:              sort,
 				}
 				err = s.CreateCharactor(charactor)
+				fmt.Println("CreateOrUpdateCharactor 05 " + charactorName)
 				return charactor, err
 			}
 		} else {
-			return charactor, err
+			// return charactor, err
 		}
 	}
 	if charactor.Id != "" {
@@ -104,7 +127,12 @@ func (s *CharactorService) CreateOrUpdateCharactor(charactorName string, gameId 
 			charactor.ImagePath = charaImage
 		}
 		charactor.Images = utils.MergeStrings(charactor.Images, charaImage)
-		charactor.OtherNames = utils.MergeStrings(charactor.OtherNames, charactorName)
+		otherNames := utils.MergeStrings(charactor.OtherNames, charactorName)
+		if strings.Contains(charactorName, "＝") {
+			otherNames = utils.MergeStrings(otherNames, strings.Split(charactorName, "＝")[0])
+			fmt.Println("CreateOrUpdateCharactor 04 " + otherNames)
+		}
+		charactor.OtherNames = otherNames
 		if charactor.Summary == "" {
 			charactor.Summary = summary
 		}
@@ -123,6 +151,31 @@ func (s *CharactorService) GetCharactorById(id string) (models.Charactor, error)
 		WHERE id = ?
 	`
 	return s.GetCharactorByQueryId(id, "", query)
+}
+
+func (s *CharactorService) GetCharactorByName(name string) (models.Charactor, error) {
+	query := `
+		SELECT id, name, other_names, image_path, images, source_charactor_id, 
+		source_type, game_ids, summary, gender, measurements, height, sort
+		FROM charactors
+		WHERE name = ? OR array_contains(string_split(other_names, ','), ?)
+	`
+	return s.GetCharactorByQueryId(name, name, query)
+}
+
+func (s *CharactorService) GetCharactorByBothName(charactorName string, cvName string) (models.Charactor, error) {
+	cName := charactorName
+	if strings.Contains(charactorName, "＝") {
+		cName = strings.Split(charactorName, "＝")[0]
+	}
+	query := `
+		SELECT c.id, c.name, c.other_names, c.image_path, c.images, c.source_charactor_id, 
+		c.source_type, c.game_ids, c.summary, c.gender, c.measurements, c.height, c.sort
+		FROM charactors c
+		JOIN works w ON c.id = w.charactor_id
+		WHERE array_contains(string_split(c.other_names, ','), ?) AND w.staff_name = ?
+	`
+	return s.GetCharactorByQueryId(cName, cvName, query)
 }
 
 func (s *CharactorService) GetCharactorByGameIdAndName(gameId, name string) (models.Charactor, error) {

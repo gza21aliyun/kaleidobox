@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from 'react-i18next';
 import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
 import { useAppStore } from "../../store";
+import { enums } from "../../../wailsjs/go/models";
 
 interface SideBarProps {
   bgEnabled?: boolean;
@@ -10,7 +11,7 @@ interface SideBarProps {
 
 export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
   const { t } = useTranslation();
-  const { isSidebarOpen, toggleSidebar } = useAppStore();
+  const { isSidebarOpen, toggleSidebar, tasks } = useAppStore();
 
   const navItems = [
     { to: "/", label: t('nav.home'), icon: "i-mdi-home" },
@@ -21,6 +22,21 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
     { to: "/stats", label: t('nav.stats'), icon: "i-mdi-chart-bar" },
     { to: "/categories", label: t('nav.categories'), icon: "i-mdi-format-list-bulleted" },
   ];
+
+  const getTaskText = () => {
+    var c = 0
+    if (tasks && tasks.length > 0) {
+      tasks.forEach(task => {
+        if (task.status == enums.TaskStatus.STARTED) {
+          c += task.total - task.completed
+        }
+      });
+    }
+    if (c > 0) {
+      return <span className="text-red-500">({c})</span>
+    }
+    return (<></>)
+  };
 
   // 根据是否启用背景图来决定样式
   const sidebarBgClass = bgEnabled
@@ -67,7 +83,7 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
                 onDragStart={e => e.preventDefault()}
               >
                 <div className={`${item.icon} text-xl pointer-events-none`} />
-                {isSidebarOpen && <span className="ml-3 pointer-events-none">{item.label}</span>}
+                {isSidebarOpen && <span className="ml-3 pointer-events-none">{item.label}{item.to === "/task" && (<>{getTaskText()}</>)}</span>}
               </Link>
             </li>
           ))}

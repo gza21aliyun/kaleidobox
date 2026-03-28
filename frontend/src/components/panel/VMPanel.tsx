@@ -12,7 +12,7 @@ export function VMPanel({ formData, onChange }: VMPanelProps) {
 
   const handleVmrunPathChange = async () => {
     try {
-      const selection = await SelectFile("Vmrun.exe", "*.exe");
+      const selection = await SelectFile("vmrun.exe", "*.exe");
       if (selection) {
         onChange({ ...formData, vmrun_path: selection });
       }

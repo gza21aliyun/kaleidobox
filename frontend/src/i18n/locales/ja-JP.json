@@ -571,7 +571,10 @@
     "searchChineseFirst": "中国語ソースを優先して中国語情報を取得",
     "autoDownloadImages": "画像を自動的に images ディレクトリにダウンロードします。Getchu ソースの画像はダウンロードしないと表示されません",
     "moreLogs": "より多くのログを app.log に書き込む",
-    "newFolderChooser": "新スタイルのファイル・フォルダーセレクター（美しいが WIN11 ではネットワークマップドドライブを選択できません）"
+    "newFolderChooser": "新スタイルのファイル・フォルダーセレクター（美しいが WIN11 ではネットワークマップドドライブを選択できません）",
+    "displayName": "ディスプレイ",
+    "defaultDisplay": "デフォルト",
+    "primaryDisplay": "プライマリ"
   },
   "dbBackup": {
     "databaseBackup": "データベースバックアップ",
@@ -1037,7 +1040,7 @@
     "updated": "更新済み",
     "notMatched": "未マッチ",
     "emptyMatch": "空マッチ",
-    "pending": "保留中",
+    "pending": "処理待ち",
     "name": "名前",
     "matchStatus": "マッチ状態",
     "updateStatus": "更新状態",

@@ -173,6 +173,12 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.SearchCn = newConfig.SearchCn
 	s.config.AutoDownloadImages = newConfig.AutoDownloadImages
 	s.config.LogAll = newConfig.LogAll
+	s.config.VmName = newConfig.VmName
+	s.config.VmPass = newConfig.VmPass
+	s.config.VmPath = newConfig.VmPath
+	s.config.VmUserName = newConfig.VmUserName
+	s.config.VmrunPath = newConfig.VmrunPath
+	s.config.DisplayName = newConfig.DisplayName
 	applog.SetLogAll(s.config.LogAll)
 	return nil
 }

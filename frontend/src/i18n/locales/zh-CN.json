@@ -574,7 +574,10 @@
     "searchChineseFirst": "搜刮中文源优先获取中文信息",
     "autoDownloadImages": "自动下载图片到images目录，注意Getchu源的图片如果不下载会看不到",
     "moreLogs": "更多日志写入app.log",
-    "newFolderChooser": "新式文件、文件夹选择器（美观但WIN11不能选网络映射盘）"
+    "newFolderChooser": "新式文件、文件夹选择器（美观但WIN11不能选网络映射盘）",
+    "displayName": "显示器",
+    "defaultDisplay": "默认",
+    "primaryDisplay": "主显示器"
   },
   "dbBackup": {
     "databaseBackup": "数据库备份",

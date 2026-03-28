@@ -571,7 +571,10 @@
     "searchChineseFirst": "Prioritize Chinese sources for Chinese information",
     "autoDownloadImages": "Auto download images to images directory. Note: Getchu source images won't be visible if not downloaded",
     "moreLogs": "More logs written to app.log",
-    "newFolderChooser": "New style file/folder selector (beautiful but can't select network mapped drives in WIN11)"
+    "newFolderChooser": "New style file/folder selector (beautiful but can't select network mapped drives in WIN11)",
+    "displayName": "Display",
+    "defaultDisplay": "Default",
+    "primaryDisplay": "Primary"
   },
   "dbBackup": {
     "databaseBackup": "Database backup",

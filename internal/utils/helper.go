@@ -310,6 +310,9 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 				}
 
 			}
+			if re, err := regexp.MatchString(`^[a-zA-Z]{1,4}$`, mainTitle); err == nil && re && subTitle != "" {
+				mainTitle = subTitle
+			}
 			return handleMainTitle(mainTitle), subTitle, numStr
 		}
 	}
@@ -525,21 +528,33 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "０") {
 		name = strings.ReplaceAll(name, "０", "0")
 	}
+	if strings.Contains(name, "Ｄ") {
+		name = strings.ReplaceAll(name, "Ｄ", "D")
+	}
+	if strings.Contains(name, "Ｈ") {
+		name = strings.ReplaceAll(name, "Ｈ", "H")
+	}
+	if strings.Contains(name, "Ｊ") {
+		name = strings.ReplaceAll(name, "Ｊ", "J")
+	}
+	if strings.Contains(name, "Ｌ") {
+		name = strings.ReplaceAll(name, "Ｌ", "L")
+	}
 	if strings.Contains(name, "Ｍ") {
 		name = strings.ReplaceAll(name, "Ｍ", "M")
 	}
 	if strings.Contains(name, "М") {
 		name = strings.ReplaceAll(name, "М", "M")
 	}
-	if strings.Contains(name, "Ｊ") {
-		name = strings.ReplaceAll(name, "Ｊ", "J")
+	if strings.Contains(name, "Ｐ") {
+		name = strings.ReplaceAll(name, "Ｐ", "P")
 	}
 
-	if strings.Contains(name, "Ｄ") {
-		name = strings.ReplaceAll(name, "Ｄ", "D")
-	}
 	if strings.Contains(name, "Ｓ") {
 		name = strings.ReplaceAll(name, "Ｓ", "S")
+	}
+	if strings.Contains(name, "Ｕ") {
+		name = strings.ReplaceAll(name, "Ｕ", "U")
 	}
 	if strings.Contains(name, "Ｘ") {
 		name = strings.ReplaceAll(name, "Ｘ", "X")
@@ -547,16 +562,16 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "Ｗ") {
 		name = strings.ReplaceAll(name, "Ｗ", "W")
 	}
-
-	if strings.Contains(name, "3") {
-		name = strings.ReplaceAll(name, "3", "III")
+	if strings.Contains(name, "III") {
+		name = strings.ReplaceAll(name, "III", "3")
 	}
-	if strings.Contains(name, "2") {
-		name = strings.ReplaceAll(name, "2", "II")
+	if strings.Contains(name, "II") {
+		name = strings.ReplaceAll(name, "II", "2")
 	}
 	if strings.Contains(name, "Ⅱ") {
-		name = strings.ReplaceAll(name, "Ⅱ", "II")
+		name = strings.ReplaceAll(name, "Ⅱ", "2")
 	}
+
 	if strings.Contains(name, "＋") {
 		name = strings.ReplaceAll(name, "＋", "+")
 	}
@@ -570,8 +585,13 @@ func getGameNameAlternative(searchName string) string {
 }
 
 func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []string, fn func(t1 T1) string) *T1 {
-	searchName := strings.ToLower(searchNameO)
+	searchName := getGameNameAlternative(searchNameO)
+	searchName = strings.ToLower(searchName)
 	mainTitle, _, num := getTitlesNum(searchName, true)
+	// if num != "" {
+	// 	num = getGameNameAlternative(num)
+	// }
+	fmt.Printf("searchNameByRegex 00:%s, num:%s, alnum:%s\n", searchName, num, getGameNameAlternative(num))
 	type Result struct {
 		similarity float32
 		Value      T1
@@ -581,13 +601,14 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 	}
 	var results []Result
 	for _, item := range slice1 {
-		name := strings.ToLower(fn(item))
+		name := getGameNameAlternative(fn(item))
+		name = strings.ToLower(name)
 		if name == searchName {
 			return &item
 		}
 		containsExcludeWords := false
 		for _, word := range excludeWords {
-			if strings.Contains(name, word) {
+			if strings.Contains(name, strings.ToLower(word)) {
 				containsExcludeWords = true
 				break
 			}
@@ -598,13 +619,17 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 		similarity := edlib.JaroWinklerSimilarity(searchName, name)
 		if num != "" {
 			if strings.Contains(name, num) || strings.Contains(name, getGameNameAlternative(num)) {
+				fmt.Printf("num is same : %s, name:%s\n", num, name)
 				similarity += 0.1
 			}
 		}
 		gMainTitle, _, gameNum := getTitlesNum(name, true)
 		if num == "" {
 
-			if gameNum != "" {
+		}
+		if gameNum != "" {
+			if !strings.Contains(name, gameNum) && !strings.Contains(name, getGameNameAlternative(gameNum)) {
+				fmt.Printf("num cannot find : %s, name:%s\n", num, name)
 				similarity -= 0.1
 			}
 		}
@@ -612,8 +637,17 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 		if strings.Contains(searchName, "シナリオ") && strings.Contains(name, "シナリオ") {
 			similarity += 0.1
 		}
+		if !strings.Contains(searchName, "シナリオ") && strings.Contains(name, "シナリオ") {
+			similarity -= 0.1
+		}
 		if strings.Contains(searchName, "DLC") && strings.Contains(name, "DLC") {
 			similarity += 0.1
+		}
+		if strings.Contains(searchName, "アフター") && strings.Contains(name, "アフター") {
+			similarity += 0.1
+		}
+		if !strings.Contains(searchName, "アフター") && strings.Contains(name, "アフター") {
+			similarity -= 0.1
 		}
 		fmt.Printf("searchNameByRegex title: %s, similarity:%0.4f, num:%s\n", name, similarity, gameNum)
 		results = append(results, Result{similarity: similarity, Value: item})

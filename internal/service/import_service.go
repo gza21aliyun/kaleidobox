@@ -1092,7 +1092,7 @@ func (s *ImportService) SearchVideoExePath(game *models.Game) error {
 					break
 				}
 			}
-			if ext == ".exe" {
+			if ext == ".exe" || ext == ".EXE" {
 				// 检查文件名是否包含排除关键词
 				filePrefix := strings.ReplaceAll(fileName, filepath.Ext(path), "")
 				if !utils.ArrayContains(excludeExeKeywords, filePrefix) {

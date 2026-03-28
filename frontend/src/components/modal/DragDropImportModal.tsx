@@ -334,12 +334,12 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
         selectManualMatch(game, manualSource);
       }
       else {
-        toast.error("未找到游戏");
+        toast.error(t('import.toasts.gameNotFound'));
       }
     }
     catch (error) {
       console.error("Failed to fetch by ID:", error);
-      toast.error("获取失败");
+      toast.error(t('import.toasts.fetchFailed'));
     }
     finally {
       setIsSearching(false);
@@ -591,7 +591,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                                   type="button"
                                   onClick={() => openManualSelect(index)}
                                   className="text-primary-500 hover:text-primary-700 text-sm"
-                                  title="手动选择"
+                                  title={t('import.modals.dragDrop.manualSelection')}
                                 >
                                   <div className="i-mdi-pencil text-lg" />
                                 </button>

@@ -3,10 +3,11 @@ import { create } from "zustand";
 import { appconf, models, vo, enums } from "../wailsjs/go/models";
 
 import { GetAppConfig, UpdateAppConfig } from "../wailsjs/go/service/ConfigService";
-import { GetGames, GetGamesByPage } from "../wailsjs/go/service/GameService";
+import { GetGames, GetGamesByPage, GetGameByID, GetSimpleGamesByPage, GetGamesSendFront } from "../wailsjs/go/service/GameService";
 import { GetHomePageData } from "../wailsjs/go/service/HomeService";
 import { EventsOn } from "../wailsjs/runtime/runtime";
 import { arrayFind } from "./components/utils/Utility";
+import { g } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
 
 type AISummaryCache = {
   [dimension: string]: string;
@@ -33,6 +34,7 @@ type AppState = {
   setGames: (games: models.Game[]) => void;
   updateGameInGames: (game: models.Game) => void;
   updateGamesInGames: (games: models.Game[]) => void;
+  loadGamesData: () => void;
   // 任务列表全局状态
   tasks: models.TaskNotice[];
   setTasks: (tasks: models.TaskNotice[]) => void;
@@ -131,11 +133,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchGames: async () => {
     set({ gamesLoading: true });
     var page = 1;
-    var pageSize = 20;
+    var pageSize = 50;
     try {
       var gameList: models.Game[] = [];
       for (;;) { 
-        const result = await GetGamesByPage(page, pageSize);        
+        const result = await GetSimpleGamesByPage(page, pageSize);        
         
         if (page == 1) {
           gameList = result || [];
@@ -149,14 +151,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
         
       }
+      set({ gamesLoading: false });
+      get().loadGamesData()
       
     }
     catch (error) {
       console.error("Failed to fetch games:", error);
-    }
-    finally {
       set({ gamesLoading: false });
     }
+    // finally {
+    //   set({ gamesLoading: false });
+    // }
   },
   // AI Summary 缓存
   aiSummaryCache: {},
@@ -176,6 +181,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   setTasks: (tasksToSet: models.TaskNotice[]) => {
     set({ tasks: tasksToSet || [] });
   },
+  loadGamesData: async () => { 
+    // for (const game of get().games) {
+    //   // const g = await GetGameByID(game.id);
+    //   // if (g) {
+    //   //   get().updateGameInGames(g);
+    //   // }
+
+    //   GetGameByID(game.id).then((g) => {
+    //     if (g) {
+    //       get().updateGameInGames(g);
+    //     }
+    //   });
+    // }
+    GetGamesSendFront(get().games.length)
+  },
 }));
 
 // 全局事件监听器，确保在任何页面都能接收到游戏更新和任务更新
@@ -183,7 +203,7 @@ const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
   const task: models.TaskNotice = new models.TaskNotice(data);
   
   // 处理游戏更新
-  if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id !== "") {
+  if (task.item_status === enums.TaskStatus.COMPLETED && task.item_id !== "" && task.type == enums.TaskType.GAMES) {
     const newGame: models.Game = task.item_data as models.Game;
     console.log("newGame:", newGame);
     
@@ -199,6 +219,9 @@ const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
       // 如果游戏不在当前列表中，添加它
       useAppStore.getState().setGames([...currentGames, newGame]);
     }
+  } else if (task.type === enums.TaskType.REFRESH_GAMES) { 
+    const newGames: models.Game[] = task.item_data as models.Game[];
+    useAppStore.getState().updateGamesInGames(newGames)
   }
   
   // 处理任务列表更新

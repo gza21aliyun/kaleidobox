@@ -64,6 +64,8 @@ func SchemaQueries() []string {
 			pv_path TEXT,
 			inside_vm BOOLEAN DEFAULT FALSE
 		)`,
+		`CREATE INDEX IF NOT EXISTS idx_games_id ON games(id)`,
+		`CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)`,
 		`CREATE TABLE IF NOT EXISTS game_categories (
 			game_id TEXT,
 			category_id TEXT,

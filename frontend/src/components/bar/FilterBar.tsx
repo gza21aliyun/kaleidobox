@@ -5,6 +5,7 @@ import { models } from "../../../wailsjs/go/models";
 import { arrayContains, mapToArray, tagMapForEach } from "../utils/Utility";
 import { ListTags, GetTagListByGroup, UpdateTagsGroup, ListGroups } from "../../../wailsjs/go/service/TagService";
 import { FilterChooseTagModal, FilterChooseGroupModal } from "../modal/FilterChooseTagModal";
+import { useAppStore } from "../../store";
 
 interface SortOption {
   label: string;
@@ -344,6 +345,21 @@ export function FilterBar({
             title={sortOrder === 'asc' ? t('common.filter.ascending') : t('common.filter.descending')}
           >
             <div className={sortOrder === "asc" ? "i-mdi-sort-ascending text-xl" : "i-mdi-sort-descending text-xl"} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => useAppStore.getState().fetchGames()}
+            className="glass-panel p-2
+                      text-brand-500 dark:text-brand-400
+                      hover:text-brand-900 dark:hover:text-white
+                      bg-white dark:bg-brand-800
+                      border border-brand-200 dark:border-brand-700
+                      rounded-lg
+                      hover:bg-brand-100 dark:hover:bg-brand-700"
+            title={t('common.refresh')}
+          >
+            <div className="i-mdi-refresh text-xl" />
           </button>
 
           {extraButtons}

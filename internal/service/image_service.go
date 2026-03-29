@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
@@ -58,6 +59,20 @@ type ImageService struct {
 	ctx    context.Context
 	db     *sql.DB
 	config *appconf.AppConfig
+
+	// 下载队列相关
+	downloadQueue chan downloadTask
+	wg            sync.WaitGroup
+	mu            sync.Mutex
+	maxConcurrent int
+}
+
+// 下载任务结构体
+type downloadTask struct {
+	imageUrl   string
+	fileName   string
+	result     chan error
+	retryCount int // 重试次数
 }
 
 // Rect 结构体定义
@@ -82,6 +97,19 @@ func (s *ImageService) Init(ctx context.Context, db *sql.DB, config *appconf.App
 	s.ctx = ctx
 	s.db = db
 	s.config = config
+
+	// 初始化下载队列
+	s.maxConcurrent = 3                            // 最大并发下载数
+	s.downloadQueue = make(chan downloadTask, 100) // 队列容量
+
+	// 启动工作协程
+	for i := 0; i < s.maxConcurrent; i++ {
+		s.wg.Add(1)
+		go s.downloadWorker()
+	}
+
+	// 设置全局 ImageService 实例
+	SetGlobalImageService(s)
 }
 
 // CreateImageBackup 创建新的 ImageBackup 记录
@@ -177,7 +205,7 @@ func (s *ImageService) CreateOrUpdateImageBackup(imageBackup models.ImageBackup)
 
 // GetImageBackupByUrl 根据 Url 查询 ImageBackup 记录
 func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.ImageBackup, error) {
-	// fmt.Printf("GetImageBackupByUrl url: %s\n", url)
+	fmt.Printf("GetImageBackupByUrl 01 url: %s\n", url)
 	query := `
 		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
 		FROM image_backups
@@ -203,6 +231,7 @@ func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.Image
 	}
 	if s.config.AutoDownloadImages && down {
 		newList, err := s.DownloadImageBackups([]models.ImageBackup{imageBackup})
+		fmt.Printf("GetImageBackupByUrl 04 url: %s\n", url)
 		return &newList[0], err
 	}
 	// else {
@@ -683,14 +712,101 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 	return err
 }
 
+// 全局 ImageService 实例，用于处理下载队列
+var globalImageService *ImageService
+
+// SetGlobalImageService 设置全局 ImageService 实例
+func SetGlobalImageService(service *ImageService) {
+	globalImageService = service
+}
+
+// DownloadImage 将下载任务加入队列并等待完成
 func DownloadImage(imageUrl, fileName string) error {
+	// 如果全局 ImageService 未初始化，使用同步下载
+	if globalImageService == nil {
+		// 创建临时 ImageService 进行同步下载
+		tempService := &ImageService{}
+		fmt.Printf("GetImageBackupByUrl 021 url: %s\n", imageUrl)
+		err := tempService.downloadImageInternal(imageUrl, fileName, 30*time.Second)
+		fmt.Printf("GetImageBackupByUrl 031 url: %s\n", imageUrl)
+		return err
+	}
+
+	// 创建下载任务
+	task := downloadTask{
+		imageUrl:   imageUrl,
+		fileName:   fileName,
+		result:     make(chan error, 1),
+		retryCount: 0, // 初始重试次数为 0
+	}
+
+	// 将任务加入队列
+	globalImageService.downloadQueue <- task
+
+	// 等待任务完成
+	err := <-task.result
+	return err
+}
+
+// determineReferer 根据图片 URL 确定应该使用的 Referer
+// 下载工作协程
+func (s *ImageService) downloadWorker() {
+	defer s.wg.Done()
+
+	for task := range s.downloadQueue {
+		// 根据重试次数设置超时时间
+		timeout := 5 * time.Second
+		if task.retryCount > 0 {
+			timeout = 30 * time.Second
+		}
+
+		// 创建一个带超时的上下文
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		// 使用通道来处理超时
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- s.downloadImageInternal(task.imageUrl, task.fileName, timeout)
+		}()
+
+		var err error
+		select {
+		case err = <-errChan:
+			if err != nil {
+				// 处理下载错误
+				fmt.Printf("downloadWorker err: %v\n", err)
+			}
+			// 下载完成
+		case <-ctx.Done():
+			// 超时
+			err = fmt.Errorf("下载超时")
+		}
+
+		// 处理重试逻辑
+		if err != nil && task.retryCount == 0 {
+			// 第一次超时，将任务重新加入队列
+			task.retryCount++
+			s.downloadQueue <- task
+			continue
+		} else {
+			// 第二次尝试或下载成功，返回结果
+			task.result <- err
+			close(task.result)
+		}
+	}
+}
+
+// 内部下载函数
+func (s *ImageService) downloadImageInternal(imageUrl, fileName string, timeout time.Duration) error {
+	fmt.Printf("GetImageBackupByUrl 022 url: %s\n", imageUrl)
 	url := imageUrl
 	if strings.HasPrefix(url, "//gyutto.com") {
 		url = strings.ReplaceAll(url, "//gyutto.com", "https://image.gyutto.com")
 	}
 	// 创建 HTTP 客户端
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: timeout,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) >= 10 {
 				return fmt.Errorf("stopped after 10 redirects")
@@ -752,11 +868,11 @@ func DownloadImage(imageUrl, fileName string) error {
 		defer os.Remove(fileName)
 		return fmt.Errorf("下载的文件大小小于3000字节，可能不是有效的图片文件")
 	}
+	fmt.Printf("GetImageBackupByUrl 032 url: %s\n", imageUrl)
 
 	return nil
 }
 
-// determineReferer 根据图片 URL 确定应该使用的 Referer
 func determineReferer(imageURL string) string {
 	// Getchu
 	if strings.Contains(imageURL, "getchu.com") {

@@ -352,6 +352,43 @@ func (s *GameService) DeleteGames(ids []string) error {
 	return nil
 }
 
+func (s *GameService) GetSimpleGamesByPage(page int, pageSize int) ([]models.Game, error) {
+	query := fmt.Sprintf(`SELECT 
+		id, name, 
+	FROM games 
+	ORDER BY created_at DESC
+	LIMIT %d OFFSET %d
+	`, pageSize, (page-1)*pageSize)
+	var games []models.Game = []models.Game{}
+	rows, err := s.db.QueryContext(s.ctx, query)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "GetGames: failed to query games: %v", err)
+		return games, fmt.Errorf("failed to query games: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var game models.Game
+
+		err := rows.Scan(
+			&game.ID,
+			&game.Name,
+		)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
+			// return games, fmt.Errorf("failed to scan game: %w", err)
+		}
+		games = append(games, game)
+	}
+
+	if err = rows.Err(); err != nil {
+		applog.LogErrorf(s.ctx, "GetGames: error iterating games: %v", err)
+		return games, fmt.Errorf("error iterating games: %w", err)
+	}
+
+	return games, nil
+}
+
 func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, error) {
 	query := fmt.Sprintf(`SELECT 
 		id, name, 
@@ -388,6 +425,60 @@ func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, err
 	LIMIT %d OFFSET %d
 	`, pageSize, (page-1)*pageSize)
 	return s.GetGamesByQuery(query)
+}
+
+func (s *GameService) GetGamesSendFront(total int) error {
+	page := 1
+	pageSize := 20
+	count := 0
+	id := uuid.New().String()
+	for {
+		games, err := s.GetGamesByPage(page, pageSize)
+		if err != nil {
+			return err
+		}
+
+		// for _, game := range games {
+		// 	count++
+		// 	taskNotice := models.Task{
+		// 		Id:          id,
+		// 		Name:        "game_updates",
+		// 		ItemData:    game,
+		// 		Status:      enums.Completed,
+		// 		ItemId:      game.ID,
+		// 		Type:        enums.RefreshGames,
+		// 		Description: "刷新游戏",
+		// 		WorkingOn:   game.Name,
+		// 		ItemStatus:  enums.Completed,
+		// 		Completed:   count,
+		// 		Total:       total,
+		// 	}
+		// 	runtime.EventsEmit(s.ctx, "game_updates", taskNotice)
+		// }
+		count += len(games)
+		if len(games) > 0 {
+			taskNotice := models.Task{
+				Id:          id,
+				Name:        "game_updates",
+				ItemData:    games,
+				Status:      enums.Completed,
+				ItemId:      games[0].ID,
+				Type:        enums.RefreshGames,
+				Description: "刷新游戏",
+				WorkingOn:   games[0].Name,
+				ItemStatus:  enums.Completed,
+				Completed:   count,
+				Total:       total,
+			}
+			runtime.EventsEmit(s.ctx, "game_updates", taskNotice)
+		}
+
+		if len(games) < pageSize {
+			break
+		}
+		page++
+	}
+	return nil
 }
 
 func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {

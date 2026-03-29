@@ -534,17 +534,35 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "０") {
 		name = strings.ReplaceAll(name, "０", "0")
 	}
+	if strings.Contains(name, "Ａ") {
+		name = strings.ReplaceAll(name, "Ａ", "A")
+	}
+	if strings.Contains(name, "Ｂ") {
+		name = strings.ReplaceAll(name, "Ｂ", "B")
+	}
 	if strings.Contains(name, "Ｃ") {
 		name = strings.ReplaceAll(name, "Ｃ", "C")
 	}
 	if strings.Contains(name, "Ｄ") {
 		name = strings.ReplaceAll(name, "Ｄ", "D")
 	}
+	if strings.Contains(name, "Ｅ") {
+		name = strings.ReplaceAll(name, "Ｅ", "E")
+	}
+	if strings.Contains(name, "Ｆ") {
+		name = strings.ReplaceAll(name, "Ｆ", "F")
+	}
+	if strings.Contains(name, "Ｇ") {
+		name = strings.ReplaceAll(name, "Ｇ", "G")
+	}
 	if strings.Contains(name, "Ｈ") {
 		name = strings.ReplaceAll(name, "Ｈ", "H")
 	}
 	if strings.Contains(name, "Ｊ") {
 		name = strings.ReplaceAll(name, "Ｊ", "J")
+	}
+	if strings.Contains(name, "Ｋ") {
+		name = strings.ReplaceAll(name, "Ｋ", "K")
 	}
 	if strings.Contains(name, "Ｌ") {
 		name = strings.ReplaceAll(name, "Ｌ", "L")
@@ -555,21 +573,46 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "М") {
 		name = strings.ReplaceAll(name, "М", "M")
 	}
+	if strings.Contains(name, "Ｎ") {
+		name = strings.ReplaceAll(name, "Ｎ", "N")
+	}
+	if strings.Contains(name, "Ｏ") {
+		name = strings.ReplaceAll(name, "Ｏ", "O")
+	}
 	if strings.Contains(name, "Ｐ") {
 		name = strings.ReplaceAll(name, "Ｐ", "P")
+	}
+	if strings.Contains(name, "Ｑ") {
+		name = strings.ReplaceAll(name, "Ｑ", "Q")
+	}
+	if strings.Contains(name, "Ｒ") {
+		name = strings.ReplaceAll(name, "Ｒ", "R")
 	}
 
 	if strings.Contains(name, "Ｓ") {
 		name = strings.ReplaceAll(name, "Ｓ", "S")
 	}
+	if strings.Contains(name, "Ｔ") {
+		name = strings.ReplaceAll(name, "Ｔ", "T")
+	}
 	if strings.Contains(name, "Ｕ") {
 		name = strings.ReplaceAll(name, "Ｕ", "U")
+	}
+	if strings.Contains(name, "Ｖ") {
+		name = strings.ReplaceAll(name, "Ｖ", "V")
 	}
 	if strings.Contains(name, "Ｘ") {
 		name = strings.ReplaceAll(name, "Ｘ", "X")
 	}
+
 	if strings.Contains(name, "Ｗ") {
 		name = strings.ReplaceAll(name, "Ｗ", "W")
+	}
+	if strings.Contains(name, "Ｙ") {
+		name = strings.ReplaceAll(name, "Ｙ", "Y")
+	}
+	if strings.Contains(name, "Ｚ") {
+		name = strings.ReplaceAll(name, "Ｚ", "Z")
 	}
 	if strings.Contains(name, "III") {
 		name = strings.ReplaceAll(name, "III", "3")

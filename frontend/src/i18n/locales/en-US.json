@@ -293,6 +293,9 @@
     "lastPlayed": "Last played",
     "releaseDate": "Release date",
     "toasts": {
+      "tagAddSuccess": "Tag added successfully",
+      "noVideosFound": "No related videos found",
+      "searchFailed": "Search failed",
       "loadGameFailed": "Failed to load game data",
       "selectExecutableFailed": "Failed to select executable",
       "selectSavePathFailed": "Failed to select save path",

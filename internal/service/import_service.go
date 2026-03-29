@@ -1063,7 +1063,7 @@ func (s *ImportService) SearchVideoExePath(game *models.Game) error {
 		"unins", "setup", "config", "patch", "update", "crashpad",
 		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet",
 		"redistributable", "installer", "launcher_helper", "crashreporter",
-		"updater", "uninstall", "删除", "卸载", "syscfg", "ihs",
+		"updater", "uninstall", "删除", "卸载", "syscfg", "ihs", "configure",
 	}
 	var videoFiles []string
 	var exeFiles []string

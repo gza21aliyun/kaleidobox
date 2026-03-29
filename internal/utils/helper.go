@@ -214,7 +214,7 @@ func extractLastNumberFromString(titleN string) (t string, n string) {
 	lastChar := runes[len(runes)-1]
 	lastCharStr := string(lastChar)
 
-	fmt.Printf("extractLastNumberFromString title:%s char:%c\n", title, lastChar)
+	// fmt.Printf("extractLastNumberFromString title:%s char:%c\n", title, lastChar)
 
 	// 使用 regexp2 支持 \u 转义
 	digitPattern := regexp2.MustCompile(`^[\u0030-\u0039\uFF10-\uFF19弐壱参]$`, 0)
@@ -256,8 +256,13 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 
 	// 有有效分隔符，尝试分离主标题和副标题
 	// 使用非空格分隔符进行分割
+	hasNonEnglish := regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(searchName)
 	separatorPattern := `[－\-~～]+`
+	if hasNonEnglish {
+		separatorPattern = `[－\-~ ～]+`
+	}
 	parts := regexp.MustCompile(separatorPattern).Split(searchName, -1)
+	// fmt.Printf("getTitlesNum 11 :%s\n", strings.Join(parts, ","))
 	if len(parts) > 1 {
 		mainTitle = strings.TrimSpace(parts[0])
 
@@ -267,7 +272,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 		mainTitle = searchName
 	}
 	if len(parts) < 2 {
-		hasNonEnglish := regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(mainTitle)
+		hasNonEnglish = regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(mainTitle)
 		if onlyNum || hasNonEnglish {
 			separatorPattern = `[－\-~～　 ！\[]+`
 			// fmt.Printf("getTitlesNum 02:\n")
@@ -279,6 +284,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 		parts = regexp.MustCompile(separatorPattern).Split(searchName, -1)
 
 	}
+	// fmt.Printf("getTitlesNum 12 :%s\n", strings.Join(parts, ","))
 
 	if len(parts) >= 2 {
 		// 成功分离出主标题和副标题
@@ -528,6 +534,9 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "０") {
 		name = strings.ReplaceAll(name, "０", "0")
 	}
+	if strings.Contains(name, "Ｃ") {
+		name = strings.ReplaceAll(name, "Ｃ", "C")
+	}
 	if strings.Contains(name, "Ｄ") {
 		name = strings.ReplaceAll(name, "Ｄ", "D")
 	}
@@ -628,7 +637,8 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 
 		}
 		if gameNum != "" {
-			if !strings.Contains(name, gameNum) && !strings.Contains(name, getGameNameAlternative(gameNum)) {
+			// fmt.Printf("num cannot find 00 : %v, al:%v\n", strings.Contains(name, gameNum), strings.Contains(name, getGameNameAlternative(gameNum)))
+			if !strings.Contains(searchName, gameNum) && !strings.Contains(searchName, getGameNameAlternative(gameNum)) {
 				fmt.Printf("num cannot find : %s, name:%s\n", num, name)
 				similarity -= 0.1
 			}

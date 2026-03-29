@@ -293,6 +293,9 @@
     "lastPlayed": "前回のプレイ",
     "releaseDate": "発売日",
     "toasts": {
+      "tagAddSuccess": "タグの追加に成功しました",
+      "noVideosFound": "関連動画が見つかりませんでした",
+      "searchFailed": "検索に失敗しました",
       "loadGameFailed": "ゲームデータの読み込みに失敗しました",
       "selectExecutableFailed": "実行ファイルの選択に失敗しました",
       "selectSavePathFailed": "セーブパスの選択に失敗しました",
@@ -1149,7 +1152,7 @@
         }
       },
       "dragDrop": {
-        "title": "ドラッグアンドドロップでゲームをインポート",
+        "title": "ドラッグで導入",
         "processingFiles": "ファイルを処理中...",
         "fileCount": "合計 {{count}} ファイル",
         "detected": "検出済み",

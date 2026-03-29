@@ -110,6 +110,8 @@ type HotkeyService struct {
 	startService *StartService
 
 	processCheckTicker *time.Ticker
+	keyboardTicker     *time.Ticker
+	keyboardStopChan   chan struct{}
 }
 
 func (s *HotkeyService) SetServices(imageService *ImageService, startService *StartService) {
@@ -236,11 +238,13 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 			if !hotkey.IsGlobal() || s.actionKeys[hotkey.KeyCode] == nil {
 				s.actionKeys[hotkey.KeyCode] = hotkey
 				devicetype = hotkey.DeviceType
+				fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
 			}
 		} else {
 			if !hotkey.IsGlobal() || s.keyMappings[hotkey.KeyCode] == nil {
 				s.keyMappings[hotkey.KeyCode] = hotkey
 				devicetype = hotkey.DeviceType
+				fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
 			}
 		}
 
@@ -1179,7 +1183,7 @@ func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	}
 }
 
-func (s *HotkeyService) clearkeysForGame() {
+func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 	s.isMonitoringKeySetting.Store(false)
 	s.SetActiveGameID("")
 	s.mappingLock.Lock()
@@ -1188,6 +1192,7 @@ func (s *HotkeyService) clearkeysForGame() {
 	defer s.robotMutex.Unlock()
 	defer s.actionkeyLock.Unlock()
 	defer s.mappingLock.Unlock()
+	s.stopKeyboardListener()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
 	if s.robot != nil {
@@ -1204,18 +1209,29 @@ func (s *HotkeyService) startAlternativeKeyListener() {
 	lastKeyState := make(map[int]bool)
 	count := 0
 
+	// 初始化停止 channel（带缓冲，防止阻塞）
+	s.keyboardStopChan = make(chan struct{}, 1)
 	// 使用较短的时间间隔以获得更好的响应性
-	ticker := time.NewTicker(50 * time.Millisecond)
+	s.keyboardTicker = time.NewTicker(50 * time.Millisecond)
 	s.actionkeyLock.RLock()
 	defer s.actionkeyLock.RUnlock()
-	defer ticker.Stop()
+	defer func() {
+		if s.keyboardTicker != nil {
+			s.keyboardTicker.Stop()
+			s.keyboardTicker = nil
+		}
+	}()
 	keys := s.actionKeys
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-s.keyboardTicker.C:
 			s.checkKeyboardState(lastKeyState, count, keys)
 			count++
+
+		case <-s.keyboardStopChan: // ✅ 监听专用的停止 channel
+			applog.LogInfof(s.ctx, "Alternative keyboard listener stopped")
+			return
 
 		case <-s.ctx.Done():
 			applog.LogInfof(s.ctx, "Alternative keyboard listener stopped")
@@ -1224,17 +1240,45 @@ func (s *HotkeyService) startAlternativeKeyListener() {
 	}
 }
 
+func (s *HotkeyService) stopKeyboardListener() {
+	if s.keyboardStopChan == nil && s.keyboardTicker == nil {
+		return
+	}
+
+	applog.LogInfo(s.ctx, "Stopping keyboard listener...")
+
+	// 发送停止信号（非阻塞，因为有缓冲）
+	select {
+	case s.keyboardStopChan <- struct{}{}:
+		applog.LogInfo(s.ctx, "Stop signal sent to keyboard listener")
+	default:
+		// channel 已经有信号了，不需要重复发送
+	}
+
+	// 停止 ticker
+	if s.keyboardTicker != nil {
+		s.keyboardTicker.Stop()
+		s.keyboardTicker = nil
+	}
+
+	// 等待一小段时间让 goroutine 退出
+	time.Sleep(60 * time.Millisecond)
+
+	applog.LogInfo(s.ctx, "Keyboard listener stopped")
+}
+
 func (s *HotkeyService) checkKeyboardState(lastKeyState map[int]bool, count int, keys map[string]*models.Hotkey) {
 	// s.stateLock.Lock()
 	// defer s.stateLock.Unlock()
 	// s.stateLock
 
 	// 首先检查是否有活动游戏且当前焦点进程匹配
+	// if s.GetActiveGameID() == "" {
+
+	// }
+	s.processCheck()
 	if s.GetActiveGameID() == "" {
-		s.processCheck()
-		if s.GetActiveGameID() == "" {
-			return
-		}
+		return
 	}
 
 	// 获取当前修饰键
@@ -1242,6 +1286,9 @@ func (s *HotkeyService) checkKeyboardState(lastKeyState map[int]bool, count int,
 
 	// 检查每个监控的键
 	for keyCode, hotkey := range keys {
+		// js, _ := json.MarshalIndent(hotkey, "", "  ")
+		// fmt.Printf("checkKeyboardState 20 keyCode:%s,key:\n%s\n", keyCode, string(js))
+
 		if keyCode == "" {
 			continue
 		}
@@ -1258,6 +1305,7 @@ func (s *HotkeyService) checkKeyboardState(lastKeyState map[int]bool, count int,
 
 			// 检查是否有匹配的快捷键（包括修饰键）
 			// go s.handleKeyboardEvent(event)
+			fmt.Printf("checkKeyboardState keyCode: %s\n", hotkey.KeyCode)
 			go s.handleActionKey(hotkey)
 		}
 

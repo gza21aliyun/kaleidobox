@@ -1,6 +1,6 @@
 import { models, enums } from "../../../wailsjs/go/models";
 import { 
-  GetGlobalHotkeys, UpdateHotkey, 
+  GetGlobalHotkeys, UpdateHotkey, DeleteHotkey,
   AddHotkey } from "../../../wailsjs/go/service/HotkeyService";
 import { OpenLocalPath } from "../../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../../wailsjs/go/service/ImageService";
@@ -73,12 +73,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
     try {
       if (screenshotHotkey) {
         // 更新现有快捷键
-        await UpdateHotkey(new models.Hotkey({
-          ...hotkey,
-          id: screenshotHotkey.id,
-          // game_id: "global",
-          updated_at: new Date()
-        }));
+        await DeleteHotkey(screenshotHotkey.id);
+        await AddHotkey(hotkey);
       } else {
         // 创建新快捷键
         await AddHotkey(hotkey);
@@ -86,6 +82,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
       setScreenshotHotkey(hotkey);
     } catch (error) {
       console.error("保存快捷键失败:", error);
+      toast.error("保存快捷键失败" + error);
       throw error;
     }
   };
@@ -115,6 +112,11 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="font-semibold text-brand-900 dark:text-white">{t('gameGallery.screenshots')}{`(${screenshots.length})`}</div>
+            <BetterButton
+              onClick={loadScreenshots}
+              icon="i-mdi-refresh"
+              title={t('gameGallery.refresh')}
+            />
             {hasFolder && (
                     <BetterButton
                       onClick={async () => {

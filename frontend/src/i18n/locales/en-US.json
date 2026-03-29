@@ -905,7 +905,8 @@
     "useHotkey": "Use hotkey {{hotkey}} to take screenshots",
     "gallery": "Gallery",
     "openLocation": "Open location in file explorer",
-    "openPathError": "Failed to open path, file/directory may not exist"
+    "openPathError": "Failed to open path, file/directory may not exist",
+    "refresh": "Refresh"
   },
   "gameInfo": {
     "staffInfo": "Staff information",

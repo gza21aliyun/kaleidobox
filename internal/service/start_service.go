@@ -204,7 +204,6 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		applog.LogErrorf(s.ctx, "failed to start game: %v", err)
 		return false, fmt.Errorf("failed to start game: %w", err)
 	}
-	s.hotkeyService.readyHotkeysForGame(gameID)
 
 	// 如果启用了 Magpie，在游戏启动后启动 Magpie
 	if useMagpie && s.config.MagpiePath != "" {
@@ -354,6 +353,8 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 		}
 	}
 
+	s.hotkeyService.readyHotkeysForGame(gameID)
+
 	// 根据情况选择监控方式
 	if needExternalMonitor {
 		// 需要外部监控：实际游戏进程不是cmd的子进程
@@ -449,7 +450,7 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 	select {
 	case exitErr = <-exitChan:
 		delete(s.gamesLaunched, processID)
-		s.hotkeyService.clearkeysForGame()
+		s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 		// 游戏正常退出
 		if exitErr != nil {
 			applog.LogDebugf(s.ctx, "Game %s exited with error: %v", gameID, exitErr)
@@ -484,6 +485,7 @@ func (s *StartService) monitorProcessByPID(sessionID string, gameID string, star
 	case <-exitChan:
 		applog.LogInfof(s.ctx, "External process %s (PID %d) has exited", processName, processID)
 		delete(s.gamesLaunched, processID)
+		s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 	case <-time.After(24 * time.Hour):
 		applog.LogWarningf(s.ctx, "Game %s exceeded maximum runtime (24h), forcing cleanup", gameID)
 	}

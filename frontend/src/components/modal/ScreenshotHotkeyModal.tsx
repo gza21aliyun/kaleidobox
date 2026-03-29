@@ -113,7 +113,7 @@ export function ScreenshotHotkeyModal({
           break;
       }
       const hotkey = models.Hotkey.createFrom({
-        key: displayKey,
+        key_code: key,
         description: "截图快捷键",
         name: displayKey,
         game_id: "golbal",

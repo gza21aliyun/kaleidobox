@@ -1060,7 +1060,7 @@ func (s *ImportService) SearchVideoExePath(game *models.Game) error {
 	folderPath := filepath.Dir(game.Path)
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
 	excludeExeKeywords := []string{
-		"unins", "setup", "config", "patch", "update", "crashpad",
+		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール",
 		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet",
 		"redistributable", "installer", "launcher_helper", "crashreporter",
 		"updater", "uninstall", "删除", "卸载", "syscfg", "ihs", "configure",

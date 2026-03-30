@@ -409,7 +409,7 @@ export function FilterBar({
         </div>
       )}
 
-      {!expanded ? (
+      {!expanded && tagsLoaded ? (
         
         <div id="expanded-filter-bar">
           <div className="mt-4">
@@ -571,7 +571,7 @@ export function FilterBar({
               
           </div>
 
-          <div className="flex flex-col gap-2 mt-4">
+          { tagsLoaded && (<div className="flex flex-col gap-2 mt-4">
             <div className="flex justify-center">
               <button 
                 onClick={() => setExpanded(!expanded)}
@@ -583,11 +583,11 @@ export function FilterBar({
                 <div className={`i-mdi-chevron-down text-lg text-brand-500 dark:text-brand-400 transition-transform duration-200 ${!expanded ? 'rotate-180' : ''}`} />
               </button>
             </div>
-          </div>
+          </div>)}
         </div>
         
       ) : (
-        <div className="flex flex-col gap-2 mt-4">
+        <>{tagsLoaded && (<div className="flex flex-col gap-2 mt-4">
           <div className="flex justify-center">
             <button 
               onClick={() => setExpanded(!expanded)}
@@ -599,7 +599,7 @@ export function FilterBar({
               <div className={`i-mdi-chevron-down text-lg text-brand-500 dark:text-brand-400 transition-transform duration-200 ${!expanded ? 'rotate-180' : ''}`} />
             </button>
           </div>
-        </div>
+        </div>)}</>
       )}
       
 

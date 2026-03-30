@@ -10,6 +10,7 @@ interface CategoryCardProps {
   selected?: boolean;
   selectionDisabled?: boolean;
   onSelectChange?: (selected: boolean) => void;
+  viewMode?: "list" | "small" | "large";
 }
 
 export function CategoryCard({
@@ -20,6 +21,7 @@ export function CategoryCard({
   selected = false,
   selectionDisabled = false,
   onSelectChange,
+  viewMode = "small",
 }: CategoryCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
+	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
 	"lunabox/internal/vo"
@@ -303,8 +304,23 @@ func (s *CategoryService) GetGamesByCategory(categoryID string) ([]models.Game, 
 			g.cached_at,
 			COALESCE(g.source_id, '') as source_id,
 			g.created_at,
+			g.updated_at,
+			COALESCE(g.tags, '') as tags,
+			COALESCE(g.arguments, '') as arguments,
+			COALESCE(g.images, '') as images,
+			COALESCE(g.bangumi_id, '') as bangumi_id,
+			COALESCE(g.dmm_id, '') as dmm_id,
+			COALESCE(g.eroscape_id, '') as eroscape_id,
+			COALESCE(g.ymgal_id, '') as ymgal_id,
+			COALESCE(g.search_name, '') as search_name,
+			COALESCE(g.dlsite_id, '') as dlsite_id,
+			COALESCE(g.release_at, '') as release_at,
+			COALESCE(g.related_games, '') as related_games,
 			COALESCE(g.use_locale_emulator, FALSE) as use_locale_emulator,
-			COALESCE(g.use_magpie, FALSE) as use_magpie
+			COALESCE(g.use_magpie, FALSE) as use_magpie,
+			COALESCE(g.getchu_id, '') as getchu_id,
+			COALESCE(g.pv_path, '') as pv_path,
+			COALESCE(g.inside_vm, FALSE) as inside_vm
 		FROM games g
 		JOIN game_categories gc ON g.id = gc.game_id
 		WHERE gc.category_id = ?
@@ -320,10 +336,14 @@ func (s *CategoryService) GetGamesByCategory(categoryID string) ([]models.Game, 
 	var games []models.Game
 	for rows.Next() {
 		var g models.Game
-		if err := rows.Scan(&g.ID, &g.Name, &g.CoverURL, &g.Company, &g.Summary, &g.Path, &g.SavePath, &g.ProcessName, &g.Status, &g.SourceType, &g.CachedAt, &g.SourceID, &g.CreatedAt, &g.UseLocaleEmulator, &g.UseMagpie); err != nil {
+		var sourceType string
+		var status string
+		if err := rows.Scan(&g.ID, &g.Name, &g.CoverURL, &g.Company, &g.Summary, &g.Path, &g.SavePath, &g.ProcessName, &status, &sourceType, &g.CachedAt, &g.SourceID, &g.CreatedAt, &g.UpdatedAt, &g.Tags, &g.Arguments, &g.Images, &g.BangumiId, &g.DmmId, &g.EroscapeId, &g.YmgalId, &g.SearchName, &g.DlsiteId, &g.ReleaseAt, &g.RelatedGames, &g.UseLocaleEmulator, &g.UseMagpie, &g.GetchuId, &g.PvPath, &g.InsideVm); err != nil {
 			applog.LogErrorf(s.ctx, "GetGamesByCategory: failed to scan row for category %s: %v", categoryID, err)
 			return nil, err
 		}
+		g.SourceType = enums.SourceType(sourceType)
+		g.Status = enums.GameStatus(status)
 		games = append(games, g)
 	}
 	return games, nil

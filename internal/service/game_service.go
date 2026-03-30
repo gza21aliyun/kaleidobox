@@ -1602,7 +1602,7 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game, req
 		updatedGame.Name = ngame.Name
 	}
 
-	if ngame.Summary != "" && !req.IsOverwrite {
+	if ngame.Summary != "" && !req.IsOverwrite || updatedGame.Summary == "" {
 		updatedGame.Summary = ngame.Summary
 	}
 

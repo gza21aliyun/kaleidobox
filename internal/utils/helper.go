@@ -244,7 +244,8 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	// 检查是否包含有效的分隔符（除了纯空格）
 	// num := -1
 	// numStr := ""
-	hasValidSeparator := regexp.MustCompile(`[－\-~～　 ！\[]`).MatchString(searchName)
+	hasValidSeparator := regexp.MustCompile(`[－\-~～　 ・！「\[]`).MatchString(searchName)
+
 	mainTitle := ""
 
 	if !hasValidSeparator {
@@ -256,10 +257,11 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 
 	// 有有效分隔符，尝试分离主标题和副标题
 	// 使用非空格分隔符进行分割
-	hasNonEnglish := regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(searchName)
+	hasNonEnglish := regexp.MustCompile(`[^a-zA-Z0-9 ]`).MatchString(searchName)
 	separatorPattern := `[－\-~～]+`
 	if hasNonEnglish {
-		separatorPattern = `[－\-~ ～]+`
+		// separatorPattern = `[－・「\-~ ～]+`
+		separatorPattern = `[－\-~～ ・「]+`
 	}
 	parts := regexp.MustCompile(separatorPattern).Split(searchName, -1)
 	// fmt.Printf("getTitlesNum 11 :%s\n", strings.Join(parts, ","))
@@ -272,9 +274,9 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 		mainTitle = searchName
 	}
 	if len(parts) < 2 {
-		hasNonEnglish = regexp.MustCompile(`[^a-zA-Z0-9]`).MatchString(mainTitle)
+		hasNonEnglish = regexp.MustCompile(`[^a-zA-Z0-9 ]`).MatchString(mainTitle)
 		if onlyNum || hasNonEnglish {
-			separatorPattern = `[－\-~～　 ！\[]+`
+			separatorPattern = `[－\-~～　 ！・「\[]+`
 			// fmt.Printf("getTitlesNum 02:\n")
 		} else {
 			separatorPattern = `[－\-~～　！\[]+`
@@ -320,6 +322,9 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 				mainTitle = subTitle
 			}
 			return handleMainTitle(mainTitle), subTitle, numStr
+		}
+		if mainTitle == "" && subTitle != "" {
+			return handleMainTitle(subTitle), "", ""
 		}
 	}
 
@@ -496,9 +501,9 @@ func getGameNameAlternative(searchName string) string {
 		name = strings.TrimSuffix(name, "！")
 	}
 
-	fmt.Printf("try00 IsCamelCase")
+	// fmt.Printf("try00 IsCamelCase\n")
 	if IsCamelCase(name) {
-		fmt.Printf("try IsCamelCase")
+		// fmt.Printf("try IsCamelCase\n")
 		return CamelCaseToSpaces(name)
 	}
 	if strings.Contains(name, "／") {
@@ -630,6 +635,9 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "＊") {
 		name = strings.ReplaceAll(name, "＊", "*")
 	}
+	if strings.Contains(name, "学") {
+		name = strings.ReplaceAll(name, "学", "學")
+	}
 
 	name = strings.TrimSuffix(name, "％")
 	fmt.Printf("getGameNameAlternative:%s\n", name)
@@ -653,8 +661,10 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 	}
 	var results []Result
 	for _, item := range slice1 {
-		name := getGameNameAlternative(fn(item))
-		name = strings.ToLower(name)
+		oname := fn(item)
+		oname2 := getGameNameAlternative(oname)
+		name := strings.ToLower(oname2)
+		// fmt.Printf("searchNameByRegex 10 name:%s, oname:%s, oname2:%s, searchName:%s\n", name, oname, oname2, searchName)
 		if name == searchName {
 			return &item
 		}
@@ -790,24 +800,34 @@ func IsCamelCase(s string) bool {
 	if len(s) == 0 {
 		return false
 	}
-	// 检查是否以小写字母开头
-	if s[0] < 'A' || s[0] > 'Z' {
-		fmt.Println("字符串不以小写字母开头")
+	hasInvalidChar := regexp.MustCompile(`[^a-zA-Z]`).MatchString(s)
+	if hasInvalidChar {
 		return false
 	}
+
+	// 检查是否以小写字母开头
+	if s[0] < 'A' || s[0] > 'Z' {
+		// fmt.Println("字符串不以小写字母开头")
+		return false
+	}
+	// ab := s[0]f
 	// 检查是否包含大写字母
 	hasUpperCase := false
+	hasLowerCase := false
 	for _, c := range s {
 		if c >= 'A' && c <= 'Z' {
 			hasUpperCase = true
 		}
+		if c >= 'a' && c <= 'z' {
+			hasLowerCase = true
+		}
 		// 检查是否包含非字母字符
 		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
-			fmt.Println("字符串包含非字母字符")
+			// fmt.Println("字符串包含非字母字符")
 			return false
 		}
 	}
-	return hasUpperCase
+	return hasUpperCase && hasLowerCase
 }
 
 func CamelCaseToSpaces(s string) string {

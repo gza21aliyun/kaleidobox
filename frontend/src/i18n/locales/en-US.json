@@ -822,7 +822,11 @@
   "guide": {
     "description": "View game guide content",
     "loadError": "Failed to load guide",
-    "noContent": "No guide content available"
+    "noContent": "No guide content available",
+    "downloadSave": "Download Save",
+    "openWeb": "Open Web",
+    "downloadSuccess": "Download Success",
+    "downloadError": "Download Failed"
   },
   "gameBackup": {
     "title": "Save backup",

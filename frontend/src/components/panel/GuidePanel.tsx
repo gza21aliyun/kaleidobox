@@ -54,9 +54,9 @@ export function GuidePanel({ game }: GuidePanelProps) {
   return (
     <div className="space-y-6">
       <div className="glass-card bg-white dark:bg-brand-800 p-6 rounded-lg shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-brand-900 dark:text-white">{t('common.guide')}</h3>
+            <h3 className="text-xl font-semibold text-brand-900 dark:text-white">{t('common.guide')}</h3>
             <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
               {t('guide.description')}
             </p>
@@ -65,42 +65,64 @@ export function GuidePanel({ game }: GuidePanelProps) {
 
         {loading
           ? (
-              <div className="flex justify-center py-8">
-                <div className="i-mdi-loading animate-spin text-2xl text-brand-500" />
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="i-mdi-loading animate-spin text-3xl text-brand-500 mb-4" />
+                <p className="text-brand-500 dark:text-brand-400">{t('common.loading')}</p>
               </div>
             )
           : guideContent
             ? (
-                <div className="prose dark:prose-invert max-w-none">
-                  <div><h6><b>{guideContent.Name}</b></h6></div>
-                  <br/>
-                  {guideContent.SaveLink && (
-                    <BetterButton onClick={() => { 
-                      downloadSave()
-                    }} icon="i-mdi-folder-download" title="下载存档"/>
-                  )}
-                  {guideContent.Link && (
-                    <BetterButton onClick={() => { 
-                      OpenBrowser(guideContent.Link)
-                    }}
-                    icon="i-mdi-folder-open" title="打开网页"/>
-                  )}
-                  <br/>
-                  <table
+                <div className="space-y-6">
+                  {/* 攻略标题 */}
+                  <div className="border-b border-brand-200 dark:border-brand-700 pb-4">
+                    <h2 className="text-2xl font-bold text-brand-900 dark:text-white">{guideContent.Name}</h2>
+                  </div>
+                  
+                  {/* 操作按钮 */}
+                  {guideContent.SaveLink || guideContent.Link ? (
+                    <div className="flex flex-wrap gap-3">
+                      {guideContent.SaveLink && (
+                        <BetterButton 
+                          onClick={downloadSave}
+                          icon="i-mdi-folder-download"
+                          title={t('guide.downloadSave')}
+                          className="bg-brand-600 hover:bg-brand-700 text-white"
+                        />
+                      )}
+                      {guideContent.Link && (
+                        <BetterButton 
+                          onClick={() => OpenBrowser(guideContent.Link)}
+                          icon="i-mdi-folder-open"
+                          title={t('guide.openWeb')}
+                          className="bg-neutral-600 hover:bg-neutral-700 text-white"
+                        />
+                      )}
+                    </div>
+                  ) : null}
+                  
+                  {/* 攻略文本 */}
+                  {guideContent.Text && (
+                    <div className="glass-card bg-brand-50 dark:bg-brand-900/50 p-4 rounded-lg">
+                      <table
                    dangerouslySetInnerHTML={{ __html: guideContent.Text }}
                   >
-                    {/* <p className="text-sm text-brand-700 dark:text-brand-300 whitespace-pre-wrap leading-relaxed">
-                                                        {guideContent.Text.replace('\n\n', '\n')}
-                                                    </p> */}
                   </table>
-                  <br/>
-                  <div dangerouslySetInnerHTML={{ __html: guideContent.Content }} />
-                  {/* <table border={1} bordercolor={"#66ccff"} bgcolor="#ffffff" height="40" cellspacing="0" dangerouslySetInnerHTML={{ __html: guideContent.Content }} /> */}
-                  {/* <div>{guideContent.Text}</div> */}
+                    </div>
+                  )}
+                  
+                  {/* 攻略内容 */}
+                  {guideContent.Content && (
+                    <div className="prose dark:prose-invert max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: guideContent.Content }} />
+                    </div>
+                  )}
                 </div>
               )
             : (
-                <div className="text-center py-8 text-brand-500">{t('guide.noContent')}</div>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="i-mdi-information-outline text-4xl text-brand-400 mb-4" />
+                  <p className="text-brand-500 dark:text-brand-400 text-lg">{t('guide.noContent')}</p>
+                </div>
               )}
       </div>
     </div>

@@ -784,7 +784,9 @@
     "description": "查看游戏攻略内容",
     "loadError": "加载攻略失败",
     "noContent": "暂无攻略内容",
-    "downloadSuccess": "成功下载",
+    "downloadSave": "下载存档",
+    "openWeb": "打开网页",
+    "downloadSuccess": "下载成功",
     "downloadError": "下载失败"
   },
   "gameBackup": {

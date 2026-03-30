@@ -816,7 +816,11 @@
   "guide": {
     "description": "ゲームガイドコンテンツを表示",
     "loadError": "ガイドの読み込みに失敗",
-    "noContent": "ガイドコンテンツはありません"
+    "noContent": "ガイドコンテンツはありません",
+    "downloadSave": "セーブデータをダウンロード",
+    "openWeb": "ウェブを開く",
+    "downloadSuccess": "ダウンロード成功",
+    "downloadError": "ダウンロード失敗"
   },
   "gameBackup": {
     "title": "セーブデータバックアップ",

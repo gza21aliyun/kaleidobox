@@ -420,7 +420,7 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 	if len(searchResp.Data) == 0 {
 		return models.Game{}, errors.New("no results found")
 	}
-	bangumiResp := *searchNameByRegex(searchResp.Data, name, []string{},
+	bangumiResp := searchNameByRegex(searchResp.Data, name, []string{},
 		func(t1 bangumiResponse) string {
 			if b.searchCn {
 				return t1.NameCN
@@ -429,13 +429,16 @@ func (b BangumiInfoGetter) FetchMetadataByName(name string, token string) (model
 			}
 		})
 	// bangumiResp := searchResp.Data[0]
+	if bangumiResp == nil {
+		return models.Game{}, errors.New("no results found")
+	}
 
 	if bangumiResp.Type != 4 { // 4 代表游戏
 		return models.Game{}, errors.New("the provided ID does not correspond to a game")
 	}
 	gameEntity := models.GameEntity{}
 	fmt.Println("游戏名01：" + bangumiResp.Name + " " + bangumiResp.NameCN)
-	gameEntity, err = b.GetDataFromResp(gameEntity, bangumiResp)
+	gameEntity, err = b.GetDataFromResp(gameEntity, *bangumiResp)
 	game := gameEntity.Game
 
 	return game, err

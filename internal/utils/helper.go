@@ -718,6 +718,9 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].similarity > results[j].similarity
 	})
+	if len(results) == 0 {
+		return nil
+	}
 	return &results[0].Value
 }
 

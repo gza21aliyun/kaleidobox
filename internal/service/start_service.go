@@ -201,8 +201,40 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 	}
 
 	if err := cmd.Start(); err != nil {
-		applog.LogErrorf(s.ctx, "failed to start game: %v", err)
-		return false, fmt.Errorf("failed to start game: %w", err)
+		// 检查是否需要管理员权限
+		if strings.Contains(err.Error(), "requires elevation") || strings.Contains(err.Error(), "拒绝访问") {
+			applog.LogInfof(s.ctx, "game requires administrator privileges, attempting to start with elevation...")
+
+			// 使用 PowerShell Start-Process -Verb RunAs 来请求提升权限
+			var startCmd *exec.Cmd
+			if arguments == "" {
+				startCmd = exec.Command("powershell", "-Command",
+					fmt.Sprintf(`Start-Process "%s" -Verb RunAs`, path))
+			} else {
+				startCmd = exec.Command("powershell", "-Command",
+					fmt.Sprintf(`Start-Process "%s" -ArgumentList "%s" -Verb RunAs`, path, arguments))
+			}
+
+			if err := startCmd.Run(); err != nil {
+				applog.LogErrorf(s.ctx, "failed to start game with administrator privileges: %v", err)
+				return false, fmt.Errorf("failed to start game with elevation: %w", err)
+			}
+
+			applog.LogInfof(s.ctx, "game started with administrator privileges via PowerShell")
+			cmd = startCmd
+
+			// 由于使用 RunAs 启动，无法获取进程对象，创建一个虚拟 session
+			// startTime := time.Now()
+			// sessionID, err := s.sessionService.CreatePendingSession(gameID, startTime)
+			if err != nil {
+				return false, fmt.Errorf("failed to create play session: %w", err)
+			}
+
+			// return true, nil
+		} else {
+			applog.LogErrorf(s.ctx, "failed to start game: %v", err)
+			return false, fmt.Errorf("failed to start game: %w", err)
+		}
 	}
 
 	// 如果启用了 Magpie，在游戏启动后启动 Magpie
@@ -307,8 +339,8 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 			// 启用了自动检测，使用分阶段检测策略来准确判断启动器类型
 			applog.LogInfof(s.ctx, "Starting staged detection for game %s, launcher: %s,new launcher:%s (PID %d)", gameID,
 				launcherExeName, savedProcessName, launcherPID)
-
-			newProcess := s.detectNewProcesses(launcherPID, gameID, "")
+			pname, _ := s.searchGameProcessName(gameID)
+			newProcess := s.detectNewProcesses(launcherPID, gameID, pname)
 			if newProcess != nil {
 				applog.LogInfof(s.ctx, "Game %s has new process found to save: %s, PID: %d", gameID, newProcess.Name, newProcess.PID)
 				actualProcessID = newProcess.PID
@@ -545,6 +577,21 @@ func (s *StartService) finalizePlaySession(sessionID string, gameID string, star
 // updateGameProcessName 更新游戏的进程名
 func (s *StartService) updateGameProcessName(gameID string, processName string) error {
 	return s.gameService.UpdateGameProcessName(gameID, processName)
+}
+
+func (s *StartService) searchGameProcessName(gameID string) (string, error) {
+	game, err := s.gameService.GetGameByID(gameID)
+	if err != nil {
+		return "", err
+	}
+	if game.ProcessName != "" {
+		return game.ProcessName, nil
+	}
+	SearchVideoExePath(&game)
+	if game.ProcessName != "" {
+		return game.ProcessName, s.gameService.UpdateGame(game)
+	}
+	return "", nil
 }
 
 // NotifyProcessSelected 用户选择了进程后调用此方法通知后端

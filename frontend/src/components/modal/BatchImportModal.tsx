@@ -50,7 +50,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
   const [isLoading, setIsLoading] = useState(false);
   const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0, gameName: "" });
   const [selectedCategoryVo, setSelectedCategoryVo] = useState<vo.CategoryVO | null>(null);
-  const [isSearchFolder, setIsSearchFolder] = useState(true);
+  const [isSearchFolder, setIsSearchFolder] = useState(false);
   const { config } = useAppStore();
 
   // 用于中断匹配过程的标志
@@ -439,7 +439,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                           options={categoryVos.current.map(c => ({ value: c.id, label: c.name }))}
                           className="min-w-[200px] w-[150px]"
                         />
-                  <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                  {/* <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchImport.searchVideoAndExe')}
                       </label>
                   <BetterSwitch
@@ -448,7 +448,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                       setIsSearchFolder(c);
                     }}
                     id="isSearchFolder"
-                  />
+                  /> */}
                 
               </>
             )}

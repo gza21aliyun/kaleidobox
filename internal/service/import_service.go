@@ -1032,7 +1032,7 @@ func (s *ImportService) createSearchVideoTaskFunction() TaskFunction {
 				"", game.ID, enums.Initial, nil)
 
 			if game.PvPath == "" {
-				err := s.SearchVideoExePath(&game)
+				err := SearchVideoExePath(&game)
 				if err == nil {
 					s.gameService.UpdateGame(game)
 					updateProgress(index, len(taskData.Games), fmt.Sprintf("找到视频: %s", game.Name),
@@ -1055,15 +1055,18 @@ func (s *ImportService) createSearchVideoTaskFunction() TaskFunction {
 	}
 }
 
-func (s *ImportService) SearchVideoExePath(game *models.Game) error {
+func SearchVideoExePath(game *models.Game) error {
 	// 获取游戏可执行文件所在的目录
 	folderPath := filepath.Dir(game.Path)
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
 	excludeExeKeywords := []string{
-		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール",
-		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet",
-		"redistributable", "installer", "launcher_helper", "crashreporter",
-		"updater", "uninstall", "删除", "卸载", "syscfg", "ihs", "configure",
+		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2",
+		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst",
+		"vcredist_x86", "vcredist_x64", "vc_redist.x86", "updchk", "upgrade", "uninstx86", "uninstx64", "uninstcl", "uninstaller",
+		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール", "システム詳細設定", "エンジン設定",
+		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet", "_uninst", "セーブデータ場所設定ツール", "システム設定",
+		"redistributable", "installer", "launcher_helper", "crashreporter", "ファイル破損チェック", "セーブデータフォルダを開く",
+		"updater", "uninstall", "删除", "卸载", "syscfg", "ihs", "configure", "セーブファイル設定", "セーブデータフォルダ・開く",
 	}
 	var videoFiles []string
 	var exeFiles []string
@@ -1092,7 +1095,7 @@ func (s *ImportService) SearchVideoExePath(game *models.Game) error {
 					break
 				}
 			}
-			if ext == ".exe" || ext == ".EXE" {
+			if strings.ToLower(ext) == ".exe" {
 				// 检查文件名是否包含排除关键词
 				filePrefix := strings.ReplaceAll(fileName, filepath.Ext(path), "")
 				if !utils.ArrayContains(excludeExeKeywords, filePrefix) {
@@ -1104,26 +1107,26 @@ func (s *ImportService) SearchVideoExePath(game *models.Game) error {
 	})
 
 	if err != nil {
-		applog.LogErrorf(s.ctx, "SearchVideoPath: failed to walk directory %s: %v", folderPath, err)
+		applog.ErrorLogSaveAppLogs("SearchVideoPath: failed to walk directory %s: %v", folderPath, err)
 		return err
 	}
 
 	// 优先使用 OP 视频
 	if foundOPVideo != "" {
 		game.PvPath = foundOPVideo
-		applog.LogInfof(s.ctx, "SearchVideoPath: found OP video for game %s: %s", game.Name, foundOPVideo)
+		applog.InfoLogSaveAppLog("SearchVideoPath: found OP video for game %s: %s", game.Name, foundOPVideo)
 	} else if len(videoFiles) > 0 {
 		// 否则使用第一个找到的视频文件
 		game.PvPath = videoFiles[0]
-		applog.LogInfof(s.ctx, "SearchVideoPath: found video for game %s: %s", game.Name, videoFiles[0])
+		applog.InfoLogSaveAppLog("SearchVideoPath: found video for game %s: %s", game.Name, videoFiles[0])
 	} else {
-		applog.LogInfof(s.ctx, "SearchVideoPath: no video found for game %s", game.Name)
+		applog.InfoLogSaveAppLog("SearchVideoPath: no video found for game %s", game.Name)
 	}
 	if len(exeFiles) == 1 {
 		game.ProcessName = exeFiles[0]
-		applog.LogInfof(s.ctx, "SearchVideoPath: found exe for game %s: %s", game.Name, exeFiles[0])
+		applog.InfoLogSaveAppLog("SearchVideoPath: found exe for game %s: %s", game.Name, exeFiles[0])
 	} else {
-		applog.LogInfof(s.ctx, "SearchVideoPath: no exe found for game %s", game.Name)
+		applog.InfoLogSaveAppLog("SearchVideoPath: no exe found for game %s", game.Name)
 	}
 
 	return nil

@@ -49,7 +49,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
   const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0, gameName: "" });
   const [hasProcessed, setHasProcessed] = useState(false);
   const [selectedCategoryVo, setSelectedCategoryVo] = useState<vo.CategoryVO | null>(null);
-  const [isSearchFolder, setIsSearchFolder] = useState(true);
+  const [isSearchFolder, setIsSearchFolder] = useState(false);
   const { config } = useAppStore();
 
   // 用于中断匹配过程的标志
@@ -386,7 +386,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                   options={categoryVos.current.map(c => ({ value: c.id, label: c.name }))}
                   className="min-w-[200px] w-[150px]"
                 />
-                <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                {/* <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                   {t('batchImport.searchVideoAndExe')}
                 </label>
                 <BetterSwitch
@@ -395,7 +395,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                     setIsSearchFolder(c);
                   }}
                   id="isSearchFolder"
-                />
+                /> */}
               </>
             )}
           </div>

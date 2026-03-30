@@ -1292,7 +1292,49 @@ func (s *HotkeyService) checkKeyboardState(lastKeyState map[int]bool, count int,
 		if keyCode == "" {
 			continue
 		}
-		vkCode := int(keyCode[0])
+		vkCode := 0
+		if len(keyCode) > 1 {
+			switch keyCode {
+			case "space":
+				vkCode = 32
+			case "enter":
+				vkCode = 13
+			case "backspace":
+				vkCode = 8
+			case "tab":
+				vkCode = 9
+			case "esc":
+				vkCode = 27
+			case "BROWSER_HOME":
+				vkCode = 172
+			case "BROWSERHOME":
+				vkCode = 172
+			case "BROWSER_BACK":
+				vkCode = 166
+			case "BROWSER_FORWARD":
+				vkCode = 167
+			case "BROWSER_REFRESH":
+				vkCode = 168
+			case "BROWSER_STOP":
+				vkCode = 169
+			case "BROWSER_SEARCH":
+				vkCode = 170
+			case "BROWSER_FAVORITES":
+				vkCode = 171
+			case "VOLUME_MUTE":
+				vkCode = 173
+			case "VOLUME_DOWN":
+				vkCode = 174
+			case "VOLUME_UP":
+				vkCode = 175
+			}
+		} else if len(keyCode) == 1 {
+			vkCode = int(keyCode[0])
+		}
+		if vkCode == 0 {
+			continue
+		}
+
 		currentState := s.isKeyPressed(vkCode)
 		lastState, exists := lastKeyState[vkCode]
 		// 如果按键状态发生变化且当前是按下状态，则触发事件

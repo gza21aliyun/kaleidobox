@@ -2,8 +2,10 @@ import type { models } from "../../../wailsjs/go/models";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import { FetchGameGuide } from "../../../wailsjs/go/service/BackupService";
+import { FetchGameGuide,DownloadFileInDownload } from "../../../wailsjs/go/service/BackupService";
 import { GetGameByID } from "../../../wailsjs/go/service/GameService";
+import { OpenBrowser } from '../../../wailsjs/go/service/ImportService';
+import { BetterButton } from "../ui/BetterButton";
 
 interface GuidePanelProps {
   game: models.Game;
@@ -35,6 +37,20 @@ export function GuidePanel({ game }: GuidePanelProps) {
     loadGuideContent();
   }, [game]);
 
+  const downloadSave = async () => { 
+    if (!guideContent || !guideContent.SaveLink || guideContent.SaveLink === "") {
+      
+      return;
+    }
+    try {
+      await DownloadFileInDownload(guideContent?.SaveLink ?? "");
+      toast.success(t('guide.downloadSuccess'));
+    } catch (err) {
+      console.error("Failed to download", err);
+      toast.error(t('guide.downloadError'));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="glass-card bg-white dark:bg-brand-800 p-6 rounded-lg shadow-sm">
@@ -57,6 +73,18 @@ export function GuidePanel({ game }: GuidePanelProps) {
             ? (
                 <div className="prose dark:prose-invert max-w-none">
                   <div><h6><b>{guideContent.Name}</b></h6></div>
+                  <br/>
+                  {guideContent.SaveLink && (
+                    <BetterButton onClick={() => { 
+                      downloadSave()
+                    }} icon="i-mdi-folder-download" title="下载存档"/>
+                  )}
+                  {guideContent.Link && (
+                    <BetterButton onClick={() => { 
+                      OpenBrowser(guideContent.Link)
+                    }}
+                    icon="i-mdi-folder-open" title="打开网页"/>
+                  )}
                   <br/>
                   <table
                    dangerouslySetInnerHTML={{ __html: guideContent.Text }}

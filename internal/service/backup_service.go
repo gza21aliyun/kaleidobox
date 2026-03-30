@@ -629,6 +629,14 @@ func (s *BackupService) DownloadSave(game models.Game, isOverride bool) (string,
 	return getter.FetchSeiyaSave(game.Name, game.SavePath, isOverride)
 }
 
+func (s *BackupService) DownloadFileInDownload(url string) (string, error) {
+	if url == "" {
+		return "", fmt.Errorf("还没设置存档位置")
+	}
+	getter := utils.NewSaveInfoGetter()
+	return getter.DownloadFileInFolder(url)
+}
+
 func (s *BackupService) FetchGameGuide(game models.Game) (models.GuideContent, error) {
 	guide := models.GuideContent{}
 	if game.Name == "" {

@@ -112,8 +112,6 @@
       "noMatchingGames": "未找到匹配的游戏"
     },
     "toasts": {
-      "batchUpdateSuccess": "已将 {{count}} 个游戏状态更新为「{{label}}」",
-      "batchAddToCollectionSuccess": "已添加 {{count}} 个游戏到收藏",
       "batchUpdateFailed": "批量更新状态失败",
       "loadCategoriesFailed": "加载收藏夹失败",
       "batchAddFailed": "批量添加失败",
@@ -122,7 +120,6 @@
     },
     "modals": {
       "batchDeleteTitle": "批量删除游戏",
-      "batchDeleteMessage": "确定要删除选中的 {{count}} 个游戏吗？此操作将从库中移除这些游戏，但不会删除本地游戏文件。",
       "batchAddToCollectionTitle": "批量添加到收藏"
     },
     "gameStatus": {
@@ -130,17 +127,6 @@
       "playing": "游玩中",
       "completed": "已通关",
       "on_hold": "搁置"
-    },
-    "toasts": {
-      "batchUpdateFailed": "批量更新状态失败",
-      "loadCategoriesFailed": "加载收藏夹失败",
-      "batchAddFailed": "批量添加失败",
-      "batchDeleteSuccess": "批量删除成功",
-      "batchDeleteFailed": "批量删除失败"
-    },
-    "modals": {
-      "batchDeleteTitle": "批量删除游戏",
-      "batchAddToCollectionTitle": "批量添加到收藏"
     },
     "buttons": {
       "setStatus": "设为状态",
@@ -234,8 +220,8 @@
       "updatedAt": "更新时间"
     },
     "modals": {
-      "deleteCategoryMessage": "确定要删除收藏夹 \"{{name}}\" 吗？此操作无法撤销。",
-      "batchDeleteMessage": "确定要删除选中的 {{count}} 个收藏夹吗？此操作无法撤销。"
+      "deleteCategoryTitle": "删除收藏夹",
+      "batchDeleteTitle": "批量删除收藏夹"
     },
     "toasts": {
       "loadCategoriesFailed": "加载收藏夹失败",
@@ -247,10 +233,6 @@
       "deleteCategoryFailed": "删除收藏夹失败",
       "batchDeleteSuccess": "批量删除成功",
       "batchDeleteFailed": "批量删除失败"
-    },
-    "modals": {
-      "deleteCategoryTitle": "删除收藏夹",
-      "batchDeleteTitle": "批量删除收藏夹"
     }
   },
   "category": {
@@ -285,7 +267,7 @@
   "game": {
     "status": {
       "not_started": "未开始",
-      "playing": "游玩中", 
+      "playing": "游玩中",
       "completed": "已通关",
       "on_hold": "搁置"
     },
@@ -294,26 +276,11 @@
     "lastPlayed": "上次游玩",
     "releaseDate": "发售日期",
     "toasts": {
-      "tagAddSuccess": "标签添加成功",
-      "noVideosFound": "没有找到相关视频",
-      "searchFailed": "搜索失败",
-      "loadGameFailed": "加载游戏数据失败",
-      "selectExecutableFailed": "选择可执行文件失败",
-      "selectSavePathFailed": "选择存档路径失败",
-      "selectCoverFailed": "选择封面图片失败",
-      "remoteUpdateSuccess": "从远程更新成功",
-      "statusUpdated": "状态已更新",
-      "statusUpdateFailed": "状态更新失败",
-      "loadCategoriesFailed": "加载收藏夹失败",
-      "collectionUpdated": "收藏已更新",
-      "updateCollectionFailed": "更新收藏失败",
-      "selectFileFailed": "选择文件失败",
-      "openSystemSelectorFailed": "打开系统选择器失败",
-      "fetchMetadataFailed": "获取元信息失败，请检查网络或 token 的有效性",
-      "saveGameFailed": "保存游戏失败",
-      "fetchMetadataByIdFailed": "通过id 获取元信息失败，请检查网络或 token 的有效性",
-      "selectCoverImageFailed": "选择封面图片失败",
-      "pleaseFillGameName": "请填写游戏名称"
+      "saveFailed": "保存失败",
+      "remoteUpdateFailed": "从远程更新失败",
+      "gameLaunchSuccess": "{{name}}启动成功",
+      "gameLaunchFailed": "{{name}}启动失败（未能启动）",
+      "gameLaunchFailedCheckLog": "{{name}} 启动失败，查询日志获得帮助"
     },
     "buttons": {
       "addToCollection": "添加到收藏",
@@ -333,13 +300,6 @@
       "addedAt": "添加时间",
       "releaseDate": "发售日期",
       "noCover": "无封面"
-    },
-    "toasts": {
-      "saveFailed": "保存失败",
-      "remoteUpdateFailed": "从远程更新失败",
-      "gameLaunchSuccess": "{{name}}启动成功",
-      "gameLaunchFailed": "{{name}}启动失败（未能启动）",
-      "gameLaunchFailedCheckLog": "{{name}} 启动失败，查询日志获得帮助"
     },
     "modals": {
       "deleteMessage": "确定要删除游戏 \"{{name}}\" 吗？此操作将从库中移除该游戏，但不会删除本地游戏文件。",
@@ -823,7 +783,9 @@
   "guide": {
     "description": "查看游戏攻略内容",
     "loadError": "加载攻略失败",
-    "noContent": "暂无攻略内容"
+    "noContent": "暂无攻略内容",
+    "downloadSuccess": "成功下载",
+    "downloadError": "下载失败"
   },
   "gameBackup": {
     "title": "存档备份",
@@ -943,7 +905,7 @@
     "cv": "CV",
     "noCategories": "暂无分类标签",
     "relatedGames": "关联游戏",
-    "characterSummary":"角色介绍",
+    "characterSummary": "角色介绍",
     "addRelatedGame": "添加关联游戏"
   },
   "gameLaunch": {

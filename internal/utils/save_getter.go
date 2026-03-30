@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -91,6 +92,26 @@ func (b SaveInfoGetter) FetchSeiyaSave(name string, folder string, isOverride bo
 		err = os.Remove(zipPath)
 		err = os.Remove(extractedDir)
 		return "", err
+	}
+
+	return zipPath, err
+}
+
+func (b SaveInfoGetter) DownloadFileInFolder(url string) (string, error) {
+	folder, err := os.UserHomeDir()
+	folder = filepath.Join(folder, "Downloads")
+
+	fileName, err := ExtractFilename(url)
+	if err != nil {
+		return "", fmt.Errorf("获取文件名失败 err:%v", err)
+	}
+	// dataDir, err := GetDataDir()
+	// coversDestDir := filepath.Join(dataDir, "1.zip")
+	zipPath := folder + "\\" + fileName
+	err = downloadFile(url, zipPath)
+	if err != nil {
+		os.Remove(zipPath)
+		return "", fmt.Errorf("下载文件失败 err:%v", err)
 	}
 
 	return zipPath, err
@@ -275,8 +296,45 @@ func (b SaveInfoGetter) FetchSeiyaGuideContent(link string) (models.GuideContent
 	guide.Source = enums.Seiya
 	var err error = nil
 	c := CreateCollector("*seiya-saiga.com")
+
+	c.OnResponse(func(r *colly.Response) {
+		decoder := japanese.EUCJP.NewDecoder()
+
+		// 转换编码
+		reader := transform.NewReader(bytes.NewReader(r.Body), decoder)
+		utf8Data, err := ioutil.ReadAll(reader)
+		if err != nil {
+			fmt.Println("Error decoding content:", err)
+		}
+		// decodedBody, _ := decodeJapaneseContent(r.Body, r.Headers.Get("Content-Type"))
+		r.Body = utf8Data
+
+	})
+
 	c.OnHTML("body > div > table > tbody > tr", func(e *colly.HTMLElement) {
+		// oHtml, err := o.DOM.Html()
+		// if err != nil {
+		// 	return
+		// }
+		// doc, err := eucToUTF8(oHtml)
+
+		// if err != nil {
+		// 	fmt.Println("Error loading HTML 00:", err)
+		// }
+		// doc = "<tr>" + doc + "</tr>"
+		// // fmt.Println("开始获取游戏攻略内容:" + doc)
+		// eDoc, err := goquery.NewDocumentFromReader(strings.NewReader(doc))
+		// if err != nil {
+		// 	fmt.Println("Error loading HTML:", err)
+		// }
+
+		// // e := eDoc.Find()
+		// s0, err := eDoc.Html()
+		// // s0, err := eDoc.Find("th").Html()
+
+		// fmt.Printf("FetchSeiyaGuideContent 30:\n%s\n", s0)
 		s := e.DOM.Find("th > table").Eq(3)
+		// fmt.Printf("FetchSeiyaGuideContent 20:\n%s\n", s.Text())
 		s.Find("tr").Each(func(i int, ss *goquery.Selection) {
 			labels := ss.Find("label").Contents()
 			fonts := ss.Find("font").Contents()
@@ -286,28 +344,31 @@ func (b SaveInfoGetter) FetchSeiyaGuideContent(link string) (models.GuideContent
 				ss.Remove()
 			}
 		})
+
 		g, _ := s.Html()
+		fmt.Printf("FetchSeiyaGuideContent 00:\n%s\n", g)
 		g = fmt.Sprintf(`<table border="1" bordercolor="#66ccff" bgcolor="#ffffff" height="40" width="800" cellspacing="0">
         %s
 		</table>`, g)
 		// guide.Content, err = shiftJISToUTF8(hml)
-		guide.Content, err = eucToUTF8(g)
+		guide.Content = g
 		s2 := e.DOM.Find("th > table").Eq(2)
+		guide.SaveLink = s2.Find("td:contains('セーブ') a").AttrOr("href", "")
 		s2.Find("tr").Each(func(i int, ss *goquery.Selection) {
-			trText, _ := eucToUTF8(ss.Text())
+			trText := ss.Text()
 			if i == 0 || i == 1 || strings.Contains(trText, "攻略リンク") {
 				ss.Remove()
 			}
 		})
 		text, _ := s2.Html()
-		guide.Text, err = eucToUTF8(text)
-		guide.Text = strings.ReplaceAll(strings.ReplaceAll(guide.Text, "��", ""), "フルコンプセーブ", "")
+		// guide.Text, err = eucToUTF8(text)
+		guide.Text = strings.ReplaceAll(strings.ReplaceAll(text, "��", ""), "フルコンプセーブ", "")
 
 		// text, _ := shiftJISToUTF8(e.DOM.Text())
-		fmt.Printf("FetchSeiyaGuideContent:\n%s\n", guide.Text)
+		// fmt.Printf("FetchSeiyaGuideContent:\n%s\n", guide.Text)
 		// guide.Text, err = shiftJISToUTF8(e.DOM.Text())
 
-		name, _ := eucToUTF8(e.DOM.Find("table").Eq(0).Find("th").Text())
+		name := e.DOM.Find("table").Eq(0).Find("th").Text()
 		guide.Name = name
 		fmt.Printf("FetchSeiyaGuideContent name: %s\n", name)
 

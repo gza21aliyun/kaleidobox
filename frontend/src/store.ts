@@ -137,7 +137,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       var gameList: models.Game[] = [];
       for (;;) { 
-        const result = await GetSimpleGamesByPage(page, pageSize);        
+        const result = await GetGamesByPage(page, pageSize);        
         
         if (page == 1) {
           gameList = result || [];
@@ -152,7 +152,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         
       }
       set({ gamesLoading: false });
-      get().loadGamesData()
+      // get().loadGamesData()
       
     }
     catch (error) {

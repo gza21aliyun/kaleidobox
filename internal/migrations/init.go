@@ -66,6 +66,10 @@ func SchemaQueries() []string {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_games_id ON games(id)`,
 		`CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)`,
+		`CREATE INDEX IF NOT EXISTS idx_games_tags ON games(tags)`,
+		`CREATE INDEX IF NOT EXISTS idx_games_cover ON games(cover_url)`,
+		`CREATE INDEX IF NOT EXISTS idx_games_summary ON games(summary)`,
+		`CREATE INDEX IF NOT EXISTS idx_games_path ON games(path)`,
 		`CREATE TABLE IF NOT EXISTS game_categories (
 			game_id TEXT,
 			category_id TEXT,

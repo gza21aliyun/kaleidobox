@@ -312,7 +312,12 @@
       "saveGameFailed": "ゲームの保存に失敗しました",
       "fetchMetadataByIdFailed": "ID でメタデータを取得するのに失敗しました。ネットワークまたはトークンの有効性を確認してください。",
       "selectCoverImageFailed": "表紙画像の選択に失敗しました",
-      "pleaseFillGameName": "ゲーム名を入力してください"
+      "pleaseFillGameName": "ゲーム名を入力してください",
+      "saveFailed": "保存に失敗しました",
+      "remoteUpdateFailed": "リモートからの更新に失敗しました",
+      "gameLaunchSuccess": "{{name}} の起動に成功しました",
+      "gameLaunchFailed": "{{name}} の起動に失敗しました（起動できませんでした）",
+      "gameLaunchFailedCheckLog": "{{name}} の起動に失敗しました。ログを確認してください。"
     },
     "buttons": {
       "addToCollection": "コレクションに追加",
@@ -332,13 +337,6 @@
       "addedAt": "追加日時",
       "releaseDate": "発売日",
       "noCover": "表紙なし"
-    },
-    "toasts": {
-      "saveFailed": "保存に失敗しました",
-      "remoteUpdateFailed": "リモートからの更新に失敗しました",
-      "gameLaunchSuccess": "{{name}} の起動に成功しました",
-      "gameLaunchFailed": "{{name}} の起動に失敗しました（起動できませんでした）",
-      "gameLaunchFailedCheckLog": "{{name}} の起動に失敗しました。ログを確認してください。"
     },
     "modals": {
       "deleteMessage": "ゲーム \"{{name}}\" を削除しますか？この操作により、このゲームはライブラリから削除されますが、ローカルのゲームファイルは削除されません。",
@@ -1065,7 +1063,7 @@
     "searchById": "IDで検索",
     "enterId": "IDを入力",
     "search": "検索",
-    "startUpdateSuccess": "バッチでメタデータの更新を開始します",
+    "startUpdateSuccess": "メタデータの一括更新を開始します",
     "noGamesImported": "ゲームがインポートされていません"
   },
   "batchImport": {

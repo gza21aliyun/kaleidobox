@@ -155,7 +155,7 @@ export function GameCard({
             <ImageCard
               url={game.cover_url}
               alt={game.name}
-              lazyLoad={false}
+              lazyLoad={true}
               referrerPolicy="no-referrer"
               className="absolute inset-0 w-full h-full object-cover object-center"
               onDragStart={e => e.preventDefault()}
@@ -260,7 +260,7 @@ export function GameCard({
               <ImageCard
                 url={game.cover_url}
                 alt={game.name}
-                lazyLoad={false}
+                lazyLoad={true}
                 referrerPolicy="no-referrer"
                 className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
                 onDragStart={e => e.preventDefault()}

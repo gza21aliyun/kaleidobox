@@ -660,9 +660,9 @@ func TestGameService_Search(t *testing.T) {
 		// gameName := "1／2 summer"
 		// gameName := "ものべの"
 		// gameName := "Timepiece Ensemble -タイムピース アンサンブル-"
-		gameName := "流星ワールドアクタ"
+		gameName := "なぜ姫は性処理便器になってもティアラを外そうとしないのか"
 
-		bgmGetter := utils.NewGetchuInfoGetter()
+		bgmGetter := utils.NewDlsiteInfoGetter()
 		bgm, err := bgmGetter.FetchMetadataByName2(gameName)
 
 		// dmmGetter := utils.NewDmmInfoGetter()
@@ -837,7 +837,7 @@ func createDmmGameCheck() (models.Game, GameCheck, vo.MetadataRequest) {
 		Path:       "C:\\Games\\TestGame\\game.exe",
 		SourceType: enums.Dmm,
 		// SourceID:   "hobc_0509",
-		SourceID:  "views_0468",
+		SourceID:  "irodori_0011",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		ReleaseAt: releaseAt,
@@ -990,7 +990,7 @@ func TestGameService_BGArray(t *testing.T) {
 
 	t.Run("add game success", func(t *testing.T) {
 		applog.SetMode(applog.ModeCLI)
-		game, checkFn, req := createYmgalGameCheck()
+		game, checkFn, req := createDmmGameCheck()
 		services := createServices(t)
 		t.Logf("add game 01: %s", game.Name)
 		err := services.GameService.AddGame(game)

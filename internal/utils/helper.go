@@ -244,7 +244,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	// 检查是否包含有效的分隔符（除了纯空格）
 	// num := -1
 	// numStr := ""
-	hasValidSeparator := regexp.MustCompile(`[－\-~～　 ・！「\[]`).MatchString(searchName)
+	hasValidSeparator := regexp.MustCompile(`[－\-~～　＝ ・！「\[]`).MatchString(searchName)
 
 	mainTitle := ""
 
@@ -261,7 +261,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	separatorPattern := `[－\-~～]+`
 	if hasNonEnglish {
 		// separatorPattern = `[－・「\-~ ～]+`
-		separatorPattern = `[－\-~～ ・「]+`
+		separatorPattern = `[－\-~～＝ ・「]+`
 	}
 	parts := regexp.MustCompile(separatorPattern).Split(searchName, -1)
 	// fmt.Printf("getTitlesNum 11 :%s\n", strings.Join(parts, ","))
@@ -276,7 +276,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	if len(parts) < 2 {
 		hasNonEnglish = regexp.MustCompile(`[^a-zA-Z0-9 ]`).MatchString(mainTitle)
 		if onlyNum || hasNonEnglish {
-			separatorPattern = `[－\-~～　 ！・「\[]+`
+			separatorPattern = `[－\-~～　＝ ！・「\[]+`
 			// fmt.Printf("getTitlesNum 02:\n")
 		} else {
 			separatorPattern = `[－\-~～　！\[]+`
@@ -637,6 +637,9 @@ func getGameNameAlternative(searchName string) string {
 	}
 	if strings.Contains(name, "学") {
 		name = strings.ReplaceAll(name, "学", "學")
+	}
+	if strings.Contains(name, "师") {
+		name = strings.ReplaceAll(name, "师", "師")
 	}
 
 	name = strings.TrimSuffix(name, "％")

@@ -272,12 +272,6 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		summary, _ := e.DOM.Find("p.text-overflow").Html()
 		summary = strings.ReplaceAll(summary, "<br/>", "\n")
 		game.Summary = summary
-		releaseAt := e.ChildText("div.item-info__release-date__content__date") + ":00"
-		game.ReleaseAt, err = time.Parse("2006/01/02 15:04:05", releaseAt)
-		fmt.Printf("发售日11：%v, %s, %v\n", game.ReleaseAt, releaseAt, err)
-		if err != nil {
-			return
-		}
 		time.Sleep(time.Millisecond * 500)
 
 		// 提取标签
@@ -297,7 +291,9 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		// 获取图片
 		var images []string
 		e.DOM.Find("div.productLayout__primaryColumn div.slider-area li img").Each(func(i int, s *goquery.Selection) {
-			image, _ := s.Attr("src")
+			image := s.AttrOr("src", "")
+			// image, _ := s.Html()
+			fmt.Println("开始获取DMM游戏信息 52 " + image)
 			if image == "" {
 				return
 			} else if strings.Contains(image, "pl.jpg") {
@@ -551,10 +547,17 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 				worksMap[work.Role] = append(worksMap[work.Role], *work)
 			}
 		})
+		gameEntity.WorksMap = worksMap
+
+		releaseAt := strings.TrimSpace(e.DOM.Find("div.item-info__release-date__content__date").First().Text()) + ":00"
+		game.ReleaseAt, err = time.Parse("2006/01/02 15:04:05", releaseAt)
+		fmt.Printf("发售日11：%v, releaseat:%s, err:%v\n", game.ReleaseAt, releaseAt, err)
+		if err != nil {
+			return
+		}
 
 		// jstr, _ := json.Marshal(worksMap)
 		// log.Printf("worksMap: " + string(jstr))
-		gameEntity.WorksMap = worksMap
 
 	})
 

@@ -255,13 +255,13 @@ func (b SaveInfoGetter) FetchSeiyaGuide(name string, fetchType int) (models.Guid
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
-		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
+		gameFound, s := searchNameByRegexSimilarity(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
 			Title string
 			Link  string
 		}) string {
 			return t1.Title
 		})
-		if gameFound != nil {
+		if gameFound != nil && s > 0.4 {
 			gameName = gameFound.Title
 			gameLink = gameFound.Link
 		}

@@ -648,6 +648,11 @@ func getGameNameAlternative(searchName string) string {
 }
 
 func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []string, fn func(t1 T1) string) *T1 {
+	found, _ := searchNameByRegexSimilarity(slice1, searchNameO, excludeWords, fn)
+	return found
+}
+
+func searchNameByRegexSimilarity[T1 any](slice1 []T1, searchNameO string, excludeWords []string, fn func(t1 T1) string) (*T1, float32) {
 	searchName := getGameNameAlternative(searchNameO)
 	searchName = strings.ToLower(searchName)
 	mainTitle, _, num := getTitlesNum(searchName, true)
@@ -660,7 +665,7 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 		Value      T1
 	}
 	if len(slice1) == 0 {
-		return nil
+		return nil, 0
 	}
 	var results []Result
 	for _, item := range slice1 {
@@ -669,7 +674,7 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 		name := strings.ToLower(oname2)
 		// fmt.Printf("searchNameByRegex 10 name:%s, oname:%s, oname2:%s, searchName:%s\n", name, oname, oname2, searchName)
 		if name == searchName {
-			return &item
+			return &item, 1
 		}
 		containsExcludeWords := false
 		for _, word := range excludeWords {
@@ -722,9 +727,9 @@ func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []s
 		return results[i].similarity > results[j].similarity
 	})
 	if len(results) == 0 {
-		return nil
+		return nil, 0
 	}
-	return &results[0].Value
+	return &results[0].Value, results[0].similarity
 }
 
 func searchNameByRegex2[T1 any](slice1 []T1, searchName string, excludeWords []string, fn func(t1 T1) string) *T1 {

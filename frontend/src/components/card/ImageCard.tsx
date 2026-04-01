@@ -12,13 +12,15 @@ interface ImageBackupProps {
   alt?: string;
   style?: React.CSSProperties | undefined;
   draggable?: boolean | undefined;
+  selectMode?: boolean;
+  onSelect?: (selected: models.ImageBackup) => void;
   referrerPolicy?: React.HTMLAttributeReferrerPolicy | undefined;  
     onDragStart?: React.DragEventHandler | undefined;
     onError?: React.ReactEventHandler | undefined;
 }
 
 export function ImageBackupCard({
-    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError
+    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
@@ -59,9 +61,21 @@ export function ImageBackupCard({
         }
     }, [isModalOpen]);
 
+    const handleClickImg = () => { 
+        if (selectMode && onSelect) {
+            onSelect(imageBackup);
+        } else {
+            setIsModalOpen(true);
+        }
+        
+    };
+
     return (
         <>
-            <div className="image-card cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setIsModalOpen(true)}>
+            <div 
+                className={`image-card cursor-pointer hover:opacity-80 transition-all ${selectMode ? 'ring-2 ring-brand-500 ring-offset-2 dark:ring-offset-brand-900 rounded-md' : ''}`} 
+                onClick={() => handleClickImg()}
+            >
                 { imageBackup.local_path !== "" ? 
                 (<img src={getImageUrl()} 
                 alt={alt || "Image"}
@@ -142,6 +156,8 @@ interface ImageCardProps {
     onDragStart?: React.DragEventHandler | undefined;
     onError?: React.ReactEventHandler | undefined;
   lazyLoad?: boolean;
+  selectMode?: boolean;
+  onSelect?: (selected: models.ImageBackup) => void;
 }
 export function ImageCard({
     url,
@@ -152,7 +168,9 @@ export function ImageCard({
     referrerPolicy,
     onDragStart,
     onError,
-    lazyLoad = true
+    lazyLoad = true,
+    selectMode = false,
+    onSelect
 }: ImageCardProps) {
     const [imageBackup, setImageBackup] = useState<models.ImageBackup | null>(null);
     const [loading, setLoading] = useState(false);
@@ -293,6 +311,8 @@ export function ImageCard({
                     onDragStart={onDragStart}
                     referrerPolicy={referrerPolicy}
                     onError={onError}
+                    selectMode={selectMode}
+                    onSelect={onSelect}
                     />
             </div>
         );

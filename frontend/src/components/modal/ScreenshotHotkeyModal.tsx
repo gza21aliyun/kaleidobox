@@ -244,7 +244,7 @@ export function ScreenshotHotkeyModal({
         </div>
 
         {/* 修饰键选择（仅键盘） */}
-        {selectedDeviceType === enums.DeviceType.KEYBOARD && (
+        {/* {selectedDeviceType === enums.DeviceType.KEYBOARD && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
             {t('hotkey.labels.modifiers')}（可选）
@@ -265,13 +265,13 @@ export function ScreenshotHotkeyModal({
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* 按键输入 */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
             {t('hotkey.labels.key')}
-            {selectedDeviceType === enums.DeviceType.KEYBOARD && `（${t('hotkey.labels.combinationSupported')}）`}
+            {/* {selectedDeviceType === enums.DeviceType.KEYBOARD && `（${t('hotkey.labels.combinationSupported')}）`} */}
             {selectedDeviceType !== enums.DeviceType.KEYBOARD && `（${t('hotkey.labels.singleKeyOnly')}）`}
           </label>
           <div className="relative">

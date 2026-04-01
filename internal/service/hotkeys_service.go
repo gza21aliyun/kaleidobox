@@ -1305,6 +1305,10 @@ func (s *HotkeyService) checkKeyboardState(lastKeyState map[int]bool, count int,
 				vkCode = 9
 			case "esc":
 				vkCode = 27
+			case "CONTEXT_MENU":
+				vkCode = 93
+			case "CONTEXTMENU":
+				vkCode = 93
 			case "BROWSER_HOME":
 				vkCode = 172
 			case "BROWSERHOME":

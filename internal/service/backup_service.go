@@ -662,16 +662,16 @@ func (s *BackupService) CreateDBBackup() (*vo.DBBackupInfo, error) {
 		return nil, err
 	}
 
-	dataDir, err := utils.GetDataDir()
-	if err != nil {
-		return nil, err
-	}
+	// dataDir, err := utils.GetDataDir()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	timestamp := time.Now().Format("2006-01-02T15-04-05")
 	// 创建临时打包目录，包含数据库导出和 covers
 	packDir := filepath.Join(backupDir, fmt.Sprintf("pack_%s", timestamp))
 	dbExportDir := filepath.Join(packDir, "database")
-	coversDestDir := filepath.Join(packDir, "images")
+	// coversDestDir := filepath.Join(packDir, "images")
 
 	if err := os.MkdirAll(dbExportDir, 0755); err != nil {
 		return nil, fmt.Errorf("创建临时目录失败: %w", err)
@@ -686,13 +686,13 @@ func (s *BackupService) CreateDBBackup() (*vo.DBBackupInfo, error) {
 	}
 
 	// 复制 covers 文件夹（如果存在）
-	coversSourceDir := filepath.Join(dataDir, "images")
-	if _, err := os.Stat(coversSourceDir); err == nil {
-		if err := utils.CopyDir(coversSourceDir, coversDestDir); err != nil {
-			applog.LogWarningf(s.ctx, "CreateDBBackup: failed to copy covers: %v", err)
-			// 封面复制失败不影响整体备份，继续执行
-		}
-	}
+	// coversSourceDir := filepath.Join(dataDir, "images")
+	// if _, err := os.Stat(coversSourceDir); err == nil {
+	// 	if err := utils.CopyDir(coversSourceDir, coversDestDir); err != nil {
+	// 		applog.LogWarningf(s.ctx, "CreateDBBackup: failed to copy covers: %v", err)
+	// 		// 封面复制失败不影响整体备份，继续执行
+	// 	}
+	// }
 
 	// 打包整个目录
 	backupFileName := fmt.Sprintf("kaleidobox_%s.zip", timestamp)

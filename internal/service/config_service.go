@@ -29,6 +29,9 @@ func (s *ConfigService) Init(ctx context.Context, db *sql.DB, config *appconf.Ap
 }
 
 func (s *ConfigService) GetAppConfig() (appconf.AppConfig, error) {
+	// if s.config == nil {
+	// 	return appconf.AppConfig{}, errors.New("app config service is nil")
+	// }
 	return *s.config, nil
 }
 

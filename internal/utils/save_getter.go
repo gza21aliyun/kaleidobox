@@ -214,6 +214,7 @@ func (b SaveInfoGetter) FetchSeiyaGuide(name string, fetchType int) (models.Guid
 	gameLink := ""
 	mainTitle, subtitle, _ := getTitles(name)
 	firstName := mainTitle
+	var sm float32 = 0
 	if fetchType == 1 {
 		firstName = getGameNameAlternative(firstName)
 	} else if fetchType == 2 && subtitle != "" {
@@ -261,9 +262,10 @@ func (b SaveInfoGetter) FetchSeiyaGuide(name string, fetchType int) (models.Guid
 		}) string {
 			return t1.Title
 		})
-		if gameFound != nil && s > 0.4 {
+		if gameFound != nil && s > 0.7 {
 			gameName = gameFound.Title
 			gameLink = gameFound.Link
+			sm = s
 		}
 
 	})
@@ -285,7 +287,7 @@ func (b SaveInfoGetter) FetchSeiyaGuide(name string, fetchType int) (models.Guid
 		return guide, fmt.Errorf("找不到游戏%s的攻略", name)
 	}
 
-	fmt.Printf("找到游戏‘%s’的攻略%s\n", gameName, gameLink)
+	fmt.Printf("找到游戏‘%s’的攻略%s, s:%0.2f\n", gameName, gameLink, sm)
 	guide, err = b.FetchSeiyaGuideContent(gameLink)
 
 	return guide, err

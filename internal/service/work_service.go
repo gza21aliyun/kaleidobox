@@ -81,6 +81,7 @@ func (s *WorkService) CreateOrUpdateWorkStaffCharactor(work models.Work) error {
 	staff := models.Staff{}
 	charactor := models.Charactor{}
 	var err error = nil
+	work.StaffName = strings.ReplaceAll(work.StaffName, `"`, "")
 	if work.StaffName != "" {
 		fmt.Printf("07 CreateOrUpdateWorkStaffCharactor %s %s %s %s %s\n", work.StaffName, work.CharactorName, string(work.Role), work.GameId, work.Images)
 		staff, err = s.staffService.CreateOrUpdateStaff(work.StaffName, work.GameId, work.SourceGameId, work.SourceType,

@@ -12,7 +12,6 @@ import (
 	"lunabox/internal/vo"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 	"unicode"
@@ -22,7 +21,7 @@ import (
 	"golang.org/x/text/transform"
 
 	"github.com/PuerkitoBio/goquery" // 添加 GoQuery 导入
-	"github.com/gocolly/colly/v2"    // 添加 Colly 导入
+	// 添加 Colly 导入
 	"github.com/labstack/gommon/log"
 )
 
@@ -204,61 +203,61 @@ type DlsiteWorkResponse struct {
 	WorkPackParent  []interface{}  `json:"work_pack_parent"`
 	IsPackParent    bool           `json:"is_pack_parent"`
 	// WorkPackChildren          []interface{}  `json:"work_pack_children"`
-	PackType                  interface{}    `json:"pack_type"`
-	IsVoicePack               bool           `json:"is_voice_pack"`
-	VoicePackParent           []interface{}  `json:"voice_pack_parent"`
-	VoicePackChild            []interface{}  `json:"voice_pack_child"`
-	Free                      bool           `json:"free"`
-	FreeOnly                  bool           `json:"free_only"`
-	FreeEndDate               bool           `json:"free_end_date"`
-	HasFreeDownload           bool           `json:"has_free_download"`
-	LimitedFreeTerms          []interface{}  `json:"limited_free_terms"`
-	LimitedFreeWork           []interface{}  `json:"limited_free_work"`
-	Creaters                  DlsiteCreaters `json:"creaters"`
-	TitleID                   interface{}    `json:"title_id"`
-	TitleName                 interface{}    `json:"title_name"`
-	TitleNameMasked           interface{}    `json:"title_name_masked"`
-	TitleVolumn               interface{}    `json:"title_volumn"`
-	TitleWorkLabeling         interface{}    `json:"title_work_labeling"`
-	TitleWorkDisplayOrder     interface{}    `json:"title_work_display_order"`
-	TitleWorkCount            interface{}    `json:"title_work_count"`
-	IsTitleCompleted          bool           `json:"is_title_completed"`
-	TitleLatestWorkno         interface{}    `json:"title_latest_workno"`
-	TitlePriceLow             interface{}    `json:"title_price_low"`
-	TitlePriceHigh            interface{}    `json:"title_price_high"`
-	IsTitlePointup            interface{}    `json:"is_title_pointup"`
-	TitlePointRate            interface{}    `json:"title_point_rate"`
-	IsTitleDiscount           interface{}    `json:"is_title_discount"`
-	IsTitleReserve            interface{}    `json:"is_title_reserve"`
-	ReserveWork               interface{}    `json:"reserve_work"`
-	IsReserveWork             bool           `json:"is_reserve_work"`
-	IsReservable              bool           `json:"is_reservable"`
-	IsDownloadableReserveWork bool           `json:"is_downloadable_reserve_work"`
-	BonusWorkno               bool           `json:"bonus_workno"`
-	BonusWork                 interface{}    `json:"bonus_work"`
-	IsBonusWork               bool           `json:"is_bonus_work"`
-	IsDownloadableBonusWork   bool           `json:"is_downloadable_bonus_work"`
-	ParentReserveWorkno       bool           `json:"parent_reserve_workno"`
-	BookType                  interface{}    `json:"book_type"`
-	IsBL                      bool           `json:"is_bl"`
-	IsTL                      bool           `json:"is_tl"`
-	IsDramaWork               bool           `json:"is_drama_work"`
-	IsDisplayNotice           bool           `json:"is_display_notice"`
-	TouchStyle1               []string       `json:"touch_style1"`
-	IsBulkbuy                 bool           `json:"is_bulkbuy"`
-	BulkbuyKey                interface{}    `json:"bulkbuy_key"`
-	BulkbuyTitle              interface{}    `json:"bulkbuy_title"`
-	BulkbuyPerItems           int            `json:"bulkbuy_per_items"`
-	BulkbuyStart              interface{}    `json:"bulkbuy_start"`
-	BulkbuyEnd                interface{}    `json:"bulkbuy_end"`
-	BulkbuyPrice              int            `json:"bulkbuy_price"`
-	BulkbuyPriceTax           int            `json:"bulkbuy_price_tax"`
-	BulkbuyPriceWithoutTax    int            `json:"bulkbuy_price_without_tax"`
-	BulkbuyDiscountRate       int            `json:"bulkbuy_discount_rate"`
-	BulkbuyPointRate          int            `json:"bulkbuy_point_rate"`
-	BulkbuyPoint              int            `json:"bulkbuy_point"`
-	Genres                    []DlsiteGenre  `json:"genres"`
-	GenresReplaced            []DlsiteGenre  `json:"genres_replaced"`
+	PackType                  interface{}   `json:"pack_type"`
+	IsVoicePack               bool          `json:"is_voice_pack"`
+	VoicePackParent           []interface{} `json:"voice_pack_parent"`
+	VoicePackChild            []interface{} `json:"voice_pack_child"`
+	Free                      bool          `json:"free"`
+	FreeOnly                  bool          `json:"free_only"`
+	FreeEndDate               bool          `json:"free_end_date"`
+	HasFreeDownload           bool          `json:"has_free_download"`
+	LimitedFreeTerms          []interface{} `json:"limited_free_terms"`
+	LimitedFreeWork           []interface{} `json:"limited_free_work"`
+	Creaters                  interface{}   `json:"creaters"`
+	TitleID                   interface{}   `json:"title_id"`
+	TitleName                 interface{}   `json:"title_name"`
+	TitleNameMasked           interface{}   `json:"title_name_masked"`
+	TitleVolumn               interface{}   `json:"title_volumn"`
+	TitleWorkLabeling         interface{}   `json:"title_work_labeling"`
+	TitleWorkDisplayOrder     interface{}   `json:"title_work_display_order"`
+	TitleWorkCount            interface{}   `json:"title_work_count"`
+	IsTitleCompleted          bool          `json:"is_title_completed"`
+	TitleLatestWorkno         interface{}   `json:"title_latest_workno"`
+	TitlePriceLow             interface{}   `json:"title_price_low"`
+	TitlePriceHigh            interface{}   `json:"title_price_high"`
+	IsTitlePointup            interface{}   `json:"is_title_pointup"`
+	TitlePointRate            interface{}   `json:"title_point_rate"`
+	IsTitleDiscount           interface{}   `json:"is_title_discount"`
+	IsTitleReserve            interface{}   `json:"is_title_reserve"`
+	ReserveWork               interface{}   `json:"reserve_work"`
+	IsReserveWork             bool          `json:"is_reserve_work"`
+	IsReservable              bool          `json:"is_reservable"`
+	IsDownloadableReserveWork bool          `json:"is_downloadable_reserve_work"`
+	BonusWorkno               bool          `json:"bonus_workno"`
+	BonusWork                 interface{}   `json:"bonus_work"`
+	IsBonusWork               bool          `json:"is_bonus_work"`
+	IsDownloadableBonusWork   bool          `json:"is_downloadable_bonus_work"`
+	ParentReserveWorkno       bool          `json:"parent_reserve_workno"`
+	BookType                  interface{}   `json:"book_type"`
+	IsBL                      bool          `json:"is_bl"`
+	IsTL                      bool          `json:"is_tl"`
+	IsDramaWork               bool          `json:"is_drama_work"`
+	IsDisplayNotice           bool          `json:"is_display_notice"`
+	TouchStyle1               []string      `json:"touch_style1"`
+	IsBulkbuy                 bool          `json:"is_bulkbuy"`
+	BulkbuyKey                interface{}   `json:"bulkbuy_key"`
+	BulkbuyTitle              interface{}   `json:"bulkbuy_title"`
+	BulkbuyPerItems           int           `json:"bulkbuy_per_items"`
+	BulkbuyStart              interface{}   `json:"bulkbuy_start"`
+	BulkbuyEnd                interface{}   `json:"bulkbuy_end"`
+	BulkbuyPrice              int           `json:"bulkbuy_price"`
+	BulkbuyPriceTax           int           `json:"bulkbuy_price_tax"`
+	BulkbuyPriceWithoutTax    int           `json:"bulkbuy_price_without_tax"`
+	BulkbuyDiscountRate       int           `json:"bulkbuy_discount_rate"`
+	BulkbuyPointRate          int           `json:"bulkbuy_point_rate"`
+	BulkbuyPoint              int           `json:"bulkbuy_point"`
+	Genres                    []DlsiteGenre `json:"genres"`
+	GenresReplaced            []DlsiteGenre `json:"genres_replaced"`
 	// CustomGenres                      []DlsiteCustomGenre    `json:"custom_genres"`
 	Editions          []interface{}       `json:"editions"`
 	LanguageEditions  []interface{}       `json:"language_editions"`
@@ -491,13 +490,19 @@ func (b DlsiteInfoGetter) FetchByNameImpl(searchName string, fn IdFunction) (mod
 		Review   string
 		CoverUrl string
 	}
+	fmt.Printf("visiting %s\n", url)
 
-	rawData, _ := getRawResponse(url)
-	document, err := goquery.NewDocumentFromReader(bytes.NewReader(rawData))
+	// rawData, _ := getRawResponse(url)
+
+	// document, err := goquery.NewDocumentFromReader(bytes.NewReader(rawData))
+	hml, err := FetchHtmlWithChromeDP(url)
+	document, err := goquery.NewDocumentFromReader(strings.NewReader(hml))
 	document.Find("ul#search_result_img_box li > dl").Each(func(i int, e *goquery.Selection) {
 		// e.Find("")
+		ehml, _ := e.Html()
+		fmt.Println("FetchByNameImpl 07 " + ehml)
 
-		link := e.Find("dl > dt > a").AttrOr("href", "")
+		link := e.Find("div.multiline_truncate a").First().AttrOr("href", "")
 		// price := e.ChildText(".component-legacy-productTile__review")
 		// log.Print("OnHTML 网页列表 ：", e.Text)
 		title := e.Find("div.multiline_truncate").Text()
@@ -521,7 +526,7 @@ func (b DlsiteInfoGetter) FetchByNameImpl(searchName string, fn IdFunction) (mod
 		}
 
 	})
-	fmt.Println("link 04:", len(potentialGames))
+	fmt.Println("found 04:", len(potentialGames))
 	gameFound := searchNameByRegex(potentialGames, searchName, []string{"セット"}, func(t1 struct {
 		Title    string
 		Link     string
@@ -596,36 +601,40 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 	} else {
 		url = fmt.Sprintf(apiUrl, "pro", request.ID)
 	}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		fmt.Println("DlsiteInfoGetter FetchMetadata 01 error: %v", err)
-		return gameEntity, err
-	}
+	// req, err := http.NewRequest("GET", url, nil)
+	// if err != nil {
+	// 	fmt.Println("DlsiteInfoGetter FetchMetadata 01 error: %v", err)
+	// 	return gameEntity, err
+	// }
 
-	req.Header.Set("User-Agent", "GameManage/1.0")
-	req.Header.Set("Accept", "application/json")
-	resp, err := b.client.Do(req)
-	if err != nil {
-		fmt.Printf("DlsiteInfoGetter FetchMetadata 02 error: %v\n", err)
-		return gameEntity, err
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Println("DlsiteInfoGetter FetchMetadata 03 error: %v", err)
-			log.Warnf("Error closing response body: %v", err)
-		}
-	}(resp.Body)
+	// req.Header.Set("User-Agent", "GameManage/1.0")
+	// req.Header.Set("Accept", "application/json")
+	// resp, err := b.client.Do(req)
+	// if err != nil {
+	// 	fmt.Printf("DlsiteInfoGetter FetchMetadata 02 error: %v\n", err)
+	// 	return gameEntity, err
+	// }
+	// defer func(Body io.ReadCloser) {
+	// 	err := Body.Close()
+	// 	if err != nil {
+	// 		fmt.Println("DlsiteInfoGetter FetchMetadata 03 error: %v", err)
+	// 		log.Warnf("Error closing response body: %v", err)
+	// 	}
+	// }(resp.Body)
 
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return gameEntity, fmt.Errorf("dlsite API returned status: %d, body: %s", resp.StatusCode, string(bodyBytes))
-	}
+	// if resp.StatusCode != http.StatusOK {
+	// 	bodyBytes, _ := io.ReadAll(resp.Body)
+	// 	return gameEntity, fmt.Errorf("dlsite API returned status: %d, body: %s", resp.StatusCode, string(bodyBytes))
+	// }
 
 	var dlsiteResp []DlsiteWorkResponse
-	if err := json.NewDecoder(resp.Body).Decode(&dlsiteResp); err != nil {
-		fmt.Println("DlsiteInfoGetter FetchMetadata 04 error: %v", err)
-		fmt.Println("DlsiteInfoGetter FetchMetadata 055")
+	// if err := json.NewDecoder(resp.Body).Decode(&dlsiteResp); err != nil {
+	// 	fmt.Println("DlsiteInfoGetter FetchMetadata 04 error: %v", err)
+	// 	fmt.Println("DlsiteInfoGetter FetchMetadata 055")
+	// 	return gameEntity, err
+	// }
+	err := FetchWithChromeDPAndDecode(url, &dlsiteResp)
+	if err != nil {
 		return gameEntity, err
 	}
 	data, err := json.MarshalIndent(dlsiteResp, "", "  ")
@@ -638,6 +647,12 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 		return gameEntity, errors.New("DlsiteInfoGetter FetchMetadata 06 no data")
 	}
 	dlsiteData := dlsiteResp[0]
+	// 解析 creaters 字段（处理 [] 和 {} 两种情况）
+	creaters, err := parseCreaters(dlsiteData.Creaters)
+	if err != nil {
+		fmt.Printf("⚠️  creaters 解析警告：%v\n", err)
+		// 解析失败不影响其他数据处理，继续使用空的 creaters
+	}
 	date, err := time.Parse("2006-01-02 15:04:05", dlsiteData.RegistDate)
 	game = models.Game{
 		ID:        request.DbGameId,
@@ -725,7 +740,7 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 		})
 	}
 	var worksMap map[enums.StaffRole][]models.Work = make(map[enums.StaffRole][]models.Work)
-	for _, work := range dlsiteData.Creaters.IllustBy {
+	for _, work := range creaters.IllustBy {
 		worksMap[enums.Art] = append(worksMap[enums.Art], models.Work{
 			GameId:        game.ID,
 			Role:          enums.Art,
@@ -734,7 +749,7 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 			SourceType:    enums.Dlsite,
 		})
 	}
-	for _, work := range dlsiteData.Creaters.MusicBy {
+	for _, work := range creaters.MusicBy {
 		worksMap[enums.Composer] = append(worksMap[enums.Composer], models.Work{
 			GameId:        game.ID,
 			Role:          enums.Composer,
@@ -743,7 +758,7 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 			SourceType:    enums.Dlsite,
 		})
 	}
-	for _, work := range dlsiteData.Creaters.ScenarioBy {
+	for _, work := range creaters.ScenarioBy {
 		worksMap[enums.Sceneario] = append(worksMap[enums.Sceneario], models.Work{
 			GameId:        game.ID,
 			Role:          enums.Sceneario,
@@ -752,7 +767,7 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 			SourceType:    enums.Dlsite,
 		})
 	}
-	for _, work := range dlsiteData.Creaters.VoiceBy {
+	for _, work := range creaters.VoiceBy {
 		worksMap[enums.CV] = append(worksMap[enums.CV], models.Work{
 			GameId:        game.ID,
 			Role:          enums.CV,
@@ -766,6 +781,36 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 	gameEntity.Tags = ArrayToMap(tagList, func(t1 models.Tag) string { return t1.Category })
 
 	return gameEntity, nil
+}
+
+func parseCreaters(creatersData interface{}) (DlsiteCreaters, error) {
+	var creaters DlsiteCreaters
+
+	if creatersData == nil {
+		return creaters, nil
+	}
+
+	// 尝试转换为数组（空数据的情况）
+	if arr, ok := creatersData.([]interface{}); ok {
+		if len(arr) == 0 {
+			// 空数组，返回空的 creaters
+			return creaters, nil
+		}
+		// 如果数组不为空但不是预期格式，也返回空
+		return creaters, nil
+	}
+
+	// 尝试转换为对象（有数据的情况）
+	data, err := json.Marshal(creatersData)
+	if err != nil {
+		return creaters, fmt.Errorf("解析 creaters 失败：%v", err)
+	}
+
+	if err := json.Unmarshal(data, &creaters); err != nil {
+		return creaters, fmt.Errorf("反序列化 creaters 失败：%v", err)
+	}
+
+	return creaters, nil
 }
 
 func (b DlsiteInfoGetter) FetchMetadata(id string, token string) (models.Game, error) {
@@ -792,23 +837,22 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 	} else {
 		dlsiteUrl = fmt.Sprintf(workUrl, "pro", request.ID)
 	}
-	c := CreateCollector("*dlsite.com")
-
-	// 处理游戏详情页面
-	c.OnHTML("body", func(e *colly.HTMLElement) {
-		name := e.ChildText("h1#work_name")
-		fmt.Println("开始获取Dlsite游戏信息 ， title:" + e.ChildText("h1"))
+	hml, err := FetchHtmlWithChromeDP(dlsiteUrl)
+	document, err := goquery.NewDocumentFromReader(strings.NewReader(hml))
+	document.Find("body").Each(func(i int, e *goquery.Selection) {
+		name := e.Find("h1#work_name").Text()
+		fmt.Println("开始获取Dlsite游戏信息 ， title:" + e.Find("h1").Text())
 		game.Name = name
 
 		// 提取公司信息
-		company := e.ChildText("span.maker_name")
+		company := e.Find("span.maker_name").Text()
 
 		game.Company = company
 
 		tagList := []models.Tag{}
 		tagList = append(tagList, models.Tag{Name: company, Category: models.TagCategoryBrand, BlockModify: true})
 
-		e.DOM.Find("div.work_genre a").Each(func(i int, s *goquery.Selection) {
+		e.Find("div.work_genre a").Each(func(i int, s *goquery.Selection) {
 			tag := strings.TrimSpace(s.Text())
 			if !strings.Contains(tag, "還元") && !strings.Contains(tag, "クーポン") && !strings.Contains(tag, "セール") &&
 				!strings.Contains(tag, "独占販売") {
@@ -818,17 +862,17 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 		})
 
 		// 提取简介
-		summary, _ := e.DOM.Find("div.work_parts_area p").Html()
+		summary, _ := e.Find("div.work_parts_area p").Html()
 		summary = strings.ReplaceAll(summary, "<br>", "\n")
 		game.Summary = summary
-		releaseAt := e.ChildText("table#work_outline tbody tr:contains('販売日') td")
+		releaseAt := e.Find("table#work_outline tbody tr:contains('販売日') td").Text()
 		game.ReleaseAt, err = time.Parse("2006年01月02日", releaseAt)
 		fmt.Printf("发售日11：%v, %s, %v\n", game.ReleaseAt, releaseAt, err)
 		if err != nil {
 			return
 		}
 		// 提取标签
-		e.DOM.Find("div.main_genre a").Each(func(i int, s *goquery.Selection) {
+		e.Find("div.main_genre a").Each(func(i int, s *goquery.Selection) {
 			tag := strings.TrimSpace(s.Text())
 			if !strings.Contains(tag, "還元") && !strings.Contains(tag, "クーポン") && !strings.Contains(tag, "セール") &&
 				!strings.Contains(tag, "独占販売") {
@@ -840,7 +884,7 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 		gameEntity.Tags = ArrayToMap(tagList, func(t1 models.Tag) string { return t1.Category })
 		// 获取图片
 		var images []string
-		e.DOM.Find("ul.slider_items li img").Each(func(i int, s *goquery.Selection) {
+		e.Find("ul.slider_items li img").Each(func(i int, s *goquery.Selection) {
 			image, _ := s.Attr("src")
 			if image == "" {
 				return
@@ -853,7 +897,7 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 		})
 		game.Images = strings.Join(images, ",")
 		var worksMap map[enums.StaffRole][]models.Work = make(map[enums.StaffRole][]models.Work)
-		e.DOM.Find("table#work_outline tbody tr:contains('イラスト') td").Each(func(i int, s *goquery.Selection) {
+		e.Find("table#work_outline tbody tr:contains('イラスト') td").Each(func(i int, s *goquery.Selection) {
 			staffName := strings.TrimSpace(s.Text())
 			StaffUrl := s.AttrOr("href", "")
 			if staffName != "" && StaffUrl != "" {
@@ -879,7 +923,7 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 				worksMap[work.Role] = append(worksMap[work.Role], work)
 			}
 		})
-		e.DOM.Find("table#work_outline tbody tr:contains('シナリオ') td").Each(func(i int, s *goquery.Selection) {
+		e.Find("table#work_outline tbody tr:contains('シナリオ') td").Each(func(i int, s *goquery.Selection) {
 			staffName := strings.TrimSpace(s.Text())
 			StaffUrl := s.AttrOr("href", "")
 			if staffName != "" && StaffUrl != "" {
@@ -905,7 +949,7 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 				worksMap[work.Role] = append(worksMap[work.Role], work)
 			}
 		})
-		e.DOM.Find("table#work_outline tbody tr:contains('音楽') td").Each(func(i int, s *goquery.Selection) {
+		e.Find("table#work_outline tbody tr:contains('音楽') td").Each(func(i int, s *goquery.Selection) {
 			staffName := strings.TrimSpace(s.Text())
 			StaffUrl := s.AttrOr("href", "")
 			if staffName != "" && StaffUrl != "" {
@@ -931,7 +975,7 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 				worksMap[work.Role] = append(worksMap[work.Role], work)
 			}
 		})
-		e.DOM.Find("table#work_outline tbody tr:contains('声優') td").Each(func(i int, s *goquery.Selection) {
+		e.Find("table#work_outline tbody tr:contains('声優') td").Each(func(i int, s *goquery.Selection) {
 			staffName := strings.TrimSpace(s.Text())
 			if staffName != "" {
 				staffId := staffName
@@ -955,63 +999,58 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 
 	})
 
-	// 错误处理
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
-	})
+	// c.OnResponse(func(r *colly.Response) {
+	// 	fmt.Printf("=== 响应调试 ===\n")
+	// 	fmt.Printf("URL: %s\n", r.Request.URL)
+	// 	fmt.Printf("状态码: %d\n", r.StatusCode)
+	// 	fmt.Printf("Content-Type: %s\n", r.Headers.Get("Content-Type"))
+	// 	fmt.Printf("响应长度: %d 字节\n", len(r.Body))
 
-	c.OnResponse(func(r *colly.Response) {
-		fmt.Printf("=== 响应调试 ===\n")
-		fmt.Printf("URL: %s\n", r.Request.URL)
-		fmt.Printf("状态码: %d\n", r.StatusCode)
-		fmt.Printf("Content-Type: %s\n", r.Headers.Get("Content-Type"))
-		fmt.Printf("响应长度: %d 字节\n", len(r.Body))
+	// 	// 显示前几个字节的十六进制
+	// 	if len(r.Body) > 0 {
+	// 		fmt.Printf("前20字节(hex): ")
+	// 		for i := 0; i < min(20, len(r.Body)); i++ {
+	// 			fmt.Printf("%02x ", r.Body[i])
+	// 		}
+	// 		fmt.Println()
+	// 	}
 
-		// 显示前几个字节的十六进制
-		if len(r.Body) > 0 {
-			fmt.Printf("前20字节(hex): ")
-			for i := 0; i < min(20, len(r.Body)); i++ {
-				fmt.Printf("%02x ", r.Body[i])
-			}
-			fmt.Println()
-		}
+	// 	// 解码处理
+	// 	decodedBody, err := decodeJapaneseContent(r.Body, r.Headers.Get("Content-Type"))
+	// 	if err != nil {
+	// 		fmt.Printf("编码处理错误: %v\n", err)
+	// 		return
+	// 	}
 
-		// 解码处理
-		decodedBody, err := decodeJapaneseContent(r.Body, r.Headers.Get("Content-Type"))
-		if err != nil {
-			fmt.Printf("编码处理错误: %v\n", err)
-			return
-		}
+	// 	// 保存解码后的内容供分析
+	// 	debugFile := fmt.Sprintf("final_decoded_%s.html", request.ID)
+	// 	os.WriteFile(debugFile, r.Body, 0644)
+	// 	fmt.Printf("✅ 解码成功，内容已保存到: %s\n", debugFile)
 
-		// 保存解码后的内容供分析
-		debugFile := fmt.Sprintf("final_decoded_%s.html", request.ID)
-		os.WriteFile(debugFile, r.Body, 0644)
-		fmt.Printf("✅ 解码成功，内容已保存到: %s\n", debugFile)
+	// 	// 验证解码结果
+	// 	if strings.Contains(decodedBody, "[编码检测失败]") {
+	// 		fmt.Println("⚠️  编码检测可能失败，请检查生成的文件")
+	// 	} else {
+	// 		fmt.Printf("解码后内容预览: %.300s...\n", decodedBody)
+	// 	}
 
-		// 验证解码结果
-		if strings.Contains(decodedBody, "[编码检测失败]") {
-			fmt.Println("⚠️  编码检测可能失败，请检查生成的文件")
-		} else {
-			fmt.Printf("解码后内容预览: %.300s...\n", decodedBody)
-		}
+	// 	// 更新响应体
+	// 	r.Body = []byte(decodedBody)
+	// })
 
-		// 更新响应体
-		r.Body = []byte(decodedBody)
-	})
-
-	c.OnScraped(func(r *colly.Response) {
-		// fmt.Printf("Scraped:%s\n", string(r.Body))
-	})
+	// c.OnScraped(func(r *colly.Response) {
+	// 	// fmt.Printf("Scraped:%s\n", string(r.Body))
+	// })
 
 	// 访问构建的 URL
-	err = c.Visit(dlsiteUrl)
-	if err != nil {
-		fmt.Printf("开始获取Dlsite游戏信息 40 err: %s\n", err)
-		return gameEntity, err
-	}
+	// err = c.Visit(dlsiteUrl)
+	// if err != nil {
+	// 	fmt.Printf("开始获取Dlsite游戏信息 40 err: %s\n", err)
+	// 	return gameEntity, err
+	// }
 
-	// 等待收集完成
-	c.Wait()
+	// // 等待收集完成
+	// c.Wait()
 	fmt.Println("开始获取Dlsite游戏信息 39 " + game.CoverURL)
 
 	// 检查是否成功获取了数据
@@ -1174,7 +1213,7 @@ type DlsiteReviewItem struct {
 }
 
 func (b DlsiteInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, error) {
-	var err error = nil
+	// var err error = nil
 	review := models.GameReview{}
 	cate := ""
 	if strings.Contains(id, "RJ") {
@@ -1186,39 +1225,9 @@ func (b DlsiteInfoGetter) FetchReviews(id string, token string, page int) (model
 	url := fmt.Sprintf("https://www.dlsite.com/%s/api/review?product_id=%s&order=top&limit=10&page=%d&locale=ja_JP",
 		cate, id, page)
 	fmt.Printf("FetchReviews url:%s\ntoken:%s\n", url, token)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		fmt.Println("BangumiInfoGetter FetchMetadata 01 error: %v", err)
-		return review, err
-	}
-	// cookie := `chii_sid=VzNpv0; chii_sec_id=IkXIr4amSQ3QgZ%2BkR39fR3N4KLywVvL5EdnpZz4; chii_cookietime=2592000; chii_auth=JRLC%2B4fzHl%2FGgsauR3VVRSkUQczTFKHpIeOteDPsqBaqG5kMZ71JTxsmMFXpZsBX5bg4pXsD%2BsTQqu11R5tvFCPkvYiltcr0NItT;`
-	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	// req.Header.Set("Cookie", cookie)
-	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
-
-	resp, err := b.client.Do(req)
-	if err != nil {
-		fmt.Println("BangumiInfoGetter FetchMetadata 02 error: %v", err)
-		return review, err
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Println("BangumiInfoGetter FetchMetadata 03 error: %v", err)
-			log.Warnf("Error closing response body: %v", err)
-		}
-	}(resp.Body)
-	// bodyBytes, _ := io.ReadAll(resp.Body)
-	// jstr := string(bodyBytes)
-	// fmt.Printf("banguimiResp: %s\n", jstr)
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return review, fmt.Errorf("bangumi API returned status: %d, body: \n%s", resp.StatusCode, string(bodyBytes))
-	}
 
 	var dlsiteResp DlsiteReviewResponse
-	if err := json.NewDecoder(resp.Body).Decode(&dlsiteResp); err != nil {
+	if err := FetchWithChromeDPAndDecode(url, &dlsiteResp); err != nil {
 		fmt.Println("BangumiInfoGetter FetchMetadata 04 error: %v", err)
 		return review, err
 	}

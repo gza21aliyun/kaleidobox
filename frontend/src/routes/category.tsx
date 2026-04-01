@@ -27,6 +27,7 @@ import { sortOptions, statusOptions } from "../consts/options";
 import { Route as rootRoute } from "./__root";
 import { arrayToMap } from "../components/utils/Utility";
 import { formatLocalDate } from '../utils/time';
+import { arrayFind, arrayMapString, joinString } from "../components/utils/Utility";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -719,6 +720,7 @@ function CategoryDetailPage() {
                             selectionMode={batchMode}
                             selected={selectedGameIds.includes(game.id)}
                             onSelectChange={selected => setGameSelection(game.id, selected)}
+                            filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
                             viewMode={viewMode}
                           />
                           {!batchMode && (

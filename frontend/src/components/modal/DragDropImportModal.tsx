@@ -247,6 +247,9 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
       if (result.games && result.games.length > 0 && selectedCategoryVo?.id) {
         await AddGamesToCategories(result.games.map(g => g.id), [selectedCategoryVo.id]);
       }
+      if (result.skipped_games && result.skipped_games.length > 0 && selectedCategoryVo?.id) {
+        await AddGamesToCategories(result.skipped_games.map(g => g.id), [selectedCategoryVo.id]);
+      }
 
       if (result.success > 0) {
         toast.success(t('import.toasts.importSuccess', { count: result.success }));

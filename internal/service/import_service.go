@@ -34,6 +34,7 @@ type ImportResult struct {
 	Failed           int           `json:"failed"`            // 失败数量
 	FailedNames      []string      `json:"failed_names"`      // 失败的游戏名称
 	SkippedNames     []string      `json:"skipped_names"`     // 跳过的游戏名称
+	SkippedGames     []models.Game `json:"skipped_games"`     // 跳过的游戏名称
 	SessionsImported int           `json:"sessions_imported"` // 导入的游玩记录数量
 	Games            []models.Game `json:"games"`
 }
@@ -885,6 +886,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 	result := ImportResult{
 		FailedNames:  []string{},
 		SkippedNames: []string{},
+		SkippedGames: []models.Game{},
 	}
 
 	// 获取现有游戏列表用于去重
@@ -894,15 +896,16 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		return result, fmt.Errorf("获取现有游戏列表失败: %w", err)
 	}
 	// 按名称和路径分别建立索引，用于不同维度的去重检查
-	existingNames := make(map[string]string) // name -> id (用于检查同名但不同路径的情况)
-	existingPaths := make(map[string]string) // path -> name (用于检查同一路径)
+	existingNames := make(map[string]models.Game) // name -> id (用于检查同名但不同路径的情况)
+	existingPaths := make(map[string]models.Game) // path -> name (用于检查同一路径)
+
 	// rs := []models.Game{}
 	for _, g := range existingGames {
 		if g.Name != "" {
-			existingNames[strings.ToLower(g.Name)] = g.ID
+			existingNames[strings.ToLower(g.Name)] = g
 		}
 		if g.Path != "" {
-			existingPaths[g.Path] = g.Name
+			existingPaths[g.Path] = g
 		}
 	}
 
@@ -917,7 +920,8 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 			if existingName, exists := existingPaths[candidate.SelectedExe]; exists {
 				applog.LogWarningf(s.ctx, "BatchImportGames: path already exists for game %s, skipping: %s", existingName, candidate.SelectedExe)
 				result.Skipped++
-				result.SkippedNames = append(result.SkippedNames, candidate.SearchName+" (路径已存在: "+existingName+")")
+				result.SkippedNames = append(result.SkippedNames, candidate.SearchName+" (路径已存在: "+existingName.Name+")")
+				result.SkippedGames = append(result.SkippedGames, existingName)
 				// rs = append(rs, existingGames[i])
 				applog.LogWarningf(s.ctx, "BatchImportGames 05:")
 				continue
@@ -936,7 +940,7 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		if existingID, exists := existingNames[strings.ToLower(gameName)]; exists {
 			// 检查是否是同一路径（完全重复的情况）
 			for _, g := range existingGames {
-				if g.ID == existingID && g.Path == candidate.SelectedExe {
+				if g.ID == existingID.ID && g.Path == candidate.SelectedExe {
 					applog.LogWarningf(s.ctx, "BatchImportGames: game already exists with same path, skipping: %s", gameName)
 					result.Skipped++
 					result.SkippedNames = append(result.SkippedNames, gameName+" (已存在)")
@@ -982,9 +986,9 @@ func (s *ImportService) BatchImportGames(candidates []vo.BatchImportCandidate) (
 		}
 
 		// 更新索引，防止同批次内的重复
-		existingNames[strings.ToLower(gameName)] = game.ID
+		existingNames[strings.ToLower(gameName)] = game
 		if candidate.SelectedExe != "" {
-			existingPaths[candidate.SelectedExe] = gameName
+			existingPaths[candidate.SelectedExe] = game
 		}
 		result.Success++
 		applog.LogWarningf(s.ctx, "BatchImportGames 10:")

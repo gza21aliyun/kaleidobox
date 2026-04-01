@@ -6,6 +6,7 @@
     "delete": "删除",
     "edit": "编辑",
     "add": "添加",
+    "create": "创建",
     "close": "关闭",
     "loading": "加载中...",
     "success": "成功",
@@ -236,6 +237,13 @@
     }
   },
   "category": {
+    "modals": {
+      "createCategory": "创建分类",
+      "editCategory": "编辑分类"
+    },
+    "placeholders": {
+      "categoryName": "请输入分类名称"
+    },
     "toasts": {
       "loadCategoriesFailed": "加载收藏夹失败",
       "loadFolderGamesFailed": "加载文件夹中游戏失败",

@@ -163,6 +163,12 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                 
               })
           }
+          if (res.skipped_games && res.skipped_games.length > 0 && selectedCategoryVo?.id) {
+            AddGamesToCategories(res.skipped_games.map(g => g.id), [selectedCategoryVo.id])
+              .then(() => {
+                
+              })
+          }
         
         })
       
@@ -293,6 +299,10 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
       setStep("result");
       if (result.games && result.games.length > 0 && selectedCategoryVo?.id) {
             await AddGamesToCategories(result.games.map(g => g.id), [selectedCategoryVo.id]);
+          }
+
+      if (result.skipped_games && result.skipped_games.length > 0 && selectedCategoryVo?.id) {
+            await AddGamesToCategories(result.skipped_games.map(g => g.id), [selectedCategoryVo.id])
           }
 
       if (result.success > 0) {

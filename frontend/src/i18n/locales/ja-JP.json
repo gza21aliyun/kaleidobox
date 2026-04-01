@@ -6,6 +6,7 @@
     "delete": "削除",
     "edit": "編集",
     "add": "追加",
+    "create": "作成",
     "close": "閉じる",
     "loading": "読み込み中...",
     "success": "成功",
@@ -253,6 +254,13 @@
     }
   },
   "category": {
+    "modals": {
+      "createCategory": "カテゴリを作成",
+      "editCategory": "カテゴリを編集"
+    },
+    "placeholders": {
+      "categoryName": "カテゴリ名を入力してください"
+    },
     "toasts": {
       "loadCategoriesFailed": "コレクションの読み込みに失敗しました",
       "loadFolderGamesFailed": "フォルダ内のゲームの読み込みに失敗しました",

@@ -6,6 +6,7 @@
     "delete": "Delete",
     "edit": "Edit",
     "add": "Add",
+    "create": "Create",
     "close": "Close",
     "loading": "Loading...",
     "success": "Success",
@@ -253,6 +254,13 @@
     }
   },
   "category": {
+    "modals": {
+      "createCategory": "Create category",
+      "editCategory": "Edit category"
+    },
+    "placeholders": {
+      "categoryName": "Enter category name"
+    },
     "toasts": {
       "loadCategoriesFailed": "Failed to load collections",
       "loadFolderGamesFailed": "Failed to load games in folder",

@@ -10,6 +10,7 @@ import { ImageBackupCard, ImageCard } from "../card/ImageCard";
 import { arrayMapString } from "../utils/Utility";
 import { useTranslation } from 'react-i18next';
 import { BetterButton } from "../ui/BetterButton";
+import { BetterSwitch } from "../ui/BetterSwitch";
 import { toast } from "react-hot-toast";
 import { arrayContains } from "../utils/Utility";
 // import { 
@@ -21,9 +22,10 @@ import { arrayContains } from "../utils/Utility";
 
 interface GameGalleryPanelProps {
   game: models.Game;
+  onGameChange: (game: models.Game) => void;
 }
 
-export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
+export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) {
   const { t } = useTranslation();
   // 截图相关状态
   const [screenshotHotkey, setScreenshotHotkey] = useState<models.Hotkey | null>(null);
@@ -31,6 +33,7 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
   const [screenshots, setScreenshots] = useState<models.ImageBackup[]>([]);
   const [images, setImages] = useState<models.ImageBackup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSelectCover, setIsSelectCover] = useState(false);
 
   // 检查是否有图片且过滤条件满足
   const hasImages = images && images.length > 0;
@@ -87,6 +90,14 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
     }
   };
 
+  const handleSelectCover = (img : models.ImageBackup) => { 
+    onGameChange({
+      ...game,
+      cover_url: img.url,
+    } as models.Game);
+    setIsSelectCover(false)
+  };
+
 
   // 处理图片数组，过滤封面图和特定后缀的图片
   const galleryImages = hasImages
@@ -107,6 +118,16 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 选择封面图开关 */}
+      <div className="flex items-center gap-2 pb-2 border-b border-brand-200 dark:border-brand-800">
+        <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{t('gameGallery.selectCover')}</span>
+        <BetterSwitch
+          id="select-cover-switch"
+          checked={isSelectCover}
+          onCheckedChange={setIsSelectCover}
+        />
+      </div>
+
       {/* 截图板块 */}
       {true && (
         <div className="flex flex-col gap-2">
@@ -159,6 +180,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
                 <ImageBackupCard
                   imageBackup={screenshot}
                   key={screenshot.url}
+                  selectMode={isSelectCover}
+                  onSelect={handleSelectCover}
                   />
               ))}
             </div>
@@ -202,6 +225,8 @@ export function GameGalleryPanel({ game }: GameGalleryPanelProps) {
                 <ImageCard
                   url={image.url}
                   key={image.url}
+                  selectMode={isSelectCover}
+                  onSelect={handleSelectCover}
                   />
               ))}
           </div>

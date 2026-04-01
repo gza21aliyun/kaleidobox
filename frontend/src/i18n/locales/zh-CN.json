@@ -879,7 +879,8 @@
     "gallery": "画廊",
     "openLocation": "在文件管理器中打开位置",
     "openPathError": "打开路径失败，文件/目录可能不存在",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "selectCover": "选择封面图"
   },
   "gameInfo": {
     "staffInfo": "工作人员信息",

@@ -783,6 +783,7 @@ function GameDetailPage() {
       {activeTab === "gallery" && game && (
         <GameGalleryPanel
           game={game}
+          onGameChange={setGame}
         />
       )}
 

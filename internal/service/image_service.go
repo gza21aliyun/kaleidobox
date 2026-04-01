@@ -686,7 +686,7 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 		LocalPath:   localCover,
 		SubjectId:   gameEntity.Game.ID,
 		SubjectType: 0,
-		ImageType:   0,
+		ImageType:   2,
 		CreatedAt:   time.Now(),
 		GameId:      gameEntity.Game.ID,
 	}

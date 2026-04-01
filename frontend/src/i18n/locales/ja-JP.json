@@ -910,7 +910,8 @@
     "gallery": "ギャラリー",
     "openLocation": "ファイルエクスプローラーで場所を開く",
     "openPathError": "パスを開くのに失敗しました。ファイル/ディレクトリが存在しない可能性があります。",
-    "refresh": "更新"
+    "refresh": "更新",
+    "selectCover": "表紙画像を選択"
   },
   "gameInfo": {
     "staffInfo": "スタッフ情報",

@@ -918,7 +918,8 @@
     "gallery": "Gallery",
     "openLocation": "Open location in file explorer",
     "openPathError": "Failed to open path, file/directory may not exist",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "selectCover": "Select cover image"
   },
   "gameInfo": {
     "staffInfo": "Staff information",

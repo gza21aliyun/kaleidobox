@@ -19,6 +19,7 @@ import (
 	"gobot.io/x/gobot/v2"
 	"gobot.io/x/gobot/v2/platforms/joystick"
 	"gobot.io/x/gobot/v2/platforms/keyboard"
+	"golang.org/x/sys/windows"
 )
 
 // KeyMapping 按键映射配置
@@ -34,7 +35,16 @@ import (
 type MappingType string
 
 var (
-	procGetAsyncKeyState = user32.NewProc("GetAsyncKeyState")
+	// user32                       = windows.NewLazySystemDLL("user32.dll")
+	procGetAsyncKeyState    = user32.NewProc("GetAsyncKeyState")
+	procSetWindowsHookEx    = user32.NewProc("SetWindowsHookExW")
+	procCallNextHookEx      = user32.NewProc("CallNextHookEx")
+	procUnhookWindowsHookEx = user32.NewProc("UnhookWindowsHookEx")
+	// procGetForegroundWindow      = user32.NewProc("GetForegroundWindow")
+	// procGetWindowThreadProcessId = user32.NewProc("GetWindowThreadProcessId")
+	procGetMessageW      = user32.NewProc("GetMessageW")
+	procTranslateMessage = user32.NewProc("TranslateMessage")
+	procDispatchMessageW = user32.NewProc("DispatchMessageW")
 )
 
 // Windows API常量
@@ -84,6 +94,8 @@ type HotkeyService struct {
 	// robotgo相关（键盘事件监听）
 	hookStarted bool
 	hookMutex   sync.RWMutex
+	hookHandle  uintptr
+	hookActive  bool
 
 	// 按键映射管理
 	keyMappings   map[string]*models.Hotkey // source_key -> mapping
@@ -1177,7 +1189,11 @@ func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	s.SetActiveGameID(gameId)
 	devicetype := s.loadHotkeyConfig(gameId)
 	if devicetype == enums.DeviceTypeKeyboard {
-		go s.startAlternativeKeyListener()
+		err := s.installKeyboardHook()
+		if err != nil {
+			applog.LogErrorf(s.ctx, "Failed to install keyboard hook: %v", err)
+			go s.startAlternativeKeyListener()
+		}
 	} else {
 		go s.startJoystickListener(devicetype)
 	}
@@ -1193,6 +1209,7 @@ func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 	defer s.actionkeyLock.Unlock()
 	defer s.mappingLock.Unlock()
 	s.stopKeyboardListener()
+	s.uninstallKeyboardHook()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
 	if s.robot != nil {
@@ -1361,4 +1378,229 @@ func (s *HotkeyService) checkKeyboardState(lastKeyState map[int]bool, count int,
 func (s *HotkeyService) isKeyPressed(vkCode int) bool {
 	ret, _, _ := procGetAsyncKeyState.Call(uintptr(vkCode))
 	return (ret & KEY_PRESSED) != 0
+}
+
+// 类型定义
+const (
+	WH_KEYBOARD_LL = 13
+	WM_KEYDOWN     = 0x0100
+	WM_KEYUP       = 0x0101
+	WM_SYSKEYDOWN  = 0x0104
+	WM_SYSKEYUP    = 0x0105
+)
+
+type HHOOK uintptr
+type HOOKPROC func(int, uintptr, uintptr) uintptr
+type KBDLLHOOKSTRUCT struct {
+	VkCode      uint32
+	ScanCode    uint32
+	Flags       uint32
+	Time        uint32
+	DwExtraInfo uintptr
+}
+
+type MSG struct {
+	HWnd    uintptr
+	Message uint32
+	WParam  uintptr
+	LParam  uintptr
+	Time    uint32
+	Pt      struct {
+		X int32
+		Y int32
+	}
+}
+
+// 全局变量，确保回调函数不会被垃圾回收
+var (
+	hookCallback uintptr
+	hookProc     HOOKPROC
+	// user32                  = windows.NewLazySystemDLL("user32.dll")
+	// procSetWindowsHookEx    = user32.NewProc("SetWindowsHookExW")
+	// procCallNextHookEx      = user32.NewProc("CallNextHookEx")
+	// procUnhookWindowsHookEx = user32.NewProc("UnhookWindowsHookEx")
+	procGetMessage = user32.NewProc("GetMessageW")
+	// procTranslateMessage    = user32.NewProc("TranslateMessage")
+	procDispatchMessage = user32.NewProc("DispatchMessageW")
+)
+
+// installKeyboardHook 安装全局键盘钩子
+// ... existing code ...
+// installKeyboardHook 安装全局键盘钩子
+func (s *HotkeyService) installKeyboardHook() error {
+	s.hookMutex.Lock()
+	defer s.hookMutex.Unlock()
+
+	if s.hookActive {
+		return nil
+	}
+
+	// 创建钩子回调函数
+	hookProc = func(nCode int, wParam uintptr, lParam uintptr) uintptr {
+		fmt.Printf(">>> Keyboard event:%v, ncode:%d\n", wParam, nCode)
+		if nCode >= 0 {
+			// 解析键盘事件
+			kbdStruct := (*KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
+			vkCode := kbdStruct.VkCode
+			keyCode := s.vkCodeToKeyCode(int(vkCode))
+			fmt.Printf(">>> Key pressed: vkCode=%d, keyCode=%s\n", vkCode, keyCode)
+
+			// 检查是否是我们需要处理的按键
+			s.mappingLock.RLock()
+			actionHotkey := s.actionKeys[keyCode]
+			mappingHotkey := s.keyMappings[keyCode]
+			s.mappingLock.RUnlock()
+
+			fmt.Printf(">>> Action hotkey: %v, Mapping hotkey: %v\n", actionHotkey != nil, mappingHotkey != nil)
+
+			if actionHotkey != nil || mappingHotkey != nil {
+				// 处理按键事件
+				switch wParam {
+				case WM_KEYDOWN, WM_SYSKEYDOWN:
+					if actionHotkey != nil {
+						fmt.Printf(">>> Handling action key: %s\n", actionHotkey.KeyCode)
+						go s.handleActionKey(actionHotkey)
+					}
+					if mappingHotkey != nil {
+						fmt.Printf(">>> Simulating key press: %s\n", mappingHotkey.ActionParams)
+						s.simulateKeyPress(mappingHotkey.ActionParams, []enums.ModifierKey{})
+					}
+					// 拦截按键
+					return 1
+				case WM_KEYUP, WM_SYSKEYUP:
+					if mappingHotkey != nil {
+						fmt.Printf(">>> Simulating key release: %s\n", mappingHotkey.ActionParams)
+						s.simulateKeyRelease(mappingHotkey.ActionParams, []enums.ModifierKey{})
+					}
+					// 拦截按键
+					return 1
+				}
+			}
+		}
+
+		// 继续传递事件
+		ret, _, _ := procCallNextHookEx.Call(hookCallback, uintptr(nCode), wParam, lParam)
+		return ret
+	}
+
+	// 安装钩子
+	handle, _, err := procSetWindowsHookEx.Call(
+		uintptr(WH_KEYBOARD_LL),
+		windows.NewCallback(hookProc),
+		0,
+		0,
+	)
+
+	if err != nil && err.Error() != "The operation completed successfully." {
+		return err
+	}
+
+	hookCallback = handle
+	s.hookHandle = handle
+	s.hookActive = true
+	applog.LogInfof(s.ctx, "Keyboard hook installed successfully, handle: %d", handle)
+
+	// 启动消息循环来处理钩子事件
+	go s.runMessageLoop()
+
+	return nil
+}
+
+// ... existing code ...
+
+// runMessageLoop 运行消息循环以处理钩子事件
+func (s *HotkeyService) runMessageLoop() {
+	applog.LogInfof(s.ctx, "Starting message loop for keyboard hook")
+
+	var msg MSG
+	for {
+		ret, _, _ := procGetMessage.Call(
+			uintptr(unsafe.Pointer(&msg)),
+			0,
+			0,
+			0,
+		)
+
+		if ret == 0 { // WM_QUIT
+			break
+		}
+
+		if ret == 1 { // 正常消息
+			procTranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
+			procDispatchMessage.Call(uintptr(unsafe.Pointer(&msg)))
+		}
+
+		// 检查是否需要停止消息循环
+		s.hookMutex.RLock()
+		active := s.hookActive
+		s.hookMutex.RUnlock()
+
+		if !active {
+			break
+		}
+	}
+
+	applog.LogInfof(s.ctx, "Message loop stopped")
+}
+
+// uninstallKeyboardHook 卸载全局键盘钩子
+func (s *HotkeyService) uninstallKeyboardHook() {
+	s.hookMutex.Lock()
+	defer s.hookMutex.Unlock()
+
+	if !s.hookActive {
+		return
+	}
+
+	procUnhookWindowsHookEx.Call(hookCallback)
+	hookCallback = 0
+	hookProc = nil
+	s.hookHandle = 0
+	s.hookActive = false
+	applog.LogInfof(s.ctx, "Keyboard hook uninstalled")
+}
+
+// vkCodeToKeyCode 将虚拟键码转换为键码字符串
+func (s *HotkeyService) vkCodeToKeyCode(vkCode int) string {
+	switch vkCode {
+	case 32:
+		return "space"
+	case 13:
+		return "enter"
+	case 8:
+		return "backspace"
+	case 9:
+		return "tab"
+	case 27:
+		return "esc"
+	case 172:
+		return "BROWSERHOME"
+		// return "BROWSER_HOME"
+	case 166:
+		return "BROWSER_BACK"
+	case 167:
+		return "BROWSER_FORWARD"
+	case 168:
+		return "BROWSER_REFRESH"
+	case 169:
+		return "BROWSER_STOP"
+	case 170:
+		return "BROWSER_SEARCH"
+	case 171:
+		return "BROWSER_FAVORITES"
+	case 173:
+		return "VOLUME_MUTE"
+	case 174:
+		return "VOLUME_DOWN"
+	case 175:
+		return "VOLUME_UP"
+	default:
+		if vkCode >= 65 && vkCode <= 90 {
+			return string(rune(vkCode))
+		}
+		if vkCode >= 48 && vkCode <= 57 {
+			return string(rune(vkCode))
+		}
+		return ""
+	}
 }

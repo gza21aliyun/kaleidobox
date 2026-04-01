@@ -19,6 +19,8 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
     { to: "/task", label: t('nav.task'), icon: "i-mdi-clipboard-list" },
     { to: "/charactor_list", label: t('nav.charactors'), icon: "i-mdi-account-group" },
     { to: "/tag_list", label: t('nav.tags'), icon: "i-mdi-tag-multiple" },
+    { to: "/brands", label: "品牌", icon: "i-mdi-store" },
+    { to: "/series", label: "系列", icon: "i-mdi-format-list-bulleted-type" },
     { to: "/stats", label: t('nav.stats'), icon: "i-mdi-chart-bar" },
     { to: "/categories", label: t('nav.categories'), icon: "i-mdi-format-list-bulleted" },
   ];

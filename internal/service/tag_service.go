@@ -364,3 +364,65 @@ func (s *TagService) ManageTags(tags []string) error {
 	_, err := s.db.ExecContext(s.ctx, query, tags)
 	return err
 }
+
+func (s *TagService) GetBrands() ([]string, error) {
+	query := `
+		SELECT DISTINCT name
+		FROM tags
+		WHERE category = ?
+		ORDER BY name
+	`
+	rows, err := s.db.QueryContext(s.ctx, query, models.TagCategoryBrand)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var brands []string
+	for rows.Next() {
+		var group string
+		err := rows.Scan(&group)
+		if err != nil {
+			return nil, err
+		}
+		brands = append(brands, group)
+	}
+
+	// 检查迭代过程中是否有错误
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return brands, nil
+}
+
+func (s *TagService) GetSeries() ([]string, error) {
+	query := `
+		SELECT DISTINCT name
+		FROM tags
+		WHERE category = ?
+		ORDER BY name
+	`
+	rows, err := s.db.QueryContext(s.ctx, query, models.TagCategorySeries)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var brands []string
+	for rows.Next() {
+		var group string
+		err := rows.Scan(&group)
+		if err != nil {
+			return nil, err
+		}
+		brands = append(brands, group)
+	}
+
+	// 检查迭代过程中是否有错误
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return brands, nil
+}

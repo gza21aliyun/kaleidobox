@@ -982,7 +982,7 @@ func (s *GameService) SelectCoverImage(gameID string) (string, error) {
 	}
 
 	coverPath, err := utils.SaveCoverImage(selection, gameID)
-	imageBackup := models.ImageBackup{Url: coverPath, LocalPath: coverPath, SubjectId: gameID, SubjectType: 0, ImageType: 0}
+	imageBackup := models.ImageBackup{Url: coverPath, LocalPath: coverPath, SubjectId: gameID, SubjectType: 0, ImageType: 2}
 	s.imageService.CreateOrUpdateImageBackup(imageBackup)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "failed to save cover image: %v", err)
@@ -1755,4 +1755,14 @@ func (s *GameService) ManageTagsForGames() error {
 	}
 	err = s.tagService.ManageTags(tagAr)
 	return err
+}
+
+func (s *GameService) GetGamesByTag(tag string) ([]models.Game, error) {
+	games := []models.Game{}
+	if tag == "" {
+		return games, nil
+	}
+	query := fmt.Sprintf("%s WHERE array_contains(string_split(tags, ','), '%s')", s.GetQueryBase(), tag)
+	games, err := s.GetGamesByQuery(query)
+	return games, err
 }

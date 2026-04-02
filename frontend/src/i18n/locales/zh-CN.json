@@ -113,6 +113,8 @@
       "noMatchingGames": "未找到匹配的游戏"
     },
     "toasts": {
+      "batchUpdateSuccess": "已将 {{count}} 个游戏的状态更新为「{{label}}」",
+      "batchAddToCollectionSuccess": "已将 {{count}} 个游戏添加到收藏",
       "batchUpdateFailed": "批量更新状态失败",
       "loadCategoriesFailed": "加载收藏夹失败",
       "batchAddFailed": "批量添加失败",
@@ -121,6 +123,7 @@
     },
     "modals": {
       "batchDeleteTitle": "批量删除游戏",
+      "batchDeleteMessage": "确定要删除选中的 {{count}} 个游戏吗？此操作将从库中移除这些游戏，但不会删除本地游戏文件。",
       "batchAddToCollectionTitle": "批量添加到收藏"
     },
     "gameStatus": {
@@ -222,7 +225,9 @@
     },
     "modals": {
       "deleteCategoryTitle": "删除收藏夹",
-      "batchDeleteTitle": "批量删除收藏夹"
+      "batchDeleteTitle": "批量删除收藏夹",
+      "deleteCategoryMessage": "确定要删除收藏夹 \"{{name}}\" 吗？此操作无法撤销。",
+      "batchDeleteMessage": "确定要删除选中的 {{count}} 个收藏夹吗？此操作无法撤销。"
     },
     "toasts": {
       "loadCategoriesFailed": "加载收藏夹失败",
@@ -284,6 +289,26 @@
     "lastPlayed": "上次游玩",
     "releaseDate": "发售日期",
     "toasts": {
+      "tagAddSuccess": "标签添加成功",
+      "noVideosFound": "没有找到相关视频",
+      "searchFailed": "搜索失败",
+      "loadGameFailed": "加载游戏数据失败",
+      "selectExecutableFailed": "选择可执行文件失败",
+      "selectSavePathFailed": "选择保存路径失败",
+      "selectCoverFailed": "选择封面图片失败",
+      "remoteUpdateSuccess": "远程更新成功",
+      "statusUpdated": "状态已更新",
+      "statusUpdateFailed": "状态更新失败",
+      "loadCategoriesFailed": "加载收藏夹失败",
+      "collectionUpdated": "收藏夹已更新",
+      "updateCollectionFailed": "更新收藏夹失败",
+      "selectFileFailed": "选择文件失败",
+      "openSystemSelectorFailed": "打开系统选择器失败",
+      "fetchMetadataFailed": "获取元数据失败，请检查网络或令牌有效性",
+      "saveGameFailed": "保存游戏失败",
+      "fetchMetadataByIdFailed": "通过 ID 获取元数据失败，请检查网络或令牌有效性",
+      "selectCoverImageFailed": "选择封面图片失败",
+      "pleaseFillGameName": "请填写游戏名称",
       "saveFailed": "保存失败",
       "remoteUpdateFailed": "从远程更新失败",
       "gameLaunchSuccess": "{{name}}启动成功",

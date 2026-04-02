@@ -132,17 +132,6 @@
       "completed": "クリア済み",
       "on_hold": "保留中"
     },
-    "toasts": {
-      "batchUpdateFailed": "一括更新に失敗しました",
-      "loadCategoriesFailed": "コレクションの読み込みに失敗しました",
-      "batchAddFailed": "一括追加に失敗しました",
-      "batchDeleteSuccess": "一括削除に成功しました",
-      "batchDeleteFailed": "一括削除に失敗しました"
-    },
-    "modals": {
-      "batchDeleteTitle": "ゲームの一括削除",
-      "batchAddToCollectionTitle": "コレクションに一括追加"
-    },
     "buttons": {
       "setStatus": "ステータスを設定",
       "batchUpdateStatus": "一括ステータス更新",
@@ -234,6 +223,8 @@
       "updatedAt": "更新日時"
     },
     "modals": {
+      "deleteCategoryTitle": "コレクションを削除",
+      "batchDeleteTitle": "コレクションの一括削除",
       "deleteCategoryMessage": "コレクション \"{{name}}\" を削除しますか？この操作は元に戻せません。",
       "batchDeleteMessage": "選択した {{count}} 個のコレクションを削除しますか？この操作は元に戻せません。"
     },
@@ -247,10 +238,6 @@
       "deleteCategoryFailed": "コレクションの削除に失敗しました",
       "batchDeleteSuccess": "一括削除に成功しました",
       "batchDeleteFailed": "一括削除に失敗しました"
-    },
-    "modals": {
-      "deleteCategoryTitle": "コレクションを削除",
-      "batchDeleteTitle": "コレクションの一括削除"
     }
   },
   "category": {

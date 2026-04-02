@@ -132,17 +132,6 @@
       "completed": "Completed",
       "on_hold": "On hold"
     },
-    "toasts": {
-      "batchUpdateFailed": "Failed to update status in batch",
-      "loadCategoriesFailed": "Failed to load collections",
-      "batchAddFailed": "Failed to add in batch",
-      "batchDeleteSuccess": "Batch deletion successful",
-      "batchDeleteFailed": "Batch deletion failed"
-    },
-    "modals": {
-      "batchDeleteTitle": "Batch delete games",
-      "batchAddToCollectionTitle": "Batch add to collection"
-    },
     "buttons": {
       "setStatus": "Set as status",
       "batchUpdateStatus": "Batch update status",
@@ -234,6 +223,8 @@
       "updatedAt": "Update time"
     },
     "modals": {
+      "deleteCategoryTitle": "Delete collection",
+      "batchDeleteTitle": "Batch delete collections",
       "deleteCategoryMessage": "Are you sure you want to delete collection \"{{name}}\"? This action cannot be undone.",
       "batchDeleteMessage": "Are you sure you want to delete the selected {{count}} collections? This action cannot be undone."
     },
@@ -247,10 +238,6 @@
       "deleteCategoryFailed": "Failed to delete collection",
       "batchDeleteSuccess": "Batch deletion successful",
       "batchDeleteFailed": "Batch deletion failed"
-    },
-    "modals": {
-      "deleteCategoryTitle": "Delete collection",
-      "batchDeleteTitle": "Batch delete collections"
     }
   },
   "category": {
@@ -320,7 +307,12 @@
       "saveGameFailed": "Failed to save game",
       "fetchMetadataByIdFailed": "Failed to fetch metadata by id, please check network or token validity",
       "selectCoverImageFailed": "Failed to select cover image",
-      "pleaseFillGameName": "Please fill in game name"
+      "pleaseFillGameName": "Please fill in game name",
+      "saveFailed": "Save failed",
+      "remoteUpdateFailed": "Remote update failed",
+      "gameLaunchSuccess": "{{name}} launched successfully",
+      "gameLaunchFailed": "{{name}} failed to launch (could not start)",
+      "gameLaunchFailedCheckLog": "{{name}} failed to launch, check logs for help"
     },
     "buttons": {
       "addToCollection": "Add to collection",
@@ -341,13 +333,7 @@
       "releaseDate": "Release date",
       "noCover": "No cover"
     },
-    "toasts": {
-      "saveFailed": "Save failed",
-      "remoteUpdateFailed": "Remote update failed",
-      "gameLaunchSuccess": "{{name}} launched successfully",
-      "gameLaunchFailed": "{{name}} failed to launch (could not start)",
-      "gameLaunchFailedCheckLog": "{{name}} failed to launch, check logs for help"
-    },
+
     "modals": {
       "deleteMessage": "Are you sure you want to delete game \"{{name}}\"? This action will remove the game from the library but will not delete local game files.",
       "addGame": {

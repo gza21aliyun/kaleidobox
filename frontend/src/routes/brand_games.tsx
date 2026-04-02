@@ -30,6 +30,7 @@ function BrandGamesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [batchMode, setBatchMode] = useState(false);
   const [selectedGameIds, setSelectedGameIds] = useState<string[]>([]);
+  const [lastSelectedGameId, setLastSelectedGameId] = useState<string | null>(null);
   const [filterExpanded, setFilterExpanded] = useState(false);
   const [tagsFilter, setTags] = useState<string[]>(() => {
     const savedTagsFilter = localStorage.getItem('brandTagsFilter');
@@ -154,13 +155,42 @@ function BrandGamesPage() {
     }
   };
 
-  const setGameSelection = (gameId: string, selected: boolean) => {
+  const setGameSelection = (gameId: string, selected: boolean, event?: React.MouseEvent) => {
     setSelectedGameIds((prev) => {
-      if (selected) {
-        return prev.includes(gameId) ? prev : [...prev, gameId];
+      const currentIndex = filteredGames.findIndex(game => game.id === gameId);
+      const lastIndex = lastSelectedGameId ? filteredGames.findIndex(game => game.id === lastSelectedGameId) : -1;
+      
+      // 处理 Shift 键：反向选择从上次选中到当前的所有游戏
+      if (event?.shiftKey && lastSelectedGameId && lastIndex !== -1 && currentIndex !== -1) {
+        const startIndex = Math.min(lastIndex, currentIndex);
+        const endIndex = Math.max(lastIndex, currentIndex);
+        const gamesInRange = filteredGames.slice(startIndex + 1, endIndex + 1).map(game => game.id);
+        
+        // 反向选择：已选中的变为未选中，未选中的变为选中
+        const newSelection = new Set([...prev]);
+        gamesInRange.forEach(gameIdInRange => {
+          if (newSelection.has(gameIdInRange)) {
+            newSelection.delete(gameIdInRange);
+          } else {
+            newSelection.add(gameIdInRange);
+          }
+        });
+        return Array.from(newSelection);
       }
-      return prev.filter(id => id !== gameId);
+      
+      // 普通点击：添加或移除当前游戏
+      else {
+        if (selected) {
+          return prev.includes(gameId) ? prev : [...prev, gameId];
+        }
+        return prev.filter(id => id !== gameId);
+      }
     });
+    
+    // 更新上次选中的游戏
+    if (selected) {
+      setLastSelectedGameId(gameId);
+    }
   };
 
   const handleSelectAll = () => {
@@ -265,7 +295,7 @@ function BrandGamesPage() {
                             searchQuery={searchQuery}
                             selectionMode={batchMode}
                             selected={selectedGameIds.includes(game.id)}
-                            onSelectChange={selected => setGameSelection(game.id, selected)}
+                            onSelectChange={(selected, event) => setGameSelection(game.id, selected, event)}
                             filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
                             viewMode={viewMode}
                           />

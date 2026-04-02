@@ -38,7 +38,7 @@ interface GameCardProps {
   game: models.Game;
   selectionMode?: boolean;
   selected?: boolean;
-  onSelectChange?: (selected: boolean) => void;
+  onSelectChange?: (selected: boolean, event?: React.MouseEvent) => void;
   /** 当前搜索词，用于高亮游戏名和开发商 */
   searchQuery?: string;
   filteredGameIdsStr?: string[];
@@ -97,7 +97,7 @@ export function GameCard({
 
   const handleToggleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onSelectChange?.(!selected);
+    onSelectChange?.(!selected, e);
   };
 
   const handleStartGame = async (e: React.MouseEvent) => {

@@ -35,7 +35,11 @@
 - **存档改进** - 加了能从诚也下载存档的功能，要先设定存档位置。关于存档位置，其实想做寻找存档位置的功能，看别的app的实现貌似也不是很准确。现在是做了个开管理员模式监控进程创建或修改文件的功能，但管理员模式下只支持管理员模式下创建的网络映射盘，其实自己用也觉得不方便，毕竟这种是甚至我的电脑里也显示不出来的。也想过通过品牌，不过这个是多对多的关系，不太好做。有建议请提一下。
 - **进程寻找改进** - 原来是要手动选进程，现在会先找exe，然后看子进程，绝大多数情况下不需要手动选进程。
 - **备份和恢复** - 添加数据库导入恢复的选项，可以选全量备份的zip。修复数据库升级后不支持的问题。
-- **视频播放** - 支持视频播放，需要ffmpeg.exe放在程序目录下。注意显卡驱动要跟ffmpeg版本兼容。
+- **视频播放** - 支持视频播放，需要ffmpeg.exe放在程序目录下。注意显卡驱动要跟ffmpeg版本兼容。搜索视频来播放视频.
+- **攻略板块** - 能看攻略
+- **系列和品牌入口** - 游戏数量多的情况提供多种入口
+- **虚拟机启动游戏** - 支持启动同目录下的虚拟机游戏，映射盘也可。
+- **选择屏幕启动游戏** - 统一游戏的输出屏幕
 - **多种小改进** - 游戏库能直接看游戏时间，游戏库增加了显示模式选择支持列表，小图，大图。
 
 ## 截图
@@ -188,6 +192,7 @@ lunabox/
 - [LunaBox](https://github.com/Saramanda9988/LunaBox) - Galgame 管理工具
 - [PotatoVN](https://github.com/GoldenPotato137/PotatoVN) - Galgame 管理工具
 - [ReinaManager](https://github.com/huoshen80/ReinaManager) - 一款轻量化的galgame和视觉小说管理工具
+- [myGal](https://github.com/INK666/myGal) - Galgame 管理工具
 - [Playnite](https://github.com/JosefNemec/Playnite) - an open source video game library manager with one simple goal: To provide a unified interface for all of your games.
 
 ## 🙏 感谢

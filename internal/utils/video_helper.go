@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 
 	"lunabox/internal/applog"
 )
@@ -18,6 +19,10 @@ var ffmpegProcessMutex sync.Mutex
 func GetSupportedHardwareEncoder(ffmpegPath string) string {
 	// 检查Intel QSV（优先检查，因为用户使用的是Intel核显）
 	cmd := exec.Command(ffmpegPath, "-encoders")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow:    true,       // 隐藏窗口
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW 标志
+	}
 	output, err := cmd.CombinedOutput()
 	if err == nil && strings.Contains(string(output), "h264_qsv") {
 		return "h264_qsv"
@@ -90,6 +95,10 @@ func ConvertVideoWithFFmpeg(ctx context.Context, ffmpegPath, inputPath, outputPa
 	// 捕获标准错误输出
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow:    true,       // 隐藏窗口
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW 标志
+	}
 
 	// 将进程添加到映射中
 	ffmpegProcessMutex.Lock()
@@ -142,6 +151,10 @@ func ConvertVideoWithFFmpeg(ctx context.Context, ffmpegPath, inputPath, outputPa
 	applog.LogInfof(ctx, "VideoStreamHandler: added ffmpeg process to map for gameID: %s", gameID)
 
 	applog.LogInfof(ctx, "VideoStreamHandler: starting ffmpeg conversion with CPU encoder")
+	cpuCmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow:    true,       // 隐藏窗口
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW 标志
+	}
 	err = cpuCmd.Run()
 
 	// 转换完成后从映射中删除进程

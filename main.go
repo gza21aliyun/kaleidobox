@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"lunabox/internal/applog"
-	"lunabox/internal/cli"
-	"lunabox/internal/cli/ipc"
 	"lunabox/internal/utils"
 	"net/http"
 	"os"
@@ -18,6 +16,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	goruntime "runtime"
+
+	"sync/atomic"
 
 	"lunabox/internal/appconf"
 	"lunabox/internal/enums"
@@ -47,16 +49,113 @@ var db *sql.DB
 
 var config *appconf.AppConfig
 
-var appCtx context.Context
+var appState = newLifecycleState()
+var ipcHTTPServer *http.Server
 
-// 用于通知 systray 退出
-var systrayQuit chan struct{}
+type lifecycleState struct {
+	ctxMu sync.RWMutex
+	ctx   context.Context
 
-// 用于同步托盘就绪状态
-var systrayReady chan struct{}
+	forceQuit    atomic.Bool
+	shuttingDown atomic.Bool
 
-// 标记是否是从托盘强制退出（绕过 OnBeforeClose 的最小化逻辑）
-var forceQuit bool
+	trayReady     chan struct{}
+	trayReadyOnce sync.Once
+	trayExit      chan struct{}
+	trayExitOnce  sync.Once
+	trayQuitOnce  sync.Once
+}
+
+func newLifecycleState() *lifecycleState {
+	return &lifecycleState{
+		trayReady: make(chan struct{}),
+		trayExit:  make(chan struct{}),
+	}
+}
+
+func (s *lifecycleState) SetContext(ctx context.Context) {
+	s.ctxMu.Lock()
+	defer s.ctxMu.Unlock()
+	s.ctx = ctx
+}
+
+func (s *lifecycleState) Context() context.Context {
+	s.ctxMu.RLock()
+	defer s.ctxMu.RUnlock()
+	return s.ctx
+}
+
+func (s *lifecycleState) MarkTrayReady() {
+	s.trayReadyOnce.Do(func() {
+		close(s.trayReady)
+	})
+}
+
+func (s *lifecycleState) MarkTrayExit() {
+	s.trayExitOnce.Do(func() {
+		close(s.trayExit)
+	})
+}
+
+func (s *lifecycleState) ShouldForceQuit() bool {
+	return s.forceQuit.Load() || s.shuttingDown.Load()
+}
+
+func (s *lifecycleState) BeginShutdown() {
+	s.shuttingDown.Store(true)
+}
+
+func (s *lifecycleState) ShowMainWindow() {
+	if s.shuttingDown.Load() {
+		return
+	}
+
+	ctx := s.Context()
+	if ctx == nil {
+		return
+	}
+
+	runtime.WindowShow(ctx)
+}
+
+func (s *lifecycleState) QuitApplication() {
+	if s.shuttingDown.Load() {
+		return
+	}
+
+	ctx := s.Context()
+	if ctx == nil {
+		return
+	}
+
+	s.forceQuit.Store(true)
+	s.shuttingDown.Store(true)
+	s.RequestTrayQuit()
+	runtime.Quit(ctx)
+}
+
+func (s *lifecycleState) StartTray() {
+	go func() {
+		goruntime.LockOSThread()
+		defer goruntime.UnlockOSThread()
+		systray.Run(onSystrayReady, onSystrayExit)
+	}()
+}
+
+func (s *lifecycleState) RequestTrayQuit() {
+	s.trayQuitOnce.Do(func() {
+		systray.Quit()
+	})
+}
+
+func (s *lifecycleState) WaitForTrayExit(timeout time.Duration) bool {
+	select {
+	case <-s.trayExit:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
+}
 
 func main() {
 	logDir, _ := utils.GetSubDir("logs")
@@ -140,7 +239,7 @@ func main() {
 					// 处理视频缓存清理请求
 					if strings.HasPrefix(r.URL.Path, "/api/video/cleanup/") {
 						gameID := strings.TrimPrefix(r.URL.Path, "/api/video/cleanup/")
-						applog.LogInfof(appCtx, "VideoCleanupHandler: received request for gameID: %s", gameID)
+						applog.LogInfof(appState.ctx, "VideoCleanupHandler: received request for gameID: %s", gameID)
 
 						// 先终止相关的ffmpeg进程
 						ffmpegProcessMap := utils.GetFFmpegProcessMap()
@@ -149,11 +248,11 @@ func main() {
 						// 如果提供了gameID，终止对应的进程
 						if gameID != "" {
 							if cmd, exists := ffmpegProcessMap[gameID]; exists {
-								applog.LogInfof(appCtx, "VideoCleanupHandler: terminating ffmpeg process for gameID: %s", gameID)
+								applog.LogInfof(appState.ctx, "VideoCleanupHandler: terminating ffmpeg process for gameID: %s", gameID)
 								if err := cmd.Process.Kill(); err != nil {
-									applog.LogErrorf(appCtx, "VideoCleanupHandler: failed to kill ffmpeg process: %v", err)
+									applog.LogErrorf(appState.ctx, "VideoCleanupHandler: failed to kill ffmpeg process: %v", err)
 								} else {
-									applog.LogInfof(appCtx, "VideoCleanupHandler: killed ffmpeg process for gameID: %s", gameID)
+									applog.LogInfof(appState.ctx, "VideoCleanupHandler: killed ffmpeg process for gameID: %s", gameID)
 								}
 								// 从映射中删除进程
 								delete(ffmpegProcessMap, gameID)
@@ -161,11 +260,11 @@ func main() {
 						} else {
 							// 如果没有提供gameID，终止所有进程
 							for id, cmd := range ffmpegProcessMap {
-								applog.LogInfof(appCtx, "VideoCleanupHandler: terminating ffmpeg process for id: %s", id)
+								applog.LogInfof(appState.ctx, "VideoCleanupHandler: terminating ffmpeg process for id: %s", id)
 								if err := cmd.Process.Kill(); err != nil {
-									applog.LogErrorf(appCtx, "VideoCleanupHandler: failed to kill ffmpeg process: %v", err)
+									applog.LogErrorf(appState.ctx, "VideoCleanupHandler: failed to kill ffmpeg process: %v", err)
 								} else {
-									applog.LogInfof(appCtx, "VideoCleanupHandler: killed ffmpeg process for id: %s", id)
+									applog.LogInfof(appState.ctx, "VideoCleanupHandler: killed ffmpeg process for id: %s", id)
 								}
 							}
 							// 清空进程映射
@@ -182,7 +281,7 @@ func main() {
 						if exists {
 							// 从缓存中删除条目
 							delete(videoCacheMap, gameID)
-							applog.LogInfof(appCtx, "VideoCleanupHandler: removed gameID from cache: %s", gameID)
+							applog.LogInfof(appState.ctx, "VideoCleanupHandler: removed gameID from cache: %s", gameID)
 						}
 
 						// 清理所有视频路径相关的缓存（path_* 格式的键）
@@ -206,11 +305,11 @@ func main() {
 						if exists && cachedVideoPath != "" {
 							for i := 0; i < maxRetries; i++ {
 								if err := os.Remove(cachedVideoPath); err != nil {
-									applog.LogErrorf(appCtx, "VideoCleanupHandler: attempt %d failed to remove cached video file: %v", i+1, err)
+									applog.LogErrorf(appState.ctx, "VideoCleanupHandler: attempt %d failed to remove cached video file: %v", i+1, err)
 									// 等待一段时间后重试
 									time.Sleep(time.Second)
 								} else {
-									applog.LogInfof(appCtx, "VideoCleanupHandler: removed cached video file: %s", cachedVideoPath)
+									applog.LogInfof(appState.ctx, "VideoCleanupHandler: removed cached video file: %s", cachedVideoPath)
 									break
 								}
 							}
@@ -220,11 +319,11 @@ func main() {
 						for _, path := range pathsToDelete {
 							for i := 0; i < maxRetries; i++ {
 								if err := os.Remove(path); err != nil {
-									applog.LogErrorf(appCtx, "VideoCleanupHandler: attempt %d failed to remove video path cached file: %v", i+1, err)
+									applog.LogErrorf(appState.ctx, "VideoCleanupHandler: attempt %d failed to remove video path cached file: %v", i+1, err)
 									// 等待一段时间后重试
 									time.Sleep(time.Second)
 								} else {
-									applog.LogInfof(appCtx, "VideoCleanupHandler: removed video path cached file: %s", path)
+									applog.LogInfof(appState.ctx, "VideoCleanupHandler: removed video path cached file: %s", path)
 									break
 								}
 							}
@@ -237,7 +336,7 @@ func main() {
 
 					// 处理视频流请求（通过游戏ID）
 					if strings.HasPrefix(r.URL.Path, "/api/video/") {
-						handleVideoStreamRequest(w, r, gameService, appCtx)
+						handleVideoStreamRequest(w, r, gameService, appState.ctx)
 						return
 					}
 
@@ -248,12 +347,12 @@ func main() {
 						// 解码视频路径
 						videoPath, err := base64.StdEncoding.DecodeString(encodedPath)
 						if err != nil {
-							applog.LogErrorf(appCtx, "VideoPathHandler: failed to decode video path: %v", err)
+							applog.LogErrorf(appState.ctx, "VideoPathHandler: failed to decode video path: %v", err)
 							http.Error(w, "Invalid video path", http.StatusBadRequest)
 							return
 						}
 						// 调用新的函数处理视频流
-						handleVideoPathStreamRequest(w, r, string(videoPath), appCtx)
+						handleVideoPathStreamRequest(w, r, string(videoPath), appState.ctx)
 						return
 					}
 
@@ -286,7 +385,7 @@ func main() {
 			}
 
 			// 如果是从托盘强制退出，直接允许关闭
-			if forceQuit {
+			if appState.ShouldForceQuit() {
 				return false
 			}
 			if config.CloseToTray {
@@ -296,7 +395,7 @@ func main() {
 			return false
 		},
 		OnStartup: func(ctx context.Context) {
-			appCtx = ctx
+			appState.SetContext(ctx)
 			var err error
 
 			// 检查是否有待恢复的全量数据备份（在打开数据库前执行）
@@ -363,8 +462,7 @@ func main() {
 			configService.Init(ctx, db, config)
 			// 设置安全退出回调
 			configService.SetQuitHandler(func() {
-				forceQuit = true
-				runtime.Quit(ctx)
+				appState.QuitApplication()
 			})
 			applog.SetLogAll(config.LogAll)
 			taskService.Init(ctx, db, config) // 初始化任务服务
@@ -402,40 +500,44 @@ func main() {
 
 			// 启动 IPC Server (用于 CLI 通信)
 			// 构造 CLI CoreApp 以共享 GUI 的服务实例
-			cliApp := &cli.CoreApp{
-				Config:         config,
-				DB:             db,
-				Ctx:            ctx,
-				GameService:    gameService,
-				StartService:   startService,
-				SessionService: sessionService,
-				BackupService:  backupService,
-				VersionService: versionService,
-			}
-			ipc.StartServer(cliApp)
+			// cliApp := &cli.CoreApp{
+			// 	Config:         config,
+			// 	DB:             db,
+			// 	Ctx:            ctx,
+			// 	GameService:    gameService,
+			// 	StartService:   startService,
+			// 	SessionService: sessionService,
+			// 	BackupService:  backupService,
+			// 	VersionService: versionService,
+			// }
+			// ipc.StartServer(cliApp)
 
 			// 在 Wails 启动后初始化系统托盘
 			// TODO: 升级wails v3，使用原生的托盘功能
-			systrayQuit = make(chan struct{})
-			systrayReady = make(chan struct{})
-			go systray.Run(onSystrayReady, onSystrayExit)
-			go startService.CleanupSessionsOnStart()
+			appState.StartTray()
 
 			// 等待托盘初始化完成，避免竞态条件
-			<-systrayReady
-			appLogger.Info("system tray initialized successfully")
+			select {
+			case <-appState.trayReady:
+				appLogger.Info("system tray initialized successfully")
+			case <-time.After(5 * time.Second):
+				appLogger.Error("system tray initialization timed out")
+			}
 		},
 		OnShutdown: func(ctx context.Context) {
-			// 关闭系统托盘
-			if systrayQuit != nil {
-				systray.Quit()
-				<-systrayQuit // 等待 systray 完全退出
-			}
+			appState.BeginShutdown()
 
-			// 从 configService 获取最新配置（避免使用启动时的旧配置覆盖文件）
-			if configService == nil {
-				appLogger.Error("app config service is nil ")
-				return
+			// 先关闭 IPC Server，避免退出过程中还有外部请求进入。
+			// if err := ipcserver.ShutdownServer(ipcHTTPServer); err != nil {
+			// 	appLogger.Error("failed to shutdown IPC server: " + err.Error())
+			// }
+
+			// 关闭系统托盘
+			appState.RequestTrayQuit()
+			if appState.WaitForTrayExit(1200 * time.Millisecond) {
+				appLogger.Info("system tray exited successfully")
+			} else {
+				appLogger.Warning("system tray exit timed out, continuing shutdown")
 			}
 			latestConfig, err := configService.GetAppConfig()
 			if err != nil {
@@ -519,55 +621,38 @@ func main() {
 func onSystrayReady() {
 	// 先设置托盘的基本属性
 	systray.SetIcon(icon)
-	systray.SetTitle("KaleidoBox")
-	systray.SetTooltip("KaleidoBox")
+	systray.SetTitle("LunaBox")
+	systray.SetTooltip("LunaBox")
 
 	// 点击托盘图标时显示窗口
 	systray.SetOnClick(func(menu systray.IMenu) {
-		// 确保 appCtx 已经初始化且有效
-		if appCtx != nil {
-			runtime.WindowShow(appCtx)
-		}
+		appState.ShowMainWindow()
 	})
 
 	// 双击托盘图标时也显示窗口
 	systray.SetOnDClick(func(menu systray.IMenu) {
-		// 确保 appCtx 已经初始化且有效
-		if appCtx != nil {
-			runtime.WindowShow(appCtx)
-		}
+		appState.ShowMainWindow()
 	})
 
-	mShow := systray.AddMenuItem("显示主窗口", "显示 KaleidoBox 主窗口")
+	mShow := systray.AddMenuItem("显示主窗口", "显示 LunaBox 主窗口")
 	systray.AddSeparator()
-	mQuit := systray.AddMenuItem("退出", "退出 KaleidoBox")
+	mQuit := systray.AddMenuItem("退出", "退出 LunaBox")
 
 	// energye/systray 使用 Click 方法设置回调，而不是 ClickedCh
 	mShow.Click(func() {
-		// 确保 appCtx 已经初始化且有效
-		if appCtx != nil {
-			runtime.WindowShow(appCtx)
-		}
+		appState.ShowMainWindow()
 	})
 
 	mQuit.Click(func() {
-		// 通过托盘退出时，设置强制退出标志，绕过 OnBeforeClose 的最小化逻辑
-		forceQuit = true
-		if appCtx != nil {
-			runtime.Quit(appCtx)
-		}
+		appState.QuitApplication()
 	})
 
 	// 通知主线程托盘已经准备就绪
-	if systrayReady != nil {
-		close(systrayReady)
-	}
+	appState.MarkTrayReady()
 }
 
 func onSystrayExit() {
-	if systrayQuit != nil {
-		close(systrayQuit)
-	}
+	appState.MarkTrayExit()
 }
 
 // 用于缓存转换后的视频文件路径

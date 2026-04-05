@@ -29,6 +29,7 @@ const searchBaseUrl = `https://www.dlsite.com/maniax/fsr/=/language/jp/sex_categ
 
 // const searchBaseUrl = `https://210.140.64.86/maniax/fsr/=/language/jp/sex_category[0]/male/keyword/%s/ana_flg/all/work_category[0]/doujin/work_category[1]/pc/order/trend/work_type_category[0]/game/options_and_or/and/from/fs.header`
 
+// https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category%5B0%5D/male/keyword/%E4%BF%BA%E3%81%AE%E5%A6%B9%E3%81%8C%E3%81%93%E3%82%93%E3%81%AA%E3%81%AB%E3%82%A8%E3%83%83%E3%83%81%E3%81%AA%E3%82%8F%E3%81%91%E3%81%8C%E3%81%AA%E3%81%84/ana_flg/all/work_category%5B0%5D/doujin/order%5B0%5D/trend/options_and_or/and/per_page/30/page/1/from/fs.header
 const apiUrl = `https://www.dlsite.com/%s/api/=/product.json?workno=%s&locale=ja-jp`
 
 // const apiUrl = `https://210.140.64.86/%s/api/=/product.json?workno=%s&locale=ja-jp`
@@ -1131,7 +1132,7 @@ func decodeJapaneseContent(content []byte, contentType string) (string, error) {
 }
 
 // 验证日文文本质量
-func isValidJapaneseText(text string) bool {
+func isValidJapaneseText2(text string) bool {
 	if len(text) < 10 {
 		return false
 	}
@@ -1149,9 +1150,9 @@ func isValidJapaneseText(text string) bool {
 			unicode.IsLetter(r) || // 其他字母
 			unicode.IsDigit(r) || // 数字
 			unicode.IsSpace(r) { // 空白字符
-			if r > 127 { // 非ASCII字符
-				japaneseCount++
-			}
+			// if r > 127 { // 非ASCII字符
+			japaneseCount++
+			// }
 		}
 	}
 
@@ -1160,6 +1161,43 @@ func isValidJapaneseText(text string) bool {
 	fmt.Printf("日文字符比例: %.2f%% (%d/%d)\n", ratio*100, japaneseCount, totalCount)
 
 	return ratio > 0.3 // 至少30%的日文字符
+}
+
+func isValidJapaneseText(text string) bool {
+	if len(text) < 10 {
+		return false
+	}
+
+	japaneseCount := 0
+	totalCount := 0
+
+	for _, r := range text {
+		// 跳过ASCII
+		if r <= 127 {
+			continue
+		}
+
+		totalCount++
+
+		// 检查是否为日文字符
+		if (r >= 0x3040 && r <= 0x309F) || // 平假名
+			(r >= 0x30A0 && r <= 0x30FF) || // 片假名
+			(r >= 0x4E00 && r <= 0x9FFF) || // CJK统一汉字
+			(r >= 0x3400 && r <= 0x4DBF) || // CJK统一汉字扩展A
+			(r >= 0xFF00 && r <= 0xFFEF) { // 全角ASCII和片假名
+			japaneseCount++
+		}
+	}
+
+	// 如果没有有效字符，返回false
+	if totalCount == 0 {
+		return false
+	}
+
+	ratio := float64(japaneseCount) / float64(totalCount)
+	fmt.Printf("日文字符比例: %.2f%% (%d/%d)\n", ratio*100, japaneseCount, totalCount)
+
+	return ratio > 0.3
 }
 
 // 辅助函数

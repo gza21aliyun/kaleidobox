@@ -304,11 +304,19 @@ func (b SaveInfoGetter) FetchSeiyaGuideContent(link string) (models.GuideContent
 
 		// 转换编码
 		reader := transform.NewReader(bytes.NewReader(r.Body), decoder)
-		utf8Data, err := ioutil.ReadAll(reader)
+		utf8Data, err := io.ReadAll(reader)
 		if err != nil {
 			fmt.Println("Error decoding content:", err)
 		}
+		decodedText := string(utf8Data)
 		// decodedBody, _ := decodeJapaneseContent(r.Body, r.Headers.Get("Content-Type"))
+		if !isValidJapaneseText(decodedText) {
+			fmt.Println("✅ euc-jp解码无效")
+			decoder = japanese.ShiftJIS.NewDecoder()
+			reader = transform.NewReader(bytes.NewReader(r.Body), decoder)
+			utf8Data, err = io.ReadAll(reader)
+
+		}
 		r.Body = utf8Data
 
 	})

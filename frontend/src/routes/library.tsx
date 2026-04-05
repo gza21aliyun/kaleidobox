@@ -28,6 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { enums, vo } from "../../wailsjs/go/models";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 import { AddTagModal } from "../components/modal/AddTagModal";
+import { v } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -60,6 +61,7 @@ function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company"> ("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sourceFilter, setSourceFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [tagsFilter, setTags] = useState<string[]>(() => {
     const savedTagsFilter = localStorage.getItem('libraryTagsFilter');
@@ -170,6 +172,32 @@ function LibraryPage() {
         if (gameDate > endDate) {
           return false;
         }
+      }
+      //源匹配过滤
+      const sourceValue = game.source_type.toString();
+      if (sourceFilter !== "") {
+        if (sourceValue === sourceFilter) {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.DMM.toString() && game.dmm_id && game.dmm_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.EROSCAPE.toString() && game.eroscape_id && game.eroscape_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.DLSITE.toString() && game.dlsite_id && game.dlsite_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.GETCHU.toString() && game.getchu_id && game.getchu_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.BANGUMI.toString() && game.bangumi_id && game.bangumi_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.YMGAL.toString() && game.ymgal_id && game.ymgal_id !== "") {
+          return true;
+        }
+        return false;
       }
       return true;
     })
@@ -329,6 +357,18 @@ function LibraryPage() {
     [enums.GameStatus.ON_HOLD]: { label: t('library.gameStatus.on_hold'), icon: "i-mdi-pause-circle-outline", color: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" },
   };
 
+  const sourceConfig = [
+    { label: "不过滤匹配", value: "" },
+    { label: "Getchu", value: enums.SourceType.GETCHU.toString() },
+    { label: "批评空间", value: enums.SourceType.EROSCAPE.toString() },
+    { label: "Dlsite", value: enums.SourceType.DLSITE.toString() },
+    { label: "夜幕Gal", value: enums.SourceType.YMGAL.toString() },
+    { label: "DMM", value: enums.SourceType.DMM.toString() },
+    { label: "Bangumi", value: enums.SourceType.BANGUMI.toString() },
+    { label: "VNDB", value: enums.SourceType.VNDB.toString() },
+    { label: "本地", value: enums.SourceType.LOCAL.toString() },
+  ];
+
   const handleBatchStatusUpdate = async (newStatus: string) => {
     if (filterSelectedIds.length === 0)
       return;
@@ -472,6 +512,9 @@ function LibraryPage() {
         onSortOrderChange={setSortOrder}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        sourceFilter={sourceFilter}
+        onSourceFilterChange={setSourceFilter}
+        sourceOptions={sourceConfig}
         onTagsFilterChange={setTags}
         tagsLoaded={tagsLoaded}
         tagsFilter={tagsFilter}

@@ -29,6 +29,10 @@ interface FilterBarProps {
   // 状态筛选
   statusFilter?: string;
   onStatusFilterChange?: (value: string) => void;
+  // 源匹配筛选
+  sourceFilter?: string;
+  onSourceFilterChange?: (value: string) => void;
+  sourceOptions?: FilterOption[];
   onTagsFilterChange?: (value: string[]) => void;
   tagsLoaded?: Map<string, models.Tag[]>;
   tagsFilter?: string[];
@@ -65,6 +69,9 @@ export function FilterBar({
   onSortOrderChange,
   statusFilter,
   onStatusFilterChange,
+  sourceFilter,
+  onSourceFilterChange,
+  sourceOptions,
   onTagsFilterChange,
   tagsLoaded,
   tagsFilter,
@@ -136,9 +143,18 @@ export function FilterBar({
         }
       }
 
+      // 恢复源匹配筛选
+      const savedSourceFilter = localStorage.getItem(`${storageKey}_sourceFilter`);
+      if (savedSourceFilter && sourceOptions && onSourceFilterChange) {
+        // 验证保存的 sourceFilter 是否在 sourceOptions 中
+        if (sourceOptions.some(opt => opt.value === savedSourceFilter)) {
+          onSourceFilterChange(savedSourceFilter);
+        }
+      }
+
       setInitialized(true);
     }
-  }, [storageKey, sortOptions, statusOptions, initialized]);
+  }, [storageKey, sortOptions, statusOptions, sourceOptions, onSourceFilterChange, initialized]);
 
   // 处理搜索查询变更
   const handleSearchChange = (value: string) => {
@@ -163,6 +179,21 @@ export function FilterBar({
         }
         else {
           localStorage.removeItem(`${storageKey}_statusFilter`);
+        }
+      }
+    }
+  };
+
+  // 处理源匹配筛选变更
+  const handleSourceFilterChange = (value: string) => {
+    if (onSourceFilterChange) {
+      onSourceFilterChange(value);
+      if (storageKey) {
+        if (value) {
+          localStorage.setItem(`${storageKey}_sourceFilter`, value);
+        }
+        else {
+          localStorage.removeItem(`${storageKey}_sourceFilter`);
         }
       }
     }
@@ -206,6 +237,7 @@ export function FilterBar({
   const handleClearFilters = () => {
     onSearchChange("");
     if (onStatusFilterChange) onStatusFilterChange("");
+    if (onSourceFilterChange) onSourceFilterChange("");
     if (onTagsFilterChange) onTagsFilterChange([]);
     if (onReleaseStartDateChange) onReleaseStartDateChange("");
     if (onReleaseEndDateChange) onReleaseEndDateChange("");
@@ -466,6 +498,18 @@ export function FilterBar({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* 源匹配筛选 */}
+                  {sourceOptions && onSourceFilterChange && (
+                    <>
+                      <BetterSelect
+                        value={sourceFilter || ""}
+                        onChange={handleSourceFilterChange}
+                        options={sourceOptions}
+                        className="min-w-[150px]"
+                      />
+                    </>
+                  )}
+                  
                   <span className="text-sm text-brand-700 dark:text-brand-300 whitespace-nowrap">
                     {t('common.filter.releaseDate')}:
                   </span>

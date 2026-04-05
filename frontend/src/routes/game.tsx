@@ -61,13 +61,20 @@ function GameDetailPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isInitialMount = useRef(true);
   const originalGameData = useRef<models.Game | null>(null);
+  
+  // 触摸滑动相关
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const touchEndY = useRef<number>(0);
+  const minSwipeDistance = 50; // 最小滑动距离（参数
 
   // console.log("ids:", filteredGameIds)
 
   useEffect(() => {
         const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
           
-            // 注意：使用正确的语法从data对象获取值
+            // 注意：使用正确的语法从data对象获取�?
             const task : models.TaskNotice = new models.TaskNotice(data);
             
             // console.log("received taskid:" + task.id + " current taskid:" + taskId + ", item_id:" + task.item_id +  " item_status:" + task.item_status)
@@ -225,14 +232,60 @@ function GameDetailPage() {
       // 不处理keyup事件
     };
 
+    // 触摸开始
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    };
+
+    // 触摸移动
+    const handleTouchMove = (e: TouchEvent) => {
+      touchEndX.current = e.touches[0].clientX;
+      touchEndY.current = e.touches[0].clientY;
+    };
+
+    // 触摸结束
+    const handleTouchEnd = () => {
+      if (!touchStartX.current || !touchEndX.current) {
+        return;
+      }
+
+      const distanceSwipedX = touchStartX.current - touchEndX.current;
+      const distanceSwipedY = touchStartY.current - touchEndY.current;
+      
+      // 判断是否达到最小滑动距离
+      if (Math.abs(distanceSwipedX) < minSwipeDistance || Math.abs(distanceSwipedY) > minSwipeDistance) {
+        return;
+      }
+
+      // 向左滑动（切换到下一个游戏）
+      if (distanceSwipedX > 0) {
+        goToNextGame();
+      }
+      // 向右滑动（切换到上一个游戏）
+      else {
+        goToPrevGame();
+      }
+
+      // 重置触摸坐标
+      touchStartX.current = 0;
+      touchEndX.current = 0;
+    };
+
     if (true) {
       window.addEventListener("keydown", handleKeyDown);
       window.addEventListener("keyup", handleKeyUp);
+      window.addEventListener("touchstart", handleTouchStart, { passive: true });
+      window.addEventListener("touchmove", handleTouchMove, { passive: true });
+      window.addEventListener("touchend", handleTouchEnd, { passive: true });
     }
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
     };
   }, [filteredGameIds, currentGameId]);
 

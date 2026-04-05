@@ -536,7 +536,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                         {emptyFoundCount}
                       </div>
                       <div className="text-sm text-orange-700 dark:text-orange-300">
-                        {t('batchUpdate.emptyMatch')}
+                        {t('sourceType.local')}
                       </div>
                   </div>
                 )}

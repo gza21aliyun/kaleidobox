@@ -159,14 +159,14 @@ export function GameEditPanel({
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            视频路径 (PvPath)
+            {t('gameEdit.pvPathLabel')}
           </label>
           <div className="flex gap-2">
             <input
               type="text"
               value={game.pv_path || ""}
               onChange={e => onGameChange({ ...game, pv_path: e.target.value } as models.Game)}
-              placeholder="视频文件路径"
+              placeholder={t('gameEdit.pvPathPlaceholder')}
               className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
             />
             <button
@@ -178,7 +178,7 @@ export function GameEditPanel({
                     onGameChange({ ...game, pv_path: selection } as models.Game);
                   }
                 } catch (error) {
-                  toast.error("选择文件失败");
+                  toast.error(t('gameEdit.selectFileFailed'));
                 }
               }}
               className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
@@ -186,12 +186,12 @@ export function GameEditPanel({
               {t('gameEdit.select')}
             </button>
           </div>
-          <p className="mt-1 text-xs text-brand-500">游戏宣传视频文件的本地路径</p>
+          <p className="mt-1 text-xs text-brand-500">{t('gameEdit.pvPathHint')}</p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            是否虚拟机内游戏
+            {t('gameEdit.insideVm')}
           </label>
           <div className="flex items-center">
             <BetterSwitch
@@ -199,7 +199,7 @@ export function GameEditPanel({
               checked={game.inside_vm || false}
               onCheckedChange={checked => onGameChange({ ...game, inside_vm: checked } as models.Game)}
             />
-            <span className="ml-2 text-sm text-brand-600 dark:text-brand-400">标记此游戏是否在虚拟机内运行</span>
+            <span className="ml-2 text-sm text-brand-600 dark:text-brand-400">{t('gameEdit.insideVmHint')}</span>
           </div>
         </div>
 

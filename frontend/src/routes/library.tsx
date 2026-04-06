@@ -10,6 +10,7 @@ import { AddGamesToCategories, GetCategories } from "../../wailsjs/go/service/Ca
 import { BatchUpdateStatus, DeleteGames } from "../../wailsjs/go/service/GameService";
 import { FilterBar } from "../components/bar/FilterBar";
 import { GameCard } from "../components/card/GameCard";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { AddGameModal } from "../components/modal/AddGameModal";
 import { AddToCategoryModal } from "../components/modal/AddToCategoryModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
@@ -101,6 +102,8 @@ function LibraryPage() {
   // 选择返回模式
   const [selectMode, setSelectMode] = useState(false);
   const [returnPath, setReturnPath] = useState("/");
+  
+
   
 
   
@@ -219,7 +222,19 @@ function LibraryPage() {
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
-
+  
+  // 虚拟滚动相关
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // 使用 react-virtual 实现虚拟滚动
+  const virtual = useVirtualizer({
+    count: filteredGames.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => 100, // 初始估计值，后续会通过 measureElement 校正
+    overscan: 3, // 预加载的项目数量
+    paddingStart: 0,
+    paddingEnd: 0,
+  });
 
   // 获取URL参数中的标签和选择模式
   useEffect(() => {
@@ -246,6 +261,16 @@ function LibraryPage() {
       setBatchMode(true); // 自动启用批量选择模式
     }
   }, []);
+  
+  // 监听视图模式变化和窗口大小变化，更新虚拟滚动
+  useEffect(() => {
+    const handleResize = () => {
+      // 窗口大小变化时，虚拟滚动会自动更新
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [viewMode]);
 
   const filterSelected = filteredGames.filter(game => selectedGameIds.includes(game.id))
   const filterSelectedIds = filterSelected.map(game => game.id)
@@ -374,7 +399,7 @@ function LibraryPage() {
       return;
     try {
       await BatchUpdateStatus(filterSelectedIds, newStatus);
-      await fetchGames();
+      await loadGames();
       const label = statusConfig[newStatus as keyof typeof statusConfig]?.label ?? newStatus;
       toast.success(t('library.toasts.batchUpdateSuccess', { count: filterSelectedIds.length, label }));
     }
@@ -417,7 +442,7 @@ function LibraryPage() {
     setSelectedGameIds([]);
     setBatchMode(false);
     setIsBatchAddTagModalOpen(false)
-    await fetchGames();
+    await loadGames();
   };
 
   const handleBatchDelete = () => {
@@ -431,7 +456,7 @@ function LibraryPage() {
       onConfirm: async () => {
         try {
           await DeleteGames(filterSelectedIds);
-          await fetchGames();
+          await loadGames();
           setSelectedGameIds([]);
           setBatchMode(false);
           toast.success(t('library.toasts.batchDeleteSuccess'));
@@ -455,6 +480,15 @@ function LibraryPage() {
       // });
       // const uniqueTags : string[] = [...new Set(tags.map(tag => tag.trim()))];
       // setTagsLoaded(uniqueTags);
+
+      ListTags().then(tags => {
+        const map = arrayToMap(tags, tag => tag.category);
+        console.log("loadgames tags", map);
+        
+        
+        setTagsLoaded(map);
+
+      });
       
 
     }
@@ -470,14 +504,7 @@ function LibraryPage() {
     if (games.length === 0) {
       loadGames();
     }
-    ListTags().then(tags => {
-      const map = arrayToMap(tags, tag => tag.category);
-      console.log("loadgames tags", map);
-      
-      
-      setTagsLoaded(map);
-
-    });
+    
       
   }, []);
 
@@ -493,7 +520,7 @@ function LibraryPage() {
   }
 
   
-      console.log("rt tagsFilter:", tagsFilter)
+      // console.log("rt tagsFilter:", tagsFilter)
 
   return (
     <div className={`space-y-6 max-w-8xl mx-auto p-8 transition-opacity duration-300 ${gamesLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
@@ -764,50 +791,95 @@ function LibraryPage() {
                 </div>
               </div>
             )
-          : (
-              <div className={
-                viewMode === "list" 
-                  ? "flex flex-col gap-2"
-                  : viewMode === "large"
-                    ? "grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4"
-                    : "grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3"
-              }>
-                {filteredGames.map(game => (
-                  <GameCard
-                    key={game.id}
-                    game={game}
-                    searchQuery={searchQuery}
-                    selectionMode={batchMode}
-                    selected={selectedGameIds.includes(game.id)}
-                    onSelectChange={(selected, event) => setGameSelection(game.id, selected, event)}
-                    filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
-                    viewMode={viewMode}
-                  />
-                ))}
-              </div>
-            )}
+          : viewMode === "list"
+            ? (
+                <div 
+                  ref={containerRef}
+                  className="flex-1 overflow-y-auto"
+                  style={{
+                    height: '100%',
+                    position: 'relative'
+                  }}
+                >
+                  <div 
+                    style={{
+                      height: `${virtual.getTotalSize()}px`,
+                      width: '100%',
+                      position: 'relative'
+                    }}
+                  >
+                    {virtual.getVirtualItems().map((virtualItem) => (
+                      <div
+                        key={filteredGames[virtualItem.index].id}
+                        ref={virtual.measureElement}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${virtualItem.start}px)`
+                        }}
+                      >
+                        <GameCard
+                          game={filteredGames[virtualItem.index]}
+                          searchQuery={searchQuery}
+                          selectionMode={batchMode}
+                          selected={selectedGameIds.includes(filteredGames[virtualItem.index].id)}
+                          onSelectChange={(selected, event) => setGameSelection(filteredGames[virtualItem.index].id, selected, event)}
+                          filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
+                          viewMode={viewMode}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            : (
+                <div 
+                  className="flex-1 overflow-y-auto"
+                >
+                  <div className={
+                    viewMode === "large"
+                      ? "grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4"
+                      : "grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3"
+                  }>
+                    {filteredGames.map(game => (
+                      <GameCard
+                        key={game.id}
+                        game={game}
+                        searchQuery={searchQuery}
+                        selectionMode={batchMode}
+                        selected={selectedGameIds.includes(game.id)}
+                        onSelectChange={(selected, event) => setGameSelection(game.id, selected, event)}
+                        filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
+                        viewMode={viewMode}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
       <AddGameModal
         isOpen={isAddGameModalOpen}
         onClose={() => setIsAddGameModalOpen(false)}
-        onGameAdded={fetchGames}
+        onGameAdded={loadGames}
       />
 
       <GameImportModal
         isOpen={importSource !== null}
         source={importSource || "potatovn"}
         onClose={() => setImportSource(null)}
-        onImportComplete={fetchGames}
+        onImportComplete={loadGames}
       />
 
       <BatchImportModal
         isOpen={isBatchImportOpen}
         onClose={() => setIsBatchImportOpen(false)}
-        onImportComplete={fetchGames}
+        onImportComplete={loadGames}
         onOpenUpdate={(res) => {
           console.log("onOpenUpdate res:", res)
           // gamesForUpdate.current = res;
-          fetchGames().then(() => { 
+          loadGames().then(() => { 
             setSelectedGameIds(res.map((g) => g.id))
             setIsBatchUpdateOpen(true);
           })

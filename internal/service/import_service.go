@@ -1064,8 +1064,8 @@ func SearchVideoExePath(game *models.Game) error {
 	folderPath := filepath.Dir(game.Path)
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
 	excludeExeKeywords := []string{
-		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2",
-		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst",
+		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2", "autorun",
+		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst", "BHVC",
 		"vcredist_x86", "vcredist_x64", "vc_redist.x86", "updchk", "upgrade", "uninstx86", "uninstx64", "uninstcl", "uninstaller",
 		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール", "システム詳細設定", "エンジン設定",
 		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet", "_uninst", "セーブデータ場所設定ツール", "システム設定",
@@ -1085,7 +1085,8 @@ func SearchVideoExePath(game *models.Game) error {
 		if !info.IsDir() {
 			// 检查文件扩展名是否为视频格式
 			ext := strings.ToLower(filepath.Ext(path))
-			fileName := strings.ToLower(filepath.Base(path))
+			oFileName := filepath.Base(path)
+			fileName := strings.ToLower(oFileName)
 			for _, e := range exts {
 				if ext == e {
 					// 检查文件名是否包含 "op" 或 "openning"
@@ -1103,7 +1104,7 @@ func SearchVideoExePath(game *models.Game) error {
 				// 检查文件名是否包含排除关键词
 				filePrefix := strings.ReplaceAll(fileName, filepath.Ext(path), "")
 				if !utils.ArrayContains(excludeExeKeywords, filePrefix) {
-					exeFiles = append(exeFiles, fileName)
+					exeFiles = append(exeFiles, oFileName)
 				}
 			}
 		}

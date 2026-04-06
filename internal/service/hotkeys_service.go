@@ -75,33 +75,33 @@ type HotkeyService struct {
 	config *appconf.AppConfig
 
 	// gobot相关（手柄支持）
-	robot      *gobot.Robot
-	robotMutex sync.Mutex
-	keyboard   *keyboard.Driver
-	joysticks  map[string]*joystick.Driver
-	deviceLock sync.RWMutex
+	robot       *gobot.Robot
+	robotMutex6 sync.Mutex
+	keyboard    *keyboard.Driver
+	joysticks   map[string]*joystick.Driver
+	deviceLock  sync.RWMutex
 
 	// robotgo相关（键盘事件监听）
 	hookStarted bool
-	hookMutex   sync.RWMutex
+	hookMutex1  sync.RWMutex
 
 	// 按键映射管理
-	keyMappings   map[string]*models.Hotkey // source_key -> mapping
-	actionKeys    map[string]*models.Hotkey
-	mappingLock   sync.RWMutex
-	actionkeyLock sync.RWMutex
+	keyMappings    map[string]*models.Hotkey // source_key -> mapping
+	actionKeys     map[string]*models.Hotkey
+	mappingLock2   sync.RWMutex
+	actionkeyLock3 sync.RWMutex
 	// keyLock     sync.RWMutex
 
 	// 按键状态跟踪
-	keyStates map[string]bool // key -> is_pressed
-	stateLock sync.RWMutex
+	keyStates  map[string]bool // key -> is_pressed
+	stateLock4 sync.RWMutex
 
 	// 快捷键管理（特殊用途）
 	// screenshotHotkey *models.Hotkey
 
 	// 当前活动游戏
 	activeGameID atomic.Value
-	activeLock   sync.RWMutex
+	activeLock5  sync.RWMutex
 
 	isMonitoringKeySetting atomic.Bool
 	monitoredKey           atomic.Value
@@ -217,10 +217,10 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 
 func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 	applog.LogInfof(s.ctx, "Loading hotkey configuration")
-	s.actionkeyLock.Lock()
-	s.mappingLock.Lock()
-	defer s.actionkeyLock.Unlock()
-	defer s.mappingLock.Unlock()
+	s.mappingLock2.Lock()
+	s.actionkeyLock3.Lock()
+	defer s.actionkeyLock3.Unlock()
+	defer s.mappingLock2.Unlock()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
 	var devicetype enums.DeviceType
@@ -319,8 +319,8 @@ func (s *HotkeyService) startKeyboardListener() {
 	// go s.keyboardEventHandler()
 	applog.LogInfof(s.ctx, "Keyboard listener started")
 
-	s.robotMutex.Lock()
-	defer s.robotMutex.Unlock()
+	s.robotMutex6.Lock()
+	defer s.robotMutex6.Unlock()
 	s.keyboard = keyboard.NewDriver()
 	s.robot = gobot.NewRobot("keyboardbot",
 		[]gobot.Connection{},
@@ -363,11 +363,11 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	}
 
 	// 更新状态
-	s.stateLock.Lock()
-	s.mappingLock.RLock()
+	s.stateLock4.Lock()
+	s.mappingLock2.RLock()
 	s.keyStates[key] = true
-	defer s.stateLock.Unlock()
-	defer s.mappingLock.RUnlock()
+	defer s.stateLock4.Unlock()
+	defer s.mappingLock2.RUnlock()
 
 	if s.actionKeys[key] != nil { // 映射的按键
 		s.monitoredKey.Store(&hk)
@@ -397,13 +397,13 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 		DeviceType: device,
 	}
 	// 更新状态
-	s.stateLock.Lock()
-	s.mappingLock.RLock()
-	s.actionkeyLock.RLock()
+	s.stateLock4.Lock()
+	s.mappingLock2.RLock()
+	s.actionkeyLock3.RLock()
 	s.keyStates[key] = false
-	defer s.stateLock.Unlock()
-	defer s.mappingLock.RUnlock()
-	defer s.actionkeyLock.RUnlock()
+	defer s.stateLock4.Unlock()
+	defer s.mappingLock2.RUnlock()
+	defer s.actionkeyLock3.RUnlock()
 
 	hotkey := s.keyMappings[key]
 
@@ -477,8 +477,8 @@ func (s *HotkeyService) handleKeboardEvents() {
 			if keyCode != "" {
 				// 简化处理：统一视为按下事件
 				// 在实际应用中可能需要更复杂的逻辑来区分按下和释放
-				s.actionkeyLock.Lock()
-				defer s.actionkeyLock.Unlock()
+				s.actionkeyLock3.Lock()
+				defer s.actionkeyLock3.Unlock()
 				hotkey := s.actionKeys[keyCode]
 				if hotkey != nil {
 					s.handleActionKey(hotkey)
@@ -675,9 +675,9 @@ func (s *HotkeyService) handleDS4Events() {
 }
 
 func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device enums.DeviceType) {
-	s.stateLock.Lock()
+	s.stateLock4.Lock()
 
-	defer s.stateLock.Unlock()
+	defer s.stateLock4.Unlock()
 
 	if isPress {
 		if !s.keyStates[key] {
@@ -699,8 +699,8 @@ func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device 
 func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 	applog.LogInfof(s.ctx, "Starting joystick listener...")
 	// devicetype := enums.DeviceTypeDualShock4
-	s.robotMutex.Lock()
-	defer s.robotMutex.Unlock()
+	s.robotMutex6.Lock()
+	defer s.robotMutex6.Unlock()
 	// 启动手柄机器人
 	// 创建 joystick 适配器
 
@@ -732,8 +732,8 @@ func (s *HotkeyService) GetSupportedDevices() []models.DeviceTypeInfo {
 
 // RemoveKeyMapping 移除按键映射
 func (s *HotkeyService) RemoveKeyMapping(sourceKey string) {
-	s.mappingLock.Lock()
-	defer s.mappingLock.Unlock()
+	s.mappingLock2.Lock()
+	defer s.mappingLock2.Unlock()
 
 	delete(s.keyMappings, sourceKey)
 	// 避免在测试中调用日志
@@ -1064,13 +1064,13 @@ func generateDeviceID() string {
 
 // MappingLock 获取映射锁（用于测试）
 func (s *HotkeyService) MappingLock() *sync.RWMutex {
-	return &s.mappingLock
+	return &s.mappingLock2
 }
 
 // IsKeyPressed 查询按键是否被按下
 func (s *HotkeyService) IsKeyPressed(key string) bool {
-	s.stateLock.RLock()
-	defer s.stateLock.RUnlock()
+	s.stateLock4.RLock()
+	defer s.stateLock4.RUnlock()
 	return s.keyStates[key]
 }
 
@@ -1186,12 +1186,12 @@ func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 	s.isMonitoringKeySetting.Store(false)
 	s.SetActiveGameID("")
-	s.mappingLock.Lock()
-	s.actionkeyLock.Lock()
-	s.robotMutex.Lock()
-	defer s.robotMutex.Unlock()
-	defer s.actionkeyLock.Unlock()
-	defer s.mappingLock.Unlock()
+	s.mappingLock2.Lock()
+	defer s.mappingLock2.Unlock()
+	s.actionkeyLock3.Lock()
+	defer s.actionkeyLock3.Unlock()
+	s.robotMutex6.Lock()
+	defer s.robotMutex6.Unlock()
 	s.stopKeyboardListener()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
@@ -1213,8 +1213,8 @@ func (s *HotkeyService) startAlternativeKeyListener() {
 	s.keyboardStopChan = make(chan struct{}, 1)
 	// 使用较短的时间间隔以获得更好的响应性
 	s.keyboardTicker = time.NewTicker(50 * time.Millisecond)
-	s.actionkeyLock.RLock()
-	defer s.actionkeyLock.RUnlock()
+	s.actionkeyLock3.RLock()
+	defer s.actionkeyLock3.RUnlock()
 	defer func() {
 		if s.keyboardTicker != nil {
 			s.keyboardTicker.Stop()

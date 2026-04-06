@@ -340,6 +340,7 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 			applog.LogInfof(s.ctx, "Starting staged detection for game %s, launcher: %s,new launcher:%s (PID %d)", gameID,
 				launcherExeName, savedProcessName, launcherPID)
 			pname, _ := s.searchGameProcessName(gameID)
+			fmt.Printf("detectAndMonitorProcess 11 process name found :%s\n", pname)
 			newProcess := s.detectNewProcesses(launcherPID, gameID, pname)
 			if newProcess != nil {
 				applog.LogInfof(s.ctx, "Game %s has new process found to save: %s, PID: %d", gameID, newProcess.Name, newProcess.PID)
@@ -388,13 +389,13 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 	s.hotkeyService.readyHotkeysForGame(gameID)
 
 	// 根据情况选择监控方式
-	if needExternalMonitor {
+	if needExternalMonitor /* || actualProcessName != "" */ {
 		// 需要外部监控：实际游戏进程不是cmd的子进程
 		s.monitorProcessByPID(sessionID, gameID, startTime, actualProcessID, actualProcessName)
 		fmt.Println(actualProcessName)
 	} else {
 		// 使用原有的 waitForGameExit：可以利用 cmd.Wait() 事件驱动
-		s.waitForGameExit(cmd, sessionID, gameID, startTime, actualProcessID)
+		s.waitForGameExit(cmd, sessionID, gameID, startTime, actualProcessID, actualProcessName)
 	}
 
 }
@@ -468,13 +469,26 @@ func (s *StartService) promptUserToSelectProcess(sessionID string, gameID string
 }
 
 // waitForGameExit 等待游戏进程退出并更新游玩记录
-func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID string, startTime time.Time, processID uint32) {
+func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID string, startTime time.Time, processID uint32, processName string) {
 	applog.LogInfof(s.ctx, "starting to monitor Waiting for game process to exit... gameId: %s", gameID)
 	s.gamesLaunched[processID] = GameProcess{GameId: gameID, ProcessID: processID}
 	// 使用独立 goroutine 等待进程，避免永久阻塞
 	exitChan := make(chan error, 1)
 	go func() {
-		exitChan <- cmd.Wait()
+		fmt.Println("Waiting for game process to exit...")
+		err := cmd.Wait()
+		time.Sleep(1 * time.Second)
+		ps, _ := utils.GetRunningProcessesWithPPID()
+		for _, p := range ps {
+			if p.PPID == processID && p.Name == processName {
+				fmt.Printf("Game process still running after waiting... pid:%d, pn:%s, pn2:%s\n", p.PID, processName, p.Name)
+				exitChan <- errors.New("go to monitorProcessByPID")
+				s.monitorProcessByPID(sessionID, gameID, startTime, p.PID, processName)
+
+				return
+			}
+		}
+		exitChan <- err
 	}()
 
 	// 等待进程退出，最长等待24小时（防止永久阻塞）
@@ -482,7 +496,7 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 	select {
 	case exitErr = <-exitChan:
 		delete(s.gamesLaunched, processID)
-		s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
+		fmt.Println("游戏已退出")
 		// 游戏正常退出
 		if exitErr != nil {
 			applog.LogDebugf(s.ctx, "Game %s exited with error: %v", gameID, exitErr)
@@ -491,7 +505,12 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 		// 超时保护（24小时后强制清理）
 		applog.LogWarningf(s.ctx, "Game %s exceeded maximum runtime (24h), forcing cleanup", gameID)
 	}
-
+	if exitErr != nil && exitErr.Error() == "go to monitorProcessByPID" {
+		return
+	}
+	fmt.Println("start cleanup playsession")
+	//todo: lock
+	go s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 	// 执行统一的会话清理逻辑
 	s.finalizePlaySession(sessionID, gameID, startTime)
 }
@@ -517,10 +536,10 @@ func (s *StartService) monitorProcessByPID(sessionID string, gameID string, star
 	case <-exitChan:
 		applog.LogInfof(s.ctx, "External process %s (PID %d) has exited", processName, processID)
 		delete(s.gamesLaunched, processID)
-		s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 	case <-time.After(24 * time.Hour):
 		applog.LogWarningf(s.ctx, "Game %s exceeded maximum runtime (24h), forcing cleanup", gameID)
 	}
+	go s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 
 	// 执行统一的会话清理逻辑
 	s.finalizePlaySession(sessionID, gameID, startTime)
@@ -539,10 +558,10 @@ func (s *StartService) finalizePlaySession(sessionID string, gameID string, star
 	var duration int
 	if s.config.RecordActiveTimeOnly {
 		duration = activeSeconds
-		applog.LogInfof(s.ctx, "Game %s active play time: %d seconds", gameID, duration)
+		applog.InfoLogSaveAppLog("Game %s active play time: %d seconds", gameID, duration)
 	} else {
 		duration = int(endTime.Sub(startTime).Seconds())
-		applog.LogInfof(s.ctx, "Game %s total runtime: %d seconds", gameID, duration)
+		applog.InfoLogSaveAppLog("Game %s total runtime: %d seconds", gameID, duration)
 	}
 
 	// 如果游玩时长小于1分钟，删除临时会话记录

@@ -244,7 +244,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	// 检查是否包含有效的分隔符（除了纯空格）
 	// num := -1
 	// numStr := ""
-	hasValidSeparator := regexp.MustCompile(`[－\-~～　＝ ・！「\[]`).MatchString(searchName)
+	hasValidSeparator := regexp.MustCompile(`[－\-~～　＝ ・！：─―_!「\[]`).MatchString(searchName)
 
 	mainTitle := ""
 
@@ -258,10 +258,10 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	// 有有效分隔符，尝试分离主标题和副标题
 	// 使用非空格分隔符进行分割
 	hasNonEnglish := regexp.MustCompile(`[^a-zA-Z0-9 ]`).MatchString(searchName)
-	separatorPattern := `[－\-~～]+`
+	separatorPattern := `[－\-~～_]+`
 	if hasNonEnglish {
 		// separatorPattern = `[－・「\-~ ～]+`
-		separatorPattern = `[－\-~～＝ ・「]+`
+		separatorPattern = `[－\-~～＝： ・_!─―「]+`
 	}
 	parts := regexp.MustCompile(separatorPattern).Split(searchName, -1)
 	// fmt.Printf("getTitlesNum 11 :%s\n", strings.Join(parts, ","))
@@ -276,7 +276,7 @@ func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, n
 	if len(parts) < 2 {
 		hasNonEnglish = regexp.MustCompile(`[^a-zA-Z0-9 ]`).MatchString(mainTitle)
 		if onlyNum || hasNonEnglish {
-			separatorPattern = `[－\-~～　＝ ！・「\[]+`
+			separatorPattern = `[－\-~～　＝ ！・─「\[]+`
 			// fmt.Printf("getTitlesNum 02:\n")
 		} else {
 			separatorPattern = `[－\-~～　！\[]+`
@@ -494,6 +494,8 @@ func getCharType(r rune) int {
 func getGameNameAlternative(searchName string) string {
 
 	var name = searchName
+	re := regexp.MustCompile(`（.*?）`)
+	name = re.ReplaceAllString(name, "")
 	for strings.HasSuffix(name, "〇") {
 		name = strings.TrimSuffix(name, "〇")
 	}
@@ -563,6 +565,9 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "Ｈ") {
 		name = strings.ReplaceAll(name, "Ｈ", "H")
 	}
+	if strings.Contains(name, "Ｉ") {
+		name = strings.ReplaceAll(name, "Ｉ", "I")
+	}
 	if strings.Contains(name, "Ｊ") {
 		name = strings.ReplaceAll(name, "Ｊ", "J")
 	}
@@ -619,6 +624,91 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "Ｚ") {
 		name = strings.ReplaceAll(name, "Ｚ", "Z")
 	}
+	if strings.Contains(name, "∧") {
+		name = strings.ReplaceAll(name, "∧", "A")
+	}
+	if strings.Contains(name, "’") {
+		name = strings.ReplaceAll(name, "’", "'")
+	}
+	if strings.Contains(name, "ａ") {
+		name = strings.ReplaceAll(name, "ａ", "a")
+	}
+	if strings.Contains(name, "ｂ") {
+		name = strings.ReplaceAll(name, "ｂ", "b")
+	}
+	if strings.Contains(name, "ｃ") {
+		name = strings.ReplaceAll(name, "ｃ", "c")
+	}
+	if strings.Contains(name, "ｄ") {
+		name = strings.ReplaceAll(name, "ｄ", "d")
+	}
+	if strings.Contains(name, "ｅ") {
+		name = strings.ReplaceAll(name, "ｅ", "e")
+	}
+	if strings.Contains(name, "ｆ") {
+		name = strings.ReplaceAll(name, "ｆ", "f")
+	}
+	if strings.Contains(name, "ｇ") {
+		name = strings.ReplaceAll(name, "ｇ", "g")
+	}
+	if strings.Contains(name, "ｈ") {
+		name = strings.ReplaceAll(name, "ｈ", "h")
+	}
+	if strings.Contains(name, "ｉ") {
+		name = strings.ReplaceAll(name, "ｉ", "i")
+	}
+	if strings.Contains(name, "ｊ") {
+		name = strings.ReplaceAll(name, "ｊ", "j")
+	}
+	if strings.Contains(name, "ｋ") {
+		name = strings.ReplaceAll(name, "ｋ", "k")
+	}
+	if strings.Contains(name, "ｌ") {
+		name = strings.ReplaceAll(name, "ｌ", "l")
+	}
+	if strings.Contains(name, "ｍ") {
+		name = strings.ReplaceAll(name, "ｍ", "m")
+	}
+	if strings.Contains(name, "ｎ") {
+		name = strings.ReplaceAll(name, "ｎ", "n")
+	}
+	if strings.Contains(name, "ｏ") {
+		name = strings.ReplaceAll(name, "ｏ", "o")
+	}
+	if strings.Contains(name, "ｐ") {
+		name = strings.ReplaceAll(name, "ｐ", "p")
+	}
+	if strings.Contains(name, "ｑ") {
+		name = strings.ReplaceAll(name, "ｑ", "q")
+	}
+	if strings.Contains(name, "ｒ") {
+		name = strings.ReplaceAll(name, "ｒ", "r")
+	}
+	if strings.Contains(name, "ｓ") {
+		name = strings.ReplaceAll(name, "ｓ", "s")
+	}
+	if strings.Contains(name, "ｔ") {
+		name = strings.ReplaceAll(name, "ｔ", "t")
+	}
+	if strings.Contains(name, "ｕ") {
+		name = strings.ReplaceAll(name, "ｕ", "u")
+	}
+	if strings.Contains(name, "ｖ") {
+		name = strings.ReplaceAll(name, "ｖ", "v")
+	}
+	if strings.Contains(name, "ｗ") {
+		name = strings.ReplaceAll(name, "ｗ", "w")
+	}
+	if strings.Contains(name, "ｘ") {
+		name = strings.ReplaceAll(name, "ｘ", "x")
+	}
+	if strings.Contains(name, "ｙ") {
+		name = strings.ReplaceAll(name, "ｙ", "y")
+	}
+	if strings.Contains(name, "ｚ") {
+		name = strings.ReplaceAll(name, "ｚ", "z")
+	}
+
 	if strings.Contains(name, "III") {
 		name = strings.ReplaceAll(name, "III", "3")
 	}
@@ -635,9 +725,9 @@ func getGameNameAlternative(searchName string) string {
 	if strings.Contains(name, "＊") {
 		name = strings.ReplaceAll(name, "＊", "*")
 	}
-	if strings.Contains(name, "学") {
-		name = strings.ReplaceAll(name, "学", "學")
-	}
+	// if strings.Contains(name, "学") {
+	// 	name = strings.ReplaceAll(name, "学", "學")
+	// }
 	if strings.Contains(name, "师") {
 		name = strings.ReplaceAll(name, "师", "師")
 	}

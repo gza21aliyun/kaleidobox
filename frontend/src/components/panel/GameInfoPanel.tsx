@@ -2,7 +2,7 @@ import { appconf, enums, models } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
 import { tagMapForEach, workMapForEach, charactorsForEach } from "../utils/Utility";
-import { GetTagListByString } from "../../../wailsjs/go/service/TagService";
+import { GetTagListByString, UpdateTag } from "../../../wailsjs/go/service/TagService";
 import { DeleteTagForGame, AddTagsForGames } from "../../../wailsjs/go/service/GameService";
 import { useEffect, useState } from "react";
 import { useAppStore } from "../../store";
@@ -63,6 +63,11 @@ export function GameInfoPanel({
             }
         }, [game])
         const handleTagClick = (tag: models.Tag) => {
+                tag.use_count++;
+                UpdateTag(tag).then((res) => {
+                    console.log("UpdateTag", res)
+                })
+
                 // 直接执行搜索功能
                 navigate({ to: '/library', search: 
                     { tags: tag.name } 
@@ -206,7 +211,7 @@ export function GameInfoPanel({
                                                     handleTagClick(tag);
                                                 }}
                                             >
-                                                {tag.name}
+                                                {tag.name}{tag.use_count > 0 ? ` (${tag.use_count})` : ''}
                                                 {!tag.block_modify && (
                                                     <button
                                                         className="ml-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"

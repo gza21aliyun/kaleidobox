@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { models } from "../../../wailsjs/go/models";
 import { useTranslation } from 'react-i18next';
-import { mapToArray, tagMapForEach } from "../utils/Utility";
+import { arrayMapString, mapToArray, tagMapForEach } from "../utils/Utility";
+import { UpdateTag } from "../../../wailsjs/go/service/TagService";
 
 interface FilterChooseTagModalProps {
   isOpen: boolean;
@@ -169,7 +170,11 @@ export function FilterChooseTagModal({
                       {tags.map((tag) => (
                         <button
                           key={tag.name}
-                          onClick={() => onTagsFilterChange([...tagsFilter, tag.name])}
+                          onClick={() => {
+                            onTagsFilterChange([...tagsFilter, tag.name]);
+                            tag.use_count++;
+                            UpdateTag(tag)
+                          }}
                           className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
                                   bg-gradient-to-r from-[#e0e000] to-[#c0c000] 
                                   text-brand-800 dark:text-brand-900
@@ -180,7 +185,7 @@ export function FilterChooseTagModal({
                                   border border-[#d0d000]/30"
                         >
                           <div className="i-mdi-tag mr-1 text-xs" />
-                          {tag.name}
+                          {tag.name}{tag.use_count > 0 ? ` (${tag.use_count})` : ''}
                         </button>
                       ))}
                       {tags.length === 0 && (
@@ -229,7 +234,7 @@ export function FilterChooseGroupModal({
   // 获取标签分组数据
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const getTagGroups = () => {
-    const groupMap: Map<string, string[]> = new Map();
+    const groupMap: Map<string, models.Tag[]> = new Map();
     const tagArray: models.Tag[] = mapToArray(availableTags || new Map());
     
     for (const tag of tagArray) {
@@ -239,9 +244,9 @@ export function FilterChooseGroupModal({
       
       if (groupMap.has(tag.group)) {
         const existingTags = groupMap.get(tag.group) || [];
-        groupMap.set(tag.group, [...existingTags, tag.name]);
+        groupMap.set(tag.group, [...existingTags, tag]);
       } else {
-        groupMap.set(tag.group, [tag.name]);
+        groupMap.set(tag.group, [tag]);
       }
     }
     
@@ -313,7 +318,8 @@ export function FilterChooseGroupModal({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            const newTagsFilter = [...new Set([...tagsFilter, ...tags])];
+                            const tagsMap = arrayMapString(tags, (tag: models.Tag) => tag.name)
+                            const newTagsFilter = [...new Set([...tagsFilter, ...tagsMap])];
                             onTagsFilterChange(newTagsFilter);
                             // onClose();
                           }}
@@ -334,12 +340,14 @@ export function FilterChooseGroupModal({
                     {isExpanded && (
                       <div className="p-3 bg-brand-50 dark:bg-brand-900/20 border-t border-brand-200 dark:border-brand-700">
                         <div className="flex flex-wrap gap-2">
-                          {tags.map((tag) => (
+                          {tags.sort((a,b) => a.use_count - b.use_count).map((tag) => (
                             <button
-                              key={tag}
+                              key={tag.name}
                               onClick={() => {
-                                const newTagsFilter = [...new Set([...tagsFilter, tag])];
+                                const newTagsFilter = [...new Set([...tagsFilter, tag.name])];
                                 onTagsFilterChange(newTagsFilter);
+                                tag.use_count++;
+                                UpdateTag(tag).then(() => {})
                                 // onClose();
                               }}
                               className="px-3 py-1.5 bg-gradient-to-r from-[#e0e000] to-[#c0c000] 
@@ -351,7 +359,7 @@ export function FilterChooseGroupModal({
                             >
                               <div className="flex items-center">
                                 <div className="i-mdi-tag mr-1 text-xs" />
-                                {tag}
+                                {tag.name}{tag.use_count > 0 ? ` (${tag.use_count})` : ''}
                               </div>
                             </button>
                           ))}

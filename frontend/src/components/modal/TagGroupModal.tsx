@@ -1,7 +1,7 @@
 import { models } from "../../../wailsjs/go/models";
 import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { tagMapForEach, arrayToMap } from "../utils/Utility";
+import { tagMapForEach, arrayToMap, sortTags } from "../utils/Utility";
 import { ListTags, ListGroups, UpdateTagsGroup, DeleteTagGroup } from "../../../wailsjs/go/service/TagService";
 
 import { toast } from "react-hot-toast";
@@ -184,7 +184,7 @@ export function TagGroupModal({ isOpen, onClose, mode, groupName, allTags, exist
                   {expandedCategories[category] && (
                     <div className="p-3 bg-brand-50 dark:bg-brand-900/10">
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {tags.map(tag => (
+                        {sortTags(tags).map(tag => (
                           <div
                             key={tag.name}
                             onClick={() => handleTagToggle(tag.name)}

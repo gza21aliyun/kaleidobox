@@ -154,7 +154,7 @@ export function tagMapForEach(map: Map<string, models.Tag[]>, fn: (key: string,
                 ].includes(key)) {
                     keyName = t("gameInfo."+transMap[key])
                 }
-                result.push(fn(keyName, map.get(key)!));
+                result.push(fn(keyName, sortTags(map.get(key)!)));
             }
         };
         handle(TAG_CATEGORY.TagCategoryBrand);
@@ -174,6 +174,14 @@ export function tagMapForEach(map: Map<string, models.Tag[]>, fn: (key: string,
             }
         });
         return result;
+}
+
+export function sortTags(tags: models.Tag[]): models.Tag[] { 
+    return tags.sort((a, b) => {
+        const dif = b.use_count - a.use_count;
+        if (dif != 0) return dif;
+        return a.name.localeCompare(b.name);
+    });
 }
 
 export function workMapForEach(map: Map<enums.StaffRole, models.Work[]>, t: (key: string) => string, fn: (key: string, 

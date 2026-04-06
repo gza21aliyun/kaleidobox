@@ -5,8 +5,9 @@ import { appconf, models, vo, enums } from "../wailsjs/go/models";
 import { GetAppConfig, UpdateAppConfig } from "../wailsjs/go/service/ConfigService";
 import { GetGames, GetGamesByPage, GetGameByID, GetSimpleGamesByPage, GetGamesSendFront } from "../wailsjs/go/service/GameService";
 import { GetHomePageData } from "../wailsjs/go/service/HomeService";
+import { ListTags } from "../wailsjs/go/service/TagService";
 import { EventsOn } from "../wailsjs/runtime/runtime";
-import { arrayFind } from "./components/utils/Utility";
+import { arrayFind, arrayToMap } from "./components/utils/Utility";
 import { g } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
 
 type AISummaryCache = {
@@ -38,6 +39,9 @@ type AppState = {
   // 任务列表全局状态
   tasks: models.TaskNotice[];
   setTasks: (tasks: models.TaskNotice[]) => void;
+  // 标签加载状态
+  tagsLoaded: Map<string, models.Tag[]>;
+  setTagsLoaded: (tags: Map<string, models.Tag[]>) => void;
   // page: number;
 };
 
@@ -133,7 +137,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchGames: async () => {
     set({ gamesLoading: true });
     var page = 1;
-    var pageSize = 50;
+    var pageSize = 100;
     try {
       var gameList: models.Game[] = [];
       for (;;) { 
@@ -141,16 +145,25 @@ export const useAppStore = create<AppState>((set, get) => ({
         
         if (page == 1) {
           gameList = result || [];
+          set({ games: gameList });
         } else {
           gameList = gameList.concat(result || []);
         }
-        set({ games: gameList });
+        
         page++;
         if (result?.length < pageSize) {
+          set({ games: gameList });
           break;
         }
         
       }
+      ListTags().then(tags => {
+              const map = arrayToMap(tags, tag => tag.category);
+              console.log("loadgames tags", map);
+              set({ tagsLoaded: map });
+      
+            });
+      
       set({ gamesLoading: false });
       // get().loadGamesData()
       
@@ -180,6 +193,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   tasks: [],
   setTasks: (tasksToSet: models.TaskNotice[]) => {
     set({ tasks: tasksToSet || [] });
+  },
+  // 标签加载状态
+  tagsLoaded: new Map(),
+  setTagsLoaded: (tags: Map<string, models.Tag[]>) => {
+    set({ tagsLoaded: tags });
   },
   loadGamesData: async () => { 
     // for (const game of get().games) {

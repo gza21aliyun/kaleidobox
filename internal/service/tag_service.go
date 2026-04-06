@@ -225,6 +225,7 @@ func (s *TagService) DeleteTagGroup(groupName string) error {
 
 // ListTags 查询所有 Tag 记录
 func (s *TagService) ListTags() ([]*models.Tag, error) {
+	fmt.Println("ListTags called")
 	query := `
 		SELECT name, category, group_name, is_h, is_spoiler, block_modify
 		FROM tags
@@ -251,6 +252,7 @@ func (s *TagService) ListTags() ([]*models.Tag, error) {
 		}
 		tags = append(tags, &tag)
 	}
+	fmt.Println("ListTags found: ", len(tags))
 	return tags, nil
 }
 

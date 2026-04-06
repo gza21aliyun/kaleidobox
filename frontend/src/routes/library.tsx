@@ -1,7 +1,7 @@
 import { models } from "../../wailsjs/go/models";
 import type { ImportSource } from "../components/modal/GameImportModal";
 import { createRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { GetGames } from "../../wailsjs/go/service/GameService";
 import { ListTags } from "../../wailsjs/go/service/TagService";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
@@ -52,8 +52,7 @@ export const Route = createRoute({
 function LibraryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { games, gamesLoading, fetchGames, setGames } = useAppStore();
-  const [tagsLoaded, setTagsLoaded] = useState<Map<string, models.Tag[]>>(new Map())
+  const { games, gamesLoading, fetchGames, setGames, tagsLoaded, setTagsLoaded } = useAppStore();
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
@@ -138,7 +137,8 @@ function LibraryPage() {
     localStorage.setItem('libraryTagsFilter', JSON.stringify(tagsFilter));
   }, [tagsFilter]);
 
-  const filteredGames = games
+  const filteredGames = useMemo(() => {
+    const gs : models.Game[] = games
     .filter((game) => {
       // 搜索过滤：同时匹配游戏名和开发商/公司
       if (searchQuery) {
@@ -222,6 +222,14 @@ function LibraryPage() {
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
+    console.log("games:", games);
+    console.log("filteredGames:", gs);
+    return gs;
+  }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate]);
+
+  // const filteredGames = useMemo(() => { 
+  //   return filteredGamesList();
+  // }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate]);
   
   // 虚拟滚动相关
   const containerRef = useRef<HTMLDivElement>(null);
@@ -481,14 +489,14 @@ function LibraryPage() {
       // const uniqueTags : string[] = [...new Set(tags.map(tag => tag.trim()))];
       // setTagsLoaded(uniqueTags);
 
-      ListTags().then(tags => {
-        const map = arrayToMap(tags, tag => tag.category);
-        console.log("loadgames tags", map);
+      // ListTags().then(tags => {
+      //   const map = arrayToMap(tags, tag => tag.category);
+      //   console.log("loadgames tags", map);
         
         
-        setTagsLoaded(map);
+      //   setTagsLoaded(map);
 
-      });
+      // });
       
 
     }

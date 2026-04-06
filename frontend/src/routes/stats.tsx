@@ -118,7 +118,7 @@ function StatsPage() {
       toast.error(t('stats.toasts.selectDateRange'));
       return;
     }
-    if (new Date(startDate) >= new Date(endDate)) {
+    if (new Date(startDate) > new Date(endDate)) {
       toast.error(t('stats.toasts.dateRangeInvalid'));
       return;
     }

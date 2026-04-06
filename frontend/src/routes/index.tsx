@@ -22,6 +22,7 @@ function HomePage() {
 
   useEffect(() => {
     fetchHomeData();
+    console.log("homeData today:", homeData);
   }, [fetchHomeData]);
 
   // 同步后端的 is_playing 状态

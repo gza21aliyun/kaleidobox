@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
 	"lunabox/internal/models"
@@ -77,6 +79,7 @@ func (s *HomeService) GetHomePageData() (vo.HomePageData, error) {
 	queryToday := `SELECT COALESCE(SUM(duration), 0) FROM play_sessions WHERE start_time >= ?`
 	err = s.db.QueryRow(queryToday, startOfDay).Scan(&data.TodayPlayTimeSec)
 	if err != nil {
+		applog.LogErrorf(s.ctx, "查询今日游戏时长失败: %v", err)
 		return data, err
 	}
 
@@ -91,8 +94,11 @@ func (s *HomeService) GetHomePageData() (vo.HomePageData, error) {
 	queryWeek := `SELECT COALESCE(SUM(duration), 0) FROM play_sessions WHERE start_time >= ?`
 	err = s.db.QueryRow(queryWeek, startOfWeek).Scan(&data.WeeklyPlayTimeSec)
 	if err != nil {
+		applog.ErrorLogSaveAppLog("Error querying weekly play time: %v", err)
 		return data, err
 	}
+	js, err := json.MarshalIndent(data, "", "  ")
+	fmt.Printf("GetHomePageData:%s\n", js)
 
 	return data, nil
 }

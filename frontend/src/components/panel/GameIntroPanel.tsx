@@ -2,7 +2,7 @@
 import { appconf, enums, models } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { GetWorksMapByGameId, CountWorks, GetWorksByGameId } from "../../../wailsjs/go/service/WorkService";
-import { tagMapForEach, workMapForEach, charactorsForEach, getCharactorIds } from "../utils/Utility";
+import { charactorsForEach, getCharactorIds } from "../utils/Utility";
 import { GetGamesByRelatedGames, GetGamesByBrand, AddRelatedGames, DeleteRelatedGame } from "../../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";

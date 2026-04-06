@@ -24,9 +24,9 @@ export function GameInfoPanel({
         const { updateGameInGames } = useAppStore();
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const [tagsMap, setTagsMap] = useState<Map<string, models.Tag[]>>(new Map())
-        const [showTagModal, setShowTagModal] = useState(false);
-        const [currentTag, setCurrentTag] = useState<models.Tag | null>(null);
         const [showAddTagModal, setShowAddTagModal] = useState(false);
+        const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+        const [tagToDelete, setTagToDelete] = useState<models.Tag | null>(null);
 
 
         useEffect(() => { 
@@ -52,6 +52,7 @@ export function GameInfoPanel({
                     const existingItems = m.get(array[i].category) || [];
                     m.set(array[i].category, [...existingItems, array[i]]);
                 }
+                console.log("tag map:", m)
                 setTagsMap(m)
             })
             
@@ -62,26 +63,21 @@ export function GameInfoPanel({
             }
         }, [game])
         const handleTagClick = (tag: models.Tag) => {
-                setCurrentTag(tag);
-                setShowTagModal(true);
+                // 直接执行搜索功能
+                navigate({ to: '/library', search: 
+                    { tags: tag.name } 
+                });
             };
 
-        const handleSearchByTag = () => {
-                if (currentTag) {
-                    const searchParams = new URLSearchParams();
-                    searchParams.set('tags', currentTag.name);
-                    navigate({ to: '/library', search: 
-                        { tags: currentTag.name } 
-                        // searchParams
-                    });
-                    setShowTagModal(false);
-                }
+        const handleDeleteTag = (tag: models.Tag) => {
+                setTagToDelete(tag);
+                setShowDeleteConfirm(true);
             };
 
-        const handleDeleteTag = async () => {
-                if (currentTag) {
+        const confirmDeleteTag = async () => {
+                if (tagToDelete) {
                     try {
-                        const newGame = await DeleteTagForGame(game, currentTag.name);
+                        const newGame = await DeleteTagForGame(game, tagToDelete.name);
                         updateGame(newGame);
                         updateGameInGames(newGame);
                         // 刷新标签列表
@@ -95,11 +91,17 @@ export function GameInfoPanel({
                             }
                             setTagsMap(m)
                         });
-                        setShowTagModal(false);
+                        setShowDeleteConfirm(false);
+                        setTagToDelete(null);
                     } catch (error) {
                         console.error("Error deleting tag:", error);
                     }
                 }
+            };
+
+        const cancelDeleteTag = () => {
+                setShowDeleteConfirm(false);
+                setTagToDelete(null);
             };
 
         const handleStaffClick = (work: models.Work) => {
@@ -143,7 +145,7 @@ export function GameInfoPanel({
                     <h3 className="text-lg font-semibold mb-3 text-brand-900 dark:text-white">{t('gameInfo.staffInfo')}</h3>
                     {worksMap && worksMap.size > 0 ? (
                         <div className="space-y-4">
-                            {workMapForEach(worksMap,(role, works) => (
+                            {workMapForEach(worksMap,t,(role, works) => (
                                 <div key={role} className="border-l-4 border-brand-500 pl-4">
                                     <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
                                         {role.toString() || role.replace(/([A-Z])/g, ' $1').trim()}
@@ -205,51 +207,57 @@ export function GameInfoPanel({
                                                 }}
                                             >
                                                 {tag.name}
+                                                {!tag.block_modify && (
+                                                    <button
+                                                        className="ml-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // 阻止事件冒泡
+                                                            handleDeleteTag(tag);
+                                                        }}
+                                                    >
+                                                        <div className="i-mdi-close text-xs"></div>
+                                                    </button>
+                                                )}
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
-                            ))
+                            ), t)
                         ) : (
                             <p className="text-brand-600 dark:text-brand-400 text-sm">{t('gameInfo.noCategoryTags')}</p>
                         )}
                     </div>
                 </div>
 
-                {/* Tag信息弹窗 */}
-                {showTagModal && currentTag && (
+
+
+                {/* 删除标签确认弹窗 */}
+                {showDeleteConfirm && tagToDelete && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-semibold text-brand-900 dark:text-white">{t('gameInfo.tagInfo')}</h3>
+                                <h3 className="text-xl font-semibold text-brand-900 dark:text-white">{t('gameInfo.confirmDelete')}</h3>
                                 <button 
-                                    onClick={() => setShowTagModal(false)}
+                                    onClick={cancelDeleteTag}
                                     className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 >
                                     ×
                                 </button>
                             </div>
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('gameInfo.tagName')}</label>
-                                    <p className="text-brand-900 dark:text-white">{currentTag.name}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('gameInfo.category')}</label>
-                                    <p className="text-brand-900 dark:text-white">{currentTag.category}</p>
-                                </div>
+                                <p className="text-brand-900 dark:text-white">{t('gameInfo.confirmDeleteTag', { tag: tagToDelete.name })}</p>
                                 <div className="flex gap-4 justify-end mt-6">
                                     <button
-                                        onClick={handleSearchByTag}
-                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                        onClick={cancelDeleteTag}
+                                        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                                     >
-                                        {t('gameInfo.searchGames')}
+                                        {t('gameInfo.cancel')}
                                     </button>
                                     <button
-                                        onClick={handleDeleteTag}
+                                        onClick={confirmDeleteTag}
                                         className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        {t('gameInfo.deleteTag')}
+                                        {t('gameInfo.delete')}
                                     </button>
                                 </div>
                             </div>

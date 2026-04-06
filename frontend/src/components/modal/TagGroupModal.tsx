@@ -1,7 +1,7 @@
 import { models } from "../../../wailsjs/go/models";
 import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { tagMapForEach, workMapForEach, charactorsForEach, arrayToMap } from "../utils/Utility";
+import { tagMapForEach, arrayToMap } from "../utils/Utility";
 import { ListTags, ListGroups, UpdateTagsGroup, DeleteTagGroup } from "../../../wailsjs/go/service/TagService";
 
 import { toast } from "react-hot-toast";

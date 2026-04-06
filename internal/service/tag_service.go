@@ -52,38 +52,43 @@ func (s *TagService) CreateTag(tag *models.Tag) error {
 	return err
 }
 
-func (s *TagService) CreateOrUpdateTag(name string, category string) error {
-	tag, err := s.GetTagByName(name)
-	cate := category
+func (s *TagService) CreateOrUpdateTag(newTag models.Tag) error {
+	tag, err := s.GetTagByName(newTag.Name)
+	cate := newTag.Category
 	if cate == "" {
-		cate = models.TagCategoryOther
+		if tag != nil {
+			cate = tag.Category
+		}
+		if cate == "" {
+			cate = models.TagCategoryOther
+		}
 	}
 	if err != nil || tag == nil {
 		if err == sql.ErrNoRows || tag == nil {
 			tag = &models.Tag{
-				Name:        name,
+				Name:        newTag.Name,
 				Category:    cate,
-				IsH:         false,
-				IsSpoiler:   false,
-				BlockModify: false,
+				IsH:         newTag.BlockModify,
+				IsSpoiler:   newTag.IsSpoiler,
+				BlockModify: newTag.BlockModify,
 			}
 			return s.CreateTag(tag)
 		}
 		return err
 	} else {
-		if !tag.BlockModify {
-			tag.Category = cate
+		if !newTag.BlockModify {
+			newTag.Category = cate
 		}
-		return s.UpdateTag(tag)
+		return s.UpdateTag(&newTag)
 	}
 	return err
 }
 
 func (s *TagService) CreateOrUpdateTagMapArray(tagMapArray map[string][]models.Tag) error {
 
-	for category, names := range tagMapArray {
+	for _, names := range tagMapArray {
 		for _, name := range names {
-			err := s.CreateOrUpdateTag(name.Name, category)
+			err := s.CreateOrUpdateTag(name)
 			if err != nil {
 				return err
 			}

@@ -1,4 +1,5 @@
 import { enums, models } from "../../../wailsjs/go/models";
+import { useTranslation } from "react-i18next";
 
 
 
@@ -123,25 +124,50 @@ export function getMapFromArrayMap(array: models.Tag[], map: Map<string, models.
 
 
 export function tagMapForEach(map: Map<string, models.Tag[]>, fn: (key: string, 
-    tags: models.Tag[]) => JSX.Element) : JSX.Element[] {
+    tags: models.Tag[]) => JSX.Element, t?: (key: string) => string) : JSX.Element[] {
         if (!map) return [];
-        var result: JSX.Element[] = [];            
+        var result: JSX.Element[] = [];   
         const handle = (key: string) => {
             // console.log("tagMapForEach key: " + key + ",has: " + map.has(key))
+            const transMap: {[key: string]: string} = { 
+                [TAG_CATEGORY.TagCategoryBrand]: "TagCategoryBrand",
+                [TAG_CATEGORY.TagCategoryPlatform]: "TagCategoryPlatform",
+                [TAG_CATEGORY.TagCategoryCustom]: "TagCategoryCustom",
+                [TAG_CATEGORY.TagCategoryGenre]: "TagCategoryGenre",
+                [TAG_CATEGORY.TagCategoryPlayerNumber]: "TagCategoryPlayerNumber",
+                [TAG_CATEGORY.TagCategoryOther]: "TagCategoryOther",
+                [TAG_CATEGORY.TagCategoryPublisher]: "TagCategoryPublisher",
+                [TAG_CATEGORY.TagCategorySeries]: "TagCategorySeries",
+
+
+            }
             if (map.has(key)) {
-                result.push(fn(key, map.get(key)!));
+                var keyName = key;
+                if (t && [TAG_CATEGORY.TagCategoryBrand.toString(),
+                    TAG_CATEGORY.TagCategoryPlatform.toString(),
+                    TAG_CATEGORY.TagCategoryCustom.toString(),
+                    TAG_CATEGORY.TagCategoryGenre.toString(),
+                    TAG_CATEGORY.TagCategoryPlayerNumber.toString(),
+                    TAG_CATEGORY.TagCategoryPublisher.toString(),
+                    TAG_CATEGORY.TagCategorySeries.toString(),
+                    TAG_CATEGORY.TagCategoryOther.toString(),
+                ].includes(key)) {
+                    keyName = t("gameInfo."+transMap[key])
+                }
+                result.push(fn(keyName, map.get(key)!));
             }
         };
         handle(TAG_CATEGORY.TagCategoryBrand);
         handle(TAG_CATEGORY.TagCategoryGenre);
         handle(TAG_CATEGORY.TagCategoryPlatform);
         handle(TAG_CATEGORY.TagCategoryPlayerNumber);
+        handle(TAG_CATEGORY.TagCategoryPublisher);
         handle(TAG_CATEGORY.TagCategorySeries);
         handle(TAG_CATEGORY.TagCategoryCustom);
         handle(TAG_CATEGORY.TagCategoryOther);
         Array.from(map.entries()).map(([key, tags]) => { 
             if (key != TAG_CATEGORY.TagCategoryOther && key != TAG_CATEGORY.TagCategoryCustom && 
-                key != TAG_CATEGORY.TagCategorySeries && key != TAG_CATEGORY.TagCategoryPlatform && 
+                key != TAG_CATEGORY.TagCategorySeries && key != TAG_CATEGORY.TagCategoryPlatform && key != TAG_CATEGORY.TagCategoryPublisher &&
                 key != TAG_CATEGORY.TagCategoryPlayerNumber && key != TAG_CATEGORY.TagCategoryGenre && key != TAG_CATEGORY.TagCategoryBrand
             ) {
                 handle(key);
@@ -150,15 +176,27 @@ export function tagMapForEach(map: Map<string, models.Tag[]>, fn: (key: string,
         return result;
 }
 
-export function workMapForEach(map: Map<enums.StaffRole, models.Work[]>, fn: (key: enums.StaffRole, 
+export function workMapForEach(map: Map<enums.StaffRole, models.Work[]>, t: (key: string) => string, fn: (key: string, 
     tags: models.Work[]) => JSX.Element) : JSX.Element[] {
         if (!map) {
             return [];
         }
         var result: JSX.Element[] = [];            
         const handle = (role: enums.StaffRole) => {
+            const transMap: {[key: string]: string} = { 
+                [enums.StaffRole.DIRECTOR]: "DIRECTOR",
+                [enums.StaffRole.CHARA_DESIGN]: "CHARA_DESIGN",
+                [enums.StaffRole.SCENEARIO]: "SCENEARIO",
+                [enums.StaffRole.ART]: "ART",
+                [enums.StaffRole.STAFF]: "STAFF",
+                [enums.StaffRole.CV]: "CV",
+                [enums.StaffRole.COMPOSER]: "COMPOSER",
+                [enums.StaffRole.SINGER]: "SINGER",
+
+            }
             if (map.has(role)) {
-                result.push(fn(role, map.get(role)!));
+                var roleName = t("gameInfo."+transMap[role])
+                result.push(fn(roleName, map.get(role)!));
             }
         };
         handle(enums.StaffRole.DIRECTOR);

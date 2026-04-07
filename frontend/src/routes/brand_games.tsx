@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { models, enums } from "../../wailsjs/go/models";
 import { createRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { GetGamesByTag } from "../../wailsjs/go/service/GameService";
 import { FilterBar } from "../components/bar/FilterBar";
@@ -11,6 +11,7 @@ import { Route as rootRoute } from "./__root";
 import { arrayMapString, arrayToMap } from "../components/utils/Utility";
 import { ListTags } from "../../wailsjs/go/service/TagService";
 import { formatLocalDate } from '../utils/time';
+import { FetchEmptyGalleryGames } from '../../wailsjs/go/service/ImageService';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -30,6 +31,7 @@ function BrandGamesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [batchMode, setBatchMode] = useState(false);
   const [selectedGameIds, setSelectedGameIds] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<string>("");
   const [lastSelectedGameId, setLastSelectedGameId] = useState<string | null>(null);
   const [filterExpanded, setFilterExpanded] = useState(false);
   const [tagsFilter, setTags] = useState<string[]>(() => {
@@ -43,6 +45,10 @@ function BrandGamesPage() {
     const savedViewMode = localStorage.getItem('brandViewMode');
     return (savedViewMode as "list" | "small" | "large") || "small";
   });
+  const [tagsIntersectionMode, setTagsIntersectionMode] = useState<boolean>(() => {
+    const savedMode = localStorage.getItem('brandTagsIntersectionMode');
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
 
   // 保存 viewMode 到 localStorage
   useEffect(() => {
@@ -53,6 +59,11 @@ function BrandGamesPage() {
   useEffect(() => {
     localStorage.setItem('brandTagsFilter', JSON.stringify(tagsFilter));
   }, [tagsFilter]);
+
+  // 保存标签交集模式到本地存储
+  useEffect(() => {
+    localStorage.setItem('brandTagsIntersectionMode', JSON.stringify(tagsIntersectionMode));
+  }, [tagsIntersectionMode]);
 
   // 加载标签数据
   useEffect(() => {
@@ -89,8 +100,23 @@ function BrandGamesPage() {
     navigate({ to: "/brands" });
   };
 
-  const filteredGames = games
+  const [includedIds, setIncludedIds] = useState<string[] | null>(null);
+
+  const filteredGames = useMemo(() => {
+    if (sourceFilter === "emptyGallery") {
+      if (includedIds === null) {
+        FetchEmptyGalleryGames().then((res) => { 
+          setIncludedIds(res);
+        });
+      }
+    } else {
+      setIncludedIds(null);
+    }
+    return games
     .filter((game) => {
+      if (includedIds && !includedIds.includes(game.id)) {
+        return false;
+      }
       // 搜索过滤：同时匹配游戏名和开发商/公司
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -106,8 +132,16 @@ function BrandGamesPage() {
       // 标签过滤
       if (tagsFilter && tagsFilter.length > 0) {
         const tags = game.tags ? game.tags.split(",") : [];
-        if (!tags.some((tag) => tagsFilter.includes(tag))) {
-          return false;
+        if (tagsIntersectionMode) {
+          // 交集模式：游戏必须包含所有过滤标签
+          if (!tagsFilter.every((filterTag) => tags.includes(filterTag))) {
+            return false;
+          }
+        } else {
+          // 并集模式：游戏只要包含任意一个过滤标签
+          if (!tags.some((tag) => tagsFilter.includes(tag))) {
+            return false;
+          }
         }
       }
       // 发售日期过滤
@@ -126,6 +160,38 @@ function BrandGamesPage() {
         if (gameDate > endDate) {
           return false;
         }
+      }
+      // 源匹配过滤
+      const sourceValue = game.source_type.toString();
+      if (sourceFilter !== "") {
+        if (sourceValue === sourceFilter) {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.DMM.toString() && game.dmm_id && game.dmm_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.EROSCAPE.toString() && game.eroscape_id && game.eroscape_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.DLSITE.toString() && game.dlsite_id && game.dlsite_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.GETCHU.toString() && game.getchu_id && game.getchu_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.BANGUMI.toString() && game.bangumi_id && game.bangumi_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.YMGAL.toString() && game.ymgal_id && game.ymgal_id !== "") {
+          return true;
+        }
+        if (sourceFilter === "emptyCover" && (!game.cover_url || game.cover_url === "")) {
+          return true;
+        }
+        if (sourceFilter === "emptyGallery" && (includedIds && includedIds.includes(game.id))) {
+          return true;
+        }
+        return false;
       }
       return true;
     })
@@ -147,6 +213,7 @@ function BrandGamesPage() {
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
+  }, [games, searchQuery, statusFilter, tagsFilter, tagsIntersectionMode, releaseStartDate, releaseEndDate, sourceFilter, sortBy, sortOrder, includedIds]);
 
   const handleBatchModeChange = (enabled: boolean) => {
     setBatchMode(enabled);
@@ -254,7 +321,9 @@ function BrandGamesPage() {
           sortOptions={sortOptions}
           sortOrder={sortOrder}
           onSortOrderChange={setSortOrder}
+          onSourceFilterChange={setSourceFilter}
           statusFilter={statusFilter}
+          games={filteredGames}
           onStatusFilterChange={setStatusFilter}
           statusOptions={statusOptions}
           filterExpanded={filterExpanded}
@@ -273,6 +342,8 @@ function BrandGamesPage() {
           onClearSelection={handleClearSelection}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          tagsIntersectionMode={tagsIntersectionMode}
+          onTagsIntersectionModeChange={setTagsIntersectionMode}
         />
       </div>
 

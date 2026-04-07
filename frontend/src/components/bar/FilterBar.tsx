@@ -56,6 +56,10 @@ interface FilterBarProps {
   // 视图模式
   viewMode?: "list" | "small" | "large";
   onViewModeChange?: (mode: "list" | "small" | "large") => void;
+  // 标签交集模式
+  tagsIntersectionMode?: boolean;
+  onTagsIntersectionModeChange?: (enabled: boolean) => void;
+  games?: models.Game[];
 }
 
 export function FilterBar({
@@ -92,6 +96,9 @@ export function FilterBar({
   onReleaseEndDateChange,
   viewMode = "small",
   onViewModeChange,
+  tagsIntersectionMode = false,
+  onTagsIntersectionModeChange,
+  games,
 }: FilterBarProps) {
   const { t } = useTranslation();
   const [initialized, setInitialized] = useState(false);
@@ -245,8 +252,8 @@ export function FilterBar({
 
 
   // 计算可用标签（tagsLoaded 中除去 tagsFilter 的标签）
-  const availableTags = getMapFromArrayMap(true, tagsFilter || [], tagsLoaded || new Map());
-  const selectedTags = getMapFromArrayMap(false, tagsFilter || [], tagsLoaded || new Map());
+  const availableTags = getMapFromArrayMap(true, tagsIntersectionMode, tagsFilter || [], tagsLoaded || new Map(), games);
+  const selectedTags = getMapFromArrayMap(false, tagsIntersectionMode, tagsFilter || [], tagsLoaded || new Map(), games);
   return (
     <div> 
       <div className="flex flex-wrap items-center justify-between gap-4 my-4">
@@ -484,6 +491,31 @@ export function FilterBar({
                       </span>
                     </button>
 
+                    {tagsFilter && onTagsFilterChange && onTagsIntersectionModeChange && (
+                      <button
+                        onClick={() => onTagsIntersectionModeChange(!tagsIntersectionMode)}
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
+                          tagsIntersectionMode
+                            ? 'bg-brand-100 dark:bg-brand-800'
+                            : 'hover:bg-brand-100 dark:hover:bg-brand-800'
+                        }`}
+                        aria-label={t('common.filter.tagsIntersectionMode')}
+                      >
+                        <div className={`i-mdi-filter-variant text-base ${
+                          tagsIntersectionMode
+                            ? 'text-brand-700 dark:text-brand-300'
+                            : 'text-brand-500 dark:text-brand-400'
+                        }`} />
+                        <span className={`text-sm font-medium ${
+                          tagsIntersectionMode
+                            ? 'text-brand-700 dark:text-brand-300'
+                            : 'text-brand-500 dark:text-brand-400'
+                        }`}>
+                          {t('common.filter.tagsIntersectionMode')}
+                        </span>
+                      </button>
+                    )}
+
                     { tagsFilter && onTagsFilterChange && (
                       <FilterChooseGroupModal
                         isOpen={isGroupDropdownOpen}
@@ -654,13 +686,26 @@ export function FilterBar({
 }
 
 
-export function getMapFromArrayMap(isRemain: boolean, array: string[], map: Map<string, models.Tag[]>): Map<string, models.Tag[]> { 
+export function getMapFromArrayMap(isRemain: boolean, isIntersection: boolean, array: string[], map: Map<string, models.Tag[]>, games?: models.Game[]): Map<string, models.Tag[]> { 
     const newMap = new Map<string, models.Tag[]>();
+    const tagSet: Set<string> = new Set();
+    if (games && isIntersection) { 
+      games.forEach(game => { 
+        game.tags.split(",").forEach(tag => { 
+          tagSet.add(tag);
+        });
+      });
+    }
 
     for (const [key, tags] of map) {
       const newTags: models.Tag[] = [];
       for (const tag of tags) {
-        if ((isRemain && !array.includes(tag.name)) || (!isRemain && array.includes(tag.name))) {
+        if (isIntersection && isRemain && games && games.length > 0) {
+          if (!array.includes(tag.name) && tagSet.has(tag.name)) {
+            newTags.push(tag);
+          }
+
+        } else if ((isRemain && !array.includes(tag.name)) || (!isRemain && array.includes(tag.name))) {
           newTags.push(tag);
         }
       }

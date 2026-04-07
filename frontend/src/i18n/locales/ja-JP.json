@@ -58,6 +58,7 @@
       "tags": "タグ",
       "selectTags": "タグを選択",
       "selectGroup": "グループを選択",
+      "tagsIntersectionMode": "タグ交差モード",
       "releaseDate": "発売日",
       "source": "データソース",
       "clearFilters": "すべてのフィルターをクリア",
@@ -676,7 +677,10 @@
     "dmm": "DMM",
     "eroscape": "批評空間",
     "dlsite": "Dlsite",
-    "getchu": "Getchu"
+    "getchu": "Getchu",
+    "noFilter": "フィルターなし",
+    "emptyCover": "カバーなし",
+    "emptyGallery": "ギャラリーなし"
   },
   "staffRole": {
     "STAFF": "スタッフ",

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { models, vo, enums } from "../../wailsjs/go/models";
 import { createRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
   AddGameToCategory,
@@ -28,6 +28,7 @@ import { Route as rootRoute } from "./__root";
 import { arrayToMap } from "../components/utils/Utility";
 import { formatLocalDate } from '../utils/time';
 import { arrayFind, arrayMapString, joinString } from "../components/utils/Utility";
+import { FetchEmptyGalleryGames } from '../../wailsjs/go/service/ImageService';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -45,6 +46,7 @@ function CategoryDetailPage() {
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
   const [allGames, setAllGames] = useState<models.Game[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company"> ("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc"> ("desc");
@@ -63,6 +65,10 @@ function CategoryDetailPage() {
   const [viewMode, setViewMode] = useState<"list" | "small" | "large">(() => {
     const savedViewMode = localStorage.getItem('categoryViewMode');
     return (savedViewMode as "list" | "small" | "large") || "small";
+  });
+  const [tagsIntersectionMode, setTagsIntersectionMode] = useState<boolean>(() => {
+    const savedMode = localStorage.getItem('categoryTagsIntersectionMode');
+    return savedMode ? JSON.parse(savedMode) : false;
   });
   
   // 批量操作相关状态
@@ -111,6 +117,11 @@ function CategoryDetailPage() {
   useEffect(() => {
     localStorage.setItem('categoryTagsFilter', JSON.stringify(tagsFilter));
   }, [tagsFilter]);
+
+  // 保存标签交集模式到本地存储
+  useEffect(() => {
+    localStorage.setItem('categoryTagsIntersectionMode', JSON.stringify(tagsIntersectionMode));
+  }, [tagsIntersectionMode]);
 
   // 加载标签数据
   useEffect(() => {
@@ -217,8 +228,23 @@ function CategoryDetailPage() {
     }
   };
 
-  const filteredGames = games
+  const [includedIds, setIncludedIds] = useState<string[] | null>(null);
+
+  const filteredGames = useMemo(() => {
+    if (sourceFilter === "emptyGallery") {
+      if (includedIds === null) {
+        FetchEmptyGalleryGames().then((res) => { 
+          setIncludedIds(res);
+        });
+      }
+    } else {
+      setIncludedIds(null);
+    }
+    return games
     .filter((game) => {
+      if (includedIds && !includedIds.includes(game.id)) {
+        return false;
+      }
       // 搜索过滤：同时匹配游戏名和开发商/公司
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -234,26 +260,66 @@ function CategoryDetailPage() {
       // 标签过滤
       if (tagsFilter && tagsFilter.length > 0) {
         const tags = game.tags ? game.tags.split(",") : [];
-        if (!tags.some((tag) => tagsFilter.includes(tag))) {
-          return false;
+        if (tagsIntersectionMode) {
+          // 交集模式：游戏必须包含所有过滤标签
+          if (!tagsFilter.every((filterTag) => tags.includes(filterTag))) {
+            return false;
+          }
+        } else {
+          // 并集模式：游戏只要包含任意一个过滤标签
+          if (!tags.some((tag) => tagsFilter.includes(tag))) {
+            return false;
+          }
         }
       }
       // 发售日期过滤
       if (releaseStartDate && game.release_at) {
         const gameDate = new Date(formatLocalDate(game.release_at));
-        const startDate = new Date(formatLocalDate(releaseStartDate));
+        const startDate = new Date(releaseStartDate);
         if (gameDate < startDate) {
           return false;
         }
       }
       if (releaseEndDate && game.release_at) {
         const gameDate = new Date(formatLocalDate(game.release_at));
-        const endDate = new Date(formatLocalDate(releaseEndDate));
+        const endDate = new Date(releaseEndDate);
         // 将结束日期设置为当天的最后一刻
         endDate.setHours(23, 59, 59, 999);
         if (gameDate > endDate) {
           return false;
         }
+      }
+      // 源匹配过滤
+      const sourceValue = game.source_type.toString();
+      if (sourceFilter !== "") {
+        if (sourceValue === sourceFilter) {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.DMM.toString() && game.dmm_id && game.dmm_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.EROSCAPE.toString() && game.eroscape_id && game.eroscape_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.DLSITE.toString() && game.dlsite_id && game.dlsite_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.GETCHU.toString() && game.getchu_id && game.getchu_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.BANGUMI.toString() && game.bangumi_id && game.bangumi_id !== "") {
+          return true;
+        }
+        if (sourceFilter === enums.SourceType.YMGAL.toString() && game.ymgal_id && game.ymgal_id !== "") {
+          return true;
+        }
+        if (sourceFilter === "emptyCover" && (!game.cover_url || game.cover_url === "")) {
+          return true;
+        }
+        if (sourceFilter === "emptyGallery" && (includedIds && includedIds.includes(game.id))) {
+          return true;
+        }
+        return false;
       }
       return true;
     })
@@ -275,6 +341,7 @@ function CategoryDetailPage() {
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
+  }, [games, searchQuery, statusFilter, tagsFilter, tagsIntersectionMode, releaseStartDate, releaseEndDate, sourceFilter, sortBy, sortOrder, includedIds]);
 
   const handleBatchModeChange = (enabled: boolean) => {
     setBatchMode(enabled);
@@ -541,9 +608,11 @@ function CategoryDetailPage() {
           onStatusFilterChange={setStatusFilter}
           statusOptions={statusOptions}
           filterExpanded={filterExpanded}
+          games={filteredGames}
           tagsFilter={tagsFilter}
           onTagsFilterChange={setTags}
           tagsLoaded={tagsLoaded}
+          onSourceFilterChange={setSourceFilter}
           releaseStartDate={releaseStartDate}
           onReleaseStartDateChange={setReleaseStartDate}
           releaseEndDate={releaseEndDate}
@@ -556,6 +625,8 @@ function CategoryDetailPage() {
           onClearSelection={handleClearSelection}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          tagsIntersectionMode={tagsIntersectionMode}
+          onTagsIntersectionModeChange={setTagsIntersectionMode}
           batchActions={( 
             <>
               {/* 选择模式下的确认和取消按钮 */}

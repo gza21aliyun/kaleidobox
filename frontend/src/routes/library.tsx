@@ -95,6 +95,10 @@ function LibraryPage() {
   // const gamesForUpdate = useRef(games)
   const [releaseStartDate, setReleaseStartDate] = useState<string>("");
   const [releaseEndDate, setReleaseEndDate] = useState<string>("");
+  const [tagsIntersectionMode, setTagsIntersectionMode] = useState<boolean>(() => {
+    const savedMode = localStorage.getItem('libraryTagsIntersectionMode');
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
   const [viewMode, setViewMode] = useState<"list" | "small" | "large">(() => {
     const savedViewMode = localStorage.getItem('libraryViewMode');
     return (savedViewMode as "list" | "small" | "large") || "small";
@@ -135,9 +139,15 @@ function LibraryPage() {
   }, [viewMode]);
 
   // 保存 tagsFilter 到 localStorage
+// 保存标签过滤到本地存储
   useEffect(() => {
     localStorage.setItem('libraryTagsFilter', JSON.stringify(tagsFilter));
   }, [tagsFilter]);
+
+  // 保存标签交集模式到本地存储
+  useEffect(() => {
+    localStorage.setItem('libraryTagsIntersectionMode', JSON.stringify(tagsIntersectionMode));
+  }, [tagsIntersectionMode]);
 
   const filteredGames = useMemo(() => {
     if (sourceFilter === "emptyGallery") {
@@ -170,8 +180,16 @@ function LibraryPage() {
       //标签过滤
       if (tagsFilter && tagsFilter.length > 0) {
         const tags = game.tags.split(",");
-        if (!tags.some((tag) => tagsFilter.includes(tag))) {
-          return false;
+        if (tagsIntersectionMode) {
+          // 交集模式：游戏必须包含所有过滤标签
+          if (!tagsFilter.every((filterTag) => tags.includes(filterTag))) {
+            return false;
+          }
+        } else {
+          // 并集模式：游戏只要包含任意一个过滤标签
+          if (!tags.some((tag) => tagsFilter.includes(tag))) {
+            return false;
+          }
         }
       }
       // 发售日期过滤
@@ -246,7 +264,7 @@ function LibraryPage() {
     console.log("games:", games);
     console.log("filteredGames:", gs);
     return gs;
-  }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate, includedIds]);
+  }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate, includedIds, tagsIntersectionMode]);
 
   // const filteredGames = useMemo(() => { 
   //   return filteredGamesList();
@@ -412,17 +430,17 @@ function LibraryPage() {
   };
 
   const sourceConfig = [
-    { label: "不过滤匹配", value: "" },
-    { label: "Getchu", value: enums.SourceType.GETCHU.toString() },
-    { label: "批评空间", value: enums.SourceType.EROSCAPE.toString() },
-    { label: "Dlsite", value: enums.SourceType.DLSITE.toString() },
-    { label: "夜幕Gal", value: enums.SourceType.YMGAL.toString() },
-    { label: "DMM", value: enums.SourceType.DMM.toString() },
-    { label: "Bangumi", value: enums.SourceType.BANGUMI.toString() },
-    { label: "VNDB", value: enums.SourceType.VNDB.toString() },
-    { label: "本地", value: enums.SourceType.LOCAL.toString() },
-    { label: "无封面", value: "emptyCover" },
-    { label: "无画廊", value: "emptyGallery" },
+    { label: t('sourceType.noFilter'), value: "" },
+    { label: t('sourceType.getchu'), value: enums.SourceType.GETCHU.toString() },
+    { label: t('sourceType.eroscape'), value: enums.SourceType.EROSCAPE.toString() },
+    { label: t('sourceType.dlsite'), value: enums.SourceType.DLSITE.toString() },
+    { label: t('sourceType.ymgal'), value: enums.SourceType.YMGAL.toString() },
+    { label: t('sourceType.dmm'), value: enums.SourceType.DMM.toString() },
+    { label: t('sourceType.bangumi'), value: enums.SourceType.BANGUMI.toString() },
+    { label: t('sourceType.vndb'), value: enums.SourceType.VNDB.toString() },
+    { label: t('sourceType.local'), value: enums.SourceType.LOCAL.toString() },
+    { label: t('sourceType.emptyCover'), value: "emptyCover" },
+    { label: t('sourceType.emptyGallery'), value: "emptyGallery" },
   ];
 
   const handleBatchStatusUpdate = async (newStatus: string) => {
@@ -584,12 +602,15 @@ function LibraryPage() {
         onReleaseEndDateChange={setReleaseEndDate}
         storageKey="library"
         batchMode={batchMode}
+        games={filteredGames}
         onBatchModeChange={handleBatchModeChange}
         selectedCount={filterSelectedIds.length}
         onSelectAll={handleSelectAll}
         onClearSelection={handleClearSelection}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        tagsIntersectionMode={tagsIntersectionMode}
+        onTagsIntersectionModeChange={setTagsIntersectionMode}
         batchActions={( 
           <>
             {/* 选择模式下的确认和取消按钮 */}

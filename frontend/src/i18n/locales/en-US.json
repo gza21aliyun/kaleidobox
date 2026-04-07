@@ -58,6 +58,7 @@
       "tags": "Tags",
       "selectTags": "Select tags",
       "selectGroup": "Select group",
+      "tagsIntersectionMode": "Tags intersection mode",
       "releaseDate": "Release date",
       "source": "Data source",
       "clearFilters": "Clear all filters",
@@ -335,7 +336,6 @@
       "releaseDate": "Release date",
       "noCover": "No cover"
     },
-
     "modals": {
       "deleteMessage": "Are you sure you want to delete game \"{{name}}\"? This action will remove the game from the library but will not delete local game files.",
       "addGame": {
@@ -677,7 +677,10 @@
     "dmm": "DMM",
     "eroscape": "ErogameScape",
     "dlsite": "Dlsite",
-    "getchu": "Getchu"
+    "getchu": "Getchu",
+    "noFilter": "No source filter",
+    "emptyCover": "No cover",
+    "emptyGallery": "No gallery"
   },
   "staffRole": {
     "STAFF": "Staff",

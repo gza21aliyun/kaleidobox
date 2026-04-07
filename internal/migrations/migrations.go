@@ -158,6 +158,18 @@ func migration140(tx *sql.Tx) error {
 	return nil
 }
 
+// migration141 添加 use_count 列到 tags 表，用于记录标签使用次数
+func migration141(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+		ALTER TABLE tags 
+		ADD COLUMN IF NOT EXISTS use_count INTEGER DEFAULT 0
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to add use_count column: %w", err)
+	}
+	return nil
+}
+
 // 所有迁移按版本号顺序排列
 var migrations = []Migration{
 	{
@@ -175,6 +187,12 @@ var migrations = []Migration{
 		Description: "Add process_name column to games table for tracking actual game process",
 		Up:          migration140,
 	},
+	{
+		Version:     141,
+		Description: "Add use_count column to tags table for tracking tag usage count",
+		Up:          migration141,
+	},
+
 	// {
 	// 	Version:     114,
 	// 	Description: "Convert UTC timestamps to local time (+8 hours for historical data)",

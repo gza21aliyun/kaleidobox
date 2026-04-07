@@ -7,6 +7,7 @@ type Tag struct {
 	IsH         bool   `json:"is_h"`
 	IsSpoiler   bool   `json:"is_spoiler"`
 	BlockModify bool   `json:"block_modify"`
+	UseCount    int    `json:"use_count"`
 }
 
 func (t Tag) GetName() string {

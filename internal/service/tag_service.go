@@ -37,8 +37,8 @@ func (s *TagService) CreateTag(tag *models.Tag) error {
 		tag.Category = models.TagCategoryBrand
 	}
 	query := `
-		INSERT INTO tags (name, category, group_name, is_h, is_spoiler, block_modify)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO tags (name, category, group_name, is_h, is_spoiler, block_modify, use_count)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
 		tag.Name,
@@ -47,6 +47,7 @@ func (s *TagService) CreateTag(tag *models.Tag) error {
 		tag.IsH,
 		tag.IsSpoiler,
 		tag.BlockModify,
+		tag.UseCount,
 	)
 	// fmt.Println("创建标签成功：", tag.Name, " ", tag.Category)
 	return err
@@ -100,7 +101,7 @@ func (s *TagService) CreateOrUpdateTagMapArray(tagMapArray map[string][]models.T
 // GetTagByName 根据 Name 查询 Tag 记录
 func (s *TagService) GetTagByName(name string) (*models.Tag, error) {
 	query := `
-		SELECT name, category, group_name, is_h, is_spoiler, block_modify
+		SELECT name, category, group_name, is_h, is_spoiler, block_modify, use_count
 		FROM tags
 		WHERE name = ?
 	`
@@ -114,6 +115,7 @@ func (s *TagService) GetTagByName(name string) (*models.Tag, error) {
 		&tag.IsH,
 		&tag.IsSpoiler,
 		&tag.BlockModify,
+		&tag.UseCount,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -124,11 +126,20 @@ func (s *TagService) GetTagByName(name string) (*models.Tag, error) {
 	return &tag, nil
 }
 
+func (s *TagService) AccumulateTag(tagName string) error {
+	tag, err := s.GetTagByName(tagName)
+	if tag != nil {
+		tag.UseCount++
+		return s.UpdateTag(tag)
+	}
+	return err
+}
+
 // UpdateTag 更新 Tag 记录
 func (s *TagService) UpdateTag(tag *models.Tag) error {
 	query := `
 		UPDATE tags
-		SET category = ?, group_name = ?, is_h = ?, is_spoiler = ?, block_modify = ?
+		SET category = ?, group_name = ?, is_h = ?, is_spoiler = ?, block_modify = ?, use_count = ?
 		WHERE name = ?
 	`
 	_, err := s.db.ExecContext(s.ctx, query,
@@ -137,6 +148,7 @@ func (s *TagService) UpdateTag(tag *models.Tag) error {
 		tag.IsH,
 		tag.IsSpoiler,
 		tag.BlockModify,
+		tag.UseCount,
 		tag.Name,
 	)
 	return err
@@ -232,7 +244,7 @@ func (s *TagService) DeleteTagGroup(groupName string) error {
 func (s *TagService) ListTags() ([]*models.Tag, error) {
 	fmt.Println("ListTags called")
 	query := `
-		SELECT name, category, group_name, is_h, is_spoiler, block_modify
+		SELECT name, category, group_name, is_h, is_spoiler, block_modify, use_count
 		FROM tags
 	`
 	rows, err := s.db.QueryContext(s.ctx, query)
@@ -251,6 +263,7 @@ func (s *TagService) ListTags() ([]*models.Tag, error) {
 			&tag.IsH,
 			&tag.IsSpoiler,
 			&tag.BlockModify,
+			&tag.UseCount,
 		)
 		if err != nil {
 			return nil, err
@@ -263,7 +276,7 @@ func (s *TagService) ListTags() ([]*models.Tag, error) {
 
 func (s *TagService) GetTagListByString(tagString string) ([]models.Tag, error) {
 	query := `
-		SELECT name, category, group_name, is_h, is_spoiler, block_modify
+		SELECT name, category, group_name, is_h, is_spoiler, block_modify, use_count
 		FROM tags
 		WHERE name IN (
 			SELECT unnest(string_to_array(?, ','))
@@ -285,6 +298,7 @@ func (s *TagService) GetTagListByString(tagString string) ([]models.Tag, error) 
 			&tag.IsH,
 			&tag.IsSpoiler,
 			&tag.BlockModify,
+			&tag.UseCount,
 		)
 		if err != nil {
 			return nil, err

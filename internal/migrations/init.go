@@ -155,7 +155,8 @@ func SchemaQueries() []string {
 			group_name TEXT,
 			is_h BOOLEAN DEFAULT FALSE,
 			is_spoiler BOOLEAN DEFAULT FALSE,
-			block_modify BOOLEAN DEFAULT FALSE
+			block_modify BOOLEAN DEFAULT FALSE,
+			use_count INTEGER DEFAULT 0
 		)`,
 		`CREATE TABLE IF NOT EXISTS image_backups (
 			url TEXT PRIMARY KEY,

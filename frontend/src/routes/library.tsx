@@ -30,6 +30,7 @@ import { enums, vo } from "../../wailsjs/go/models";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 import { AddTagModal } from "../components/modal/AddTagModal";
 import { v } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
+import { FetchEmptyGalleryGames } from "../../wailsjs/go/service/ImageService";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -63,6 +64,7 @@ function LibraryPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [sourceFilter, setSourceFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [includedIds, setIncludedIds] = useState<string[] | null>(null);
   const [tagsFilter, setTags] = useState<string[]>(() => {
     const savedTagsFilter = localStorage.getItem('libraryTagsFilter');
     return savedTagsFilter ? JSON.parse(savedTagsFilter) : [];
@@ -138,8 +140,21 @@ function LibraryPage() {
   }, [tagsFilter]);
 
   const filteredGames = useMemo(() => {
+    if (sourceFilter === "emptyGallery") {
+      if (includedIds === null) {
+        FetchEmptyGalleryGames().then((res) => { 
+          setIncludedIds(res);
+        });
+      }
+      
+    } else {
+      setIncludedIds(null);
+    }
     const gs : models.Game[] = games
     .filter((game) => {
+      if (includedIds && !includedIds.includes(game.id)) {
+        return false;
+      }
       // 搜索过滤：同时匹配游戏名和开发商/公司
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -200,6 +215,12 @@ function LibraryPage() {
         if (sourceFilter === enums.SourceType.YMGAL.toString() && game.ymgal_id && game.ymgal_id !== "") {
           return true;
         }
+        if (sourceFilter === "emptyCover" && (!game.cover_url || game.cover_url === "")) {
+          return true;
+        }
+        if (sourceFilter === "emptyGallery" && (includedIds && includedIds.includes(game.id))) {
+          return true;
+        }
         return false;
       }
       return true;
@@ -225,7 +246,7 @@ function LibraryPage() {
     console.log("games:", games);
     console.log("filteredGames:", gs);
     return gs;
-  }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate]);
+  }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate, includedIds]);
 
   // const filteredGames = useMemo(() => { 
   //   return filteredGamesList();
@@ -400,6 +421,8 @@ function LibraryPage() {
     { label: "Bangumi", value: enums.SourceType.BANGUMI.toString() },
     { label: "VNDB", value: enums.SourceType.VNDB.toString() },
     { label: "本地", value: enums.SourceType.LOCAL.toString() },
+    { label: "无封面", value: "emptyCover" },
+    { label: "无画廊", value: "emptyGallery" },
   ];
 
   const handleBatchStatusUpdate = async (newStatus: string) => {

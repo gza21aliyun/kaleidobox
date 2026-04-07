@@ -368,6 +368,39 @@ func (s *ImageService) FetchImageBackups(query string, id string, subjectType in
 	return imageBackups, nil
 }
 
+func (s *ImageService) FetchEmptyGalleryGames() ([]string, error) {
+	var err error
+	var rows *sql.Rows
+	query := `
+		SELECT g.id FROM games g
+		WHERE NOT EXISTS (
+			SELECT 1 FROM image_backups ib WHERE ib.subject_type = ? AND ib.subject_id = g.id
+		)
+	`
+	rows, err = s.db.QueryContext(s.ctx, query, 0)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var gameIds []string
+	for rows.Next() {
+		var gameId string
+		err = rows.Scan(
+			&gameId,
+		)
+		if err != nil {
+
+			continue
+		}
+		gameIds = append(gameIds, gameId)
+	}
+	// go s.DownloadImageBackups(imageBackups)
+	fmt.Println("FetchEmptyGalleryGames:", len(gameIds))
+	return gameIds, nil
+}
+
 // CountImageBackups 返回 ImageBackup 表中的记录总数
 func (s *ImageService) CountImageBackups() (int, error) {
 	query := `SELECT COUNT(*) FROM image_backups`
@@ -567,6 +600,27 @@ func joinStrings(strs []string, sep string) string {
 	return result
 }
 
+// ioCopyWithContext 带上下文的 io.Copy 函数
+func ioCopyWithContext(ctx context.Context, dst io.Writer, src io.Reader) (written int64, err error) {
+	type result struct {
+		n   int64
+		err error
+	}
+
+	ch := make(chan result, 1)
+	go func() {
+		n, err := io.Copy(dst, src)
+		ch <- result{n, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	case res := <-ch:
+		return res.n, res.err
+	}
+}
+
 func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 	// pid := getCurrentForegroundProcessId()
 	// 1. 获取当前焦点窗口的句柄
@@ -726,8 +780,12 @@ func DownloadImage(imageUrl, fileName string) error {
 	if globalImageService == nil {
 		// 创建临时 ImageService 进行同步下载
 		tempService := &ImageService{}
+		// 创建带超时的上下文
+		timeout := 5 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
 		fmt.Printf("GetImageBackupByUrl 021 url: %s\n", imageUrl)
-		err := tempService.downloadImageInternal(imageUrl, fileName, 30*time.Second)
+		err := tempService.downloadImageInternal(ctx, imageUrl, fileName, timeout)
 		fmt.Printf("GetImageBackupByUrl 031 url: %s\n", imageUrl)
 		return err
 	}
@@ -767,7 +825,7 @@ func (s *ImageService) downloadWorker() {
 		// 使用通道来处理超时
 		errChan := make(chan error, 1)
 		go func() {
-			errChan <- s.downloadImageInternal(task.imageUrl, task.fileName, timeout)
+			errChan <- s.downloadImageInternal(ctx, task.imageUrl, task.fileName, timeout)
 		}()
 
 		var err error
@@ -798,7 +856,7 @@ func (s *ImageService) downloadWorker() {
 }
 
 // 内部下载函数
-func (s *ImageService) downloadImageInternal(imageUrl, fileName string, timeout time.Duration) error {
+func (s *ImageService) downloadImageInternal(ctx context.Context, imageUrl, fileName string, timeout time.Duration) error {
 	fmt.Printf("GetImageBackupByUrl 022 url: %s\n", imageUrl)
 	url := imageUrl
 	if strings.HasPrefix(url, "//gyutto.com") {
@@ -816,7 +874,7 @@ func (s *ImageService) downloadImageInternal(imageUrl, fileName string, timeout 
 	}
 
 	// 创建请求
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("创建请求失败：%w", err)
 	}
@@ -853,7 +911,7 @@ func (s *ImageService) downloadImageInternal(imageUrl, fileName string, timeout 
 	}
 	defer destFile.Close()
 
-	if _, err := io.Copy(destFile, resp.Body); err != nil {
+	if _, err := ioCopyWithContext(ctx, destFile, resp.Body); err != nil {
 		return fmt.Errorf("写入文件失败：%w", err)
 	}
 	// 检查文件大小

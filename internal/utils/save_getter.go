@@ -3,6 +3,7 @@ package utils
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -665,4 +666,256 @@ func extractFile(file *zip.File, targetPath string) error {
 	}
 
 	return nil
+}
+
+func SearchSave(game models.Game) (models.Game, error) {
+	if game.SavePath != "" {
+		return game, nil
+	}
+	brandMap := map[string]string{
+		"FrontWing":    "フロントウイング",
+		"ETERNAL":      "WillPuls",
+		"シルキーズSAKURA":  "SilkysSakura",
+		"でぼの巣製作所":      "DebonosuWorks",
+		"アストロノーツ・シリウス": "Sirius",
+		"かえるそふと":       "Kaeru Soft",
+	}
+	newGame, engine, exeName, err := SearchGamePathSave(game)
+
+	// if err != nil && engine == "" && newGame.SavePath == "" {
+	// 	return game, err
+	// }
+	if err == nil && newGame.SavePath != "" {
+		return newGame, nil
+	}
+	brand := game.Company
+	if brandMap[brand] != "" {
+		brand = brandMap[brand]
+	}
+	gameName := game.Name
+	savePath := searchSpSave(exeName, gameName, brand, engine, filepath.Dir(game.Path))
+	if savePath != "" {
+		newGame.SavePath = savePath
+		return newGame, nil
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return game, err
+	}
+	searchPath := filepath.Join(homeDir, "Documents")
+	savePath = searchFolderSave(searchPath, exeName, gameName, brand, engine)
+	if savePath != "" {
+		newGame.SavePath = savePath
+		return newGame, nil
+	}
+	searchPath = filepath.Join(homeDir, "AppData", "Roaming")
+	savePath = searchFolderSave(searchPath, exeName, gameName, brand, engine)
+	if savePath != "" {
+		newGame.SavePath = savePath
+		return newGame, nil
+	}
+	searchPath = filepath.Join(homeDir, "Saved Games")
+	savePath = searchFolderSave(searchPath, exeName, gameName, brand, engine)
+	if savePath != "" {
+		newGame.SavePath = savePath
+		return newGame, nil
+	}
+	searchPath = filepath.Join(homeDir, "AppData", "Local")
+	savePath = searchFolderSave(searchPath, exeName, gameName, brand, engine)
+	if savePath != "" {
+		newGame.SavePath = savePath
+		return newGame, nil
+	}
+	searchPath = filepath.Join(homeDir, "AppData", "LocalLow")
+	savePath = searchFolderSave(searchPath, exeName, gameName, brand, engine)
+	if savePath != "" {
+		newGame.SavePath = savePath
+		return newGame, nil
+	}
+	if savePath == "" {
+		return newGame, errors.New("no save path found")
+	}
+
+	return newGame, err
+}
+
+func searchFolderSave(searchPath, exeName, gameName, brand, engine string) string {
+	brandEntries, err := os.ReadDir(searchPath)
+	if err != nil {
+		return ""
+	}
+
+	brandEntry, s := searchNameByRegexSimilarity(brandEntries, brand, []string{}, func(entry os.DirEntry) string {
+		return entry.Name()
+	})
+	if brandEntry != nil {
+		brandFound := strings.ToLower((*brandEntry).Name())
+		bfc := len([]rune(brandFound))
+		bc := len([]rune(brand))
+		if bfc < 6 && bc >= 6 && bc-bfc < 4 && !strings.Contains(strings.ToLower(brand), brandFound) {
+			s -= 0.2
+		}
+	}
+	if brandEntry == nil || s < 0.7 {
+		return ""
+	}
+	gameEntry := searchGameSave(filepath.Join(searchPath, (*brandEntry).Name()), exeName, gameName, engine, s)
+	if gameEntry == "" {
+		return ""
+	}
+
+	return gameEntry
+}
+
+/**
+ * 返回的是完整路径
+ */
+func searchGameSave(searchPath, exeName, gameName, engine string, lastSimilarity float32) string {
+	gameEntries, err := os.ReadDir(searchPath)
+	if err != nil {
+		return ""
+	}
+
+	gameEntry, s := searchNameByRegexSimilarity(gameEntries, gameName, []string{}, func(entry os.DirEntry) string {
+		return entry.Name()
+	})
+	if gameEntry != nil {
+		gameEntryName := (*gameEntry).Name()
+		if s > 0.7 || strings.Contains(gameEntryName, gameName) || strings.Contains(gameName, gameEntryName) {
+			return filepath.Join(searchPath, (*gameEntry).Name())
+		}
+
+	}
+	gameEntry, s = searchNameByRegexSimilarity(gameEntries, exeName, []string{}, func(entry os.DirEntry) string {
+		return entry.Name()
+	})
+	if gameEntry != nil && s > 0.6 || len(gameEntries) < 10 {
+		if lastSimilarity < 0.8 {
+			if s > 0.7 {
+				return filepath.Join(searchPath, (*gameEntry).Name())
+			}
+		} else {
+			if s > 0.6 || len(gameEntries) < 10 {
+				return filepath.Join(searchPath, (*gameEntry).Name())
+			}
+		}
+	}
+
+	return ""
+}
+
+func searchSpSave(exeName, gameName, brand, engine, exePath string) string {
+	rs := ""
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	if engine == "willplus" {
+		rs = filepath.Join(homeDir, "Saved Games", "WillPlus")
+		return searchGameSave(rs, exeName, gameName, engine, 1)
+	}
+	if engine == "odn" {
+		rs = filepath.Join(exePath, "data")
+		return rs
+	}
+	if engine == "npf" {
+		return exePath
+	}
+
+	return ""
+}
+
+func SearchGamePathSave(game models.Game) (models.Game, string, string, error) {
+	var err error = nil
+
+	var engine string
+	var exeName string = filepath.Base(game.Path)
+
+	exts := []string{".sav", ".gdb"}
+	pexts := []string{".sav", ".gdb", ".bin", ".dat"}
+	folders := []string{"save", "userdata", "savedata", "sav", "セーブデータ"}
+	foldersExclude := []string{"saveloadimage"}
+	var foundSaveFile string
+	var foundPath string
+	folderPath := filepath.Dir(game.Path)
+	err = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // 忽略无法访问的路径
+		}
+
+		if !info.IsDir() {
+			// 检查文件扩展名是否为视频格式
+			ext := strings.ToLower(filepath.Ext(path))
+			oFileName := filepath.Base(path)
+			fileName := strings.ToLower(oFileName)
+			fName := strings.TrimSuffix(fileName, ext)
+			if strings.Contains(path, "AdvHD.exe") {
+				engine = "willplus"
+				return errors.New("found")
+			}
+			if strings.Contains(path, ".odn") {
+				engine = "odn"
+				return errors.New("found")
+			}
+			if strings.Contains(path, ".npf") {
+				engine = "npf"
+				return errors.New("found")
+			}
+			for _, e := range exts {
+				if ext == e {
+					foundSaveFile = path
+					return nil
+				}
+			}
+			fmt.Printf("search save filename:%s\n", fileName)
+			if fName == "sav" || strings.Contains(fName, "save") {
+				if ArrayContains(pexts, ext) {
+					foundSaveFile = path
+					return errors.New("found")
+				}
+
+			}
+			if strings.Contains(path, "xp3") {
+				engine = "krkr2"
+				return nil
+				//krkr2
+			}
+
+			if strings.Contains(path, "\\BGI.") {
+				engine = "bgi"
+				foundSaveFile = path
+				return errors.New("found")
+				//krkr2
+			}
+		} else {
+			lowPath := strings.ToLower(path)
+			fmt.Printf("search save folder:%s\n", lowPath)
+			for _, f := range foldersExclude {
+				if strings.Contains(lowPath, f) {
+					return nil
+				}
+			}
+			for _, f := range folders {
+				if strings.Contains(lowPath, f) {
+					foundPath = path
+					return errors.New("found")
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil && err.Error() == "found" {
+		err = nil
+	}
+	if foundSaveFile != "" && foundPath == "" {
+		foundPath = filepath.Dir(foundSaveFile)
+	}
+	if foundPath == "" {
+		return game, engine, exeName, errors.New("no save path found")
+	}
+	fmt.Printf("search save foundpath:%s\n", foundPath)
+	game.SavePath = foundPath
+	return game, engine, exeName, err
 }

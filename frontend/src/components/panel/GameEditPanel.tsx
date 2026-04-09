@@ -1,6 +1,6 @@
 import type { models } from "../../../wailsjs/go/models";
 import { toast } from "react-hot-toast";
-import { OpenLocalPath, SelectFile } from "../../../wailsjs/go/service/GameService";
+import { OpenLocalPath, SearchSave, SelectFile } from "../../../wailsjs/go/service/GameService";
 import { BetterButton } from "../ui/BetterButton";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -35,6 +35,17 @@ export function GameEditPanel({
 }: GameEditFormProps) {
   const { t } = useTranslation();
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
+
+  const onSearchSaveDirectory = () => {
+    // if ()
+    SearchSave(game).then((newGame) => {
+      onGameChange(newGame);
+      toast.success("成功搜索到保存目录！");
+    }).catch((error) => {
+      console.error("Failed to search save directory:", error);
+      toast.error("搜索保存目录失败"+error);
+    });
+  }
 
 
   return (
@@ -153,6 +164,29 @@ export function GameEditPanel({
             >
               {t('gameEdit.select')}
             </button>
+
+            <button
+              type="button"
+              onClick={onSearchSaveDirectory}
+              className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
+            >
+              搜索
+            </button>
+            {game.save_path && (
+              <BetterButton
+                onClick={async () => {
+                  try {
+                    await OpenLocalPath(game.save_path);
+                  }
+                  catch {
+                    toast.error(t('gameEdit.openPathError'));
+                  }
+                }}
+                disabled={!game.save_path}
+                icon="i-mdi-folder-open"
+                title={t('gameEdit.openLocation')}
+              />
+            )}
           </div>
           <p className="mt-1 text-xs text-brand-500">{t('gameEdit.savePathHint')}</p>
         </div>
@@ -231,7 +265,8 @@ export function GameEditPanel({
                 { value: "ymgal", label: t('sourceType.ymgal') },
                 { value: "dmm", label: t('sourceType.dmm') },
                 { value: "eroscape", label: t('sourceType.eroscape') },
-                { value: "dlsite", label: t('sourceType.dlsite') }
+                { value: "dlsite", label: t('sourceType.dlsite') },
+                { value: "getchu", label: t('sourceType.getchu') },
               ]}
             />
           </div>

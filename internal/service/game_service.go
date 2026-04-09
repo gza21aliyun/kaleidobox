@@ -1766,3 +1766,21 @@ func (s *GameService) GetGamesByTag(tag string) ([]models.Game, error) {
 	games, err := s.GetGamesByQuery(query)
 	return games, err
 }
+
+func (s *GameService) SearchSave(game models.Game) (models.Game, error) {
+	return utils.SearchSave(game)
+}
+
+func (s *GameService) SearchGameSaves(game []models.Game) error {
+	var err error = nil
+	for _, g := range game {
+		if g.Company == "" {
+			continue
+		}
+		_, err := utils.SearchSave(g)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}

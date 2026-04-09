@@ -10,7 +10,7 @@ import (
 )
 
 // ZipDirectory 压缩目录
-func ZipDirectory(source, target string) (int64, error) {
+func ZipDirectory(source, target string, allowBig bool) (int64, error) {
 	zipFile, err := os.Create(target)
 	if err != nil {
 		return 0, err
@@ -36,7 +36,13 @@ func ZipDirectory(source, target string) (int64, error) {
 		if info.IsDir() {
 			header.Name += "/"
 		} else {
+
+			ext := strings.ToLower(filepath.Ext(path))
 			header.Method = zip.Deflate
+			size := info.Size()
+			if !allowBig && size > 1024*1024*2 || ext == ".exe" || ext == ".zip" || ext == ".ogg" || ext == ".dll" { // 2MB
+				return nil
+			}
 		}
 
 		writer, err := archive.CreateHeader(header)
@@ -60,7 +66,7 @@ func ZipDirectory(source, target string) (int64, error) {
 }
 
 // ZipFileOrDirectory 压缩单个文件或整个目录
-func ZipFileOrDirectory(source, target string) (int64, error) {
+func ZipFileOrDirectory(source, target string, allowBig bool) (int64, error) {
 	// 检查源路径是否存在
 	info, err := os.Stat(source)
 	if err != nil {
@@ -69,7 +75,7 @@ func ZipFileOrDirectory(source, target string) (int64, error) {
 
 	// 如果是目录，使用原有的 ZipDirectory 函数
 	if info.IsDir() {
-		return ZipDirectory(source, target)
+		return ZipDirectory(source, target, allowBig)
 	}
 
 	// 如果是单个文件，创建 zip 并添加该文件

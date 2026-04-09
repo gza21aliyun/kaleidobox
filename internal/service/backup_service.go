@@ -296,7 +296,7 @@ func (s *BackupService) CreateBackup(gameID string) (*models.GameBackup, error) 
 	backupFileName := fmt.Sprintf("%s.zip", timestamp)
 	backupPath := filepath.Join(gameBackupDir, backupFileName)
 
-	size, err := utils.ZipFileOrDirectory(savePath, backupPath)
+	size, err := utils.ZipFileOrDirectory(savePath, backupPath, false)
 	if err != nil {
 		return nil, fmt.Errorf("fail to backup: %w", err)
 	}
@@ -374,7 +374,7 @@ func (s *BackupService) RestoreBackup(backupPath string) error {
 		preRestoreDir := filepath.Join(backupDir, gameID, "pre_restore")
 		os.MkdirAll(preRestoreDir, 0755)
 		preRestorePath := filepath.Join(preRestoreDir, fmt.Sprintf("%s_before_restore.zip", time.Now().Format("2006-01-02T15-04-05")))
-		_, err := utils.ZipFileOrDirectory(savePath, preRestorePath)
+		_, err := utils.ZipFileOrDirectory(savePath, preRestorePath, false)
 		if err != nil {
 			return err
 		}
@@ -543,7 +543,7 @@ func (s *BackupService) RestoreFromCloud(cloudKey string, gameID string) error {
 		preRestoreDir := filepath.Join(backupDir, gameID, "pre_restore")
 		os.MkdirAll(preRestoreDir, 0755)
 		preRestorePath := filepath.Join(preRestoreDir, fmt.Sprintf("%s_before_cloud_restore.zip", time.Now().Format("2006-01-02T15-04-05")))
-		_, err := utils.ZipFileOrDirectory(savePath, preRestorePath)
+		_, err := utils.ZipFileOrDirectory(savePath, preRestorePath, false)
 		if err != nil {
 			return err
 		}
@@ -698,7 +698,7 @@ func (s *BackupService) CreateDBBackup() (*vo.DBBackupInfo, error) {
 	backupFileName := fmt.Sprintf("kaleidobox_%s.zip", timestamp)
 	backupPath := filepath.Join(backupDir, backupFileName)
 
-	_, err = utils.ZipDirectory(packDir, backupPath)
+	_, err = utils.ZipDirectory(packDir, backupPath, true)
 	os.RemoveAll(packDir)
 	if err != nil {
 		return nil, fmt.Errorf("压缩备份失败: %w", err)
@@ -869,7 +869,7 @@ func (s *BackupService) CreateFullDataBackup(savePath string) error {
 	}
 
 	// 打包到用户指定的路径
-	_, err = utils.ZipDirectory(packDir, savePath)
+	_, err = utils.ZipDirectory(packDir, savePath, true)
 	if err != nil {
 		return fmt.Errorf("压缩全量备份失败: %w", err)
 	}

@@ -9,6 +9,7 @@ import "./i18n/i18n";
 // 清除本地存储的库页面状态
 localStorage.removeItem('libraryViewMode');
 localStorage.removeItem('libraryTagsFilter');
+localStorage.removeItem('library_sourceFilter');
 
 const container = document.getElementById("root");
 

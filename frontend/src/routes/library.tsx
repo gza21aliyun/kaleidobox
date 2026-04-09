@@ -549,6 +549,8 @@ function LibraryPage() {
     }
   };
 
+  const filteredGameIdsStr= useMemo(() => arrayMapString(filteredGames, (game) => game.id), [filteredGames])
+
   useEffect(() => {
     if (games.length === 0) {
       loadGames();
@@ -878,7 +880,7 @@ function LibraryPage() {
                           selectionMode={batchMode}
                           selected={selectedGameIds.includes(filteredGames[virtualItem.index].id)}
                           onSelectChange={(selected, event) => setGameSelection(filteredGames[virtualItem.index].id, selected, event)}
-                          filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
+                          filteredGameIdsStr={filteredGameIdsStr}
                           viewMode={viewMode}
                         />
                       </div>
@@ -903,7 +905,7 @@ function LibraryPage() {
                         selectionMode={batchMode}
                         selected={selectedGameIds.includes(game.id)}
                         onSelectChange={(selected, event) => setGameSelection(game.id, selected, event)}
-                        filteredGameIdsStr={arrayMapString(filteredGames, (game) => game.id)}
+                        filteredGameIdsStr={filteredGameIdsStr}
                         viewMode={viewMode}
                       />
                     ))}

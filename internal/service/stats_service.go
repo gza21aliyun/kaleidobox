@@ -293,6 +293,7 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 		}
 		stats.RecentPlayHistory = append(stats.RecentPlayHistory, item)
 	}
+	fmt.Printf("stats.RecentPlayHistory:%s\n", req.GameID)
 
 	return stats, nil
 }

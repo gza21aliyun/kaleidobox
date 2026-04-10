@@ -40,7 +40,7 @@ func ZipDirectory(source, target string, allowBig bool) (int64, error) {
 			ext := strings.ToLower(filepath.Ext(path))
 			header.Method = zip.Deflate
 			size := info.Size()
-			if !allowBig && size > 1024*1024*2 || ext == ".exe" || ext == ".zip" || ext == ".ogg" || ext == ".dll" { // 2MB
+			if !allowBig && size > 1024*1024*2 || ext == ".exe" || ext == ".zip" || ext == ".ogg" || ext == ".dll" || ext == ".fpk" { // 2MB
 				return nil
 			}
 		}

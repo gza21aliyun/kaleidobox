@@ -1064,7 +1064,7 @@ func SearchVideoExePath(game *models.Game) error {
 	folderPath := filepath.Dir(game.Path)
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
 	excludeExeKeywords := []string{
-		"courier_i", "courier", "acmp", "curl",
+		"courier_i", "courier", "acmp", "curl", "unitycrashhandler64",
 		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2", "autorun",
 		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst", "BHVC",
 		"vcredist_x86", "vcredist_x64", "vc_redist.x86", "updchk", "upgrade", "uninstx86", "uninstx64", "uninstcl", "uninstaller",
@@ -1104,7 +1104,8 @@ func SearchVideoExePath(game *models.Game) error {
 			if strings.ToLower(ext) == ".exe" {
 				// 检查文件名是否包含排除关键词
 				filePrefix := strings.ReplaceAll(fileName, filepath.Ext(path), "")
-				if !utils.ArrayContains(excludeExeKeywords, filePrefix) {
+				lowPrefix := strings.ToLower(filePrefix)
+				if !utils.ArrayContains(excludeExeKeywords, filePrefix) && !strings.Contains(lowPrefix, "setup") {
 					exeFiles = append(exeFiles, oFileName)
 				}
 			}

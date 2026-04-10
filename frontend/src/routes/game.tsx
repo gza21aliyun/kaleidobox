@@ -564,7 +564,10 @@ function GameDetailPage() {
 
         {/* Navigation Arrows */}
         {filteredGameIds.length > 0 && (
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1.5 text-sm font-medium text-brand-700 bg-brand-100 rounded-md dark:text-brand-200 dark:bg-brand-800">
+              {`${currentIndex + 1}/${filteredGameIds.length}`}
+            </span>
             <button
               onClick={goToPrevGame}
               disabled={!canGoPrev}

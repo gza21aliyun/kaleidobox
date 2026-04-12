@@ -174,7 +174,7 @@ func (s *GameService) AddGame(game models.Game) error {
 		id, name, cover_url, company, summary, path, 
 		source_type, cached_at, source_id, created_at, updated_at,
 		tags, arguments, images, bangumi_id, dmm_id, eroscape_id, ymgal_id, search_name, dlsite_id, release_at, related_games, 
-		use_locale_emulator, use_magpie, process_name, getchu_id, pv_path, inside_vm
+		use_locale_emulator, use_magpie, process_name, getchu_id, pv_path, vm_id
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := s.db.ExecContext(s.ctx, query,
@@ -206,7 +206,7 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.ProcessName,
 		game.GetchuId,
 		game.PvPath,
-		game.InsideVm,
+		game.VmId,
 	)
 
 	if err != nil {
@@ -419,7 +419,7 @@ func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, err
 		COALESCE(process_name, '') as process_name,
 		COALESCE(getchu_id, '') as getchu_id,
 		COALESCE(pv_path, '') as pv_path,
-		COALESCE(inside_vm, FALSE) as inside_vm
+		COALESCE(vm_id, '') as vm_id
 	FROM games 
 	ORDER BY created_at DESC
 	LIMIT %d OFFSET %d
@@ -526,7 +526,7 @@ func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {
 			&game.ProcessName,
 			&game.GetchuId,
 			&game.PvPath,
-			&game.InsideVm,
+			&game.VmId,
 		)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
@@ -576,7 +576,7 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 		COALESCE(process_name, '') as process_name,
 		COALESCE(getchu_id, '') as getchu_id,
 		COALESCE(pv_path, '') as pv_path,
-		COALESCE(inside_vm, FALSE) as inside_vm
+		COALESCE(vm_id, '') as vm_id
 	FROM games 
 	ORDER BY created_at DESC`
 
@@ -705,7 +705,7 @@ func (s *GameService) GetQueryBase() string {
 		COALESCE(process_name, '') as process_name,
 		COALESCE(getchu_id, '') as getchu_id,
 		COALESCE(pv_path, '') as pv_path,
-		COALESCE(inside_vm, FALSE) as inside_vm,
+		COALESCE(vm_id, '') as vm_id,
 	FROM games`
 }
 
@@ -761,7 +761,7 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 			&game.ProcessName,
 			&game.GetchuId,
 			&game.PvPath,
-			&game.InsideVm,
+			&game.VmId,
 		)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "GetGames: failed to scan game row: %v", err)
@@ -811,7 +811,7 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		COALESCE(use_magpie, FALSE) as use_magpie,
 		COALESCE(getchu_id, '') as getchu_id,
 		COALESCE(pv_path, '') as pv_path,
-		COALESCE(inside_vm, FALSE) as inside_vm
+		COALESCE(vm_id, '') as vm_id
 	FROM games 
 	WHERE id = ?`
 
@@ -849,7 +849,7 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		&game.UseMagpie,
 		&game.GetchuId,
 		&game.PvPath,
-		&game.InsideVm,
+		&game.VmId,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -893,7 +893,7 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		use_magpie = ?,
 		getchu_id = ?,
 		pv_path = ?,
-		inside_vm = ?
+		vm_id = ?
 	WHERE id = ?`
 
 	result, err := s.db.ExecContext(s.ctx, query,
@@ -922,7 +922,7 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		game.UseMagpie,
 		game.GetchuId,
 		game.PvPath,
-		game.InsideVm,
+		game.VmId,
 		game.ID,
 	)
 
@@ -942,6 +942,10 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		return fmt.Errorf("game not found with id: %s", game.ID)
 	}
 	fmt.Printf("成功更新游戏：%s\n", game.Name)
+	jstr, err := json.MarshalIndent(game, "", "  ")
+	if err == nil {
+		fmt.Printf("game: \n$s\n", string(jstr))
+	}
 
 	return nil
 }
@@ -1639,7 +1643,7 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game, req
 	updatedGame.Arguments = ngame.Arguments
 	updatedGame.SearchName = ngame.SearchName
 	updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
-	updatedGame.InsideVm = ngame.InsideVm
+	updatedGame.VmId = ngame.VmId
 	if updatedGame.DmmId == "" {
 		updatedGame.DmmId = ngame.DmmId
 	}

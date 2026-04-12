@@ -36,7 +36,7 @@ type Game struct {
 	UseMagpie         bool             `json:"use_magpie"`          // 是否使用 Magpie 超分辨率缩放
 	GetchuId          string           `json:"getchu_id"`
 	PvPath            string           `json:"pv_path"`
-	InsideVm          bool             `json:"inside_vm"`
+	VmId              string           `json:"vm_id"`
 }
 
 type GameEntity struct {
@@ -93,4 +93,16 @@ type MonitorInfo struct {
 	Right      int32  `json:"right"`
 	Bottom     int32  `json:"bottom"`
 	IsPrimary  bool   `json:"is_primary"`
+}
+
+type Vms struct {
+	VmId       string `json:"vm_id,omitempty"`        // 虚拟机ID
+	VmName     string `json:"vm_name,omitempty"`      // 虚拟机名称
+	VmUserName string `json:"vm_user_name,omitempty"` // 虚拟机用户名
+	VmPass     string `json:"vm_pass,omitempty"`      // 虚拟机密码
+	VmPath     string `json:"vm_path,omitempty"`      // 虚拟机vmx路径
+	VmType     string `json:"vm_type,omitempty"`      // 虚拟机类型: workstation, esx
+	HostUrl    string `json:"host_url,omitempty"`     // 虚拟机主机URL,esx需要填写
+	HostUser   string `json:"host_user,omitempty"`    // 虚拟机主机用户名, esx需要填写
+	HostPass   string `json:"host_pass,omitempty"`    // 虚拟机主机密码, esx需要填写
 }

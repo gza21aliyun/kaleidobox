@@ -54,6 +54,7 @@
     "select": "Select",
     "cancelSelection": "Cancel selection",
     "viewDetails": "View details",
+    "actions": "Actions",
     "filter": {
       "tags": "Tags",
       "selectTags": "Select tags",
@@ -84,7 +85,8 @@
     "categories": "Categories",
     "settings": "Settings",
     "charactors": "Characters",
-    "tags": "Tags"
+    "tags": "Tags",
+    "virtualMachines": "Virtual Machines"
   },
   "home": {
     "welcomeBack": "Welcome back!",
@@ -1388,6 +1390,39 @@
     "buttons": {
       "confirmAndRestart": "Confirm and restart app"
     }
+  },
+  "vm": {
+    "title": "VM Management",
+    "add": "Add VM",
+    "addTitle": "Add VM",
+    "editTitle": "Edit VM",
+    "name": "Name",
+    "namePlaceholder": "Enter VM name",
+    "type": "Type",
+    "typeWorkstation": "Workstation",
+    "typeEsx": "ESX",
+    "userName": "Username",
+    "userNamePlaceholder": "Enter VM username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter VM password",
+    "path": "VM Path",
+    "pathPlaceholder": "Enter VM .vmx file path",
+    "host": "Host",
+    "hostUrl": "Host URL",
+    "hostUrlPlaceholder": "Enter ESX host URL",
+    "hostUser": "Host Username",
+    "hostUserPlaceholder": "Enter ESX host username",
+    "hostPassword": "Host Password",
+    "hostPasswordPlaceholder": "Enter ESX host password",
+    "loadError": "Failed to load VMs",
+    "addSuccess": "VM added successfully",
+    "updateSuccess": "VM updated successfully",
+    "deleteSuccess": "VM deleted successfully",
+    "deleteError": "Failed to delete VM",
+    "saveError": "Failed to save VM",
+    "deleteConfirm": "Are you sure you want to delete this VM?",
+    "loading": "Loading...",
+    "listVms": "List VMs"
   },
   "batchUpdate": {
     "title": "Batch update metadata",

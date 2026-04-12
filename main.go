@@ -191,6 +191,7 @@ func main() {
 	imageService := service.NewImageService()
 	hotkeyService := service.NewHotkeyService()
 	i18nService := service.NewI18nService()
+	vmService := service.NewVMService()
 
 	// 创建本地文件处理器
 	localFileHandler, err := utils.NewLocalFileHandler()
@@ -487,11 +488,14 @@ func main() {
 			workService.Init(ctx, db, config)
 			workService.SetServices(staffService, charactorService, imageService)
 			gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
+			vmService.Init(ctx, db, config)
+			vmService.SetGameService(gameService)
 			// 设置 StartService 的 BackupService 依赖
 			startService.SetBackupService(backupService)
 			startService.SetGameService(gameService)
 			startService.SetSessionService(sessionService)
 			startService.SetHotkeyService(hotkeyService)
+			startService.SetVMService(vmService)
 
 			hotkeyService.SetServices(imageService, startService)
 
@@ -596,6 +600,7 @@ func main() {
 			hotkeyService,
 			i18nService,
 			workService,
+			vmService,
 		},
 		EnumBind: []interface{}{
 			enums.AllSourceTypes,

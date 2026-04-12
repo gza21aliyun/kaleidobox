@@ -54,6 +54,7 @@
     "select": "选择",
     "cancelSelection": "取消选择",
     "viewDetails": "查看详情",
+    "actions": "操作",
     "filter": {
       "tags": "标签",
       "selectTags": "选择标签",
@@ -84,7 +85,8 @@
     "categories": "分类",
     "settings": "设置",
     "charactors": "角色",
-    "tags": "标签"
+    "tags": "标签",
+    "virtualMachines": "虚拟机"
   },
   "home": {
     "welcomeBack": "欢迎回来!",
@@ -896,6 +898,9 @@
     "selectFileFailed": "选择文件失败",
     "insideVm": "是否虚拟机内游戏",
     "insideVmHint": "标记此游戏是否在虚拟机内运行",
+    "vmId": "虚拟机",
+    "vmIdHint": "选择运行此游戏的虚拟机",
+    "noVm": "不使用虚拟机",
     "summary": "简介",
     "sourceType": "数据源类型",
     "none": "无",
@@ -1388,6 +1393,39 @@
     "buttons": {
       "confirmAndRestart": "确认并重启应用"
     }
+  },
+  "vm": {
+    "title": "虚拟机管理",
+    "add": "添加虚拟机",
+    "addTitle": "添加虚拟机",
+    "editTitle": "编辑虚拟机",
+    "name": "名称",
+    "namePlaceholder": "输入虚拟机名称",
+    "type": "类型",
+    "typeWorkstation": "Workstation",
+    "typeEsx": "ESX",
+    "userName": "用户名",
+    "userNamePlaceholder": "输入虚拟机用户名",
+    "password": "密码",
+    "passwordPlaceholder": "输入虚拟机密码",
+    "path": "虚拟机路径",
+    "pathPlaceholder": "输入虚拟机 .vmx 文件路径",
+    "host": "主机",
+    "hostUrl": "主机 URL",
+    "hostUrlPlaceholder": "输入 ESX 主机 URL",
+    "hostUser": "主机用户名",
+    "hostUserPlaceholder": "输入 ESX 主机用户名",
+    "hostPassword": "主机密码",
+    "hostPasswordPlaceholder": "输入 ESX 主机密码",
+    "loadError": "加载虚拟机失败",
+    "addSuccess": "虚拟机添加成功",
+    "updateSuccess": "虚拟机更新成功",
+    "deleteSuccess": "虚拟机删除成功",
+    "deleteError": "虚拟机删除失败",
+    "saveError": "保存虚拟机失败",
+    "deleteConfirm": "确定要删除此虚拟机吗？",
+    "loading": "加载中...",
+    "listVms": "列出虚拟机"
   },
   "batchUpdate": {
     "title": "批量更新元数据",

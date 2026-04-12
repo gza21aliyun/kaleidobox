@@ -40,6 +40,7 @@ type StartService struct {
 	sessionService    *SessionService
 	hotkeyService     *HotkeyService
 	activeTimeTracker *timer.ActiveTimeTracker
+	vmService         *VMService
 	mu                sync.Mutex
 
 	// 进程选择相关
@@ -111,6 +112,11 @@ func (s *StartService) SetHotkeyService(hotkeyService *HotkeyService) {
 	s.hotkeyService = hotkeyService
 }
 
+// SetVMService 设置虚拟机服务（用于管理虚拟机）
+func (s *StartService) SetVMService(vmService *VMService) {
+	s.vmService = vmService
+}
+
 // StartGameWithTracking 启动游戏并自动追踪游玩时长
 // 当游戏进程退出时，自动保存游玩记录到数据库
 func (s *StartService) StartGameWithTracking(gameID string) (bool, error) {
@@ -121,8 +127,8 @@ func (s *StartService) StartGameWithTracking(gameID string) (bool, error) {
 		return s.startGame(gameID, LaunchOptions{})
 	}
 
-	if game.InsideVm {
-		return s.startGameInsideVm(gameID)
+	if game.VmId != "" {
+		return s.vmService.StartGameInsideVm(gameID)
 	}
 
 	return s.startGame(gameID, LaunchOptions{})
@@ -1138,60 +1144,6 @@ func formatChangeType(changeType uint32) string {
 }
 
 // startGameInsideVm 在虚拟机中启动游戏
-func (s *StartService) startGameInsideVm(gameID string) (bool, error) {
-	// 检查虚拟机配置是否完整
-	if s.config.VmrunPath == "" || s.config.VmPath == "" || s.config.VmUserName == "" {
-		applog.LogErrorf(s.ctx, "虚拟机配置不完整")
-		return false, fmt.Errorf("虚拟机配置不完整，请在设置中配置虚拟机参数")
-	}
-
-	// 获取游戏路径和参数
-	path, _, arguments, _, err := s.getGamePathAndProcess(gameID)
-	if err != nil {
-		applog.LogErrorf(s.ctx, "failed to get game path: %v", err)
-		return false, fmt.Errorf("failed to get game path: %w", err)
-	}
-
-	if path == "" {
-		applog.LogErrorf(s.ctx, "game path is empty for game: %s", gameID)
-		return false, fmt.Errorf("game path is empty for game: %s", gameID)
-	}
-
-	// 构建vmrun命令来启动虚拟机（如果未运行）
-	vmrunCmd := exec.Command(s.config.VmrunPath, "start", s.config.VmPath, "gui")
-	if err := vmrunCmd.Run(); err != nil {
-		applog.LogWarningf(s.ctx, "启动虚拟机失败，可能已经在运行: %v", err)
-	}
-
-	// 等待虚拟机启动
-	time.Sleep(10 * time.Second)
-
-	// 构建vmrun命令在虚拟机中启动游戏
-	var vmrunArgs []string
-	vmrunArgs = append(vmrunArgs, "-T", "ws")
-	vmrunArgs = append(vmrunArgs, "-gu", s.config.VmUserName)
-	vmrunArgs = append(vmrunArgs, "-gp", s.config.VmPass)
-	vmrunArgs = append(vmrunArgs, "runProgramInGuest")
-	vmrunArgs = append(vmrunArgs, s.config.VmPath)
-	vmrunArgs = append(vmrunArgs, "-noWait")
-	vmrunArgs = append(vmrunArgs, "-interactive")
-	vmrunArgs = append(vmrunArgs, "-activeWindow")
-	vmrunArgs = append(vmrunArgs, path)
-	if arguments != "" {
-		vmrunArgs = append(vmrunArgs, arguments)
-	}
-
-	applog.LogInfof(s.ctx, "在虚拟机中启动游戏: %s", gameID)
-	cmd := exec.Command(s.config.VmrunPath, vmrunArgs...)
-
-	if err := cmd.Start(); err != nil {
-		applog.LogErrorf(s.ctx, "failed to start game in VM: %v", err)
-		return false, fmt.Errorf("failed to start game in VM: %w", err)
-	}
-
-	// 启动成功，返回 true 给前端
-	return true, nil
-}
 
 // SearchSavePath 使用文件时间戳对比检测存档文件
 // 无需管理员权限，但可能无法访问某些受保护的目录

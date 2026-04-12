@@ -149,6 +149,8 @@ function GameDetailPage() {
     const hasChanges = JSON.stringify(game) !== JSON.stringify(originalGameData.current);
     if (!hasChanges)
       return;
+    
+    console.log("自动保存", hasChanges, ":", game);
 
     const timer = setTimeout(async () => {
       try {
@@ -564,10 +566,7 @@ function GameDetailPage() {
 
         {/* Navigation Arrows */}
         {filteredGameIds.length > 0 && (
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1.5 text-sm font-medium text-brand-700 bg-brand-100 rounded-md dark:text-brand-200 dark:bg-brand-800">
-              {`${currentIndex + 1}/${filteredGameIds.length}`}
-            </span>
+          <div className="flex gap-2">
             <button
               onClick={goToPrevGame}
               disabled={!canGoPrev}
@@ -800,6 +799,7 @@ function GameDetailPage() {
         <GameEditPanel
           game={game}
           onGameChange={(g) => {
+            console.log("GameEditPanel.onGameChange", g)
             setGame(g)
             updateGameInGames(g)
           }}

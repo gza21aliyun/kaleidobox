@@ -25,12 +25,13 @@ import { Route as brandsRoute } from "./routes/brands";
 import { Route as brandGamesRoute } from "./routes/brand_games";
 import { Route as seriesListRoute } from "./routes/series_list";
 import { Route as seriesGamesRoute } from "./routes/series_games";
+import { Route as vmRoute } from "./routes/virtual_machines";
 
 import { useAppStore } from "./store";
 
 const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, categoriesRoute, 
   categoryRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute, taskRoute, 
-  brandsRoute, brandGamesRoute, seriesListRoute, seriesGamesRoute]);
+  brandsRoute, brandGamesRoute, seriesListRoute, seriesGamesRoute, vmRoute]);
 
 const router = createRouter({ routeTree });
 

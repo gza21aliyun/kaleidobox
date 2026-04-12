@@ -320,7 +320,7 @@ func (s *CategoryService) GetGamesByCategory(categoryID string) ([]models.Game, 
 			COALESCE(g.use_magpie, FALSE) as use_magpie,
 			COALESCE(g.getchu_id, '') as getchu_id,
 			COALESCE(g.pv_path, '') as pv_path,
-			COALESCE(g.inside_vm, FALSE) as inside_vm
+			COALESCE(g.vm_id, '') as vm_id
 		FROM games g
 		JOIN game_categories gc ON g.id = gc.game_id
 		WHERE gc.category_id = ?
@@ -338,7 +338,7 @@ func (s *CategoryService) GetGamesByCategory(categoryID string) ([]models.Game, 
 		var g models.Game
 		var sourceType string
 		var status string
-		if err := rows.Scan(&g.ID, &g.Name, &g.CoverURL, &g.Company, &g.Summary, &g.Path, &g.SavePath, &g.ProcessName, &status, &sourceType, &g.CachedAt, &g.SourceID, &g.CreatedAt, &g.UpdatedAt, &g.Tags, &g.Arguments, &g.Images, &g.BangumiId, &g.DmmId, &g.EroscapeId, &g.YmgalId, &g.SearchName, &g.DlsiteId, &g.ReleaseAt, &g.RelatedGames, &g.UseLocaleEmulator, &g.UseMagpie, &g.GetchuId, &g.PvPath, &g.InsideVm); err != nil {
+		if err := rows.Scan(&g.ID, &g.Name, &g.CoverURL, &g.Company, &g.Summary, &g.Path, &g.SavePath, &g.ProcessName, &status, &sourceType, &g.CachedAt, &g.SourceID, &g.CreatedAt, &g.UpdatedAt, &g.Tags, &g.Arguments, &g.Images, &g.BangumiId, &g.DmmId, &g.EroscapeId, &g.YmgalId, &g.SearchName, &g.DlsiteId, &g.ReleaseAt, &g.RelatedGames, &g.UseLocaleEmulator, &g.UseMagpie, &g.GetchuId, &g.PvPath, &g.VmId); err != nil {
 			applog.LogErrorf(s.ctx, "GetGamesByCategory: failed to scan row for category %s: %v", categoryID, err)
 			return nil, err
 		}

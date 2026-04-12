@@ -62,7 +62,8 @@ func SchemaQueries() []string {
 			process_name TEXT,
 			getchu_id TEXT,
 			pv_path TEXT,
-			inside_vm BOOLEAN DEFAULT FALSE
+			inside_vm BOOLEAN DEFAULT FALSE,
+			vm_id TEXT DEFAULT ''
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_games_id ON games(id)`,
 		`CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)`,
@@ -108,7 +109,7 @@ func SchemaQueries() []string {
 			image_path TEXT,
 			images TEXT,
 			source_charactor_id TEXT,
-            source_type TEXT,
+		    source_type TEXT,
 			game_ids TEXT,
 			summary TEXT,
 			gender INTEGER,
@@ -123,7 +124,7 @@ func SchemaQueries() []string {
 			other_names TEXT,
 			roles TEXT,
 			source_staff_id TEXT,
-            source_type TEXT,
+		    source_type TEXT,
 			game_ids TEXT,
 			summary TEXT,
 			gender INTEGER,
@@ -139,7 +140,7 @@ func SchemaQueries() []string {
 			charactor_name TEXT,
 			staff_name TEXT,
 			work_summary TEXT,
-            source_type TEXT,
+		    source_type TEXT,
 			source_staff_id TEXT,
 			source_charactor_id TEXT,
 			source_game_id TEXT,
@@ -191,6 +192,20 @@ func SchemaQueries() []string {
 			connected_at TIMESTAMPTZ,
 			last_seen_at TIMESTAMPTZ
 		)`,
+		// 新增虚拟机表
+		`CREATE TABLE IF NOT EXISTS vms (
+			vm_id TEXT PRIMARY KEY,
+			vm_name TEXT NOT NULL,
+			vm_user_name TEXT,
+			vm_pass TEXT,
+			vm_path TEXT,
+			vm_type TEXT NOT NULL, -- workstation, esx
+			host_url TEXT,
+			host_user TEXT,
+			host_pass TEXT
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_vms_id ON vms(vm_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_vms_type ON vms(vm_type)`,
 	}
 	return queries
 }

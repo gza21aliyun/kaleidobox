@@ -170,6 +170,53 @@ func migration141(tx *sql.Tx) error {
 	return nil
 }
 
+// migration142 添加 vm_id 列到 games 表，删除 inside_vm 字段
+func migration142(tx *sql.Tx) error {
+	// 添加 vm_id 列
+	_, err := tx.Exec(`
+		ALTER TABLE games 
+		ADD COLUMN IF NOT EXISTS vm_id TEXT DEFAULT ''
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to add vm_id column: %w", err)
+	}
+
+	// 不删除 inside_vm 字段，只添加 vm_id 字段
+	// 这样可以避免依赖错误，同时保持向后兼容
+	// 后续可以在应用代码中逐步迁移到使用 vm_id 字段
+
+	// 创建 vms 表
+	_, err = tx.Exec(`
+		CREATE TABLE IF NOT EXISTS vms (
+			vm_id TEXT PRIMARY KEY,
+			vm_name TEXT NOT NULL,
+			vm_user_name TEXT,
+			vm_pass TEXT,
+			vm_path TEXT,
+			vm_type TEXT NOT NULL, -- workstation, esx
+			host_url TEXT,
+			host_user TEXT,
+			host_pass TEXT
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create vms table: %w", err)
+	}
+
+	// 创建索引
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_vms_id ON vms(vm_id)`)
+	if err != nil {
+		return fmt.Errorf("failed to create idx_vms_id index: %w", err)
+	}
+
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_vms_type ON vms(vm_type)`)
+	if err != nil {
+		return fmt.Errorf("failed to create idx_vms_type index: %w", err)
+	}
+
+	return nil
+}
+
 // 所有迁移按版本号顺序排列
 var migrations = []Migration{
 	{
@@ -191,6 +238,11 @@ var migrations = []Migration{
 		Version:     141,
 		Description: "Add use_count column to tags table for tracking tag usage count",
 		Up:          migration141,
+	},
+	{
+		Version:     142,
+		Description: "Add vm_id column to games table, drop inside_vm column, and create vms table",
+		Up:          migration142,
 	},
 
 	// {

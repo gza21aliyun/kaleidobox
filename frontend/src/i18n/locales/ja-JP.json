@@ -54,6 +54,7 @@
     "select": "選択",
     "cancelSelection": "選択をキャンセル",
     "viewDetails": "詳細を表示",
+    "actions": "アクション",
     "filter": {
       "tags": "タグ",
       "selectTags": "タグを選択",

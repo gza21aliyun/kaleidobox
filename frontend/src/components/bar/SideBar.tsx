@@ -23,6 +23,7 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
     { to: "/series", label: "系列", icon: "i-mdi-format-list-bulleted-type" },
     { to: "/stats", label: t('nav.stats'), icon: "i-mdi-chart-bar" },
     { to: "/categories", label: t('nav.categories'), icon: "i-mdi-format-list-bulleted" },
+    { to: "/virtual_machines", label: t('nav.virtualMachines'), icon: "i-mdi-laptop" },
   ];
 
   const getTaskText = () => {

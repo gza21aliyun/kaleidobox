@@ -9,6 +9,8 @@ import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { getFolderPath } from "../utils/Utility";
 import { BatchUpdateModal } from "../../components/modal/BatchUpdateModal";
+import { GetAllVMs } from "../../../wailsjs/go/service/VMService";
+import { v } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
 
 interface GameEditFormProps {
   game: models.Game;
@@ -35,6 +37,12 @@ export function GameEditPanel({
 }: GameEditFormProps) {
   const { t } = useTranslation();
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
+  const [vms, setVms] = useState<models.Vms[]>([]);
+
+  useEffect(() => {
+    // 获取虚拟机列表
+    GetAllVMs().then(setVms).catch(console.error);
+  }, []);
 
   const onSearchSaveDirectory = () => {
     // if ()
@@ -46,6 +54,15 @@ export function GameEditPanel({
       toast.error("搜索保存目录失败"+error);
     });
   }
+
+  const vmOptions = [
+              { value: "", label: t('gameEdit.noVm') },
+              ...vms.map(vm => ({
+                value: vm.vm_id!,
+                label: `${vm.vm_name} (${vm.vm_type})`
+              }))
+            ]
+  console.log("vms options", vmOptions)
 
 
   return (
@@ -225,16 +242,15 @@ export function GameEditPanel({
 
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
-            {t('gameEdit.insideVm')}
+            {t('gameEdit.vmId')}
           </label>
-          <div className="flex items-center">
-            <BetterSwitch
-              id="inside_vm"
-              checked={game.inside_vm || false}
-              onCheckedChange={checked => onGameChange({ ...game, inside_vm: checked } as models.Game)}
-            />
-            <span className="ml-2 text-sm text-brand-600 dark:text-brand-400">{t('gameEdit.insideVmHint')}</span>
-          </div>
+          <BetterSelect
+            value={game.vm_id!}
+            onChange={value => onGameChange({ ...game, vm_id: value } as models.Game)}
+            options={vmOptions}
+            // placeholder={t('common.pleaseSelect')}
+          />
+          <span className="ml-2 text-sm text-brand-600 dark:text-brand-400">{t('gameEdit.vmIdHint')}</span>
         </div>
 
         <div>

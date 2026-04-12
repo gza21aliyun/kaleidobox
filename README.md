@@ -56,13 +56,15 @@
 ![信息](screenshot/info.png)
 主要是工作人员栏和标签
 
-![手柄](screenshot/joystick.png.png)
+![手柄](screenshot/joystick.png)
 
 ![评论](screenshot/review.png)
 主要要看评论需要在搜刮的时候先匹配ID
 
 ![标签](screenshot/tags.png)
 支持分类和分组，分类主要是搜刮的时候自动分配，分组是自用。
+![虚拟机](screenshot/vms.png)
+虚拟机管理
 
 ![更新](screenshot/games_update.png)
 联合搜主要给批评空间用，如果源是批评空间的时候，能同时获得dlsite，dmm，getchu的id。但批评空间本身没游戏介绍，如果获得这些id后就能从这些源把搜刮一次。简单来说，等同于搜刮一次后再以所有选项选否的形式再在dmm源搜刮一次。重匹配意思就是重新用名字来搜数据即使已经有源匹配id，否则如果有id的话就直接从详情页拉数据。

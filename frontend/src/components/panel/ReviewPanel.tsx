@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { models, enums } from '../../../wailsjs/go/models';
 import { LoadReviewsForGame, LoadDetailReview } from '../../../wailsjs/go/service/GameService';
 import { OpenBrowser } from '../../../wailsjs/go/service/ImportService';
@@ -8,6 +8,7 @@ import { useAppStore } from '../../store';
 import i18next from '../../i18n/i18n';
 import { BetterButton } from '../ui/BetterButton';
 import { N } from '@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs';
+import { BetterSelect } from '../ui/BetterSelect';
 
 const t = i18next.t;
 
@@ -22,8 +23,15 @@ const sourceTypeOptions = [
   { value: enums.SourceType.DLSITE || "Dlsite", label: "Dlsite" },
 ];
 
+const typeOptions = [
+  { value: "0", label: "吐槽" },
+  { value: "1", label: "评论" },
+];
+
 export function ReviewPanel({ game }: ReviewPanelProps) {
   const [gameReview, setGameReview] = useState<models.GameReview | null>(null);
+  const [reviews, setReviews] = useState<models.Review[]>([]);
+  const [reviewType, setReviewType] = useState("0");
 
   const getSource = () => {
     if (game.bangumi_id !== "") {
@@ -46,6 +54,8 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   const [loadingReviewDetail, setLoadingReviewDetail] = useState<string | null>(null);
   const [showSourceDropdown, setShowSourceDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const lastPage = useRef(currentPage);
+  const reachedEnd = useRef(false);
   const [hasNextPage, setHasNextPage] = useState(false);
   const config = useAppStore(state => state.config);
 
@@ -87,14 +97,32 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
         return;
       }
 
-      const reviewData = await LoadReviewsForGame(gameId, selectedSourceType, currentPage);
+      const reviewData = await LoadReviewsForGame(gameId, selectedSourceType, currentPage, reviewType);
       console.log("reviewData:", reviewData)
       const hasNext = reviewData.has_next;
       setHasNextPage(hasNext);
+
       if (reviewData && reviewData.reviews && reviewData.reviews.length > 0) {
         setGameReview(reviewData);
+        if (currentPage === 1) {
+          setReviews(reviewData.reviews);
+          if (hasNext) {
+            reachedEnd.current = false;
+          }
+        } else {
+          if (!reachedEnd.current) setReviews([...reviews, ...reviewData.reviews]);
+        }
+        
       } else {
         setGameReview(null);
+        if (currentPage === 1) {
+          setReviews([]);
+        }
+      }
+      lastPage.current = currentPage;
+      if (!hasNext) {
+        reachedEnd.current = true;
+
       }
     } catch (error) {
       console.error('Failed to load reviews:', error);
@@ -113,20 +141,27 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   }, [game]);
 
   useEffect(() => {
-    if (selectedSourceType == enums.SourceType.EROSCAPE || selectedSourceType == enums.SourceType.DLSITE || selectedSourceType == enums.SourceType.DMM) {
+    if (selectedSourceType == enums.SourceType.EROSCAPE || selectedSourceType == enums.SourceType.DLSITE || 
+      selectedSourceType == enums.SourceType.DMM || selectedSourceType == enums.SourceType.BANGUMI) {
       loadReviews();
-    } else if (selectedSourceType == enums.SourceType.BANGUMI) {
-      setLoading(false)
-      // window.open(`https://bgm.tv/subject/${game.bangumi_id}/comments`)
-    }
+    } 
+    // else if (selectedSourceType == enums.SourceType.BANGUMI) {
+    //   setLoading(false)
+    //   // window.open(`https://bgm.tv/subject/${game.bangumi_id}/comments`)
+    // }
     console.log("selectedSourceType:", selectedSourceType);
     
-  }, [selectedSourceType, currentPage]);
+  }, [selectedSourceType, currentPage, reviewType]);
 
   const handleSourceTypeChange = (sourceType: enums.SourceType) => {
     setSelectedSourceType(sourceType);
     setCurrentPage(1);
     setShowSourceDropdown(false);
+  };
+
+  const handleReviewTypeChange = (type : string) => { 
+    setCurrentPage(1);
+    setReviewType(type);
   };
 
   console.log("review 01")
@@ -146,6 +181,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
           const updatedReviews = prev.reviews.map(r => 
             r.id === review.id ? new models.Review(review) : r
           );
+          // setReviews([...reviews, ...updatedReviews]);
           return new models.GameReview({
             ...prev,
             reviews: updatedReviews
@@ -204,8 +240,8 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
       var tp = 5;
       var stp = 0;
       var sap = 0;
-      for (var i = 0; i < (gameReview?.reviews?.length ?? 0); i++) {
-        var review = gameReview.reviews[i];        
+      for (var i = 0; i < (reviews.length); i++) {
+        var review = reviews[i];        
         
         tp = Number(review.total_points);
         if (isNaN(tp)) tp = 5;
@@ -285,47 +321,44 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
     return null;
   }
 
-  if (loading && !gameReview) {
-    return (
-      <div className="review-panel flex items-center justify-center h-64">
-        <div className="text-brand-500 dark:text-brand-400">{t('common.loading')}</div>
-      </div>
-    );
-  }
+  // if (loading && !gameReview) {
+  //   return (
+  //     <div className="review-panel flex items-center justify-center h-64">
+  //       <div className="text-brand-500 dark:text-brand-400">{t('common.loading')}</div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="review-panel space-y-6">
       <div className="flex justify-between items-start">
-        <div className="relative">
+        <div className="flex items-center space-x-2">
           <div className="text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">{t('reviews.dataSource') || '数据源'}</div>
-          <button
-            onClick={() => setShowSourceDropdown(!showSourceDropdown)}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-100 hover:bg-brand-200 dark:bg-brand-800 dark:hover:bg-brand-700 text-brand-800 dark:text-brand-200 rounded-lg transition-colors min-w-[140px]"
-          >
-            <span>{getSourceTypeLabel(selectedSourceType)}</span>
-            <span className="i-mdi-chevron-down text-sm ml-auto" />
-          </button>
-          
-          {showSourceDropdown && (
-            <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-brand-800 rounded-lg shadow-lg border border-brand-200 dark:border-brand-700 z-10">
-              {filteredSourceTypeOptions.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => handleSourceTypeChange(option.value)}
-                  className={`w-full text-left px-4 py-2 hover:bg-brand-100 dark:hover:bg-brand-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                    selectedSourceType === option.value ? "bg-brand-200 dark:bg-brand-700 text-brand-800 dark:text-brand-200" : "text-brand-700 dark:text-brand-300"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+          <BetterSelect
+            value={selectedSourceType}
+            onChange={(value) => handleSourceTypeChange(value as enums.SourceType)}
+            options={filteredSourceTypeOptions}
+            placeholder={t('common.pleaseSelect') || '请选择数据源'}
+            className="min-w-[140px]"
+          />
+          {selectedSourceType === enums.SourceType.BANGUMI && (
+            <>
+              <div className="text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">{t('reviews.type') || '类型'}</div>
+              <BetterSelect
+                value={reviewType}
+                onChange={(value) => handleReviewTypeChange(value)}
+                options={typeOptions}
+                placeholder={t('common.pleaseSelect') || '请选择类型'}
+                className="min-w-[140px]"
+              />
+            </>
           )}
+          
         </div>
 
         {gameReview && (
           <div className="flex items-center gap-4">
-            <div className="text-center">
+            <div className="flex items-center gap-4 text-center">
               <div className="text-sm text-brand-600 dark:text-brand-400">{t('reviews.overallScore') || '综合评分'}</div>
               <div className="text-3xl font-bold text-brand-700 dark:text-brand-300">
                 {getAverageRating()[0]}
@@ -336,7 +369,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
         )}
       </div>
 
-      {(selectedSourceType === enums.SourceType.BANGUMI) && ( 
+      {/* {(selectedSourceType === enums.SourceType.BANGUMI) && ( 
         <BetterButton onClick={() => { 
           if (selectedSourceType == enums.SourceType.BANGUMI) { 
             OpenBrowser(`https://bgm.tv/subject/${game.bangumi_id}/comments`)
@@ -345,9 +378,13 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
           {`前往${selectedSourceType}评论`}
 
           </BetterButton>
-      )}
+      )} */}
 
-      {!gameReview || gameReview.reviews.length === 0 ? (
+      {loading && !gameReview ? (
+        <div className="review-panel flex items-center justify-center h-64">
+          <div className="text-brand-500 dark:text-brand-400">{t('common.loading')}</div>
+        </div>
+      ) : !gameReview || gameReview.reviews.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-brand-500 dark:text-brand-400">
           <div className="i-mdi-message-text-outline text-4xl mb-2" />
           <p>{t('reviews.noData') || '暂无评论数据'}</p>

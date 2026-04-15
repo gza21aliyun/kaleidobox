@@ -1679,7 +1679,7 @@ func (s *GameService) GetWorkGamesByCharactorId(staffId string) ([]models.WorkGa
 	return worksGames, err
 }
 
-func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType, page int) (models.GameReview, error) {
+func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType, page int, reviewType string) (models.GameReview, error) {
 	if sourceType == enums.Eroscape {
 		esReviewer := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
 		return esReviewer.FetchReviews(id, "", page)
@@ -1689,6 +1689,9 @@ func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType,
 	} else if sourceType == enums.Dmm {
 		dmmReviewer := utils.NewDmmInfoGetter()
 		return dmmReviewer.FetchReviews(id, "", page)
+	} else if sourceType == enums.Bangumi {
+		bgmReviewer := utils.NewBangumiInfoGetter(s.config.SearchCn)
+		return bgmReviewer.FetchGameReviews(id, s.config.BangumiAccessToken, page, reviewType)
 	}
 	return models.GameReview{}, nil
 }
@@ -1697,6 +1700,9 @@ func (s *GameService) LoadDetailReview(review models.Review, gameId string, sour
 	if sourceType == enums.Eroscape {
 		esReviewer := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
 		return esReviewer.FetchReviewDetail(review, gameId, "")
+	} else if sourceType == enums.Bangumi {
+		bgmReviewer := utils.NewBangumiInfoGetter(s.config.SearchCn)
+		return bgmReviewer.FetchReviewDetail(review, gameId, s.config.BangumiAccessToken)
 	}
 	return models.Review{}, nil
 }

@@ -1062,7 +1062,8 @@
     "loadDetailFailed": "加载评论详情失败",
     "viewMore": "看更多",
     "previous": "上一页",
-    "next": "下一页"
+    "next": "下一页",
+    "type": "类型"
   },
   "task": {
     "title": "任务",

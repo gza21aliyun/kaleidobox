@@ -35,6 +35,70 @@ func NewBangumiInfoGetter(searchCn bool) *BangumiInfoGetter {
 var _ Getter = (*BangumiInfoGetter)(nil)
 
 const bangumiIdQueryAPIURL = "https://api.bgm.tv/v0/subjects"
+const bangumiIdQueryCommentAPIURL = "https://next.bgm.tv/p1/subjects/%s/comments"
+
+type bangumiBlogDetail struct {
+	ID        int      `json:"id"`
+	Type      int      `json:"type"`
+	UID       int      `json:"uid"`
+	Title     string   `json:"title"`
+	Icon      string   `json:"icon"`
+	Content   string   `json:"content"`
+	Tags      []string `json:"tags"`
+	Views     int      `json:"views"`
+	Replies   int      `json:"replies"`
+	CreatedAt int64    `json:"createdAt"`
+	UpdatedAt int64    `json:"updatedAt"`
+	Noreply   int      `json:"noreply"`
+	Related   int      `json:"related"`
+	Public    bool     `json:"public"`
+}
+type bangumiBlogEntry struct {
+	ID        int    `json:"id"`
+	Type      int    `json:"type"`
+	UID       int    `json:"uid"`
+	Title     string `json:"title"`
+	Icon      string `json:"icon"`
+	Summary   string `json:"summary"`
+	Replies   int    `json:"replies"`
+	Public    bool   `json:"public"`
+	CreatedAt int64  `json:"createdAt"`
+	UpdatedAt int64  `json:"updatedAt"`
+}
+
+type bangumiBlogComment struct {
+	ID    int                `json:"id"`
+	Entry bangumiBlogEntry   `json:"entry"`
+	User  bangumiCommentUser `json:"user"`
+}
+
+type bangumiBlogsResponse struct {
+	Data  []bangumiBlogComment `json:"data"`
+	Total int                  `json:"total"`
+}
+
+type bangumiCommentUser struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	Group    int    `json:"group"`
+	Sign     string `json:"sign"`
+	JoinedAt int64  `json:"joinedAt"`
+}
+
+type bangumiComment struct {
+	ID        int                `json:"id"`
+	User      bangumiCommentUser `json:"user"`
+	Type      int                `json:"type"`
+	Rate      int                `json:"rate"`
+	Comment   string             `json:"comment"`
+	UpdatedAt int64              `json:"updatedAt"`
+}
+
+type bangumiCommentsResponse struct {
+	Data  []bangumiComment `json:"data"`
+	Total int              `json:"total"`
+}
 
 type bangumiImages struct {
 	Large  string `json:"large"`
@@ -454,6 +518,7 @@ func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxIte
 		}
 		tag := models.Tag{}
 		switch v := item.Value.(type) {
+
 		case string:
 			tag.Name = v
 			if isValidDateFormat(v) {
@@ -516,20 +581,31 @@ func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxIte
 	return nil
 }
 
-func (b BangumiInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, error) {
+func (b BangumiInfoGetter) FetchGameReviews(id string, token string, page int, reviewType string) (models.GameReview, error) {
+	if reviewType == "0" {
+		return b.FetchComments(id, token, page)
+	} else {
+		return b.FetchReviews(id, token, page)
+	}
+
+}
+
+func (b BangumiInfoGetter) FetchComments(id string, token string, page int) (models.GameReview, error) {
 	var err error = nil
 	review := models.GameReview{}
+	pageSize := 10
+	offset := (page - 1) * pageSize
 
-	url := fmt.Sprintf("https://api.bgm.tv/altair/subjects/%s/comments", id)
+	url := fmt.Sprintf("https://next.bgm.tv/p1/subjects/%s/comments?limit=%d&offset=%d", id, pageSize, offset)
 	fmt.Printf("FetchReviews url:%s\ntoken:%s\n", url, token)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		fmt.Println("BangumiInfoGetter FetchMetadata 01 error: %v", err)
 		return review, err
 	}
-	cookie := `chii_sid=VzNpv0; chii_sec_id=IkXIr4amSQ3QgZ%2BkR39fR3N4KLywVvL5EdnpZz4; chii_cookietime=2592000; chii_auth=JRLC%2B4fzHl%2FGgsauR3VVRSkUQczTFKHpIeOteDPsqBaqG5kMZ71JTxsmMFXpZsBX5bg4pXsD%2BsTQqu11R5tvFCPkvYiltcr0NItT;`
+	// cookie := `chii_sid=VzNpv0; chii_sec_id=IkXIr4amSQ3QgZ%2BkR39fR3N4KLywVvL5EdnpZz4; chii_cookietime=2592000; chii_auth=JRLC%2B4fzHl%2FGgsauR3VVRSkUQczTFKHpIeOteDPsqBaqG5kMZ71JTxsmMFXpZsBX5bg4pXsD%2BsTQqu11R5tvFCPkvYiltcr0NItT;`
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	req.Header.Set("Cookie", cookie)
+	// req.Header.Set("Cookie", cookie)
 	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
 
 	resp, err := b.client.Do(req)
@@ -544,20 +620,154 @@ func (b BangumiInfoGetter) FetchReviews(id string, token string, page int) (mode
 			log.Warnf("Error closing response body: %v", err)
 		}
 	}(resp.Body)
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	jstr := string(bodyBytes)
-	fmt.Printf("banguimiResp: %s\n", jstr)
+	// bodyBytes, _ := io.ReadAll(resp.Body)
+	// jstr := string(bodyBytes)
+	// fmt.Printf("banguimiResp: %s\n", jstr)
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return review, fmt.Errorf("bangumi API returned status: %d, body: \n%s", resp.StatusCode, string(bodyBytes))
 	}
 
-	var bangumiResp bangumiResponse
+	var bangumiResp bangumiCommentsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&bangumiResp); err != nil {
-		fmt.Println("BangumiInfoGetter FetchMetadata 04 error: %v", err)
+		fmt.Println("BangumiInfoGetter FetchMetadata 05 error: %v", err)
 		return review, err
 	}
+
+	review.SourceType = enums.Bangumi
+	review.Id = id
+	review.HasNext = bangumiResp.Total > offset+pageSize
+	if len(bangumiResp.Data) > 0 {
+		for _, item := range bangumiResp.Data {
+			tm := time.Unix(item.UpdatedAt, 0)
+			review.Reviews = append(review.Reviews, models.Review{
+				Id:          strconv.Itoa(item.ID),
+				Content:     item.Comment,
+				Reviewer:    item.User.Nickname,
+				Date:        tm,
+				TotalPoints: "10",
+				Points:      strconv.Itoa(item.Rate),
+			})
+
+		}
+	}
+
+	return review, nil
+}
+
+func (b BangumiInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, error) {
+	var err error = nil
+	review := models.GameReview{}
+	pageSize := 10
+	offset := (page - 1) * pageSize
+
+	url := fmt.Sprintf("https://next.bgm.tv/p1/subjects/%s/reviews?limit=%d&offset=%d", id, pageSize, offset)
+	fmt.Printf("FetchReviews url:%s\ntoken:%s\n", url, token)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 01 error: %v", err)
+		return review, err
+	}
+	// cookie := `chii_sid=VzNpv0; chii_sec_id=IkXIr4amSQ3QgZ%2BkR39fR3N4KLywVvL5EdnpZz4; chii_cookietime=2592000; chii_auth=JRLC%2B4fzHl%2FGgsauR3VVRSkUQczTFKHpIeOteDPsqBaqG5kMZ71JTxsmMFXpZsBX5bg4pXsD%2BsTQqu11R5tvFCPkvYiltcr0NItT;`
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	// req.Header.Set("Cookie", cookie)
+	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
+
+	resp, err := b.client.Do(req)
+	if err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 02 error: %v", err)
+		return review, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("BangumiInfoGetter FetchMetadata 03 error: %v", err)
+			log.Warnf("Error closing response body: %v", err)
+		}
+	}(resp.Body)
+	// bodyBytes, _ := io.ReadAll(resp.Body)
+	// jstr := string(bodyBytes)
+	// fmt.Printf("banguimiResp: %s\n", jstr)
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return review, fmt.Errorf("bangumi API returned status: %d, body: \n%s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var bangumiResp bangumiBlogsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&bangumiResp); err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 05 error: %v", err)
+		return review, err
+	}
+
+	review.SourceType = enums.Bangumi
+	review.Id = id
+	review.HasNext = bangumiResp.Total > offset+pageSize
+	if len(bangumiResp.Data) > 0 {
+		for _, item := range bangumiResp.Data {
+			tm := time.Unix(item.Entry.UpdatedAt, 0)
+			review.Reviews = append(review.Reviews, models.Review{
+				Id:          strconv.Itoa(item.ID),
+				Content:     item.Entry.Summary,
+				Title:       item.Entry.Title,
+				Reviewer:    item.User.Nickname,
+				Date:        tm,
+				TotalPoints: "",
+				Points:      "",
+				Link:        strconv.Itoa(item.Entry.ID),
+			})
+
+		}
+	}
+
+	return review, nil
+}
+
+func (b BangumiInfoGetter) FetchReviewDetail(review models.Review, gameId, token string) (models.Review, error) {
+	var err error = nil
+
+	url := fmt.Sprintf("https://next.bgm.tv/p1/blogs/%s", review.Link)
+	fmt.Printf("FetchReviews url:%s\ntoken:%s\n", url, token)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 01 error: %v", err)
+		return review, err
+	}
+	// cookie := `chii_sid=VzNpv0; chii_sec_id=IkXIr4amSQ3QgZ%2BkR39fR3N4KLywVvL5EdnpZz4; chii_cookietime=2592000; chii_auth=JRLC%2B4fzHl%2FGgsauR3VVRSkUQczTFKHpIeOteDPsqBaqG5kMZ71JTxsmMFXpZsBX5bg4pXsD%2BsTQqu11R5tvFCPkvYiltcr0NItT;`
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	// req.Header.Set("Cookie", cookie)
+	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.3.2 (desktop) (https://github.com/Saramanda9988/LunaBox)")
+
+	resp, err := b.client.Do(req)
+	if err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 02 error: %v", err)
+		return review, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("BangumiInfoGetter FetchMetadata 03 error: %v", err)
+			log.Warnf("Error closing response body: %v", err)
+		}
+	}(resp.Body)
+	// bodyBytes, _ := io.ReadAll(resp.Body)
+	// jstr := string(bodyBytes)
+	// fmt.Printf("banguimiResp: %s\n", jstr)
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return review, fmt.Errorf("bangumi API returned status: %d, body: \n%s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var bangumiResp bangumiBlogDetail
+	if err := json.NewDecoder(resp.Body).Decode(&bangumiResp); err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 05 error: %v", err)
+		return review, err
+	}
+
+	review.Content = bangumiResp.Content
+	review.Link = ""
 
 	return review, nil
 }

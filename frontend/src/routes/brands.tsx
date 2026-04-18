@@ -7,6 +7,8 @@ import { FilterBar } from "../components/bar/FilterBar";
 import { CategoriesSkeleton } from "../components/skeleton/CategoriesSkeleton";
 import { BrandCard } from "../components/card/BrandCard";
 import { Route as rootRoute } from "./__root";
+import { models } from "../../wailsjs/go/models";
+import { sortTags } from "../components/utils/Utility";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -14,13 +16,10 @@ export const Route = createRoute({
   component: BrandsPage,
 });
 
-interface BrandItem {
-  name: string;
-}
 
 function BrandsPage() {
   const { t } = useTranslation();
-  const [brands, setBrands] = useState<BrandItem[]>([]);
+  const [brands, setBrands] = useState<models.Tag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,7 +29,7 @@ function BrandsPage() {
   const loadBrands = async () => {
     try {
       const result = await GetBrands();
-      setBrands(result ? result.map(name => ({ name })) : []);
+      setBrands(result ?? []);
     }
     catch (error) {
       console.error("Failed to load brands:", error);
@@ -104,7 +103,7 @@ function BrandsPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredBrands.map(brand => (
+        {sortTags(filteredBrands).map(brand => (
           <BrandCard key={brand.name} brand={brand} />
         ))}
       </div>

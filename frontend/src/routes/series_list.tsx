@@ -7,6 +7,8 @@ import { FilterBar } from "../components/bar/FilterBar";
 import { CategoriesSkeleton } from "../components/skeleton/CategoriesSkeleton";
 import { SeriesCard } from "../components/card/SeriesCard";
 import { Route as rootRoute } from "./__root";
+import { models } from "../../wailsjs/go/models";
+import { sortTags } from "../components/utils/Utility";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -14,13 +16,10 @@ export const Route = createRoute({
   component: SeriesListPage,
 });
 
-interface SeriesItem {
-  name: string;
-}
 
 function SeriesListPage() {
   const { t } = useTranslation();
-  const [series, setSeries] = useState<SeriesItem[]>([]);
+  const [series, setSeries] = useState<models.Tag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,7 +29,7 @@ function SeriesListPage() {
   const loadSeries = async () => {
     try {
       const result = await GetSeries();
-      setSeries(result ? result.map(name => ({ name })) : []);
+      setSeries(result ?? []);
     }
     catch (error) {
       console.error("Failed to load series:", error);
@@ -102,7 +101,7 @@ function SeriesListPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredSeries.map(seriesItem => (
+        {sortTags(filteredSeries).map(seriesItem => (
           <SeriesCard key={seriesItem.name} series={seriesItem} />
         ))}
       </div>

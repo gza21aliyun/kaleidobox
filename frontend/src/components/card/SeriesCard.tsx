@@ -1,18 +1,24 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
+import { models } from '../../../wailsjs/go/models';
+import { UpdateTag } from '../../../wailsjs/go/service/TagService';
+import { useAppStore } from '../../store';
 
 interface SeriesCardProps {
-  series: {
-    name: string;
-  };
+  series: models.Tag;
 }
 
 export function SeriesCard({ series }: SeriesCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { updateTagInTags } = useAppStore();
 
   const handleViewDetails = () => {
     navigate({ to: `/series/${series.name}` });
+    series.use_count++;
+    UpdateTag(series)
+    updateTagInTags(series)
+    
   };
 
   return (
@@ -25,7 +31,7 @@ export function SeriesCard({ series }: SeriesCardProps) {
       </div>
       <div className="flex-1">
         <h3 className="font-semibold text-brand-900 dark:text-white group-hover:text-neutral-600 dark:group-hover:text-neutral-400 transition-colors">
-          {series.name}
+          {series.name}{series.use_count > 0 ? ` (${series.use_count})` : ''}
         </h3>
       </div>
     </div>

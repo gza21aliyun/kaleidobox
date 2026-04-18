@@ -3,6 +3,7 @@ import type { models } from "../../../wailsjs/go/models";
 import { useTranslation } from 'react-i18next';
 import { arrayMapString, mapToArray, tagMapForEach } from "../utils/Utility";
 import { UpdateTag } from "../../../wailsjs/go/service/TagService";
+import { useAppStore } from "../../store";
 
 interface FilterChooseTagModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export function FilterChooseTagModal({
   const { t } = useTranslation();
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [selectedTagsInCategory, setSelectedTagsInCategory] = useState<Record<string, string[]>>({});
+  const { updateTagInTags } = useAppStore()
 
   // 处理分类展开/收起
   const toggleCategory = (category: string) => {
@@ -180,6 +182,7 @@ export function FilterChooseTagModal({
                             onTagsFilterChange([...tagsFilter, tag.name]);
                             tag.use_count++;
                             UpdateTag(tag)
+                            updateTagInTags(tag);
                           }}
                           className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
                                   bg-gradient-to-r from-[#e0e000] to-[#c0c000] 
@@ -239,6 +242,7 @@ export function FilterChooseGroupModal({
   const { t } = useTranslation();
   // 获取标签分组数据
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const { updateTagInTags } = useAppStore();
   const getTagGroups = () => {
     const groupMap: Map<string, models.Tag[]> = new Map();
     const tagArray: models.Tag[] = mapToArray(availableTags || new Map());
@@ -360,6 +364,7 @@ export function FilterChooseGroupModal({
                                 onTagsFilterChange(newTagsFilter);
                                 tag.use_count++;
                                 UpdateTag(tag).then(() => {})
+                                updateTagInTags(tag);
                                 // onClose();
                               }}
                               className="px-3 py-1.5 bg-gradient-to-r from-[#e0e000] to-[#c0c000] 

@@ -21,7 +21,7 @@ export function GameInfoPanel({
     game, config, onTagTaps, updateGame }: GameEditFormProps) { 
         const navigate = useNavigate();
         const { t } = useTranslation();
-        const { updateGameInGames } = useAppStore();
+        const { updateGameInGames, updateTagInTags } = useAppStore();
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const [tagsMap, setTagsMap] = useState<Map<string, models.Tag[]>>(new Map())
         const [showAddTagModal, setShowAddTagModal] = useState(false);
@@ -67,6 +67,7 @@ export function GameInfoPanel({
                 UpdateTag(tag).then((res) => {
                     console.log("UpdateTag", res)
                 })
+                updateTagInTags(tag)
 
                 // 直接执行搜索功能
                 navigate({ to: '/library', search: 

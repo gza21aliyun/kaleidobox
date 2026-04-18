@@ -386,9 +386,9 @@ func (s *TagService) ManageTags(tags []string) error {
 	return err
 }
 
-func (s *TagService) GetBrands() ([]string, error) {
+func (s *TagService) GetBrands() ([]models.Tag, error) {
 	query := `
-		SELECT DISTINCT name
+		SELECT name, category, group_name, is_h, is_spoiler, block_modify, use_count
 		FROM tags
 		WHERE category = ?
 		ORDER BY name
@@ -399,14 +399,14 @@ func (s *TagService) GetBrands() ([]string, error) {
 	}
 	defer rows.Close()
 
-	var brands []string
+	var tags []models.Tag
 	for rows.Next() {
-		var group string
-		err := rows.Scan(&group)
+		var tag models.Tag
+		err := rows.Scan(&tag.Name, &tag.Category, &tag.Group, &tag.IsH, &tag.IsSpoiler, &tag.BlockModify, &tag.UseCount)
 		if err != nil {
 			return nil, err
 		}
-		brands = append(brands, group)
+		tags = append(tags, tag)
 	}
 
 	// 检查迭代过程中是否有错误
@@ -414,12 +414,12 @@ func (s *TagService) GetBrands() ([]string, error) {
 		return nil, err
 	}
 
-	return brands, nil
+	return tags, nil
 }
 
-func (s *TagService) GetSeries() ([]string, error) {
+func (s *TagService) GetSeries() ([]models.Tag, error) {
 	query := `
-		SELECT DISTINCT name
+		SELECT name, category, group_name, is_h, is_spoiler, block_modify, use_count
 		FROM tags
 		WHERE category = ?
 		ORDER BY name
@@ -430,14 +430,14 @@ func (s *TagService) GetSeries() ([]string, error) {
 	}
 	defer rows.Close()
 
-	var brands []string
+	var tags []models.Tag
 	for rows.Next() {
-		var group string
-		err := rows.Scan(&group)
+		var tag models.Tag
+		err := rows.Scan(&tag.Name, &tag.Category, &tag.Group, &tag.IsH, &tag.IsSpoiler, &tag.BlockModify, &tag.UseCount)
 		if err != nil {
 			return nil, err
 		}
-		brands = append(brands, group)
+		tags = append(tags, tag)
 	}
 
 	// 检查迭代过程中是否有错误
@@ -445,5 +445,5 @@ func (s *TagService) GetSeries() ([]string, error) {
 		return nil, err
 	}
 
-	return brands, nil
+	return tags, nil
 }

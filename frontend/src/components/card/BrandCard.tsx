@@ -1,18 +1,23 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
+import { models } from '../../../wailsjs/go/models';
+import { UpdateTag } from '../../../wailsjs/go/service/TagService';
+import { useAppStore } from '../../store';
 
 interface BrandCardProps {
-  brand: {
-    name: string;
-  };
+  brand: models.Tag;
 }
 
 export function BrandCard({ brand }: BrandCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { updateTagInTags } = useAppStore();
 
   const handleViewDetails = () => {
     navigate({ to: `/brand/${brand.name}` });
+    brand.use_count++
+    UpdateTag(brand)
+    updateTagInTags(brand)
   };
 
   return (
@@ -25,7 +30,7 @@ export function BrandCard({ brand }: BrandCardProps) {
       </div>
       <div className="flex-1">
         <h3 className="font-semibold text-brand-900 dark:text-white group-hover:text-neutral-600 dark:group-hover:text-neutral-400 transition-colors">
-          {brand.name}
+          {brand.name}{brand.use_count > 0 ? ` (${brand.use_count})` : ''}
         </h3>
       </div>
     </div>

@@ -42,6 +42,7 @@ type AppState = {
   // 标签加载状态
   tagsLoaded: Map<string, models.Tag[]>;
   setTagsLoaded: (tags: Map<string, models.Tag[]>) => void;
+  updateTagInTags: (tags: models.Tag) => void;
   // page: number;
 };
 
@@ -213,6 +214,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     //   });
     // }
     GetGamesSendFront(get().games.length)
+  },
+  updateTagInTags: (tag: models.Tag) => { 
+    var tagsMap = get().tagsLoaded ?? new Map<string, models.Tag[]>();
+    var tags = tagsMap.get(tag.category) ?? [];
+    const foundTag = arrayFind(tags, (t) => t.name === tag.name);
+    if (foundTag) { 
+      const index = tags.indexOf(foundTag);
+      tags[index] = tag;
+    } else { 
+      tags.push(tag);
+    }
+    tagsMap.set(tag.category, tags);
+    set({ tagsLoaded: tagsMap });
+    
   },
 }));
 

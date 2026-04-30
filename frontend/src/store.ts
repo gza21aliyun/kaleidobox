@@ -7,7 +7,7 @@ import { GetGames, GetGamesByPage, GetGameByID, GetSimpleGamesByPage, GetGamesSe
 import { GetHomePageData } from "../wailsjs/go/service/HomeService";
 import { ListTags } from "../wailsjs/go/service/TagService";
 import { EventsOn } from "../wailsjs/runtime/runtime";
-import { arrayFind, arrayToMap } from "./components/utils/Utility";
+import { arrayFind, arrayToMap, arrayToSingleMap } from "./components/utils/Utility";
 import { g } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
 import { GetGameStatsList } from "../wailsjs/go/service/StatsService";
 
@@ -42,7 +42,7 @@ type AppState = {
   setTasks: (tasks: models.TaskNotice[]) => void;
   // 标签加载状态
   tagsLoaded: Map<string, models.Tag[]>;
-  gameStats: vo.GameDetailStats[];
+  gameStats: Map<string, vo.GameDetailStats>;
   setTagsLoaded: (tags: Map<string, models.Tag[]>) => void;
   updateTagInTags: (tags: models.Tag) => void;
   // page: number;
@@ -169,7 +169,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       GetGameStatsList().then(stats => { 
         console.log("loadgames stats", stats);
-        set({ gameStats: stats })
+        set({ gameStats: arrayToSingleMap(stats, stat => stat.game_id) })
       });
       
       set({ gamesLoading: false });
@@ -204,7 +204,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   // 标签加载状态
   tagsLoaded: new Map(),
-  gameStats: [],
+  gameStats: new Map(),
   setTagsLoaded: (tags: Map<string, models.Tag[]>) => {
     set({ tagsLoaded: tags });
   },

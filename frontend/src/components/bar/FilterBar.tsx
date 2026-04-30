@@ -368,7 +368,7 @@ export function FilterBar({
             value={sortBy}
             onChange={handleSortByChange}
             options={sortOptions}
-            className="min-w-[120px]"
+            className="min-w-[130px]"
           />
 
           <button

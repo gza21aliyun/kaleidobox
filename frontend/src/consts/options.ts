@@ -12,5 +12,7 @@ export const sortOptions = [
   { label: "名称", value: "name" },
   { label: "添加时间", value: "created_at" },
   { label: "发售日期", value: "release_at" },
-  { label: "开发", value: "company" },
+  { label: "开发商", value: "company" },
+  { label: "最后游玩", value: "last_played" },
+  { label: "游戏时间", value: "play_time" },
 ];

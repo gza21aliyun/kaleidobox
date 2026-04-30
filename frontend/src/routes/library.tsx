@@ -53,14 +53,14 @@ export const Route = createRoute({
 function LibraryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { games, gamesLoading, fetchGames, tagsLoaded, setTagsLoaded } = useAppStore();
+  const { games, gamesLoading, fetchGames, tagsLoaded, gameStats } = useAppStore();
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>(() => localStorage.getItem('searchQuery') || "");
-  const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company"> ("created_at");
+  const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company" | "last_played" | "play_time"> ("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [sourceFilter, setSourceFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -257,6 +257,16 @@ function LibraryPage() {
           break;
         case "company":
           comparison = String(a.company || "").localeCompare(String(b.company || ""));
+          break;
+        case "last_played":
+          const aEndDate = gameStats.get(a.id)?.end_date || "";
+          const bEndDate = gameStats.get(b.id)?.end_date || "";
+          comparison = aEndDate.localeCompare(bEndDate);
+          break;
+        case "play_time":
+          const aPlayTime = gameStats.get(a.id)?.total_play_time || 0;
+          const bPlayTime = gameStats.get(b.id)?.total_play_time || 0;
+          comparison = aPlayTime - bPlayTime;
           break;
       }
       return sortOrder === "asc" ? comparison : -comparison;
@@ -584,7 +594,7 @@ function LibraryPage() {
         onSearchChange={(q) => {setSearchQuery(q);localStorage.setItem('searchQuery', q)}}
         searchPlaceholder={t('library.searchPlaceholder')}
         sortBy={sortBy}
-        onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at" | "company")}
+        onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at" | "company" | "last_played" | "play_time")}
         sortOptions={sortOptions}
         sortOrder={sortOrder}
         onSortOrderChange={setSortOrder}

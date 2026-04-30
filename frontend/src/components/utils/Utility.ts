@@ -26,6 +26,16 @@ export function arrayToMap<T>(ar: T[], keyFn: (key: T) => string): Map<string, T
     return map;
 }
 
+export function arrayToSingleMap<T>(ar: T[], keyFn: (key: T) => string): Map<string, T>{
+    if (!ar) return new Map<string, T>();
+    const map = new Map<string, T>();
+    ar.forEach(item => {
+        const key = keyFn(item);
+        map.set(key, item);
+    });
+    return map;
+}
+
 export function arrayMapString<T>(ar: T[], keyFn: (key: T) => string): string[]{
     if (!ar) return [];
     const array: string[] = [];

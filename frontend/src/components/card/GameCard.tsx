@@ -129,7 +129,7 @@ export function GameCard({
   const isCompleted = game.status === enums.GameStatus.COMPLETED;
   const companyDisplay = game.company || "Unknown Developer";
 
-  const stats = gameStats.find((s) => s.game_id == game.id)
+  const stats = gameStats.get(game.id);
   console.log('LazyGameStats', game.id, stats, gameStats);
 
   

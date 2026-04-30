@@ -29,6 +29,7 @@ import { arrayToMap } from "../components/utils/Utility";
 import { formatLocalDate } from '../utils/time';
 import { arrayFind, arrayMapString, joinString } from "../components/utils/Utility";
 import { FetchEmptyGalleryGames } from '../../wailsjs/go/service/ImageService';
+import { useAppStore } from "../store";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -40,6 +41,7 @@ function CategoryDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { categoryId } = Route.useParams();
+  const { gameStats } = useAppStore();
   const [category, setCategory] = useState<vo.CategoryVO | null>(null);
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ function CategoryDetailPage() {
   const [allGames, setAllGames] = useState<models.Game[]>([]);
   const [sourceFilter, setSourceFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company"> ("created_at");
+  const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company" | "last_played" | "play_time"> ("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc"> ("desc");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [batchMode, setBatchMode] = useState(false);
@@ -338,10 +340,20 @@ function CategoryDetailPage() {
         case "company":
           comparison = String(a.company || "").localeCompare(String(b.company || ""));
           break;
+        case "last_played":
+          const aEndDate = gameStats.get(a.id)?.end_date || "";
+          const bEndDate = gameStats.get(b.id)?.end_date || "";
+          comparison = aEndDate.localeCompare(bEndDate);
+          break;
+        case "play_time":
+          const aPlayTime = gameStats.get(a.id)?.total_play_time || 0;
+          const bPlayTime = gameStats.get(b.id)?.total_play_time || 0;
+          comparison = aPlayTime - bPlayTime;
+          break;
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
-  }, [games, searchQuery, statusFilter, tagsFilter, tagsIntersectionMode, releaseStartDate, releaseEndDate, sourceFilter, sortBy, sortOrder, includedIds]);
+  }, [games, searchQuery, statusFilter, tagsFilter, tagsIntersectionMode, releaseStartDate, releaseEndDate, sourceFilter, sortBy, sortOrder, includedIds, gameStats]);
 
   const handleBatchModeChange = (enabled: boolean) => {
     setBatchMode(enabled);
@@ -600,7 +612,7 @@ function CategoryDetailPage() {
           onSearchChange={setSearchQuery}
           searchPlaceholder={t('category.messages.searchPlaceholder')}
           sortBy={sortBy}
-          onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at" | "company")}
+          onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at" | "company" | "last_played" | "play_time")}
           sortOptions={sortOptions}
           sortOrder={sortOrder}
           onSortOrderChange={setSortOrder}

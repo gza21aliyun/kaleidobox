@@ -284,12 +284,12 @@ function StaffPage() {
                             //     handleGameClick(work.game.id);
                             // }}
                             >
-                            <td className="py-3 px-3 w-[4%]">
+                            <td className="py-3 px-3 w-[6%]">
                                 {work.game.cover_url && (
                                 <ImageCard
                                     url={work.game.cover_url} 
                                     alt={`${work.game.name?.trim() || t('common.game')} ${t('common.cover')}`} 
-                                    className="w-16 h-24 object-cover rounded"
+                                    className="w-25 h-40 object-cover rounded"
                                 />
                                 )}
                             </td>

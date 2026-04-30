@@ -36,7 +36,7 @@ export default function GameStats({ game_id, stats }: GameStatsProps) {
   //   loadStats();
   // }, [game_id]);
 
-  if (!stats || stats.total_play_time <= 0) {
+  if (!stats/* || stats.total_play_time <= 0*/) {
     return null;
   }
   const endDate = formatLastDateText(stats.end_date) ?? ""
@@ -47,7 +47,10 @@ export default function GameStats({ game_id, stats }: GameStatsProps) {
       </div>
       {stats.end_date && (
         <div className="mt-0.5 flex items-center whitespace-nowrap border-t border-white/20 pt-0.5">
-          {endDate}玩过
+          {
+          endDate
+          // stats.end_date
+          }玩过
         </div>
       )}
     </div>

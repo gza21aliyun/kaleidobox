@@ -130,7 +130,7 @@ export function GameCard({
   const companyDisplay = game.company || "Unknown Developer";
 
   const stats = gameStats.get(game.id);
-  console.log('LazyGameStats', game.id, stats, gameStats);
+  // console.log('LazyGameStats', game.id, stats, gameStats);
 
   
   

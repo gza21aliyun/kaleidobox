@@ -496,6 +496,7 @@ func main() {
 			startService.SetSessionService(sessionService)
 			startService.SetHotkeyService(hotkeyService)
 			startService.SetVMService(vmService)
+			startService.SetStasService(statsService)
 
 			hotkeyService.SetServices(imageService, startService)
 

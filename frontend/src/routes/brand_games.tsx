@@ -24,7 +24,7 @@ function BrandGamesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { brandName } = Route.useParams();
-  const { gameStats } = useAppStore();
+  const { gameStats, loadStats } = useAppStore();
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,6 +91,7 @@ function BrandGamesPage() {
     try {
       const result = await GetGamesByTag(brand);
       setGames(result || []);
+      loadStats();
     }
     catch (error) {
       console.error("Failed to load games for brand:", error);

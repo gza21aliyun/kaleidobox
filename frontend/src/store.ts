@@ -43,6 +43,8 @@ type AppState = {
   // 标签加载状态
   tagsLoaded: Map<string, models.Tag[]>;
   gameStats: Map<string, vo.GameDetailStats>;
+  loadStats: () => void;
+  updateStats: (gameStats: vo.GameDetailStats) => void;
   setTagsLoaded: (tags: Map<string, models.Tag[]>) => void;
   updateTagInTags: (tags: models.Tag) => void;
   // page: number;
@@ -167,10 +169,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       
             });
 
-      GetGameStatsList().then(stats => { 
-        console.log("loadgames stats", stats);
-        set({ gameStats: arrayToSingleMap(stats, stat => stat.game_id) })
-      });
+      get().loadStats();
       
       set({ gamesLoading: false });
       // get().loadGamesData()
@@ -183,6 +182,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     // finally {
     //   set({ gamesLoading: false });
     // }
+  },
+  loadStats: () => { 
+    GetGameStatsList().then(stats => { 
+        console.log("loadgames stats", stats);
+        set({ gameStats: arrayToSingleMap(stats, stat => stat.game_id) })
+      });
   },
   // AI Summary 缓存
   aiSummaryCache: {},
@@ -237,6 +242,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ tagsLoaded: tagsMap });
     
   },
+  updateStats: (stats: vo.GameDetailStats) => { 
+    const statsMap = new Map(get().gameStats);
+    statsMap.set(stats.game_id, stats);
+    // set({ gameStats: new Map() });
+    set({ gameStats: new Map(statsMap) });
+    // set({ gameStats: statsMap });
+  },
 }));
 
 // 全局事件监听器，确保在任何页面都能接收到游戏更新和任务更新
@@ -282,11 +294,21 @@ const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
   // }
 });
 
+const unlistenDataUpdate = EventsOn("data_updates", (data: any) => { 
+  const dataUpdate : vo.DataUpdate = new vo.DataUpdate(data);
+  console.log("data_update", dataUpdate);
+  if (dataUpdate.Type === "game_stats" && dataUpdate.GameStats) {
+    useAppStore.getState().updateStats(dataUpdate.GameStats)
+  }
+});
+
 // 在应用退出时取消事件监听
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     if (unlistenTaskUpdate) {
       unlistenTaskUpdate();
     }
+    if (unlistenDataUpdate) {
+      unlistenDataUpdate();    }
   });
 }

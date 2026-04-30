@@ -51,6 +51,11 @@ type GameDetailStats struct {
 	GameId            string          `json:"game_id"`
 }
 
+type DataUpdate struct {
+	Type      string //stats
+	GameStats GameDetailStats
+}
+
 type GamePlayStats struct {
 	GameID        string `json:"game_id"`
 	GameName      string `json:"game_name"`

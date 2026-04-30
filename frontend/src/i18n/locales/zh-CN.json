@@ -68,7 +68,8 @@
       "noTags": "暂无标签",
       "deleteCategory": "删除分类",
       "collapse": "收起过滤器",
-      "expand": "展开过滤器"
+      "expand": "展开过滤器",
+      "allStatus": "全部状态"
     }
   },
   "topbar": {
@@ -135,6 +136,14 @@
       "playing": "游玩中",
       "completed": "已通关",
       "on_hold": "搁置"
+    },
+    "sortOptions": {
+      "name": "名称",
+      "createdAt": "添加时间",
+      "releaseAt": "发售日期",
+      "company": "开发商",
+      "lastPlayed": "最后游玩",
+      "playTime": "游戏时间"
     },
     "buttons": {
       "setStatus": "设为状态",

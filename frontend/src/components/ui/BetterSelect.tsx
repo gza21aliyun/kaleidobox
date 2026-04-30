@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 export interface BetterSelectOption {
   value: string;
   label: string;
+  tKey?: string;
 }
 
 interface BetterSelectProps {
@@ -27,7 +28,7 @@ export function BetterSelect({
   const { t } = useTranslation();
   const finalPlaceholder = placeholder || t('common.pleaseSelect');
   const selectedOption = options.find(opt => opt.value === value);
-  const displayValue = selectedOption?.label || finalPlaceholder;
+  const displayValue = selectedOption ? (selectedOption.tKey ? t(selectedOption.tKey) : selectedOption.label) : finalPlaceholder;
 
   return (
     <Listbox value={value} onChange={onChange} disabled={disabled}>
@@ -84,7 +85,7 @@ export function BetterSelect({
                     </span>
                   )}
                   <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
-                    {option.label}
+                    {option.tKey ? t(option.tKey) : option.label}
                   </span>
                 </>
               )}

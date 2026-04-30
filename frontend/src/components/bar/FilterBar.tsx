@@ -10,11 +10,13 @@ import { useAppStore } from "../../store";
 interface SortOption {
   label: string;
   value: string;
+  tKey?: string;
 }
 
 interface FilterOption {
   label: string;
   value: string;
+  tKey?: string;
 }
 
 interface FilterBarProps {

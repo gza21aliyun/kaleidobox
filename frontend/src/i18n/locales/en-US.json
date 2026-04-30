@@ -66,6 +66,7 @@
       "ascending": "Ascending",
       "descending": "Descending",
       "noTags": "No tags",
+      "allStatus": "All status",
       "deleteCategory": "Delete category",
       "collapse": "Collapse filters",
       "expand": "Expand filters"
@@ -135,6 +136,14 @@
       "playing": "Playing",
       "completed": "Completed",
       "on_hold": "On hold"
+    },
+    "sortOptions": {
+      "name": "Name",
+      "createdAt": "Created at",
+      "releaseAt": "Release date",
+      "company": "Company",
+      "lastPlayed": "Last played",
+      "playTime": "Play time"
     },
     "buttons": {
       "setStatus": "Set as status",

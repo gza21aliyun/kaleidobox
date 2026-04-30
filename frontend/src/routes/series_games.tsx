@@ -24,7 +24,7 @@ function SeriesGamesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { seriesName } = Route.useParams();
-  const { gameStats } = useAppStore();
+  const { gameStats, loadStats } = useAppStore();
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,6 +92,7 @@ function SeriesGamesPage() {
     try {
       const result = await GetGamesByTag(series);
       setGames(result || []);
+      loadStats();
     }
     catch (error) {
       console.error("Failed to load games for series:", error);

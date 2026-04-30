@@ -41,7 +41,7 @@ function CategoryDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { categoryId } = Route.useParams();
-  const { gameStats } = useAppStore();
+  const { gameStats, loadStats } = useAppStore();
   const [category, setCategory] = useState<vo.CategoryVO | null>(null);
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,6 +177,7 @@ function CategoryDetailPage() {
     try {
       const result = await GetGamesByCategory(id);
       setGames(result || []);
+      loadStats();
     }
     catch (error) {
       console.error("Failed to load games for category:", error);

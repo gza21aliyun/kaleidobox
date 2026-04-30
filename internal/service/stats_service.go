@@ -307,7 +307,7 @@ func (s *StatsService) GetGameStatsList() ([]vo.GameDetailStats, error) {
 			COUNT(*) as total_play_count,
 			SUM(duration) as total_play_time,
 			MIN(start_time::DATE) as first_play_date,
-			COALESCE(MAX(end_time::DATE), current_date) as last_play_date
+			COALESCE(MAX(end_time), current_date) as last_play_date
 		FROM play_sessions
 		GROUP BY game_id
 		ORDER BY total_play_time DESC
@@ -336,6 +336,43 @@ func (s *StatsService) GetGameStatsList() ([]vo.GameDetailStats, error) {
 	applog.InfoLogSaveAppLog("GetGameStatsList 获取游戏统计列表成功 %d 条数据", len(results))
 
 	return results, nil
+}
+
+func (s *StatsService) GetSingleGameStats(gameId string) (vo.DataUpdate, error) {
+
+	query := `
+		SELECT 
+			game_id,
+			COUNT(*) as total_play_count,
+			SUM(duration) as total_play_time,
+			MIN(start_time::DATE) as first_play_date,
+			COALESCE(MAX(end_time), current_date) as last_play_date
+		FROM play_sessions
+		WHERE game_id = ?
+		GROUP BY game_id
+		ORDER BY total_play_time DESC
+	`
+
+	rows, err := s.db.QueryContext(s.ctx, query, gameId)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "failed to query game stats list: %v", err)
+		return vo.DataUpdate{}, fmt.Errorf("查询游戏统计列表失败: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item vo.GameDetailStats
+		if err := rows.Scan(&item.GameId, &item.TotalPlayCount, &item.TotalPlayTime, &item.StartDate, &item.EndDate); err != nil {
+			applog.LogErrorf(s.ctx, "failed to scan game stats: %v", err)
+			return vo.DataUpdate{}, fmt.Errorf("查询游戏统计失败: %w", err)
+		}
+
+		return vo.DataUpdate{
+			Type:      "game_stats",
+			GameStats: item,
+		}, nil
+	}
+	return vo.DataUpdate{}, fmt.Errorf("查询游戏统计失败2: %w", err)
 }
 
 func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.PeriodStats, error) {

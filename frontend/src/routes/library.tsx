@@ -274,7 +274,7 @@ function LibraryPage() {
     console.log("games:", games);
     console.log("filteredGames:", gs);
     return gs;
-  }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate, includedIds, tagsIntersectionMode]);
+  }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate, includedIds, tagsIntersectionMode, gameStats]);
 
   // const filteredGames = useMemo(() => { 
   //   return filteredGamesList();

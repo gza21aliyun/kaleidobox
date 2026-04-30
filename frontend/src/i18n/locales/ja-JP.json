@@ -66,6 +66,7 @@
       "ascending": "昇順",
       "descending": "降順",
       "noTags": "タグがありません",
+      "allStatus": "すべてのステータス",
       "deleteCategory": "カテゴリを削除",
       "collapse": "フィルターを折りたたむ",
       "expand": "フィルターを展開"
@@ -134,6 +135,14 @@
       "playing": "プレイ中",
       "completed": "クリア済み",
       "on_hold": "保留中"
+    },
+    "sortOptions": {
+      "name": "名前",
+      "createdAt": "追加日時",
+      "releaseAt": "発売日",
+      "company": "開発元",
+      "lastPlayed": "最終プレイ",
+      "playTime": "プレイ時間"
     },
     "buttons": {
       "setStatus": "ステータスを設定",

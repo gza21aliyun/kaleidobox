@@ -41,6 +41,7 @@ type StartService struct {
 	hotkeyService     *HotkeyService
 	activeTimeTracker *timer.ActiveTimeTracker
 	vmService         *VMService
+	statsService      *StatsService
 	mu                sync.Mutex
 
 	// 进程选择相关
@@ -115,6 +116,10 @@ func (s *StartService) SetHotkeyService(hotkeyService *HotkeyService) {
 // SetVMService 设置虚拟机服务（用于管理虚拟机）
 func (s *StartService) SetVMService(vmService *VMService) {
 	s.vmService = vmService
+}
+
+func (s *StartService) SetStasService(statsService *StatsService) {
+	s.statsService = statsService
 }
 
 // StartGameWithTracking 启动游戏并自动追踪游玩时长
@@ -593,6 +598,11 @@ func (s *StartService) finalizePlaySession(sessionID string, gameID string, star
 	if err != nil {
 		applog.LogErrorf(s.ctx, "Failed to update play session %s: %v", sessionID, err)
 		return
+	}
+	stats, err := s.statsService.GetSingleGameStats(session.GameID)
+	if err == nil {
+		applog.InfoLogSaveAppLog("stats_update %v\n", stats)
+		runtime.EventsEmit(s.ctx, "data_updates", stats)
 	}
 
 	// 自动备份游戏存档

@@ -219,7 +219,7 @@ export function GameStatsPanel({ gameId }: GameStatsPanelProps) {
                             >
                               <div className="flex-1">
                                 <div className="text-sm text-brand-900 dark:text-white">
-                                  {formatLocalDateTime(session.start_time, config?.time_zone)}
+                                  {formatLocalDateTime(session.start_time, config?.time_zone)} -- {session.end_time ? formatLocalDateTime(session.end_time, config?.time_zone) : ""}
                                 </div>
                                 <div className="text-xs text-brand-500 dark:text-brand-400">
                                   {t("gameStats.duration")}:

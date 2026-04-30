@@ -386,9 +386,7 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	var tagsMap map[string][]models.Tag = make(map[string][]models.Tag)
 
 	game.Name = name
-	if game.CoverURL == "" {
-		game.CoverURL = coverURL
-	}
+	game.CoverURL = coverURL
 
 	var err error = nil
 	for _, metaTagText := range bangumiResp.MetaTags {

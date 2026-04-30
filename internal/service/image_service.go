@@ -504,6 +504,9 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) ([]models
 			}
 		}
 		ext := filepath.Ext(imageBackup.Url)
+		if queryIndex := strings.Index(ext, "?"); queryIndex != -1 {
+			ext = ext[:queryIndex]
+		}
 		fileName := fmt.Sprintf(`%s\%s%s`, path, uuid.New().String(), ext)
 		err = DownloadImage(imageBackup.Url, fileName)
 		if err != nil {
@@ -563,6 +566,9 @@ func (s *ImageService) DownloadImages() error {
 			}
 		}
 		ext := filepath.Ext(imageBackup.Url)
+		if queryIndex := strings.Index(ext, "?"); queryIndex != -1 {
+			ext = ext[:queryIndex]
+		}
 		fileName := fmt.Sprintf(`%s\%s.%s`, path, uuid.New().String(), ext)
 		err = DownloadImage(imageBackup.Url, fileName)
 		if err != nil {
@@ -861,6 +867,9 @@ func (s *ImageService) downloadImageInternal(ctx context.Context, imageUrl, file
 	url := imageUrl
 	if strings.HasPrefix(url, "//gyutto.com") {
 		url = strings.ReplaceAll(url, "//gyutto.com", "https://image.gyutto.com")
+	}
+	if strings.HasPrefix(url, "//img.dlsite.jp") {
+		url = strings.ReplaceAll(url, "//img.dlsite.jp", "https://img.dlsite.jp")
 	}
 	// 创建 HTTP 客户端
 	client := &http.Client{

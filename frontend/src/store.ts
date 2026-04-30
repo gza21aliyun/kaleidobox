@@ -9,6 +9,7 @@ import { ListTags } from "../wailsjs/go/service/TagService";
 import { EventsOn } from "../wailsjs/runtime/runtime";
 import { arrayFind, arrayToMap } from "./components/utils/Utility";
 import { g } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
+import { GetGameStatsList } from "../wailsjs/go/service/StatsService";
 
 type AISummaryCache = {
   [dimension: string]: string;
@@ -41,6 +42,7 @@ type AppState = {
   setTasks: (tasks: models.TaskNotice[]) => void;
   // 标签加载状态
   tagsLoaded: Map<string, models.Tag[]>;
+  gameStats: vo.GameDetailStats[];
   setTagsLoaded: (tags: Map<string, models.Tag[]>) => void;
   updateTagInTags: (tags: models.Tag) => void;
   // page: number;
@@ -164,6 +166,11 @@ export const useAppStore = create<AppState>((set, get) => ({
               set({ tagsLoaded: map });
       
             });
+
+      GetGameStatsList().then(stats => { 
+        console.log("loadgames stats", stats);
+        set({ gameStats: stats })
+      });
       
       set({ gamesLoading: false });
       // get().loadGamesData()
@@ -197,6 +204,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   // 标签加载状态
   tagsLoaded: new Map(),
+  gameStats: [],
   setTagsLoaded: (tags: Map<string, models.Tag[]>) => {
     set({ tagsLoaded: tags });
   },

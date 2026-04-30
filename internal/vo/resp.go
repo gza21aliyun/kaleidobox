@@ -48,6 +48,7 @@ type GameDetailStats struct {
 	TotalPlayTime     int             `json:"total_play_time"`
 	TodayPlayTime     int             `json:"today_play_time"`
 	RecentPlayHistory []DailyPlayTime `json:"recent_play_history"`
+	GameId            string          `json:"game_id"`
 }
 
 type GamePlayStats struct {

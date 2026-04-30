@@ -85,6 +85,8 @@ func SchemaQueries() []string {
 			pid INTEGER,
 		    process_name TEXT
 		)`,
+		`CREATE INDEX IF NOT EXISTS idx_play_sessions_game_id ON play_sessions(game_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_play_sessions_start_time ON play_sessions(start_time)`,
 		// 新增 Task 表
 		`CREATE TABLE IF NOT EXISTS tasks (
 			id TEXT PRIMARY KEY,

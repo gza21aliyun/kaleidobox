@@ -53,7 +53,7 @@ export const Route = createRoute({
 function LibraryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { games, gamesLoading, fetchGames, setGames, tagsLoaded, setTagsLoaded } = useAppStore();
+  const { games, gamesLoading, fetchGames, tagsLoaded, setTagsLoaded } = useAppStore();
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);

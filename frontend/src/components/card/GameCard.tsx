@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { models } from "../../../wailsjs/go/models";
+import type { models, vo } from "../../../wailsjs/go/models";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import { enums } from "../../../wailsjs/go/models";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
 import { ImageCard } from "./ImageCard";
 import { formatLocalDate } from "../../utils/time";
+import { useAppStore } from "../../store";
 
 // ── 高亮工具：将文本中匹配 query 的部分高亮显示 ──────────────────────────────
 function HighlightText({ text, query }: { text: string; query: string }) {
@@ -30,14 +31,16 @@ function HighlightText({ text, query }: { text: string; query: string }) {
 }
 
 // ── 懒加载游戏统计信息组件 ──────────────────────────────────────────────────────
-function LazyGameStats({ game_id }: { game_id: string }) {
+function LazyGameStats({ game_id, stats }: { game_id: string, stats: vo.GameDetailStats | undefined }) {
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
+          
           setIsVisible(true);
           observer.disconnect();
         }
@@ -54,9 +57,9 @@ function LazyGameStats({ game_id }: { game_id: string }) {
 
   return (
     <div ref={containerRef}>
-      {isVisible && (
+      {isVisible && stats && (
         <React.Suspense fallback={null}>
-          {React.createElement(React.lazy(() => import('./GameStats')), { game_id })}
+          {React.createElement(React.lazy(() => import('./GameStats')), { game_id, stats })}
         </React.Suspense>
       )}
     </div>
@@ -86,10 +89,11 @@ export function GameCard({
   searchQuery = "",
   filteredGameIdsStr = [],
   viewMode = "small",
-  onDelete
+  onDelete,
 }: GameCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { gameStats } = useAppStore();
 
   const handleToggleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -124,6 +128,12 @@ export function GameCard({
 
   const isCompleted = game.status === enums.GameStatus.COMPLETED;
   const companyDisplay = game.company || "Unknown Developer";
+
+  const stats = gameStats.find((s) => s.game_id == game.id)
+  console.log('LazyGameStats', game.id, stats, gameStats);
+
+  
+  
 
   if (viewMode === "list") {
     return (
@@ -237,7 +247,7 @@ export function GameCard({
           <div className="i-mdi-check text-sm" />
         </button>
       )}
-      <LazyGameStats game_id={game.id} />
+      <LazyGameStats game_id={game.id} stats={stats} />
       
       <div className="relative aspect-[3/3.6] w-full overflow-hidden bg-brand-200 dark:bg-brand-700">
         {game.cover_url

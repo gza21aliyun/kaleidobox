@@ -298,6 +298,46 @@ func (s *StatsService) GetGameStats(req vo.GameStatsRequest) (vo.GameDetailStats
 	return stats, nil
 }
 
+func (s *StatsService) GetGameStatsList() ([]vo.GameDetailStats, error) {
+	var results []vo.GameDetailStats
+
+	query := `
+		SELECT 
+			game_id,
+			COUNT(*) as total_play_count,
+			SUM(duration) as total_play_time,
+			MIN(start_time::DATE) as first_play_date,
+			COALESCE(MAX(end_time::DATE), current_date) as last_play_date
+		FROM play_sessions
+		GROUP BY game_id
+		ORDER BY total_play_time DESC
+	`
+
+	rows, err := s.db.QueryContext(s.ctx, query)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "failed to query game stats list: %v", err)
+		return nil, fmt.Errorf("查询游戏统计列表失败: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item vo.GameDetailStats
+		if err := rows.Scan(&item.GameId, &item.TotalPlayCount, &item.TotalPlayTime, &item.StartDate, &item.EndDate); err != nil {
+			applog.LogErrorf(s.ctx, "failed to scan game stats: %v", err)
+			continue
+		}
+		results = append(results, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		applog.LogErrorf(s.ctx, "error iterating game stats rows: %v", err)
+		return nil, fmt.Errorf("遍历游戏统计数据失败: %w", err)
+	}
+	applog.InfoLogSaveAppLog("GetGameStatsList 获取游戏统计列表成功 %d 条数据", len(results))
+
+	return results, nil
+}
+
 func (s *StatsService) GetGlobalPeriodStats(req vo.PeriodStatsRequest) (vo.PeriodStats, error) {
 	var stats vo.PeriodStats
 	stats.Dimension = req.Dimension

@@ -10,6 +10,7 @@ import "./i18n/i18n";
 localStorage.removeItem('libraryViewMode');
 localStorage.removeItem('libraryTagsFilter');
 localStorage.removeItem('library_sourceFilter');
+localStorage.removeItem('searchQuery');
 
 const container = document.getElementById("root");
 

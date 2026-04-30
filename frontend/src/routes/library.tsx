@@ -59,7 +59,7 @@ function LibraryPage() {
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState<string>(() => localStorage.getItem("searchQuery") || "");
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company"> ("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [sourceFilter, setSourceFilter] = useState<string>("");
@@ -581,7 +581,7 @@ function LibraryPage() {
 
       <FilterBar
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(q) => {setSearchQuery(q);localStorage.setItem('searchQuery', q)}}
         searchPlaceholder={t('library.searchPlaceholder')}
         sortBy={sortBy}
         onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at" | "company")}

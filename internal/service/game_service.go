@@ -1202,6 +1202,9 @@ func (s *GameService) UnionFetch(gameEntity *models.GameEntity, req vo.MetadataR
 		dmmGameEntity, _ := dmmGetter.FetchMetadataById(newReq)
 		game := gameEntity.Game
 		game.Summary = dmmGameEntity.Game.Summary
+		if game.Images == "" {
+			game.Images = dmmGameEntity.Game.Images
+		}
 		gameEntity.Game = game
 		fetched = true
 	}
@@ -1212,6 +1215,9 @@ func (s *GameService) UnionFetch(gameEntity *models.GameEntity, req vo.MetadataR
 		getchuGameEntity, _ := getchuGetter.FetchMetadataById(newReq)
 		game := gameEntity.Game
 		game.Summary = getchuGameEntity.Game.Summary
+		if game.Images == "" {
+			game.Images = getchuGameEntity.Game.Images
+		}
 		gameEntity.Game = game
 		fetched = true
 	}
@@ -1222,6 +1228,9 @@ func (s *GameService) UnionFetch(gameEntity *models.GameEntity, req vo.MetadataR
 		dlsiteGameEntity, _ := dlsiteGetter.FetchMetadataById2(newReq)
 		game := gameEntity.Game
 		game.Summary = dlsiteGameEntity.Game.Summary
+		if game.Images == "" {
+			game.Images = dlsiteGameEntity.Game.Images
+		}
 		gameEntity.Game = game
 		fetched = true
 	}

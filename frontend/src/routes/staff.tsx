@@ -7,6 +7,7 @@ import { GetWorkGamesByStaffId } from "../../wailsjs/go/service/GameService";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
 import { ImageCard } from '../components/card/ImageCard';
+import { joinString } from '../components/utils/Utility';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -47,15 +48,22 @@ function StaffPage() {
   };
 
   const handleGameClick = (gameId: string) => {
+                const filteredGameIdsStr = games.map((game) => game.work.game_id)
+                console.log("filteredGameIdsStr:", filteredGameIdsStr)
                 if (gameId != "") {
-                    navigate({ to: `/game/${gameId}` });
+                    navigate({ 
+                      to: `/game/${gameId}` ,
+                      search: {filteredGameIdsStr} ,
+                    });
                 }
                 // navigate({ to: `/staff/${staffId}` });
             };
 
   const handleCharactorClick = (charactorId: string) => {
       if (charactorId != "") {
-          navigate({ to: `/charactor/${charactorId}` });
+          navigate({ 
+            to: `/charactor/${charactorId}` ,
+          });
       }
       // navigate({ to: `/staff/${staffId}` });
   };

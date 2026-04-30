@@ -8,6 +8,7 @@ import { FetchImages } from "../../wailsjs/go/service/ImageService";
 import { Route as rootRoute } from "./__root";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ImageBackupCard, ImageCard } from "../components/card/ImageCard";
+import { joinString } from '../components/utils/Utility';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -55,8 +56,12 @@ function CharactorPage() {
   };
 
   const handleGameClick = (gameId: string) => {
+    const filteredGameIdsStr = games.map((game) => game.work.game_id)
     if (gameId != "") {
-      navigate({ to: `/game/${gameId}` });
+      navigate({ 
+        to: `/game/${gameId}`,
+        search: {filteredGameIdsStr} ,
+       });
     }
   };
 

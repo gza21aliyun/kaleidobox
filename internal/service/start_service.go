@@ -392,7 +392,8 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 		}
 	}
 
-	s.hotkeyService.readyHotkeysForGame(gameID)
+	go s.hotkeyService.readyHotkeysForGame(gameID)
+	applog.InfoLogSaveAppLog("start to wait 03")
 
 	// 根据情况选择监控方式
 	if needExternalMonitor /* || actualProcessName != "" */ {
@@ -524,6 +525,7 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 // monitorProcessByPID 通过PID监控外部进程直到退出
 // 使用 WaitForSingleObject 事件驱动，避免轮询
 func (s *StartService) monitorProcessByPID(sessionID string, gameID string, startTime time.Time, processID uint32, processName string) {
+	applog.InfoLogSaveAppLog("Starting to monitor external process %s (PID %d) using WaitForSingleObject", processName, processID)
 	applog.LogInfof(s.ctx, "Starting to monitor external process %s (PID %d) using WaitForSingleObject", processName, processID)
 	s.gamesLaunched[processID] = GameProcess{GameId: gameID, ProcessID: processID, ProcessName: processName}
 

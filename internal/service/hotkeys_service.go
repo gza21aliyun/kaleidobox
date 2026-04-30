@@ -217,10 +217,10 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 
 func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 	applog.LogInfof(s.ctx, "Loading hotkey configuration")
-	s.mappingLock2.Lock()
 	s.actionkeyLock3.Lock()
-	defer s.actionkeyLock3.Unlock()
+	s.mappingLock2.Lock()
 	defer s.mappingLock2.Unlock()
+	defer s.actionkeyLock3.Unlock()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
 	var devicetype enums.DeviceType
@@ -364,18 +364,22 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 
 	// 更新状态
 	s.stateLock4.Lock()
-	s.mappingLock2.RLock()
 	s.keyStates[key] = true
-	defer s.stateLock4.Unlock()
-	defer s.mappingLock2.RUnlock()
+	s.stateLock4.Unlock()
 
-	if s.actionKeys[key] != nil { // 映射的按键
+	s.actionkeyLock3.RLock()
+	actionkey := s.actionKeys[key]
+	s.actionkeyLock3.RUnlock()
+	if actionkey != nil { // 映射的按键
 		s.monitoredKey.Store(&hk)
 		return
 	}
 
 	// 直接映射：立即模拟目标按键按下
+
+	s.mappingLock2.RLock()
 	hotkey := s.keyMappings[key]
+	s.mappingLock2.RUnlock()
 	if hotkey != nil {
 		s.simulateKeyPress(hotkey.ActionParams, []enums.ModifierKey{})
 	}
@@ -398,14 +402,14 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 	}
 	// 更新状态
 	s.stateLock4.Lock()
-	s.mappingLock2.RLock()
-	s.actionkeyLock3.RLock()
 	s.keyStates[key] = false
-	defer s.stateLock4.Unlock()
-	defer s.mappingLock2.RUnlock()
-	defer s.actionkeyLock3.RUnlock()
+	s.stateLock4.Unlock()
+
+	s.mappingLock2.RLock()
 
 	hotkey := s.keyMappings[key]
+
+	s.mappingLock2.RUnlock()
 
 	fmt.Printf("Key: %v , mappings:%v\n", hotkey, s.keyMappings)
 	if hotkey != nil {
@@ -413,7 +417,9 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 		s.monitoredKey.Store(&hk)
 		return
 	}
+	s.actionkeyLock3.RLock()
 	hotkey = s.actionKeys[key]
+	s.actionkeyLock3.RUnlock()
 	if hotkey != nil {
 		s.handleActionKey(hotkey)
 		s.monitoredKey.Store(&hk)
@@ -477,9 +483,9 @@ func (s *HotkeyService) handleKeboardEvents() {
 			if keyCode != "" {
 				// 简化处理：统一视为按下事件
 				// 在实际应用中可能需要更复杂的逻辑来区分按下和释放
-				s.actionkeyLock3.Lock()
-				defer s.actionkeyLock3.Unlock()
+				s.actionkeyLock3.RLock()
 				hotkey := s.actionKeys[keyCode]
+				s.actionkeyLock3.RUnlock()
 				if hotkey != nil {
 					s.handleActionKey(hotkey)
 				}
@@ -733,9 +739,9 @@ func (s *HotkeyService) GetSupportedDevices() []models.DeviceTypeInfo {
 // RemoveKeyMapping 移除按键映射
 func (s *HotkeyService) RemoveKeyMapping(sourceKey string) {
 	s.mappingLock2.Lock()
-	defer s.mappingLock2.Unlock()
-
 	delete(s.keyMappings, sourceKey)
+	s.mappingLock2.Unlock()
+
 	// 避免在测试中调用日志
 	if s.ctx != nil && s.ctx.Err() == nil {
 		applog.LogInfof(s.ctx, "Removed key mapping for: %s", sourceKey)
@@ -1108,7 +1114,7 @@ func (s *HotkeyService) processCheck() {
 		if game.ProcessID == newProcessId {
 			if activeGameId != game.GameId {
 				s.SetActiveGameID(game.GameId)
-				applog.LogDebugf(s.ctx, "Focus changed to game: %s", game.GameId)
+				applog.LogDebugf(s.ctx, "Focus changed to game: %s(%s)", game.GameId, game.ProcessName)
 			}
 			checked = true
 			break
@@ -1177,24 +1183,25 @@ func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	s.SetActiveGameID(gameId)
 	devicetype := s.loadHotkeyConfig(gameId)
 	if devicetype == enums.DeviceTypeKeyboard {
-		go s.startAlternativeKeyListener()
+		s.startAlternativeKeyListener()
 	} else {
-		go s.startJoystickListener(devicetype)
+		s.startJoystickListener(devicetype)
 	}
 }
 
 func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 	s.isMonitoringKeySetting.Store(false)
 	s.SetActiveGameID("")
-	s.mappingLock2.Lock()
-	defer s.mappingLock2.Unlock()
 	s.actionkeyLock3.Lock()
-	defer s.actionkeyLock3.Unlock()
+	s.mappingLock2.Lock()
+	s.keyMappings = make(map[string]*models.Hotkey)
+	s.actionKeys = make(map[string]*models.Hotkey)
+	s.mappingLock2.Unlock()
+	s.actionkeyLock3.Unlock()
 	s.robotMutex6.Lock()
 	defer s.robotMutex6.Unlock()
 	s.stopKeyboardListener()
-	s.keyMappings = make(map[string]*models.Hotkey)
-	s.actionKeys = make(map[string]*models.Hotkey)
+
 	if s.robot != nil {
 		s.robot.Stop()
 		s.robot = nil
@@ -1214,14 +1221,14 @@ func (s *HotkeyService) startAlternativeKeyListener() {
 	// 使用较短的时间间隔以获得更好的响应性
 	s.keyboardTicker = time.NewTicker(50 * time.Millisecond)
 	s.actionkeyLock3.RLock()
-	defer s.actionkeyLock3.RUnlock()
+	keys := s.actionKeys
+	s.actionkeyLock3.RUnlock()
 	defer func() {
 		if s.keyboardTicker != nil {
 			s.keyboardTicker.Stop()
 			s.keyboardTicker = nil
 		}
 	}()
-	keys := s.actionKeys
 
 	for {
 		select {

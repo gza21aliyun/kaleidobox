@@ -70,7 +70,8 @@
       "collapse": "收起过滤器",
       "expand": "展开过滤器",
       "allStatus": "全部状态"
-    }
+    },
+    "refresh": "刷新"
   },
   "topbar": {
     "minimize": "最小化",
@@ -144,6 +145,11 @@
       "company": "开发商",
       "lastPlayed": "最后游玩",
       "playTime": "游戏时间"
+    },
+    "viewMode": {
+      "list": "列表视图",
+      "large": "大卡片视图",
+      "small": "小卡片视图"
     },
     "buttons": {
       "setStatus": "设为状态",

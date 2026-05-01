@@ -70,7 +70,8 @@
       "deleteCategory": "Delete category",
       "collapse": "Collapse filters",
       "expand": "Expand filters"
-    }
+    },
+    "refresh": "Refresh"
   },
   "topbar": {
     "minimize": "Minimize",
@@ -144,6 +145,11 @@
       "company": "Company",
       "lastPlayed": "Last played",
       "playTime": "Play time"
+    },
+    "viewMode": {
+      "list": "List view",
+      "large": "Large card view",
+      "small": "Small card view"
     },
     "buttons": {
       "setStatus": "Set as status",

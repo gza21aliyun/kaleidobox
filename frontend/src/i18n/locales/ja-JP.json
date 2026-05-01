@@ -70,7 +70,8 @@
       "deleteCategory": "カテゴリを削除",
       "collapse": "フィルターを折りたたむ",
       "expand": "フィルターを展開"
-    }
+    },
+    "refresh": "更新"
   },
   "topbar": {
     "minimize": "最小化",
@@ -143,6 +144,11 @@
       "company": "開発元",
       "lastPlayed": "最終プレイ",
       "playTime": "プレイ時間"
+    },
+    "viewMode": {
+      "list": "リストビュー",
+      "large": "大カードビュー",
+      "small": "小カードビュー"
     },
     "buttons": {
       "setStatus": "ステータスを設定",

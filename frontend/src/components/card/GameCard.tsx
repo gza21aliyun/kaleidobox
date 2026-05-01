@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { enums } from "../../../wailsjs/go/models";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
 import { ImageCard } from "./ImageCard";
-import { formatLocalDate } from "../../utils/time";
+import { formatDurationSimple, formatLastDateText, formatLocalDate } from "../../utils/time";
 import { useAppStore } from "../../store";
 
 // ── 高亮工具：将文本中匹配 query 的部分高亮显示 ──────────────────────────────
@@ -32,38 +32,48 @@ function HighlightText({ text, query }: { text: string; query: string }) {
 
 // ── 懒加载游戏统计信息组件 ──────────────────────────────────────────────────────
 function LazyGameStats({ game_id, stats }: { game_id: string, stats: vo.GameDetailStats | undefined }) {
-  const [isVisible, setIsVisible] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // const [isVisible, setIsVisible] = useState(false);
+  // const containerRef = useRef<HTMLDivElement>(null);
 
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+  // useEffect(() => {
+  //   const observer = new IntersectionObserver(
+  //     ([entry]) => {
+  //       if (entry.isIntersecting) {
           
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
+  //         setIsVisible(true);
+  //         observer.disconnect();
+  //       }
+  //     },
+  //     { threshold: 0.1 }
+  //   );
+
+  //   if (containerRef.current) {
+  //     observer.observe(containerRef.current);
+  //   }
+
+  //   return () => observer.disconnect();
+  // }, []);
+  if (!stats) {
+    return null;
+  }
+
+    const endDate = formatLastDateText(stats.end_date) ?? ""
+    return (
+      <div className="absolute right-1 bottom-16 z-10 flex flex-col rounded-md bg-black/30 px-2 py-1 text-xs text-white/90 backdrop-blur-sm shadow-lg"> 
+        <div className="flex items-center whitespace-nowrap">
+          玩过{formatDurationSimple(stats.total_play_time)}
+        </div>
+        {stats.end_date && (
+          <div className="mt-0.5 flex items-center whitespace-nowrap border-t border-white/20 pt-0.5">
+            {
+            endDate
+            // stats.end_date
+            }玩过
+          </div>
+        )}
+      </div>
     );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={containerRef}>
-      {isVisible && stats && (
-        <React.Suspense fallback={null}>
-          {React.createElement(React.lazy(() => import('./GameStats')), { game_id, stats })}
-        </React.Suspense>
-      )}
-    </div>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

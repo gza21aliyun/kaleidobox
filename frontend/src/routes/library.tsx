@@ -276,6 +276,21 @@ function LibraryPage() {
     return gs;
   }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate, includedIds, tagsIntersectionMode, gameStats]);
 
+  const gridKey = useMemo(() => {
+    return JSON.stringify({
+      l: filteredGames.length,
+      q: searchQuery,
+      s: sortBy,
+      o: sortOrder,
+      f: statusFilter,
+      src: sourceFilter,
+      t: tagsFilter.join(','),
+      rs: releaseStartDate,
+      re: releaseEndDate,
+      v: viewMode
+    });
+  }, [filteredGames.length, searchQuery, sortBy, sortOrder, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate, viewMode]);
+
   // const filteredGames = useMemo(() => { 
   //   return filteredGamesList();
   // }, [games, sortBy, sortOrder, searchQuery, statusFilter, sourceFilter, tagsFilter, releaseStartDate, releaseEndDate]);
@@ -885,6 +900,7 @@ function LibraryPage() {
                         }}
                       >
                         <GameCard
+                          key={filteredGames[virtualItem.index].id}
                           game={filteredGames[virtualItem.index]}
                           searchQuery={searchQuery}
                           selectionMode={batchMode}
@@ -901,6 +917,7 @@ function LibraryPage() {
             : (
                 <div 
                   className="flex-1 overflow-y-auto"
+                  key={`grid-${gridKey}`}
                 >
                   <div className={
                     viewMode === "large"

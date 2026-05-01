@@ -155,7 +155,11 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		return false, fmt.Errorf("failed to get game path: %w", err)
 	}
 
-	if path == "" {
+	// 检测是否为 Steam 协议链接(可能在 path 或 arguments 中)
+	isSteamProtocol := strings.HasPrefix(path, "steam://") || strings.HasPrefix(arguments, "steam://")
+
+	// 如果是 Steam 协议,不需要检查 path 是否为空
+	if !isSteamProtocol && path == "" {
 		applog.LogErrorf(s.ctx, "game path is empty for game: %s", gameID)
 		return false, fmt.Errorf("game path is empty for game: %s", gameID)
 	}
@@ -183,8 +187,25 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 
 	var cmd *exec.Cmd
 
-	// 如果启用了 Locale Emulator
-	if useLE && s.config.LocaleEmulatorPath != "" {
+	// 如果是 Steam 协议链接，使用特殊方式启动
+	if isSteamProtocol {
+		runtime.LogInfof(s.ctx, "Starting game via Steam protocol")
+
+		// 确定要使用的 Steam URL(优先从 arguments 获取)
+		steamURL := arguments
+		if steamURL == "" {
+			steamURL = path
+		}
+
+		// 使用 Windows start 命令来打开 Steam 协议链接
+		cmd = exec.Command("cmd", "/C", "start", steamURL)
+
+		// Steam 游戏不使用 Locale Emulator
+		useLE = false
+
+		applog.LogInfof(s.ctx, "Launching Steam game with URL: %s", steamURL)
+	} else if useLE && s.config.LocaleEmulatorPath != "" {
+		// 如果启用了 Locale Emulator
 		runtime.LogInfof(s.ctx, "Starting game with Locale Emulator: %s", gameID)
 		if arguments == "" {
 			cmd = exec.Command(s.config.LocaleEmulatorPath, path)
@@ -201,7 +222,10 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		}
 	}
 
-	cmd.Dir = filepath.Dir(path)
+	// 对于 Steam 协议,不设置工作目录
+	if !isSteamProtocol {
+		cmd.Dir = filepath.Dir(path)
+	}
 	if s.config.DisplayName != "" {
 		_, err := s.GetDisplayByName(s.config.DisplayName)
 		if err == nil {
@@ -262,6 +286,25 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		return false, fmt.Errorf("failed to create play session: %w", err)
 	}
 
+	// 对于 Steam 游戏，也需要启动进程检测
+	// detectAndMonitorProcess 会通过 detectNewProcesses 找到实际的游戏进程
+	if isSteamProtocol {
+		applog.InfoLogSaveAppLog("Steam game launched, starting process detection")
+		// s.hotkeyService.readyHotkeysForGame(gameID)
+		launcherPID, err = utils.GetProcessPIDByName("steam.exe", "")
+		if err != nil {
+			applog.InfoLogSaveAppLog("failed to get Steam process ID: %v", err)
+			return false, fmt.Errorf("failed to get Steam process ID: %w", err)
+		}
+		applog.InfoLogSaveAppLog("Steam process ID: %d", launcherPID)
+
+		go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, "steam.exe", processName, useLE, path, savePath)
+
+		// 传入一个虚拟的 launcherExeName,让 detectAndMonitorProcess 进入正确的分支
+
+		return true, nil
+	}
+
 	// 启动进程检测和监控 goroutine
 	applog.InfoLogSaveAppLog("启动进程检测和监控 goroutine")
 	go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, launcherExeName, processName, useLE, path, savePath)
@@ -304,7 +347,7 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 		} else {
 			applog.LogInfof(s.ctx, "Game %s has no new process: %s", gameID, savedProcessName)
 			// 在系统进程中搜索保存的进程名
-			pid, err := utils.GetProcessPIDByName(savedProcessName, path)
+			pid, err := utils.GetProcessPIDByName(savedProcessName, "")
 			if err != nil {
 				applog.LogWarningf(s.ctx, "Failed to find saved process %s: %v, falling back to launcher monitoring", savedProcessName, err)
 				// 如果找不到保存的进程，使用启动器进程监控
@@ -875,7 +918,7 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 				return oldProcess
 			}
 		}
-		if proc.PPID == tpid {
+		if proc.PPID == tpid && proc.Name != "steamwebhelper.exe" {
 			applog.InfoLogSaveAppLog("detectNewProcesses Found process: %s (PID: %d)", proc.Name, proc.PID)
 			tpid = proc.PID
 			newProcess = &utils.NewProcessInfo{Name: proc.Name, PID: proc.PID, PPID: proc.PPID}
@@ -909,7 +952,7 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 				if !knownPIDs[proc.PID] {
 					// 检查该进程是否由目标进程启动
 					applog.InfoLogSaveAppLog("detectNewProcesses New process detected: %s (PID: %d)")
-					if proc.PPID == tpid {
+					if proc.PPID == tpid && proc.Name != "steamwebhelper.exe" {
 						applog.InfoLogSaveAppLog("detectNewProcesses Detected new process launched by PID %d: %s (PID: %d)", targetPID, proc.Name, proc.PID)
 						// 可以在这里添加业务逻辑，例如记录或通知
 						// return &proc
@@ -921,6 +964,9 @@ func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, proce
 						break
 					}
 					knownPIDs[proc.PID] = true
+				}
+				if processName != "" && processName == proc.Name {
+					applog.InfoLogSaveAppLog("detectNewProcesses Process found: %s (PID: %d, ppid:%d, tpid:%d)", proc.Name, proc.PID, proc.PPID, tpid)
 				}
 			}
 

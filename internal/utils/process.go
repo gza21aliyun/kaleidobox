@@ -219,14 +219,14 @@ func GetProcessPIDByName(processName string, path string) (uint32, error) {
 
 		// 不区分大小写比较
 		if strings.EqualFold(exeName, targetName) {
+			if path == "" {
+				applog.InfoLogSaveAppLog("processName:%s found, paths are empty", processName, err)
+				return pe32.ProcessID, nil
+			}
 			processPath, err := GetProcessPath(pe32.ProcessID)
 			applog.InfoLogSaveAppLog("processPath:%s, %v", processPath, err)
 			if path == processPath {
 				applog.InfoLogSaveAppLog("processName:%s found, paths are same", processName, err)
-				return pe32.ProcessID, nil
-			}
-			if path == "" {
-				applog.InfoLogSaveAppLog("processName:%s found, paths are empty", processName, err)
 				return pe32.ProcessID, nil
 			}
 

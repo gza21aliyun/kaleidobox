@@ -482,9 +482,19 @@ func (s *GameService) GetGamesSendFront(total int) error {
 }
 
 func (s *GameService) GetGamesByQuery(query string) ([]models.Game, error) {
+	return s.GetGamesByQueryText(query, "")
+}
+
+func (s *GameService) GetGamesByQueryText(query string, txt string) ([]models.Game, error) {
 	// fmt.Printf("GetGamesByQuery 01: query: %s\n", query)
 	var games []models.Game = []models.Game{}
-	rows, err := s.db.QueryContext(s.ctx, query)
+	var rows *sql.Rows
+	var err error
+	if txt != "" {
+		rows, err = s.db.QueryContext(s.ctx, query, txt)
+	} else {
+		rows, err = s.db.QueryContext(s.ctx, query)
+	}
 	if err != nil {
 		applog.LogErrorf(s.ctx, "GetGames: failed to query games: %v", err)
 		return games, fmt.Errorf("failed to query games: %w", err)
@@ -670,8 +680,8 @@ func (s *GameService) GetGamesByBrand(brand string) ([]models.Game, error) {
 	if brand == "" {
 		return games, nil
 	}
-	query := fmt.Sprintf("%s WHERE company = '%s'", s.GetQueryBase(), brand)
-	games, err := s.GetGamesByQuery(query)
+	query := fmt.Sprintf("%s WHERE company = ?", s.GetQueryBase())
+	games, err := s.GetGamesByQueryText(query, brand)
 	return games, err
 }
 

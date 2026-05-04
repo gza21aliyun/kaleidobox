@@ -196,6 +196,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
     console.log("req:", req)
     UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), req, uuid)
     toast.success(t('batchUpdate.startUpdateSuccess'))
+    onUpdateComplete();
     
     
   };

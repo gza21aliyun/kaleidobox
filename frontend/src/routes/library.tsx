@@ -981,7 +981,10 @@ function LibraryPage() {
       <BatchUpdateModal
         isOpen={isBatchUpdateOpen}
         onClose={() => setIsBatchUpdateOpen(false)}
-        onUpdateComplete={loadGames}
+        onUpdateComplete={() => {
+          setBatchMode(false);
+          // loadGames().then((res)=>{});
+        }}
         games={filterSelected}
       />
 

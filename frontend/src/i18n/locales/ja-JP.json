@@ -502,6 +502,42 @@
       "back": "戻る"
     }
   },
+  "brandList": {
+    "title": "ブランド",
+    "searchPlaceholder": "ブランドを検索",
+    "sortOptions": {
+      "name": "名前",
+      "use_count": "使用回数"
+    },
+    "toasts": {
+      "loadBrandsFailed": "ブランドの読み込みに失敗しました"
+    },
+    "viewMode": {
+      "default": "デフォルト",
+      "gallery": "ギャラリー"
+    },
+    "labels": {
+      "games": "ゲーム"
+    }
+  },
+  "seriesList": {
+    "title": "シリーズ",
+    "searchPlaceholder": "シリーズを検索",
+    "sortOptions": {
+      "name": "名前",
+      "use_count": "使用回数"
+    },
+    "toasts": {
+      "loadSeriesFailed": "シリーズの読み込みに失敗しました"
+    },
+    "viewMode": {
+      "default": "デフォルト",
+      "gallery": "ギャラリー"
+    },
+    "labels": {
+      "games": "ゲーム"
+    }
+  },
   "charactorList": {
     "title": "キャラクター一覧",
     "stats": {

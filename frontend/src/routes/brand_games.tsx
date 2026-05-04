@@ -3,7 +3,7 @@ import { models, enums } from "../../wailsjs/go/models";
 import { createRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
-import { GetGamesByTag } from "../../wailsjs/go/service/GameService";
+import { GetGamesByTag, GetGamesByBrand } from "../../wailsjs/go/service/GameService";
 import { FilterBar } from "../components/bar/FilterBar";
 import { GameCard } from "../components/card/GameCard";
 import { sortOptions, statusOptions } from "../consts/options";
@@ -18,12 +18,14 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/brand/$brandName",
   component: BrandGamesPage,
+  shouldReload: false,
 });
 
 function BrandGamesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { brandName } = Route.useParams();
+  const decodedBrandName = decodeURIComponent(brandName);
   const { gameStats, loadStats } = useAppStore();
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +91,7 @@ function BrandGamesPage() {
 
   const loadGames = async (brand: string) => {
     try {
-      const result = await GetGamesByTag(brand);
+      const result = await GetGamesByBrand(brand);
       setGames(result || []);
       loadStats();
     }
@@ -108,7 +110,7 @@ function BrandGamesPage() {
   const filteredGames = useMemo(() => {
     if (sourceFilter === "emptyGallery") {
       if (includedIds === null) {
-        FetchEmptyGalleryGames().then((res) => { 
+        FetchEmptyGalleryGames().then((res) => {
           setIncludedIds(res);
         });
       }
@@ -239,13 +241,13 @@ function BrandGamesPage() {
     setSelectedGameIds((prev) => {
       const currentIndex = filteredGames.findIndex(game => game.id === gameId);
       const lastIndex = lastSelectedGameId ? filteredGames.findIndex(game => game.id === lastSelectedGameId) : -1;
-      
+
       // 处理 Shift 键：反向选择从上次选中到当前的所有游戏
       if (event?.shiftKey && lastSelectedGameId && lastIndex !== -1 && currentIndex !== -1) {
         const startIndex = Math.min(lastIndex, currentIndex);
         const endIndex = Math.max(lastIndex, currentIndex);
         const gamesInRange = filteredGames.slice(startIndex + 1, endIndex + 1).map(game => game.id);
-        
+
         // 反向选择：已选中的变为未选中，未选中的变为选中
         const newSelection = new Set([...prev]);
         gamesInRange.forEach(gameIdInRange => {
@@ -257,7 +259,7 @@ function BrandGamesPage() {
         });
         return Array.from(newSelection);
       }
-      
+
       // 普通点击：添加或移除当前游戏
       else {
         if (selected) {
@@ -266,7 +268,7 @@ function BrandGamesPage() {
         return prev.filter(id => id !== gameId);
       }
     });
-    
+
     // 更新上次选中的游戏
     if (selected) {
       setLastSelectedGameId(gameId);
@@ -290,17 +292,57 @@ function BrandGamesPage() {
   };
 
   useEffect(() => {
-    if (brandName) {
+    if (decodedBrandName) {
       const init = async () => {
         setLoading(true);
         setBatchMode(false);
         setSelectedGameIds([]);
-        await loadGames(brandName);
+        await loadGames(decodedBrandName);
         setLoading(false);
       };
       init();
     }
-  }, [brandName]);
+  }, [decodedBrandName]);
+
+  // 多次尝试恢复滚动位置，确保图片加载后也能正确定位
+  useEffect(() => {
+    if (!loading) {
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        const savedPosition = sessionStorage.getItem('brandGamesScrollPosition');
+        if (savedPosition) {
+          const attemptRestore = (attempts: number) => {
+            if (attempts <= 0) return;
+            setTimeout(() => {
+              mainElement.scrollTop = parseInt(savedPosition);
+              attemptRestore(attempts - 1);
+            }, 100);
+          };
+          attemptRestore(10);
+        }
+      }
+    }
+  }, [loading]);
+
+  // 保存滚动位置到 sessionStorage
+  useEffect(() => {
+    const mainElement = document.querySelector('main');
+    const handleScroll = () => {
+      if (mainElement) {
+        sessionStorage.setItem('brandGamesScrollPosition', mainElement.scrollTop.toString());
+      }
+    };
+    
+    if (mainElement) {
+      mainElement.addEventListener('scroll', handleScroll);
+    }
+    
+    return () => {
+      if (mainElement) {
+        mainElement.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
 
   return (
     <div className={`h-full w-full overflow-y-auto p-8 transition-opacity duration-300 ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
@@ -317,7 +359,7 @@ function BrandGamesPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold text-brand-900 dark:text-white flex items-center gap-3">
-              {brandName}
+              {decodedBrandName}
             </h1>
             <p className="text-brand-500 dark:text-brand-400 mt-2">
               {games.length} {t('category.labels.games')}
@@ -366,7 +408,7 @@ function BrandGamesPage() {
               filteredGames.length > 0
                 ? (
                     <div className={
-                      viewMode === "list" 
+                      viewMode === "list"
                         ? "flex flex-col gap-2"
                         : viewMode === "large"
                           ? "grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4"

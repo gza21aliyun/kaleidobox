@@ -503,6 +503,42 @@
       "back": "Back"
     }
   },
+  "brandList": {
+    "title": "Brands",
+    "searchPlaceholder": "Search brands",
+    "sortOptions": {
+      "name": "Name",
+      "use_count": "Usage count"
+    },
+    "toasts": {
+      "loadBrandsFailed": "Failed to load brands"
+    },
+    "viewMode": {
+      "default": "Default",
+      "gallery": "Gallery"
+    },
+    "labels": {
+      "games": "games"
+    }
+  },
+  "seriesList": {
+    "title": "Series",
+    "searchPlaceholder": "Search series",
+    "sortOptions": {
+      "name": "Name",
+      "use_count": "Usage count"
+    },
+    "toasts": {
+      "loadSeriesFailed": "Failed to load series"
+    },
+    "viewMode": {
+      "default": "Default",
+      "gallery": "Gallery"
+    },
+    "labels": {
+      "games": "games"
+    }
+  },
   "charactorList": {
     "title": "Character list",
     "stats": {

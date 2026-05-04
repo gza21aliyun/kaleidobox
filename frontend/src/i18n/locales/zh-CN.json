@@ -503,6 +503,42 @@
       "back": "返回"
     }
   },
+  "brandList": {
+    "title": "品牌",
+    "searchPlaceholder": "搜索品牌",
+    "sortOptions": {
+      "name": "名称",
+      "use_count": "使用次数"
+    },
+    "toasts": {
+      "loadBrandsFailed": "加载品牌失败"
+    },
+    "viewMode": {
+      "default": "默认",
+      "gallery": "画廊"
+    },
+    "labels": {
+      "games": "个游戏"
+    }
+  },
+  "seriesList": {
+    "title": "系列",
+    "searchPlaceholder": "搜索系列",
+    "sortOptions": {
+      "name": "名称",
+      "use_count": "使用次数"
+    },
+    "toasts": {
+      "loadSeriesFailed": "加载系列失败"
+    },
+    "viewMode": {
+      "default": "默认",
+      "gallery": "画廊"
+    },
+    "labels": {
+      "games": "个游戏"
+    }
+  },
   "charactorList": {
     "title": "角色列表",
     "stats": {

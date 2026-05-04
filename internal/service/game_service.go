@@ -1793,8 +1793,8 @@ func (s *GameService) GetGamesByTag(tag string) ([]models.Game, error) {
 	if tag == "" {
 		return games, nil
 	}
-	query := fmt.Sprintf("%s WHERE array_contains(string_split(tags, ','), '%s')", s.GetQueryBase(), tag)
-	games, err := s.GetGamesByQuery(query)
+	query := fmt.Sprintf("%s WHERE array_contains(string_split(tags, ','), ?)", s.GetQueryBase())
+	games, err := s.GetGamesByQueryText(query, tag)
 	return games, err
 }
 

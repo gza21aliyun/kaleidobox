@@ -18,12 +18,14 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/series/$seriesName",
   component: SeriesGamesPage,
+  shouldReload: false,
 });
 
 function SeriesGamesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { seriesName } = Route.useParams();
+  const decodedSeriesName = decodeURIComponent(seriesName);
   const { gameStats, loadStats } = useAppStore();
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ function SeriesGamesPage() {
   const [lastSelectedGameId, setLastSelectedGameId] = useState<string | null>(null);
   const [filterExpanded, setFilterExpanded] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<string>("");
-        
+
   const [tagsFilter, setTags] = useState<string[]>(() => {
     const savedTagsFilter = localStorage.getItem('seriesTagsFilter');
     return savedTagsFilter ? JSON.parse(savedTagsFilter) : [];
@@ -109,7 +111,7 @@ function SeriesGamesPage() {
   const filteredGames = useMemo(() => {
     if (sourceFilter === "emptyGallery") {
       if (includedIds === null) {
-        FetchEmptyGalleryGames().then((res) => { 
+        FetchEmptyGalleryGames().then((res) => {
           setIncludedIds(res);
         });
       }
@@ -240,13 +242,13 @@ function SeriesGamesPage() {
     setSelectedGameIds((prev) => {
       const currentIndex = filteredGames.findIndex(game => game.id === gameId);
       const lastIndex = lastSelectedGameId ? filteredGames.findIndex(game => game.id === lastSelectedGameId) : -1;
-      
+
       // 处理 Shift 键：反向选择从上次选中到当前的所有游戏
       if (event?.shiftKey && lastSelectedGameId && lastIndex !== -1 && currentIndex !== -1) {
         const startIndex = Math.min(lastIndex, currentIndex);
         const endIndex = Math.max(lastIndex, currentIndex);
         const gamesInRange = filteredGames.slice(startIndex + 1, endIndex + 1).map(game => game.id);
-        
+
         // 反向选择：已选中的变为未选中，未选中的变为选中
         const newSelection = new Set([...prev]);
         gamesInRange.forEach(gameIdInRange => {
@@ -258,7 +260,7 @@ function SeriesGamesPage() {
         });
         return Array.from(newSelection);
       }
-      
+
       // 普通点击：添加或移除当前游戏
       else {
         if (selected) {
@@ -267,7 +269,7 @@ function SeriesGamesPage() {
         return prev.filter(id => id !== gameId);
       }
     });
-    
+
     // 更新上次选中的游戏
     if (selected) {
       setLastSelectedGameId(gameId);
@@ -291,17 +293,57 @@ function SeriesGamesPage() {
   };
 
   useEffect(() => {
-    if (seriesName) {
+    if (decodedSeriesName) {
       const init = async () => {
         setLoading(true);
         setBatchMode(false);
         setSelectedGameIds([]);
-        await loadGames(seriesName);
+        await loadGames(decodedSeriesName);
         setLoading(false);
       };
       init();
     }
-  }, [seriesName]);
+  }, [decodedSeriesName]);
+
+  // 多次尝试恢复滚动位置，确保图片加载后也能正确定位
+  useEffect(() => {
+    if (!loading) {
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        const savedPosition = sessionStorage.getItem('seriesGamesScrollPosition');
+        if (savedPosition) {
+          const attemptRestore = (attempts: number) => {
+            if (attempts <= 0) return;
+            setTimeout(() => {
+              mainElement.scrollTop = parseInt(savedPosition);
+              attemptRestore(attempts - 1);
+            }, 100);
+          };
+          attemptRestore(10);
+        }
+      }
+    }
+  }, [loading]);
+
+  // 保存滚动位置到 sessionStorage
+  useEffect(() => {
+    const mainElement = document.querySelector('main');
+    const handleScroll = () => {
+      if (mainElement) {
+        sessionStorage.setItem('seriesGamesScrollPosition', mainElement.scrollTop.toString());
+      }
+    };
+    
+    if (mainElement) {
+      mainElement.addEventListener('scroll', handleScroll);
+    }
+    
+    return () => {
+      if (mainElement) {
+        mainElement.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
 
   return (
     <div className={`h-full w-full overflow-y-auto p-8 transition-opacity duration-300 ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
@@ -318,7 +360,7 @@ function SeriesGamesPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold text-brand-900 dark:text-white flex items-center gap-3">
-              {seriesName}
+              {decodedSeriesName}
             </h1>
             <p className="text-brand-500 dark:text-brand-400 mt-2">
               {games.length} {t('category.labels.games')}
@@ -367,7 +409,7 @@ function SeriesGamesPage() {
               filteredGames.length > 0
                 ? (
                     <div className={
-                      viewMode === "list" 
+                      viewMode === "list"
                         ? "flex flex-col gap-2"
                         : viewMode === "large"
                           ? "grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4"

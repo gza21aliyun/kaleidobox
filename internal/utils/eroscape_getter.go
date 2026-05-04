@@ -164,6 +164,12 @@ func (b EroscapeInfoGetter) GetDomain() string {
 	return domain
 }
 
+func (b EroscapeInfoGetter) GetIdFromLink(link string) string {
+	idParts := strings.Split(strings.Split(link, "#")[0], "=")
+	gameId := idParts[len(idParts)-1]
+	return gameId
+}
+
 func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn IdFunction) (models.Game, error) {
 	log.Println("Fetching 01 metadata by name:", name)
 	log.Println("Fetching 02 metadata by name:", name)
@@ -210,8 +216,9 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn Id
 
 		title := e.DOM.Find("td").Eq(0).Text()
 		href := e.ChildAttr("td a.tooltip", "href")
-		idParts := strings.Split(strings.Split(href, "#")[0], "=")
-		gameId := idParts[len(idParts)-1]
+		// idParts := strings.Split(strings.Split(href, "#")[0], "=")
+		gameId := b.GetIdFromLink(href)
+		// gameId := idParts[len(idParts)-1]
 
 		// link := gameUrl + gameId
 

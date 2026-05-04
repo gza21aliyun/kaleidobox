@@ -128,6 +128,12 @@ func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction)
 	return game, err
 }
 
+func (b GetchuInfoGetter) GetIdFromLink(link string) string {
+	linkParts := strings.Split(link, "id=")
+	id := linkParts[1]
+	return id
+}
+
 func (b GetchuInfoGetter) FetchMetadata(id string, token string) (models.Game, error) {
 	gameEntity, err := b.FetchMetadataById(vo.MetadataRequest{ID: id})
 	return gameEntity.Game, err

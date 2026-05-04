@@ -417,7 +417,6 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	gameEntity.Tags = tagsMap
 	gameEntity.Game = game
 
-	fmt.Println("01 02 " + game.Company)
 	return gameEntity, err
 }
 
@@ -571,11 +570,34 @@ func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxIte
 						}
 					}
 				}
+			} else if strings.Contains(item.Key, "链接") {
+				fmt.Printf("infobox 21 \n")
+				for _, obj := range item.Value.([]interface{}) {
+					fmt.Printf("infobox 22 %v \n", obj)
+					if objMap, ok := obj.(map[string]interface{}); ok {
+						fmt.Printf("infobox 23 %v \n", objMap)
+						if k, _ := objMap["k"]; k == "ErogameScape" {
+							link := objMap["v"].(string)
+							bgm := NewEroscapeInfoGetter(false)
+							game.EroscapeId = bgm.GetIdFromLink(link)
+						} else if k, _ := objMap["k"]; k == "Getchu" {
+							link := objMap["v"].(string)
+							getchu := NewGetchuInfoGetter()
+							game.GetchuId = getchu.GetIdFromLink(link)
+						} else if k, _ := objMap["k"]; k == "DLsite" {
+							link := objMap["v"].(string)
+							dlsite := NewDlsiteInfoGetter()
+							game.DlsiteId = dlsite.GetIdFromLink(link)
+						}
+					}
+				}
 			}
 
 		}
 	}
 	gameEntity.Tags = tagsMap
+	js, _ := json.MarshalIndent(*game, "", "  ")
+	fmt.Println("infobox 25 " + string(js))
 	return nil
 }
 

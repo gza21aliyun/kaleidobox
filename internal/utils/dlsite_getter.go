@@ -590,6 +590,13 @@ func getRawResponse(url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
+func (b DlsiteInfoGetter) GetIdFromLink(link string) string {
+
+	linkParts := strings.Split(link, "/")
+	id := strings.ReplaceAll(linkParts[len(linkParts)-1], ".html", "")
+	return id
+}
+
 func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models.GameEntity, error) {
 	var gameEntity models.GameEntity = models.GameEntity{}
 	var game models.Game = request.GetGame()

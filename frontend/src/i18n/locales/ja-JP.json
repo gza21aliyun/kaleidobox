@@ -937,7 +937,7 @@
     "selectFile": "ファイルを選択",
     "openLocation": "ファイルエクスプローラーで場所を開く",
     "openPathError": "パスを開くのに失敗しました。ファイル/ディレクトリが存在しない可能性があります。",
-    "arguments": "ゲーム引数",
+    "arguments": "ゲーム引数(スチームリンク)",
     "savePath": "セーブパス",
     "savePathPlaceholder": "ゲームのセーブパスを選択してください（ファイルまたはフォルダー）",
     "select": "選択",

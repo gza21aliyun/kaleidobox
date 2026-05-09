@@ -938,7 +938,7 @@
     "selectFile": "Select file",
     "openLocation": "Open location in file explorer",
     "openPathError": "Failed to open path, file/directory may not exist",
-    "arguments": "Game arguments",
+    "arguments": "Game arguments(Supports steam link)",
     "savePath": "Save path",
     "savePathPlaceholder": "Select game save path (file or folder)",
     "select": "Select",

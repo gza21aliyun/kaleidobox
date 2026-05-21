@@ -88,7 +88,11 @@
     "settings": "Settings",
     "charactors": "Characters",
     "tags": "Tags",
-    "virtualMachines": "Virtual Machines"
+    "virtualMachines": "Virtual Machines",
+    "brands": "Brands",
+    "series": "Series",
+    "categoryList": "Categories",
+    "favorites": "Favorites"
   },
   "home": {
     "welcomeBack": "Welcome back!",

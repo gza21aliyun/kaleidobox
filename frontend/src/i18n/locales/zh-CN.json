@@ -88,7 +88,11 @@
     "settings": "设置",
     "charactors": "角色",
     "tags": "标签",
-    "virtualMachines": "虚拟机"
+    "virtualMachines": "虚拟机",
+    "brands": "品牌",
+    "series": "系列",
+    "categoryList": "分类",
+    "favorites": "收藏"
   },
   "home": {
     "welcomeBack": "欢迎回来!",

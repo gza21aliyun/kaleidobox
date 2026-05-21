@@ -1,0 +1,287 @@
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from "@tanstack/react-router";
+import { models, vo } from '../../../wailsjs/go/models';
+import { UpdateTag } from '../../../wailsjs/go/service/TagService';
+import { GetGamesByTag } from '../../../wailsjs/go/service/GameService';
+import { GetGamesByCategory } from '../../../wailsjs/go/service/CategoryService';
+import { useAppStore } from '../../store';
+import { ImageCard } from './ImageCard';
+
+type CategoryType = 'favorite' | 'brand' | 'series' | 'genre' | 'parent1' | 'parent2';
+
+interface CategoryListCardProps {
+  id: string;
+  name: string;
+  type: CategoryType;
+  game_count?: number;
+  use_count?: number;
+  viewMode?: "default" | "gallery";
+  original?: models.Tag | vo.CategoryVO;
+  dirPath?: string;
+  gameIds?: string[];
+}
+
+export function CategoryListCard({
+  id,
+  name,
+  type,
+  game_count = 0,
+  use_count = 0,
+  viewMode = "default",
+  original,
+  dirPath,
+  gameIds,
+}: CategoryListCardProps) {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { games: storeGames, updateTagInTags } = useAppStore();
+  const [games, setGames] = useState<models.Game[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const isPathCategory = type === 'parent1' || type === 'parent2';
+  const isTagCategory = type === 'brand' || type === 'series' || type === 'genre';
+  const displayCount = isTagCategory ? use_count : game_count;
+
+  const pathPreviewGames = useMemo(() => {
+    if (!isPathCategory || !gameIds) return [];
+    return storeGames
+      .filter(g => gameIds.includes(g.id) && g.cover_url)
+      .slice(0, 3);
+  }, [storeGames, gameIds, isPathCategory]);
+
+  const handleViewDetails = () => {
+    if (isPathCategory) {
+      if (gameIds && gameIds.length > 0) {
+        navigate({ 
+          to: '/category_games',
+          search: {
+            selectedGameIds: gameIds.join(','),
+            title: dirPath || name,
+          } as Record<string, string>
+        });
+      }
+      return;
+    }
+    if (type === 'favorite') {
+      navigate({ to: `/favorites/${id}` });
+    } else if (type === 'brand') {
+      navigate({ to: `/brand/${encodeURIComponent(name)}` });
+      if (original && 'use_count' in original) {
+        original.use_count++;
+        UpdateTag(original as models.Tag)
+        updateTagInTags(original as models.Tag)
+      }
+    } else if (type === 'series') {
+      navigate({ to: `/series/${encodeURIComponent(name)}` });
+      if (original && 'use_count' in original) {
+        original.use_count++;
+        UpdateTag(original as models.Tag)
+        updateTagInTags(original as models.Tag)
+      }
+    } else if (type === 'genre') {
+      const genreGames = storeGames.filter(g => {
+        const tags = g.tags?.split(',') || [];
+        return tags.includes(name);
+      }).map(g => g.id);
+      if (genreGames.length > 0) {
+        navigate({
+          to: '/category_games',
+          search: {
+            selectedGameIds: genreGames.join(','),
+            title: name,
+          } as Record<string, string>
+        });
+      }
+      if (original && 'use_count' in original) {
+        original.use_count++;
+        UpdateTag(original as models.Tag)
+        updateTagInTags(original as models.Tag)
+      }
+    }
+  };
+
+  const loadCategoryGames = async () => {
+    if (isPathCategory || isLoading || hasLoaded) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      let result: models.Game[] = [];
+      if (type === 'favorite') {
+        result = await GetGamesByCategory(id);
+      } else {
+        result = await GetGamesByTag(name);
+      }
+      setGames(result || []);
+      setHasLoaded(true);
+    } catch (error) {
+      console.error(`Failed to load games for category ${name}:`, error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (viewMode !== "gallery" || isPathCategory) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadCategoryGames();
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [viewMode, name, id, type]);
+
+  const getTypeIcon = () => {
+    switch (type) {
+      case 'favorite':
+        return "i-mdi-heart";
+      case 'brand':
+        return "i-mdi-store";
+      case 'series':
+        return "i-mdi-format-list-bulleted-type";
+      case 'parent1':
+      case 'parent2':
+        return "i-mdi-folder";
+      default:
+        return "i-mdi-folder";
+    }
+  };
+
+  const getTypeColorClass = () => {
+    switch (type) {
+      case 'favorite':
+        return "bg-error-100 text-error-600 dark:bg-error-900/30 dark:text-error-400";
+      case 'brand':
+        return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+      case 'series':
+        return "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400";
+      case 'parent1':
+      case 'parent2':
+        return "bg-neutral-100 text-neutral-600 dark:bg-neutral-900/30 dark:text-neutral-400";
+      default:
+        return "bg-neutral-100 text-neutral-600 dark:bg-neutral-900/30 dark:text-neutral-400";
+    }
+  };
+
+  const previewGames = isPathCategory ? pathPreviewGames : games.filter(game => game.cover_url).slice(0, 3);
+  const actualGameCount = isPathCategory ? game_count : games.length;
+
+  if (viewMode === "gallery") {
+    return (
+      <div
+        ref={cardRef}
+        className="glass-card flex flex-col bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700 rounded-xl shadow-sm hover:shadow-md transition-all text-left group cursor-pointer overflow-hidden"
+        onClick={handleViewDetails}
+      >
+        <div className="relative w-full overflow-hidden bg-neutral-100 dark:bg-brand-700" style={{ aspectRatio: '16/9' }}>
+          {!isPathCategory && isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+            </div>
+          ) : previewGames.length > 0 ? (
+            <>
+              {previewGames.length === 1 && (
+                <ImageCard
+                  url={previewGames[0].cover_url}
+                  alt={previewGames[0].name}
+                  lazyLoad={true}
+                  referrerPolicy="no-referrer"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  onDragStart={e => e.preventDefault()}
+                />
+              )}
+
+              {previewGames.length === 2 && (
+                <div className="grid grid-cols-2 absolute inset-0">
+                  {previewGames.map((game) => (
+                    <div key={game.id} className="relative h-full overflow-hidden">
+                      <ImageCard
+                        url={game.cover_url}
+                        alt={game.name}
+                        lazyLoad={true}
+                        referrerPolicy="no-referrer"
+                        className="absolute inset-0 w-full h-full object-cover object-center"
+                        onDragStart={e => e.preventDefault()}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {previewGames.length >= 3 && (
+                <div className="grid grid-cols-3 absolute inset-0">
+                  {previewGames.slice(0, 3).map((game) => (
+                    <div key={game.id} className="relative h-full overflow-hidden">
+                      <ImageCard
+                        url={game.cover_url}
+                        alt={game.name}
+                        lazyLoad={true}
+                        referrerPolicy="no-referrer"
+                        className="absolute inset-0 w-full h-full object-cover object-center"
+                        onDragStart={e => e.preventDefault()}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-neutral-400 dark:text-brand-400">
+              <div className={`${getTypeIcon()} text-5xl`} />
+            </div>
+          )}
+        </div>
+
+        <div className="p-4">
+          <h3 className="font-semibold text-brand-900 dark:text-white group-hover:text-neutral-600 dark:group-hover:text-neutral-400 transition-colors truncate">
+            {name}{isTagCategory && displayCount > 0 ? ` (点击${displayCount}次)` : ''}
+          </h3>
+          <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
+            {actualGameCount} {t('brandList.labels.games')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="glass-card flex items-center p-4 bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700 rounded-xl shadow-sm hover:shadow-md transition-all text-left group cursor-pointer"
+      onClick={handleViewDetails}
+    >
+      <div className={`p-3 rounded-lg mr-4 ${getTypeColorClass()}`}>
+        <div className={`text-2xl ${getTypeIcon()}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-brand-900 dark:text-white group-hover:text-neutral-600 dark:group-hover:text-neutral-400 transition-colors truncate">
+          {name}{isTagCategory && displayCount > 0 ? ` (点击${displayCount}次)` : ''}
+        </h3>
+        <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
+          {actualGameCount} {t('brandList.labels.games')}
+        </p>
+      </div>
+    </div>
+  );
+}

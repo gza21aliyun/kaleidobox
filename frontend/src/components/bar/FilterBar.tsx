@@ -62,6 +62,10 @@ interface FilterBarProps {
   tagsIntersectionMode?: boolean;
   onTagsIntersectionModeChange?: (enabled: boolean) => void;
   games?: models.Game[];
+  // 分类筛选（收藏、品牌、系列）
+  categoryFilter?: string;
+  onCategoryFilterChange?: (value: string) => void;
+  categoryOptions?: FilterOption[];
 }
 
 export function FilterBar({
@@ -101,6 +105,9 @@ export function FilterBar({
   tagsIntersectionMode = false,
   onTagsIntersectionModeChange,
   games,
+  categoryFilter,
+  onCategoryFilterChange,
+  categoryOptions,
 }: FilterBarProps) {
   const { t } = useTranslation();
   const [initialized, setInitialized] = useState(false);
@@ -203,6 +210,21 @@ export function FilterBar({
         }
         else {
           localStorage.removeItem(`${storageKey}_sourceFilter`);
+        }
+      }
+    }
+  };
+
+  // 处理分类筛选变更
+  const handleCategoryFilterChange = (value: string) => {
+    if (onCategoryFilterChange) {
+      onCategoryFilterChange(value);
+      if (storageKey) {
+        if (value) {
+          localStorage.setItem(`${storageKey}_categoryFilter`, value);
+        }
+        else {
+          localStorage.removeItem(`${storageKey}_categoryFilter`);
         }
       }
     }
@@ -321,6 +343,16 @@ export function FilterBar({
               onChange={handleStatusFilterChange}
               options={statusOptions}
               className="min-w-[120px]"
+            />
+          )}
+
+          {/* 分类筛选 */}
+          {categoryOptions && onCategoryFilterChange && (
+            <BetterSelect
+              value={categoryFilter || ""}
+              onChange={handleCategoryFilterChange}
+              options={categoryOptions}
+              className="min-w-[180px]"
             />
           )}
 

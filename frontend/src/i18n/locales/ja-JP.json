@@ -87,7 +87,12 @@
     "categories": "カテゴリ",
     "settings": "設定",
     "charactors": "キャラクター",
-    "tags": "タグ"
+    "tags": "タグ",
+    "virtualMachines": "仮想マシン",
+    "brands": "ブランド",
+    "series": "シリーズ",
+    "categoryList": "カテゴリ一覧",
+    "favorites": "お気に入り"
   },
   "home": {
     "welcomeBack": "おかえりなさい！",

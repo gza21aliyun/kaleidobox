@@ -33,7 +33,7 @@ import { useAppStore } from "../store";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/categories/$categoryId",
+  path: "/favorites/$categoryId",
   component: CategoryDetailPage,
 });
 
@@ -186,7 +186,7 @@ function CategoryDetailPage() {
   };
 
   const onBack = () => {
-    navigate({ to: "/categories" });
+    navigate({ to: "/favorites" });
   };
 
   const handleRemoveGame = async (gameId: string) => {

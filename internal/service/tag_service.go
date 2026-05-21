@@ -447,3 +447,34 @@ func (s *TagService) GetSeries() ([]models.Tag, error) {
 
 	return tags, nil
 }
+
+func (s *TagService) GetGenres() ([]models.Tag, error) {
+	query := `
+		SELECT name, category, group_name, is_h, is_spoiler, block_modify, use_count
+		FROM tags
+		WHERE category = ?
+		ORDER BY name
+	`
+	rows, err := s.db.QueryContext(s.ctx, query, models.TagCategoryGenre)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tags []models.Tag
+	for rows.Next() {
+		var tag models.Tag
+		err := rows.Scan(&tag.Name, &tag.Category, &tag.Group, &tag.IsH, &tag.IsSpoiler, &tag.BlockModify, &tag.UseCount)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+
+	// 检查迭代过程中是否有错误
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tags, nil
+}

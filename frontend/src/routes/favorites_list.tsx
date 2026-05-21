@@ -11,7 +11,7 @@ import {
   UpdateCategory,
 } from "../../wailsjs/go/service/CategoryService";
 import { FilterBar } from "../components/bar/FilterBar";
-import { CategoryCard } from "../components/card/CategoryCard";
+import { FavoritesCard } from "../components/card/FavoritesCard";
 import { CategoryModal } from "../components/modal/CategoryModal";
 import { ConfirmModal } from "../components/modal/ConfirmModal";
 import { CategoriesSkeleton } from "../components/skeleton/CategoriesSkeleton";
@@ -19,11 +19,11 @@ import { Route as rootRoute } from "./__root";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/categories",
-  component: CategoriesPage,
+  path: "/favorites",
+  component: FavoritesListPage,
 });
 
-function CategoriesPage() {
+function FavoritesListPage() {
   const { t } = useTranslation();
   const [categories, setCategories] = useState<vo.CategoryVO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -288,7 +288,7 @@ function CategoriesPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {filteredCategories.map(category => (
-          <CategoryCard
+          <FavoritesCard
             key={category.id}
             category={category}
             onEdit={e => handleEditCategory(e, category)}

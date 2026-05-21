@@ -8,8 +8,8 @@ import { TimezoneSelectModal } from "./components/modal/TimezoneSelectModal";
 import { UpdateDialog } from "./components/ui/UpdateDialog";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
 import { Route as rootRoute } from "./routes/__root";
-import { Route as categoriesRoute } from "./routes/categories";
-import { Route as categoryRoute } from "./routes/category";
+import { Route as favoritesListRoute } from "./routes/favorites_list";
+import { Route as favoritesRoute } from "./routes/favorites";
 import { Route as gameRoute } from "./routes/game";
 import { Route as indexRoute } from "./routes/index";
 import { Route as libraryRoute } from "./routes/library";
@@ -26,12 +26,14 @@ import { Route as brandGamesRoute } from "./routes/brand_games";
 import { Route as seriesListRoute } from "./routes/series_list";
 import { Route as seriesGamesRoute } from "./routes/series_games";
 import { Route as vmRoute } from "./routes/virtual_machines";
+import { Route as categoryListRoute } from "./routes/category_list";
+import { Route as categoryGamesRoute } from "./routes/category_games";
 
 import { useAppStore } from "./store";
 
-const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, categoriesRoute, 
-  categoryRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute, taskRoute, 
-  brandsRoute, brandGamesRoute, seriesListRoute, seriesGamesRoute, vmRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, favoritesListRoute, 
+  favoritesRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute, taskRoute, 
+  brandsRoute, brandGamesRoute, seriesListRoute, seriesGamesRoute, vmRoute, categoryListRoute, categoryGamesRoute]);
 
 const router = createRouter({ routeTree });
 

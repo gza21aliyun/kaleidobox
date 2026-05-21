@@ -2,7 +2,7 @@ import type { vo } from "../../../wailsjs/go/models";
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
 
-interface CategoryCardProps {
+interface FavoritesCardProps {
   category: vo.CategoryVO;
   onDelete?: (e: React.MouseEvent) => void;
   onEdit?: (e: React.MouseEvent) => void;
@@ -13,7 +13,7 @@ interface CategoryCardProps {
   viewMode?: "list" | "small" | "large";
 }
 
-export function CategoryCard({
+export function FavoritesCard({
   category,
   onDelete,
   onEdit,
@@ -22,12 +22,12 @@ export function CategoryCard({
   selectionDisabled = false,
   onSelectChange,
   viewMode = "small",
-}: CategoryCardProps) {
+}: FavoritesCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   const handleViewDetails = () => {
-    navigate({ to: `/categories/${category.id}` });
+    navigate({ to: `/favorites/${category.id}` });
   };
 
   const handleToggleSelect = (e?: React.MouseEvent) => {
@@ -99,7 +99,7 @@ export function CategoryCard({
             <button
               type="button"
               onClick={(e) => {
-                e.preventDefault(); // Prevent navigation
+                e.preventDefault();
                 e.stopPropagation();
                 onEdit(e);
               }}
@@ -113,7 +113,7 @@ export function CategoryCard({
             <button
               type="button"
               onClick={(e) => {
-                e.preventDefault(); // Prevent navigation
+                e.preventDefault();
                 e.stopPropagation();
                 onDelete(e);
               }}

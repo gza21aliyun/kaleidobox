@@ -946,6 +946,8 @@
     "pvPathPlaceholder": "動画ファイルパス",
     "pvPathHint": "ゲームプロモーション動画のローカルパス",
     "selectFileFailed": "ファイルの選択に失敗しました",
+    "vmrunPathLabel": "vmrun.exe パス（Vmware Workstation用、esxiは不要）",
+    "vmrunPathPlaceholder": "Vmrun.exe のフルパス",
     "insideVm": "仮想マシン内のゲームかどうか",
     "insideVmHint": "このゲームが仮想マシン内で実行されるかどうかをマークします",
     "summary": "概要",

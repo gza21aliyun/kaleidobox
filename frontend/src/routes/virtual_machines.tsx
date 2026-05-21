@@ -7,6 +7,10 @@ import { BetterButton } from "../components/ui/BetterButton";
 import { BetterSelect } from "../components/ui/BetterSelect";
 import { GetAllVMs, AddVM, UpdateVM, DeleteVM, ListVmsInEsx } from "../../wailsjs/go/service/VMService";
 import { toast } from "react-hot-toast";
+import { VMPanel } from "../components/panel/VMPanel";
+import type { appconf } from "../../wailsjs/go/models";
+import { useAppStore } from "../store";
+import { CollapsibleSection } from "../components/ui/CollapsibleSection";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -16,6 +20,7 @@ export const Route = createRoute({
 
 function VirtualMachinesPage() {
   const { t } = useTranslation();
+  const { config, fetchConfig, updateConfig } = useAppStore();
   const [vms, setVms] = useState<models.Vms[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVm, setEditingVm] = useState<models.Vms | null>(null);
@@ -30,6 +35,7 @@ function VirtualMachinesPage() {
     host_user: "",
     host_pass: ""
   });
+  const [appFormData, setAppFormData] = useState<appconf.AppConfig | null>(null);
   const [esxVms, setEsxVms] = useState<models.Vms[]>([]);
   const [showEsxVmList, setShowEsxVmList] = useState(false);
   const [isLoadingEsxVms, setIsLoadingEsxVms] = useState(false);
@@ -38,6 +44,34 @@ function VirtualMachinesPage() {
     loadVMs();
   }, []);
 
+  useEffect(() => {
+      const init = async () => {
+        await fetchConfig();
+      };
+      init();
+    }, [fetchConfig]);
+
+  // 自动保存逻辑
+  useEffect(() => {
+    if (!appFormData)
+      return;
+
+    const hasChanges = JSON.stringify(appFormData) !== JSON.stringify(config);
+    if (!hasChanges)
+      return;
+
+    const timer = setTimeout(() => {
+      updateConfig(appFormData);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [appFormData, updateConfig, config]);
+
+  useEffect(() => {
+    if (config) {
+      setAppFormData({ ...config } as appconf.AppConfig);
+    }
+  }, [config]);
   const loadVMs = async () => {
     try {
       const result = await GetAllVMs();
@@ -135,6 +169,10 @@ function VirtualMachinesPage() {
     setShowEsxVmList(false);
   };
 
+  const handleAppFormChange = (newData: appconf.AppConfig) => {
+    setAppFormData(newData);
+  };
+
   return (
     <div className="max-w-10xl mx-auto p-8">
       <div className="space-y-6">
@@ -144,6 +182,13 @@ function VirtualMachinesPage() {
             {t("vm.add")}
           </BetterButton>
         </div>
+
+        { appFormData && (
+          <CollapsibleSection title="虚拟机设置" icon="i-mdi-server" defaultOpen={false}>
+            <VMPanel formData={appFormData} onChange={handleAppFormChange} />
+          </CollapsibleSection>
+        )}
+
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-brand-200 dark:divide-brand-700">

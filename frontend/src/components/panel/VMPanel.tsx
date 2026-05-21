@@ -17,7 +17,7 @@ export function VMPanel({ formData, onChange }: VMPanelProps) {
         onChange({ ...formData, vmrun_path: selection });
       }
     } catch (error) {
-      console.error("选择文件失败:", error);
+      console.error(t("gameEdit.selectFileFailed"), error);
     }
   };
 
@@ -27,7 +27,7 @@ export function VMPanel({ formData, onChange }: VMPanelProps) {
         <div className="flex items-center gap-2 mb-1">
           <span className="i-mdi-file-executable text-brand-600 dark:text-brand-400" />
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-            vmrun.exe 路径
+            {t("gameEdit.vmrunPathLabel")}
           </label>
         </div>
         <div className="flex gap-2">
@@ -35,7 +35,7 @@ export function VMPanel({ formData, onChange }: VMPanelProps) {
             type="text"
             value={formData.vmrun_path || ""}
             onChange={(e) => onChange({ ...formData, vmrun_path: e.target.value })}
-            placeholder="Vmrun.exe 的完整路径"
+            placeholder={t("gameEdit.vmrunPathPlaceholder")}
             className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
           />
           <button
@@ -43,7 +43,7 @@ export function VMPanel({ formData, onChange }: VMPanelProps) {
             onClick={handleVmrunPathChange}
             className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
           >
-            选择
+            {t("gameEdit.select")}
           </button>
         </div>
       </div>

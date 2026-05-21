@@ -947,6 +947,8 @@
     "pvPathPlaceholder": "Video file path",
     "pvPathHint": "Local path for game promotional video file",
     "selectFileFailed": "Failed to select file",
+    "vmrunPathLabel": "vmrun.exe path (for Vmware Workstation, not needed for esxi)",
+    "vmrunPathPlaceholder": "Full path to Vmrun.exe",
     "insideVm": "Is game inside VM",
     "insideVmHint": "Mark whether this game runs inside a virtual machine",
     "summary": "Summary",

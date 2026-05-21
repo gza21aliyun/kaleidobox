@@ -9,7 +9,7 @@ import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { getFolderPath } from "../utils/Utility";
 import { BatchUpdateModal } from "../../components/modal/BatchUpdateModal";
-import { GetAllVMs } from "../../../wailsjs/go/service/VMService";
+import { GetAllVMs, OpenGamePathInsideVm } from "../../../wailsjs/go/service/VMService";
 import { v } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
 
 interface GameEditFormProps {
@@ -244,12 +244,32 @@ export function GameEditPanel({
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
             {t('gameEdit.vmId')}
           </label>
-          <BetterSelect
-            value={game.vm_id!}
-            onChange={value => onGameChange({ ...game, vm_id: value } as models.Game)}
-            options={vmOptions}
-            // placeholder={t('common.pleaseSelect')}
-          />
+           <div className="flex items-center gap-2">
+            <BetterSelect
+              value={game.vm_id!}
+              onChange={value => onGameChange({ ...game, vm_id: value } as models.Game)}
+              options={vmOptions}
+              className="flex-1"
+              // placeholder={t('common.pleaseSelect')}
+            />
+            <BetterButton
+              onClick={async () => {
+                if (!game.vm_id) {
+                  toast.error(t('gameEdit.noVmSelected'));
+                  return;
+                }
+                try {
+                  await OpenGamePathInsideVm(game.id!);
+                  toast.success(t('gameEdit.openVmPathSuccess'));
+                } catch (error) {
+                  toast.error(t('gameEdit.openVmPathError'));
+                }
+              }}
+              disabled={!game.vm_id || !game.path}
+              icon="i-mdi-folder-open"
+              title={t('gameEdit.openInVm')}
+            />
+          </div>
           <span className="ml-2 text-sm text-brand-600 dark:text-brand-400">{t('gameEdit.vmIdHint')}</span>
         </div>
 

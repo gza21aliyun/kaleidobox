@@ -955,7 +955,11 @@
     "sourceIdPlaceholder": "リモートデータソースのID",
     "updateFromRemote": "リモートから更新",
     "updateFromSource": "ソースから更新",
-    "delete": "削除"
+    "delete": "削除",
+    "noVmSelected": "最初に仮想マシンを選択してください",
+    "openVmPathSuccess": "仮想マシンでパスを開きました",
+    "openVmPathError": "仮想マシンでパスを開くのに失敗しました",
+    "openInVm": "仮想マシンで開く"
   },
   "gameGallery": {
     "screenshots": "スクリーンショット",

@@ -956,7 +956,11 @@
     "sourceIdPlaceholder": "Remote data source ID",
     "updateFromRemote": "Update from remote",
     "updateFromSource": "Update from source",
-    "delete": "Delete"
+    "delete": "Delete",
+    "noVmSelected": "Please select a virtual machine first",
+    "openVmPathSuccess": "Path opened in virtual machine",
+    "openVmPathError": "Failed to open path in virtual machine",
+    "openInVm": "Open in virtual machine"
   },
   "gameGallery": {
     "screenshots": "Screenshots",

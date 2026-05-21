@@ -479,6 +479,186 @@ func (s *VMService) StartGameInsideEsx(vm *models.Vms, path, arguments string) (
 	return true, nil
 }
 
+// ... existing code ...
+
+// OpenGamePathInsideVm 在虚拟机中打开游戏路径
+func (s *VMService) OpenGamePathInsideVm(gameID string) (bool, error) {
+	// 获取游戏信息
+	game, err := s.gameService.GetGameByID(gameID)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "failed to get game: %v", err)
+		return false, fmt.Errorf("failed to get game: %w", err)
+	}
+
+	if game.VmId == "" {
+		applog.LogErrorf(s.ctx, "game vm_id is empty: %s", gameID)
+		return false, fmt.Errorf("game vm_id is empty: %s", gameID)
+	}
+
+	// 获取虚拟机信息
+	vm, err := s.GetVMByID(game.VmId)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "failed to get vm: %v", err)
+		return false, fmt.Errorf("failed to get vm: %w", err)
+	}
+
+	// 检查游戏路径是否存在
+	if game.Path == "" {
+		applog.LogErrorf(s.ctx, "game path is empty: %s", gameID)
+		return false, fmt.Errorf("game path is empty: %s", gameID)
+	}
+
+	// 根据虚拟机类型调用不同的打开路径函数
+	switch vm.VmType {
+	case "workstation":
+		return s.OpenGamePathInsideWs(vm, game.Path)
+	case "esx":
+		return s.OpenGamePathInsideEsx(vm, game.Path)
+	default:
+		applog.LogErrorf(s.ctx, "unsupported vm type: %s", vm.VmType)
+		return false, fmt.Errorf("unsupported vm type: %s", vm.VmType)
+	}
+}
+
+// OpenGamePathInsideWs 在 Workstation 虚拟机中打开游戏路径
+func (s *VMService) OpenGamePathInsideWs(vm *models.Vms, path string) (bool, error) {
+	// 检查虚拟机配置是否完整
+	if s.config.VmrunPath == "" || vm.VmPath == "" || vm.VmUserName == "" {
+		applog.LogErrorf(s.ctx, "虚拟机配置不完整")
+		return false, fmt.Errorf("虚拟机配置不完整，请在设置中配置虚拟机参数")
+	}
+
+	// 构建vmrun命令来启动虚拟机（如果未运行）
+	vmrunCmd := exec.Command(s.config.VmrunPath, "start", vm.VmPath, "gui")
+	if err := vmrunCmd.Run(); err != nil {
+		applog.LogWarningf(s.ctx, "启动虚拟机失败，可能已经在运行: %v", err)
+	}
+
+	// 等待虚拟机启动
+	time.Sleep(10 * time.Second)
+
+	// 构建在虚拟机中打开路径的命令
+	// 使用 cmd.exe 执行 explorer 命令，兼容 Windows XP 及更高版本
+	var vmrunArgs []string
+	vmrunArgs = append(vmrunArgs, "-T", "ws")
+	vmrunArgs = append(vmrunArgs, "-gu", vm.VmUserName)
+	vmrunArgs = append(vmrunArgs, "-gp", vm.VmPass)
+	vmrunArgs = append(vmrunArgs, "runProgramInGuest")
+	vmrunArgs = append(vmrunArgs, vm.VmPath)
+	vmrunArgs = append(vmrunArgs, "-noWait")
+	vmrunArgs = append(vmrunArgs, "-interactive")
+
+	// 使用 cmd.exe /c 执行 explorer 命令，兼容所有 Windows 版本
+	vmrunArgs = append(vmrunArgs, "C:\\Windows\\System32\\cmd.exe")
+	vmrunArgs = append(vmrunArgs, "/c")
+	vmrunArgs = append(vmrunArgs, fmt.Sprintf(`explorer.exe /select,"%s"`, path))
+
+	applog.LogInfof(s.ctx, "在 Workstation 虚拟机中打开游戏路径: %s", path)
+	cmd := exec.Command(s.config.VmrunPath, vmrunArgs...)
+
+	if err := cmd.Start(); err != nil {
+		applog.LogErrorf(s.ctx, "failed to open path in VM: %v", err)
+		return false, fmt.Errorf("failed to open path in VM: %w", err)
+	}
+
+	// 操作成功，返回 true 给前端
+	return true, nil
+}
+
+// OpenGamePathInsideEsx 在 ESX 虚拟机中打开游戏路径
+func (s *VMService) OpenGamePathInsideEsx(vm *models.Vms, path string) (bool, error) {
+	// 检查 ESX 配置是否完整
+	if vm.HostUrl == "" || vm.HostUser == "" || vm.HostPass == "" {
+		applog.LogErrorf(s.ctx, "ESX 虚拟机配置不完整")
+		return false, fmt.Errorf("ESX 虚拟机配置不完整")
+	}
+
+	applog.LogInfof(s.ctx, "在 ESX 虚拟机中打开游戏路径: %s", path)
+
+	// 1. 连接到 ESX 主机
+	c, sessionManager, err := s.ConnectToESX(vm.HostUrl, vm.HostUser, vm.HostPass)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "连接 ESX 主机失败: %v", err)
+		return false, fmt.Errorf("连接 ESX 主机失败: %w", err)
+	}
+	defer sessionManager.Logout(s.ctx)
+
+	// 2. 找到指定的虚拟机
+	vmObj, err := s.FindVM(c, vm.VmPath)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "查找虚拟机失败: %v", err)
+		return false, fmt.Errorf("查找虚拟机失败: %w", err)
+	}
+	fmt.Println("虚拟机已找到:", vmObj.Name())
+
+	// 3. 确保虚拟机处于运行状态
+	running, err := s.IsVMRunning(vmObj)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "检查虚拟机状态失败: %v", err)
+		return false, fmt.Errorf("检查虚拟机状态失败: %w", err)
+	}
+
+	if !running {
+		applog.LogInfof(s.ctx, "启动虚拟机: %s", vm.VmName)
+		err = s.PowerOnVM(vmObj)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "启动虚拟机失败: %v", err)
+			return false, fmt.Errorf("启动虚拟机失败: %w", err)
+		}
+		// 等待虚拟机启动
+		time.Sleep(30 * time.Second)
+	}
+
+	// 4. 在虚拟机中打开路径
+	applog.LogInfof(s.ctx, "在 ESX 虚拟机中执行打开路径命令")
+	sc := c.ServiceContent
+	var guestOpsMgr mo.GuestOperationsManager
+	if c.ServiceContent.GuestOperationsManager == nil {
+		fmt.Println("ESXi 主机不支持 Guest Operations 或未正确初始化")
+		return false, fmt.Errorf("ESXi 主机不支持 Guest Operations 或未正确初始化")
+	}
+	err = property.DefaultCollector(c).RetrieveOne(s.ctx, *sc.GuestOperationsManager, []string{"processManager"}, &guestOpsMgr)
+	if err != nil || guestOpsMgr.ProcessManager == nil {
+		return false, fmt.Errorf("无法获取 ProcessManager 引用: %w", err)
+	}
+
+	guestAuth := &types.NamePasswordAuthentication{
+		Username: vm.VmUserName,
+		Password: vm.VmPass,
+		GuestAuthentication: types.GuestAuthentication{
+			InteractiveSession: true,
+		},
+	}
+
+	// 使用 cmd.exe /c 执行 explorer 命令，兼容 Windows XP 及更高版本
+	spec := &types.GuestProgramSpec{
+		ProgramPath:      "C:\\Windows\\System32\\cmd.exe",
+		Arguments:        fmt.Sprintf(`/c explorer.exe /select,"%s"`, path),
+		WorkingDirectory: filepath.Dir(path),
+	}
+
+	req := types.StartProgramInGuest{
+		This: *guestOpsMgr.ProcessManager,
+		Vm:   vmObj.Reference(),
+		Auth: guestAuth,
+		Spec: spec,
+	}
+	fmt.Println("开始打开路径")
+
+	res, err := methods.StartProgramInGuest(s.ctx, c, &req)
+	if err != nil {
+		fmt.Println("无法打开路径:", err)
+		return false, fmt.Errorf("无法打开路径: %v", err)
+	}
+
+	fmt.Printf("路径已在虚拟机中成功打开，进程 ID: %d\n", res.Returnval)
+	applog.LogInfof(s.ctx, "路径已在虚拟机中成功打开，进程 ID: %d\n", res.Returnval)
+
+	return true, nil
+}
+
+// ... existing code ...
+
 // ConnectToESX 连接到 ESX 主机
 func (s *VMService) ConnectToESX(hostURL, username, password string) (*vim25.Client, *session.Manager, error) {
 	applog.LogInfof(s.ctx, "连接到 ESX 主机: %s", hostURL)

@@ -959,7 +959,11 @@
     "sourceIdPlaceholder": "远程数据源的ID",
     "updateFromRemote": "从远程更新",
     "updateFromSource": "选择源更新",
-    "delete": "删除"
+    "delete": "删除",
+    "noVmSelected": "请先选择虚拟机",
+    "openVmPathSuccess": "已在虚拟机中打开路径",
+    "openVmPathError": "在虚拟机中打开路径失败",
+    "openInVm": "在虚拟机中打开"
   },
   "gameGallery": {
     "screenshots": "截图",

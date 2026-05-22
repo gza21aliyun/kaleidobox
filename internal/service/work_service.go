@@ -399,6 +399,18 @@ func (s *WorkService) GetWorksByStaffId(staffId string) ([]models.Work, error) {
 	return works, err
 }
 
+func (s *WorkService) GetWorksByStaffIdAndRole(staffId string, role enums.StaffRole) ([]models.Work, error) {
+	query := `
+		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, 
+		source_type, source_staff_id, source_charactor_id, source_game_id, images, game_name, game_cover, sort 
+		FROM works
+		WHERE staff_id = ? AND role = ?
+
+	`
+	works, err := s.GetWorksByQueryId(query, staffId, string(role))
+	return works, err
+}
+
 func (s *WorkService) GetWorkGamesByCharactorId(charactorId string) ([]models.Work, error) {
 	query := `
 		SELECT id, game_id, staff_id, role, charactor_id, charactor_name, staff_name, work_summary, 

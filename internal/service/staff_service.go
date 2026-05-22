@@ -282,3 +282,42 @@ func (s *StaffService) CountStaffs() (int, error) {
 	}
 	return count, nil
 }
+
+func (s *StaffService) GetStaffsByRole(role enums.StaffRole) ([]*models.Staff, error) {
+	query := `
+		SELECT DISTINCT st.id, st.name, st.other_names, st.roles, st.source_staff_id, st.source_type, st.game_ids, st.summary, st.gender, st.image
+		FROM works w
+		JOIN staffs st ON w.staff_id = st.id
+		WHERE w.role = ? AND w.staff_id IS NOT NULL AND w.staff_id != ''
+	`
+	rows, err := s.db.QueryContext(s.ctx, query, string(role))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var staffs []*models.Staff
+	for rows.Next() {
+		var staff models.Staff
+		var sourceType string
+		err := rows.Scan(
+			&staff.Id,
+			&staff.Name,
+			&staff.OtherNames,
+			&staff.Roles,
+			&staff.SourceStaffId,
+			&sourceType,
+			&staff.GameIds,
+			&staff.Summary,
+			&staff.Gender,
+			&staff.Image,
+		)
+		if err != nil {
+			continue
+		}
+		staff.SourceType = enums.SourceType(sourceType)
+		staffs = append(staffs, &staff)
+	}
+
+	return staffs, nil
+}

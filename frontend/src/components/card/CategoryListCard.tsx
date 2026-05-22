@@ -1,14 +1,15 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
-import { models, vo } from '../../../wailsjs/go/models';
+import { models, vo, enums } from '../../../wailsjs/go/models';
 import { UpdateTag } from '../../../wailsjs/go/service/TagService';
 import { GetGamesByTag } from '../../../wailsjs/go/service/GameService';
 import { GetGamesByCategory } from '../../../wailsjs/go/service/CategoryService';
+import { GetWorksByStaffIdAndRole } from '../../../wailsjs/go/service/WorkService';
 import { useAppStore } from '../../store';
 import { ImageCard } from './ImageCard';
 
-type CategoryType = 'favorite' | 'brand' | 'series' | 'genre' | 'parent1' | 'parent2';
+type CategoryType = 'favorite' | 'brand' | 'series' | 'genre' | 'chara_design' | 'sceneario' | 'parent1' | 'parent2';
 
 interface CategoryListCardProps {
   id: string;
@@ -17,7 +18,7 @@ interface CategoryListCardProps {
   game_count?: number;
   use_count?: number;
   viewMode?: "default" | "gallery";
-  original?: models.Tag | vo.CategoryVO;
+  original?: models.Tag | vo.CategoryVO | models.Staff;
   dirPath?: string;
   gameIds?: string[];
 }
@@ -68,14 +69,36 @@ export function CategoryListCard({
     if (type === 'favorite') {
       navigate({ to: `/favorites/${id}` });
     } else if (type === 'brand') {
-      navigate({ to: `/brand/${encodeURIComponent(name)}` });
+      GetGamesByTag(name).then(games => {
+        const gameIds = games.map(g => g.id).filter((id): id is string => !!id);
+        if (gameIds.length > 0) {
+          navigate({
+            to: '/category_games',
+            search: {
+              selectedGameIds: gameIds.join(','),
+              title: name,
+            } as Record<string, string>
+          });
+        }
+      });
       if (original && 'use_count' in original) {
         original.use_count++;
         UpdateTag(original as models.Tag)
         updateTagInTags(original as models.Tag)
       }
     } else if (type === 'series') {
-      navigate({ to: `/series/${encodeURIComponent(name)}` });
+      GetGamesByTag(name).then(games => {
+        const gameIds = games.map(g => g.id).filter((id): id is string => !!id);
+        if (gameIds.length > 0) {
+          navigate({
+            to: '/category_games',
+            search: {
+              selectedGameIds: gameIds.join(','),
+              title: name,
+            } as Record<string, string>
+          });
+        }
+      });
       if (original && 'use_count' in original) {
         original.use_count++;
         UpdateTag(original as models.Tag)
@@ -100,6 +123,21 @@ export function CategoryListCard({
         UpdateTag(original as models.Tag)
         updateTagInTags(original as models.Tag)
       }
+    } else if (type === 'chara_design' || type === 'sceneario') {
+      const staffModel = original as unknown as models.Staff;
+      const role = type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
+      GetWorksByStaffIdAndRole(staffModel.id, role).then(works => {
+        const workGameIds = works.map(w => w.game_id).filter((id): id is string => !!id);
+        if (workGameIds.length > 0) {
+          navigate({
+            to: '/category_games',
+            search: {
+              selectedGameIds: workGameIds.join(','),
+              title: name,
+            } as Record<string, string>
+          });
+        }
+      });
     }
   };
 
@@ -114,6 +152,12 @@ export function CategoryListCard({
       let result: models.Game[] = [];
       if (type === 'favorite') {
         result = await GetGamesByCategory(id);
+      } else if (type === 'chara_design' || type === 'sceneario') {
+        const staffModel = original as unknown as models.Staff;
+        const role = type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
+        const works = await GetWorksByStaffIdAndRole(staffModel.id, role);
+        const gameIds = works.map(w => w.game_id).filter((id): id is string => !!id);
+        result = storeGames.filter(g => gameIds.includes(g.id));
       } else {
         result = await GetGamesByTag(name);
       }
@@ -127,7 +171,7 @@ export function CategoryListCard({
   };
 
   useEffect(() => {
-    if (viewMode !== "gallery" || isPathCategory) {
+    if (isPathCategory) {
       return;
     }
 
@@ -151,7 +195,7 @@ export function CategoryListCard({
     return () => {
       observer.disconnect();
     };
-  }, [viewMode, name, id, type]);
+  }, [name, id, type]);
 
   const getTypeIcon = () => {
     switch (type) {

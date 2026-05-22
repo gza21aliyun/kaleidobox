@@ -6,9 +6,10 @@ import { FilterBar } from "../components/bar/FilterBar";
 import { CategoriesSkeleton } from "../components/skeleton/CategoriesSkeleton";
 import { CategoryListCard } from "../components/card/CategoryListCard";
 import { Route as rootRoute } from "./__root";
-import { models, vo } from "../../wailsjs/go/models";
+import { models, vo, enums } from "../../wailsjs/go/models";
 import { GetBrands, GetGenres, GetSeries } from "../../wailsjs/go/service/TagService";
 import { GetCategories } from "../../wailsjs/go/service/CategoryService";
+import { GetStaffsByRole } from "../../wailsjs/go/service/StaffService";
 import { useAppStore } from "../store";
 
 export const Route = createRoute({
@@ -21,10 +22,10 @@ export const Route = createRoute({
 type CategoryItem = {
   id: string;
   name: string;
-  type: 'favorite' | 'brand' | 'series' | 'genre' | 'parent1' | 'parent2';
+  type: 'favorite' | 'brand' | 'series' | 'genre' | 'chara_design' | 'sceneario' | 'parent1' | 'parent2';
   game_count?: number;
   use_count?: number;
-  original?: models.Tag | vo.CategoryVO;
+  original?: models.Tag | vo.CategoryVO | models.Staff;
   dirPath?: string;
   gameIds?: string[];
 };
@@ -37,47 +38,62 @@ function CategoryListPage() {
   const [brands, setBrands] = useState<models.Tag[]>([]);
   const [series, setSeries] = useState<models.Tag[]>([]);
   const [genres, setGenres] = useState<models.Tag[]>([]);
+  const [charaDesigns, setCharaDesigns] = useState<models.Staff[]>([]);
+  const [scenearios, setScenearios] = useState<models.Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "use_count">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [categoryFilter, setCategoryFilter] = useState<string>("brand");
+  const [categoryFilter, setCategoryFilter] = useState<string>(() => {
+    const savedFilter = localStorage.getItem('categoryListFilter');
+    return savedFilter || "brand";
+  });
   const [viewMode, setViewMode] = useState<"default" | "gallery">(() => {
     const savedViewMode = localStorage.getItem('categoryListViewMode');
     return (savedViewMode as "default" | "gallery") || "default";
   });
 
   useEffect(() => {
+    localStorage.setItem('categoryListFilter', categoryFilter);
+  }, [categoryFilter]);
+
+  useEffect(() => {
     localStorage.setItem('categoryListViewMode', viewMode);
   }, [viewMode]);
 
   const categoryOptions = [
-    { label: "收藏", value: "favorite" },
-    { label: "品牌", value: "brand" },
-    { label: "系列", value: "series" },
-    { label: "游戏类型", value: "genre" },
-    { label: "第一级父目录", value: "parent1" },
-    { label: "第二级父目录", value: "parent2" },
+    { label: t('categoryList.options.favorite'), value: "favorite" },
+    { label: t('categoryList.options.brand'), value: "brand" },
+    { label: t('categoryList.options.series'), value: "series" },
+    { label: t('categoryList.options.genre'), value: "genre" },
+    { label: t('categoryList.options.charaDesign'), value: "chara_design" },
+    { label: t('categoryList.options.sceneario'), value: "sceneario" },
+    { label: t('categoryList.options.parent1'), value: "parent1" },
+    { label: t('categoryList.options.parent2'), value: "parent2" },
   ];
 
   const loadAllCategories = async () => {
     try {
       setIsLoading(true);
-      const [favoritesResult, brandsResult, seriesResult, genresResult] = await Promise.all([
+      const [favoritesResult, brandsResult, seriesResult, genresResult, charaDesignsResult, sceneariosResult] = await Promise.all([
         GetCategories(),
         GetBrands(),
         GetSeries(),
         GetGenres(),
+        GetStaffsByRole(enums.StaffRole.CHARA_DESIGN),
+        GetStaffsByRole(enums.StaffRole.SCENEARIO),
       ]);
       setFavorites(favoritesResult || []);
       setBrands(brandsResult || []);
       setSeries(seriesResult || []);
       setGenres(genresResult || []);
+      setCharaDesigns(charaDesignsResult || []);
+      setScenearios(sceneariosResult || []);
     }
     catch (error) {
       console.error("Failed to load categories:", error);
-      toast.error("加载分类失败");
+      toast.error(t('categoryList.toasts.loadFailed'));
     }
     finally {
       setIsLoading(false);
@@ -96,7 +112,7 @@ function CategoryListPage() {
     }
 
     const level = categoryFilter === 'parent1' ? 1 : 2;
-    const dirMap = new Map<string, { path: string; gameIds: string[] }>();
+    const targetDirSet = new Set<string>();
 
     games.forEach(game => {
       if (!game.path) return;
@@ -126,22 +142,26 @@ function CategoryListPage() {
         }
       }
 
-      const existing = dirMap.get(targetDir) || { path: targetDir, gameIds: [] };
-      if (!existing.gameIds.includes(game.id)) {
-        existing.gameIds.push(game.id);
-      }
-      dirMap.set(targetDir, existing);
+      targetDirSet.add(targetDir);
     });
 
     const result: CategoryItem[] = [];
-    dirMap.forEach((value, key) => {
+    targetDirSet.forEach(dirPath => {
+      const prefix = dirPath + '/';
+      const descendantGameIds = games
+        .filter(g => {
+          if (!g.path) return false;
+          const normalized = g.path.replace(/\\/g, '/');
+          return normalized === dirPath || normalized.startsWith(prefix);
+        })
+        .map(g => g.id);
       result.push({
-        id: `dir-${key}`,
-        name: value.path,
+        id: `dir-${dirPath}`,
+        name: dirPath,
         type: categoryFilter,
-        game_count: value.gameIds.length,
-        dirPath: value.path,
-        gameIds: value.gameIds,
+        game_count: descendantGameIds.length,
+        dirPath: dirPath,
+        gameIds: descendantGameIds,
       });
     });
 
@@ -176,6 +196,18 @@ function CategoryListPage() {
       type: 'genre' as const,
       use_count: g.use_count,
       original: g,
+    })),
+    ...charaDesigns.map(c => ({
+      id: `chara-${c.id}`,
+      name: c.name,
+      type: 'chara_design' as const,
+      original: c,
+    })),
+    ...scenearios.map(s => ({
+      id: `sceneario-${s.id}`,
+      name: s.name,
+      type: 'sceneario' as const,
+      original: s,
     })),
   ];
 
@@ -238,7 +270,7 @@ function CategoryListPage() {
   return (
     <div className={`w-full p-8 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-brand-900 dark:text-white">分类列表</h1>
+        <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('categoryList.title', { count: filteredCategories.length })}</h1>
 
         <div className="flex items-center gap-2 bg-neutral-100 dark:bg-brand-700 rounded-lg p-1">
           <button
@@ -248,10 +280,10 @@ function CategoryListPage() {
                 ? "bg-white dark:bg-brand-600 text-brand-900 dark:text-white shadow-sm"
                 : "text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-200"
             }`}
-            title="列表模式"
+            title={t('categoryList.viewMode.list')}
           >
             <div className="i-mdi-view-agenda text-lg" />
-            <span>列表</span>
+            <span>{t('categoryList.viewMode.list')}</span>
           </button>
           <button
             onClick={() => setViewMode("gallery")}
@@ -260,10 +292,10 @@ function CategoryListPage() {
                 ? "bg-white dark:bg-brand-600 text-brand-900 dark:text-white shadow-sm"
                 : "text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-200"
             }`}
-            title="画廊模式"
+            title={t('categoryList.viewMode.gallery')}
           >
             <div className="i-mdi-view-grid text-lg" />
-            <span>画廊</span>
+            <span>{t('categoryList.viewMode.gallery')}</span>
           </button>
         </div>
       </div>
@@ -271,12 +303,12 @@ function CategoryListPage() {
       <FilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="搜索分类..."
+        searchPlaceholder={t('categoryList.searchPlaceholder')}
         sortBy={sortBy}
         onSortByChange={val => setSortBy(val as "name" | "use_count")}
         sortOptions={[
-          { label: "名称", value: "name" },
-          { label: "使用数量", value: "use_count" },
+          { label: t('categoryList.sortOptions.name'), value: "name" },
+          { label: t('categoryList.sortOptions.useCount'), value: "use_count" },
         ]}
         sortOrder={sortOrder}
         onSortOrderChange={setSortOrder}
@@ -309,7 +341,7 @@ function CategoryListPage() {
       {filteredCategories.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center h-64 text-brand-500 dark:text-brand-400 mt-8">
           <div className="i-mdi-magnify text-6xl mb-4" />
-          <p className="text-lg">未找到分类</p>
+          <p className="text-lg">{t('categoryList.noCategoriesFound')}</p>
         </div>
       )}
     </div>

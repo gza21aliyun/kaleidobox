@@ -563,6 +563,41 @@
       "gameCount": "ゲーム数"
     }
   },
+  "categoryList": {
+    "title": "カテゴリ（{{count}}）",
+    "searchPlaceholder": "カテゴリを検索...",
+    "options": {
+      "favorite": "お気に入り",
+      "brand": "ブランド",
+      "series": "シリーズ",
+      "genre": "ジャンル",
+      "charaDesign": "キャラクターデザイン",
+      "sceneario": "シナリオ",
+      "parent1": "第1レベル親ディレクトリ",
+      "parent2": "第2レベル親ディレクトリ"
+    },
+    "sortOptions": {
+      "name": "名前",
+      "useCount": "使用回数"
+    },
+    "viewMode": {
+      "list": "リスト",
+      "gallery": "ギャラリー"
+    },
+    "toasts": {
+      "loadFailed": "カテゴリの読み込みに失敗しました"
+    },
+    "noCategoriesFound": "カテゴリが見つかりません"
+  },
+  "categoryGames": {
+    "title": "カテゴリのゲーム",
+    "searchPlaceholder": "ゲームを検索...",
+    "noGamesFound": "ゲームが見つかりません",
+    "empty": "このカテゴリにはゲームがありません",
+    "error": {
+      "loadFailed": "カテゴリのゲームの読み込みに失敗しました"
+    }
+  },
   "ai": {
     "title": "AI 分析",
     "thinking": "考え中...",

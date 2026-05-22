@@ -121,9 +121,14 @@ function RootLayout() {
     const savedPosition = scrollPositions.current[location.pathname];
     if (mainContentRef.current && savedPosition !== undefined) {
       // 使用 setTimeout 确保内容已加载
+      const scrollDelayStr = localStorage.getItem('scrollDelayMs');
+      const scrollDelay = scrollDelayStr ? parseInt(scrollDelayStr) : 300;
+      if (scrollDelayStr) {
+        localStorage.removeItem('scrollDelayMs');
+      }
       const timer = setTimeout(() => {
         mainContentRef.current!.scrollTop = savedPosition;
-      }, 300);
+      }, scrollDelay);
 
       return () => clearTimeout(timer);
     } else if (mainContentRef.current) {

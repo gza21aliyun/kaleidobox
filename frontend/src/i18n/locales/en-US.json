@@ -563,6 +563,41 @@
       "gameCount": "Game count"
     }
   },
+  "categoryList": {
+    "title": "Categories ({{count}})",
+    "searchPlaceholder": "Search categories...",
+    "options": {
+      "favorite": "Favorites",
+      "brand": "Brands",
+      "series": "Series",
+      "genre": "Genres",
+      "charaDesign": "Character Design",
+      "sceneario": "Scenario",
+      "parent1": "Level 1 Parent Directory",
+      "parent2": "Level 2 Parent Directory"
+    },
+    "sortOptions": {
+      "name": "Name",
+      "useCount": "Usage count"
+    },
+    "viewMode": {
+      "list": "List",
+      "gallery": "Gallery"
+    },
+    "toasts": {
+      "loadFailed": "Failed to load categories"
+    },
+    "noCategoriesFound": "No categories found"
+  },
+  "categoryGames": {
+    "title": "Category Games",
+    "searchPlaceholder": "Search games...",
+    "noGamesFound": "No games found",
+    "empty": "No games in this category",
+    "error": {
+      "loadFailed": "Failed to load category games"
+    }
+  },
   "ai": {
     "title": "AI Analysis",
     "thinking": "Thinking...",

@@ -55,7 +55,7 @@ function CategoryGamesPage() {
   });
 
   const selectedGameIdsFromParams = (search.selectedGameIds as string) || "";
-  const categoryTitle = (search.title as string) || "分类游戏";
+  const categoryTitle = (search.title as string) || t('categoryGames.title');
 
   useEffect(() => {
     localStorage.setItem('categoryGamesViewMode', viewMode);
@@ -100,11 +100,12 @@ function CategoryGamesPage() {
     }
     catch (error) {
       console.error("Failed to load games for category games:", error);
-      toast.error("加载分类游戏失败");
+      toast.error(t('categoryGames.error.loadFailed'));
     }
   };
 
   const onBack = () => {
+    localStorage.setItem('scrollDelayMs', '1000');
     navigate({ to: "/category_list" });
   };
 
@@ -318,7 +319,7 @@ function CategoryGamesPage() {
         <FilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="搜索游戏"
+          searchPlaceholder={t('categoryGames.searchPlaceholder')}
           sortBy={sortBy}
           onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at" | "company" | "last_played" | "play_time")}
           sortOptions={sortOptions}
@@ -380,14 +381,14 @@ function CategoryGamesPage() {
                 : (
                     <div className="flex flex-col items-center justify-center h-64 text-brand-500 dark:text-brand-400">
                       <div className="i-mdi-magnify text-6xl mb-4" />
-                      <p className="text-lg">未找到游戏</p>
+                      <p className="text-lg">{t('categoryGames.noGamesFound')}</p>
                     </div>
                   )
             )
           : (
               <div className="flex flex-col items-center justify-center h-64 text-brand-500 dark:text-brand-400">
                 <div className="i-mdi-gamepad-variant-outline text-6xl mb-4" />
-                <p className="text-lg">该分类下暂无游戏</p>
+                <p className="text-lg">{t('categoryGames.empty')}</p>
               </div>
             )}
       </div>

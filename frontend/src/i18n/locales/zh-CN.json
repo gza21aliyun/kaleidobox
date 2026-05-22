@@ -563,6 +563,41 @@
       "gameCount": "游戏数"
     }
   },
+  "categoryList": {
+    "title": "分类（{{count}}）",
+    "searchPlaceholder": "搜索分类...",
+    "options": {
+      "favorite": "收藏",
+      "brand": "品牌",
+      "series": "系列",
+      "genre": "游戏类型",
+      "charaDesign": "人设",
+      "sceneario": "剧本",
+      "parent1": "第一级父目录",
+      "parent2": "第二级父目录"
+    },
+    "sortOptions": {
+      "name": "名称",
+      "useCount": "使用次数"
+    },
+    "viewMode": {
+      "list": "列表",
+      "gallery": "画廊"
+    },
+    "toasts": {
+      "loadFailed": "加载分类失败"
+    },
+    "noCategoriesFound": "未找到分类"
+  },
+  "categoryGames": {
+    "title": "分类游戏",
+    "searchPlaceholder": "搜索游戏...",
+    "noGamesFound": "未找到游戏",
+    "empty": "该分类下暂无游戏",
+    "error": {
+      "loadFailed": "加载分类游戏失败"
+    }
+  },
   "ai": {
     "title": "AI 分析",
     "thinking": "思考中...",

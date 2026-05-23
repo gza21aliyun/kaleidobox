@@ -147,21 +147,11 @@ function CategoryListPage() {
 
     const result: CategoryItem[] = [];
     targetDirSet.forEach(dirPath => {
-      const prefix = dirPath + '/';
-      const descendantGameIds = games
-        .filter(g => {
-          if (!g.path) return false;
-          const normalized = g.path.replace(/\\/g, '/');
-          return normalized === dirPath || normalized.startsWith(prefix);
-        })
-        .map(g => g.id);
       result.push({
         id: `dir-${dirPath}`,
         name: dirPath,
         type: categoryFilter,
-        game_count: descendantGameIds.length,
         dirPath: dirPath,
-        gameIds: descendantGameIds,
       });
     });
 

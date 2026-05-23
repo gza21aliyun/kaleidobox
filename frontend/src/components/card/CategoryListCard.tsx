@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
 import { models, vo, enums } from '../../../wailsjs/go/models';
@@ -46,20 +46,26 @@ export function CategoryListCard({
   const isTagCategory = type === 'brand' || type === 'series' || type === 'genre';
   const displayCount = isTagCategory ? use_count : game_count;
 
-  const pathPreviewGames = useMemo(() => {
-    if (!isPathCategory || !gameIds) return [];
+  const getPathGameIds = () => {
+    if (!isPathCategory || !dirPath) return [];
+    const prefix = dirPath + '/';
     return storeGames
-      .filter(g => gameIds.includes(g.id) && g.cover_url)
-      .slice(0, 3);
-  }, [storeGames, gameIds, isPathCategory]);
+      .filter(g => {
+        if (!g.path) return false;
+        const normalized = g.path.replace(/\\/g, '/');
+        return normalized === dirPath || normalized.startsWith(prefix);
+      })
+      .map(g => g.id);
+  };
 
   const handleViewDetails = () => {
     if (isPathCategory) {
-      if (gameIds && gameIds.length > 0) {
+      const pathGameIds = getPathGameIds();
+      if (pathGameIds.length > 0) {
         navigate({ 
           to: '/category_games',
           search: {
-            selectedGameIds: gameIds.join(','),
+            selectedGameIds: pathGameIds.join(','),
             title: dirPath || name,
           } as Record<string, string>
         });
@@ -141,8 +147,17 @@ export function CategoryListCard({
     }
   };
 
+  const isStaffCategory = type === 'chara_design' || type === 'sceneario';
+
+  const handleStaffTitleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isStaffCategory) return;
+    const staffModel = original as unknown as models.Staff;
+    navigate({ to: `/staff/${staffModel.id}` });
+  };
+
   const loadCategoryGames = async () => {
-    if (isPathCategory || isLoading || hasLoaded) {
+    if (isLoading || hasLoaded) {
       return;
     }
 
@@ -150,7 +165,14 @@ export function CategoryListCard({
 
     try {
       let result: models.Game[] = [];
-      if (type === 'favorite') {
+      if (isPathCategory) {
+        const prefix = dirPath + '/';
+        result = storeGames.filter(g => {
+          if (!g.path) return false;
+          const normalized = g.path.replace(/\\/g, '/');
+          return normalized === dirPath || normalized.startsWith(prefix);
+        });
+      } else if (type === 'favorite') {
         result = await GetGamesByCategory(id);
       } else if (type === 'chara_design' || type === 'sceneario') {
         const staffModel = original as unknown as models.Staff;
@@ -171,10 +193,6 @@ export function CategoryListCard({
   };
 
   useEffect(() => {
-    if (isPathCategory) {
-      return;
-    }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -229,8 +247,10 @@ export function CategoryListCard({
     }
   };
 
-  const previewGames = isPathCategory ? pathPreviewGames : games.filter(game => game.cover_url).slice(0, 3);
-  const actualGameCount = isPathCategory ? game_count : games.length;
+  const previewGames = isPathCategory
+    ? games.filter(game => game.cover_url).slice(0, 3)
+    : games.filter(game => game.cover_url).slice(0, 3);
+  const actualGameCount = games.length;
 
   if (viewMode === "gallery") {
     return (
@@ -240,7 +260,7 @@ export function CategoryListCard({
         onClick={handleViewDetails}
       >
         <div className="relative w-full overflow-hidden bg-neutral-100 dark:bg-brand-700" style={{ aspectRatio: '16/9' }}>
-          {!isPathCategory && isLoading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
             </div>
@@ -300,7 +320,17 @@ export function CategoryListCard({
 
         <div className="p-4">
           <h3 className="font-semibold text-brand-900 dark:text-white group-hover:text-neutral-600 dark:group-hover:text-neutral-400 transition-colors truncate">
-            {name}{isTagCategory && displayCount > 0 ? ` (点击${displayCount}次)` : ''}
+            {isStaffCategory ? (
+              <button
+                onClick={handleStaffTitleClick}
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+              >
+                {name}
+              </button>
+            ) : (
+              name
+            )}
+            {isTagCategory && displayCount > 0 ? ` (点击${displayCount}次)` : ''}
           </h3>
           <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
             {actualGameCount} {t('brandList.labels.games')}
@@ -320,7 +350,17 @@ export function CategoryListCard({
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-brand-900 dark:text-white group-hover:text-neutral-600 dark:group-hover:text-neutral-400 transition-colors truncate">
-          {name}{isTagCategory && displayCount > 0 ? ` (点击${displayCount}次)` : ''}
+          {isStaffCategory ? (
+            <button
+              onClick={handleStaffTitleClick}
+              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+            >
+              {name}
+            </button>
+          ) : (
+            name
+          )}
+          {isTagCategory && displayCount > 0 ? ` (点击${displayCount}次)` : ''}
         </h3>
         <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
           {actualGameCount} {t('brandList.labels.games')}

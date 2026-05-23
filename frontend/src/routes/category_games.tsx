@@ -105,7 +105,7 @@ function CategoryGamesPage() {
   };
 
   const onBack = () => {
-    localStorage.setItem('scrollDelayMs', '1000');
+    localStorage.setItem('scrollDelayMs', '400');
     navigate({ to: "/category_list" });
   };
 

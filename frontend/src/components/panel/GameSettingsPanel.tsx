@@ -4,14 +4,44 @@ import { SelectGameExecutable } from "../../../wailsjs/go/service/GameService";
 import { BetterButton } from "../ui/BetterButton";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useTranslation } from "react-i18next";
+import { useState, useEffect, useRef } from "react";
 
 interface GameSettingsPanelProps {
   formData: appconf.AppConfig;
   onChange: (data: appconf.AppConfig) => void;
 }
 
+function getKeyName(code: string): string {
+  if (code.startsWith("Key")) return code.slice(3);
+  if (code.startsWith("Digit")) return code.slice(5);
+  switch (code) {
+    case "ControlLeft": case "ControlRight": return "Ctrl";
+    case "ShiftLeft": case "ShiftRight": return "Shift";
+    case "AltLeft": case "AltRight": return "Alt";
+    case "MetaLeft": case "MetaRight": return "Win";
+    case "F1": case "F2": case "F3": case "F4": case "F5": case "F6":
+    case "F7": case "F8": case "F9": case "F10": case "F11": case "F12":
+      return code;
+    default: return code;
+  }
+}
+
 export function GameSettingsPanel({ formData, onChange }: GameSettingsPanelProps) {
   const { t } = useTranslation();
+  const [recordingHotkey, setRecordingHotkey] = useState(false);
+  const hotkeyRecorderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (hotkeyRecorderRef.current && !hotkeyRecorderRef.current.contains(e.target as Node)) {
+        setRecordingHotkey(false);
+      }
+    };
+    if (recordingHotkey) {
+      document.addEventListener("click", handleGlobalClick);
+    }
+    return () => document.removeEventListener("click", handleGlobalClick);
+  }, [recordingHotkey]);
   const handleSelectLocaleEmulatorPath = async () => {
     try {
       const path = await SelectGameExecutable();
@@ -146,6 +176,61 @@ export function GameSettingsPanel({ formData, onChange }: GameSettingsPanelProps
             </div>
             <p className="mt-1 text-xs text-brand-500">
               {t("gameSettings.magpiePathDescription")}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
+              Magpie 缩放快捷键
+            </label>
+            <div className="flex gap-2">
+              <div
+                ref={hotkeyRecorderRef}
+                tabIndex={0}
+                onClick={() => setRecordingHotkey(true)}
+                onKeyDown={(e) => {
+                  if (!recordingHotkey) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const mods: string[] = [];
+                  let mainKey = "";
+                  if (e.ctrlKey) mods.push("Ctrl");
+                  if (e.shiftKey) mods.push("Shift");
+                  if (e.altKey) mods.push("Alt");
+                  if (e.metaKey) mods.push("Win");
+                  const keyName = getKeyName(e.code);
+                  if (!["Ctrl", "Shift", "Alt", "Win"].includes(keyName)) {
+                    mainKey = keyName;
+                  }
+                  if (mainKey) {
+                    let finalKeys = [...new Set([...mods, mainKey])];
+                    onChange({ ...formData, magpie_hotkey: finalKeys.join("+") } as appconf.AppConfig);
+                    setRecordingHotkey(false);
+                  }
+                }}
+                className={`glass-input flex-1 px-3 py-2 border rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white outline-none select-none transition-all cursor-text ${
+                  recordingHotkey
+                    ? "ring-2 ring-blue-500 border-blue-400"
+                    : "border-brand-300 dark:border-brand-600 focus:ring-2 focus:ring-neutral-500"
+                }`}
+              >
+                <span className={recordingHotkey ? "text-blue-500 italic" : ""}>
+                  {recordingHotkey
+                    ? "按快捷键组合..."
+                    : formData.magpie_hotkey || "Win+Shift+A"}
+                </span>
+              </div>
+              <BetterButton
+                onClick={() => {
+                  onChange({ ...formData, magpie_hotkey: "Win+Shift+A" } as appconf.AppConfig);
+                }}
+                size="sm"
+              >
+                重置
+              </BetterButton>
+            </div>
+            <p className="mt-1 text-xs text-brand-500">
+              点击输入框后直接按下要设置的快捷键组合，需与 Magpie 中设置的快捷键一致
             </p>
           </div>
         </div>

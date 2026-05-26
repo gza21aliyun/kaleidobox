@@ -166,6 +166,7 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	// 游戏相关配置
 	s.config.LocaleEmulatorPath = newConfig.LocaleEmulatorPath
 	s.config.MagpiePath = newConfig.MagpiePath
+	s.config.MagpieHotkey = newConfig.MagpieHotkey
 	s.config.AutoDetectGameProcess = newConfig.AutoDetectGameProcess
 
 	// 时区相关配置

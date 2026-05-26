@@ -19,6 +19,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/bi-zone/etw"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -272,13 +273,13 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		}
 	}
 
-	// 如果启用了 Magpie，在游戏启动后启动 Magpie
+	// 获取启动器的进程 ID
+	launcherPID := uint32(cmd.Process.Pid)
+
+	// 如果启用了 Magpie，预先启动 Magpie（不立即触发缩放）
 	if useMagpie && s.config.MagpiePath != "" {
 		go s.startMagpie()
 	}
-
-	// 获取启动器的进程 ID
-	launcherPID := uint32(cmd.Process.Pid)
 
 	startTime := time.Now()
 	sessionID, err := s.sessionService.CreatePendingSession(gameID, startTime)
@@ -298,7 +299,7 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		}
 		applog.InfoLogSaveAppLog("Steam process ID: %d", launcherPID)
 
-		go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, "steam.exe", processName, useLE, path, savePath)
+		go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, "steam.exe", processName, useLE, useMagpie, path, savePath)
 
 		// 传入一个虚拟的 launcherExeName,让 detectAndMonitorProcess 进入正确的分支
 
@@ -307,7 +308,7 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 
 	// 启动进程检测和监控 goroutine
 	applog.InfoLogSaveAppLog("启动进程检测和监控 goroutine")
-	go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, launcherExeName, processName, useLE, path, savePath)
+	go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, launcherExeName, processName, useLE, useMagpie, path, savePath)
 
 	// 启动成功，返回 true 给前端
 	return true, nil
@@ -324,8 +325,9 @@ func (s *StartService) GetDisplayByName(name string) (models.MonitorInfo, error)
 // detectAndMonitorProcess 检测实际游戏进程并开始监控
 // 采用分阶段检测策略，利用60秒会话记录阈值提供的余裕时间
 // usedLE: 是否使用了 Locale Emulator 启动，影响进程检测策略
+// usedMagpie: 是否使用了 Magpie 缩放
 func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, gameID string, startTime time.Time, launcherPID uint32,
-	launcherExeName string, savedProcessName string, usedLE bool, path string, savepath string) {
+	launcherExeName string, savedProcessName string, usedLE bool, usedMagpie bool, path string, savepath string) {
 	fmt.Printf("launcherExeName:%s\n", launcherExeName)
 	var actualProcessID uint32
 	var actualProcessName string
@@ -423,6 +425,11 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 
 	fmt.Printf("start tracking pid:%d, pName:%s\n", actualProcessID, actualProcessName)
 	s.sessionService.UpdateProcess(sessionID, actualProcessName, int(actualProcessID))
+
+	// 如果启用了 Magpie，对真正的游戏进程触发缩放
+	if usedMagpie && s.config.MagpiePath != "" {
+		go s.triggerMagpieScaling(actualProcessID)
+	}
 
 	if s.config.DisplayName != "" {
 		monitor, err := utils.GetDisplayByName(s.config.DisplayName)
@@ -857,11 +864,25 @@ func (s *StartService) getGameLaunchConfig(gameID string) (useLE bool, useMagpie
 	return game.UseLocaleEmulator, game.UseMagpie, nil
 }
 
-// startMagpie 启动 Magpie 程序
-func (s *StartService) startMagpie() {
-	// 延迟一小段时间，确保游戏窗口已经创建
-	time.Sleep(1 * time.Second)
+var (
+	user32Magpie                 = syscall.NewLazyDLL("user32.dll")
+	procSetForegroundWindow      = user32Magpie.NewProc("SetForegroundWindow")
+	procAllowSetForegroundWindow = user32Magpie.NewProc("AllowSetForegroundWindow")
+	procAttachThreadInput        = user32Magpie.NewProc("AttachThreadInput")
+	procKeybdEvent               = user32Magpie.NewProc("keybd_event")
+)
 
+const (
+	KEYEVENTF_KEYUP = 0x0002
+	VK_LWIN         = 0x5B
+	VK_LMENU        = 0xA4
+	VK_LSHIFT       = 0xA0
+	VK_A            = 0x41
+	ASFW_ANY        = 0xFFFFFFFF
+)
+
+// startMagpie 启动 Magpie 程序（仅启动托盘模式，不触发缩放）
+func (s *StartService) startMagpie() {
 	// 检查 Magpie 是否已经在运行
 	isRunning, err := utils.CheckIfProcessRunning("Magpie.exe")
 	if err != nil {
@@ -884,12 +905,218 @@ func (s *StartService) startMagpie() {
 		return
 	}
 
-	// 分离进程，避免阻塞
 	if cmd.Process != nil {
 		cmd.Process.Release()
 	}
 
 	applog.LogInfof(s.ctx, "Magpie started successfully")
+}
+
+// triggerMagpieScaling 对指定游戏进程触发 Magpie 缩放
+func (s *StartService) triggerMagpieScaling(gamePID uint32) {
+	if s.config.MagpiePath == "" {
+		return
+	}
+
+	// 检查 Magpie 是否已经在运行，等待最多 5 秒
+	var isRunning bool
+	var err error
+	for i := 0; i < 10; i++ {
+		isRunning, err = utils.CheckIfProcessRunning("Magpie.exe")
+		if err == nil && isRunning {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	if err != nil {
+		applog.LogErrorf(s.ctx, "Magpie trigger: failed to check process: %v", err)
+		return
+	}
+	if !isRunning {
+		applog.LogWarningf(s.ctx, "Magpie trigger: Magpie not running after waiting")
+		return
+	}
+
+	applog.LogInfof(s.ctx, "Magpie trigger: looking for game window with PID %d", gamePID)
+
+	// 等待游戏窗口出现
+	var gameHWND uintptr = 0
+	for i := 0; i < 30; i++ {
+		// 通过 gamePID 枚举窗口
+		hwnds, err := utils.EnumWindowsByProcessID(gamePID)
+		if err == nil && len(hwnds) > 0 {
+			gameHWND = hwnds[0]
+			applog.LogInfof(s.ctx, "Magpie trigger: found game window from PID %d", gamePID)
+			break
+		}
+
+		// 也尝试获取当前前景窗口
+		fgHWND, _, _ := procGetForegroundWindow.Call()
+		if fgHWND != 0 {
+			var fgPID uint32
+			procGetWindowThreadProcessId.Call(fgHWND, uintptr(unsafe.Pointer(&fgPID)))
+			if fgPID == gamePID {
+				gameHWND = fgHWND
+				applog.LogInfof(s.ctx, "Magpie trigger: foreground window matches game PID")
+				break
+			}
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	if gameHWND == 0 {
+		applog.LogInfof(s.ctx, "Magpie trigger: game window not found")
+		return
+	}
+
+	// 允许设置前景窗口
+	procAllowSetForegroundWindow.Call(ASFW_ANY)
+
+	// 获取当前前景窗口的线程ID
+	currentFG, _, _ := procGetForegroundWindow.Call()
+	var currentFGThreadId uintptr
+	if currentFG != 0 {
+		currentFGThreadId, _, _ = procGetWindowThreadProcessId.Call(currentFG, 0)
+	}
+
+	// 获取游戏窗口的线程ID
+	gameThreadId, _, _ := procGetWindowThreadProcessId.Call(gameHWND, 0)
+
+	// 附加线程输入以允许 SetForegroundWindow
+	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
+		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 1)
+	}
+
+	// 设置游戏窗口为前景
+	procSetForegroundWindow.Call(gameHWND)
+
+	// 取消线程附加
+	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
+		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 0)
+	}
+
+	// 等待窗口激活
+	time.Sleep(8000 * time.Millisecond)
+
+	hotkeyStr := "Win+Shift+A"
+	if s.config.MagpieHotkey != "" {
+		hotkeyStr = s.config.MagpieHotkey
+	}
+
+	applog.LogInfof(s.ctx, "Magpie trigger: sending configured hotkey: %s", hotkeyStr)
+
+	// 解析并发送快捷键
+	keys := strings.Split(strings.ToLower(hotkeyStr), "+")
+	var vks []uintptr
+
+	for _, key := range keys {
+		switch strings.TrimSpace(key) {
+		case "win", "windows", "lwin":
+			vks = append(vks, VK_LWIN)
+		case "ctrl", "control", "lctrl":
+			vks = append(vks, 0x11) // VK_CONTROL
+		case "alt", "lalt", "menu":
+			vks = append(vks, VK_LMENU)
+		case "shift", "lshift":
+			vks = append(vks, VK_LSHIFT)
+		case "a":
+			vks = append(vks, VK_A)
+		case "b":
+			vks = append(vks, 0x42)
+		case "c":
+			vks = append(vks, 0x43)
+		case "d":
+			vks = append(vks, 0x44)
+		case "e":
+			vks = append(vks, 0x45)
+		case "f":
+			vks = append(vks, 0x46)
+		case "g":
+			vks = append(vks, 0x47)
+		case "h":
+			vks = append(vks, 0x48)
+		case "i":
+			vks = append(vks, 0x49)
+		case "j":
+			vks = append(vks, 0x4A)
+		case "k":
+			vks = append(vks, 0x4B)
+		case "l":
+			vks = append(vks, 0x4C)
+		case "m":
+			vks = append(vks, 0x4D)
+		case "n":
+			vks = append(vks, 0x4E)
+		case "o":
+			vks = append(vks, 0x4F)
+		case "p":
+			vks = append(vks, 0x50)
+		case "q":
+			vks = append(vks, 0x51)
+		case "r":
+			vks = append(vks, 0x52)
+		case "s":
+			vks = append(vks, 0x53)
+		case "t":
+			vks = append(vks, 0x54)
+		case "u":
+			vks = append(vks, 0x55)
+		case "v":
+			vks = append(vks, 0x56)
+		case "w":
+			vks = append(vks, 0x57)
+		case "x":
+			vks = append(vks, 0x58)
+		case "y":
+			vks = append(vks, 0x59)
+		case "z":
+			vks = append(vks, 0x5A)
+		case "f1":
+			vks = append(vks, 0x70)
+		case "f2":
+			vks = append(vks, 0x71)
+		case "f3":
+			vks = append(vks, 0x72)
+		case "f4":
+			vks = append(vks, 0x73)
+		case "f5":
+			vks = append(vks, 0x74)
+		case "f6":
+			vks = append(vks, 0x75)
+		case "f7":
+			vks = append(vks, 0x76)
+		case "f8":
+			vks = append(vks, 0x77)
+		case "f9":
+			vks = append(vks, 0x78)
+		case "f10":
+			vks = append(vks, 0x79)
+		case "f11":
+			vks = append(vks, 0x7A)
+		case "f12":
+			vks = append(vks, 0x7B)
+		}
+	}
+
+	// fallback to Win+Shift+A
+	if len(vks) == 0 {
+		vks = []uintptr{VK_LWIN, VK_LSHIFT, VK_A}
+	}
+
+	// 按下所有键
+	for _, vk := range vks {
+		procKeybdEvent.Call(vk, 0, 0, 0)
+		time.Sleep(30 * time.Millisecond)
+	}
+
+	// 松开所有键（逆序）
+	for i := len(vks) - 1; i >= 0; i-- {
+		procKeybdEvent.Call(vks[i], 0, KEYEVENTF_KEYUP, 0)
+		time.Sleep(30 * time.Millisecond)
+	}
+
+	applog.LogInfof(s.ctx, "Magpie trigger: scaling hotkey sent successfully")
 }
 
 func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, processName string) *utils.NewProcessInfo {

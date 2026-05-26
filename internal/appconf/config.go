@@ -75,6 +75,7 @@ type AppConfig struct {
 	// Locale Emulator 和 Magpie 配置
 	LocaleEmulatorPath string `json:"locale_emulator_path,omitempty"` // Locale Emulator 可执行文件路径
 	MagpiePath         string `json:"magpie_path,omitempty"`          // Magpie 可执行文件路径
+	MagpieHotkey       string `json:"magpie_hotkey,omitempty"`        // Magpie 缩放快捷键，格式如: "Win+Shift+A"
 	FfmpegPath         string `json:"ffmpeg_path,omitempty"`          // FFmpeg 可执行文件路径
 	// 进程检测配置
 	AutoDetectGameProcess bool `json:"auto_detect_game_process"` // 是否启用自动游戏进程检测（分阶段检测策略）
@@ -156,6 +157,7 @@ func LoadConfig() (*AppConfig, error) {
 		BackgroundIsLight:       true,  // 默认是浅色调
 		LocaleEmulatorPath:      "",
 		MagpiePath:              "",
+		MagpieHotkey:            "Win+Shift+A",
 		FfmpegPath:              "",
 		AutoDetectGameProcess:   true, // 默认启用自动检测，保持向后兼容
 		EroscapeUseMirror:       false,

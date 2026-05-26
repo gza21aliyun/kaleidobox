@@ -10,6 +10,8 @@ import (
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
 	"net/http"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -18,8 +20,6 @@ import (
 	"unsafe"
 
 	"lunabox/internal/applog"
-
-	"os"
 
 	"github.com/go-vgo/robotgo"
 
@@ -755,6 +755,41 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 		ImageType:   3,
 		CreatedAt:   time.Now(),
 	})
+
+	// 发送 Windows 通知
+	go func() {
+		displayPath := fileName
+		if len(displayPath) > 50 {
+			displayPath = "..." + displayPath[len(displayPath)-50:]
+		}
+		script := fmt.Sprintf(`
+			[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+			[Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+			[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+			$template = @"
+			<toast activationType="protocol" launch="file:///%s">
+				<visual>
+					<binding template="ToastGeneric">
+						<text>截图已保存</text>
+						<text>%s</text>
+					</binding>
+				</visual>
+			</toast>
+"@
+			$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+			$xml.LoadXml($template)
+			$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
+			[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("LunaBox").Show($toast)
+		`, filepath.ToSlash(fileName), displayPath)
+		cmd := exec.Command("powershell", "-NoProfile", "-Command", script)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000,
+		}
+		_ = cmd.Start()
+		if cmd.Process != nil {
+			cmd.Process.Release()
+		}
+	}()
 
 }
 

@@ -35,6 +35,7 @@ var (
 	procGetWindowThreadProcessId = user32.NewProc("GetWindowThreadProcessId")
 	procGetSystemMetrics         = user32.NewProc("GetSystemMetrics")
 	procFindWindowW              = user32.NewProc("FindWindowW")
+	procGetPropW                 = user32.NewProc("GetPropW")
 	// procOpenProcess                = kernel32.NewProc("OpenProcess")
 	// procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
 	// procCloseHandle                = kernel32.NewProc("CloseHandle")
@@ -52,6 +53,13 @@ var (
 	// gdi32                      = syscall.NewLazyDLL("gdi32.dll")
 	// procKeybdEvent             = user32.NewProc("keybd_event")
 )
+
+// getMagpieProp 获取 Magpie 缩放窗口的属性
+func getMagpieProp(hwnd uintptr, propName string) int32 {
+	propNamePtr, _ := syscall.UTF16PtrFromString(propName)
+	val, _, _ := procGetPropW.Call(hwnd, uintptr(unsafe.Pointer(propNamePtr)))
+	return int32(val)
+}
 
 const (
 	SRCCOPY     = 0x00CC0020
@@ -654,14 +662,30 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 	var width, height int
 
 	if hwndMagpie != 0 {
-		// Magpie 缩放已激活，使用全屏截图
-		x = 0
-		y = 0
-		screenWidth, _, _ := procGetSystemMetrics.Call(SM_CXSCREEN)
-		screenHeight, _, _ := procGetSystemMetrics.Call(SM_CYSCREEN)
-		width = int(screenWidth)
-		height = int(screenHeight)
-		applog.LogInfof(s.ctx, "Magpie scaling is active, using fullscreen screenshot: %dx%d", width, height)
+		// Magpie 缩放已激活，从缩放窗口属性中获取精确缩放区域
+		// 参考: https://github.com/Blinue/Magpie/blob/dev/docs/%E4%BB%A5%E7%BC%96%E7%A8%8B%E6%96%B9%E5%BC%8F%E4%B8%8E%20Magpie%20%E4%BA%A4%E4%BA%92.md
+		destLeft := getMagpieProp(hwndMagpie, "Magpie.DestLeft")
+		destTop := getMagpieProp(hwndMagpie, "Magpie.DestTop")
+		destRight := getMagpieProp(hwndMagpie, "Magpie.DestRight")
+		destBottom := getMagpieProp(hwndMagpie, "Magpie.DestBottom")
+
+		x = int(destLeft)
+		y = int(destTop)
+		width = int(destRight - destLeft)
+		height = int(destBottom - destTop)
+
+		if width <= 0 || height <= 0 {
+			// fallback: 如果属性获取失败，使用全屏
+			screenWidth, _, _ := procGetSystemMetrics.Call(SM_CXSCREEN)
+			screenHeight, _, _ := procGetSystemMetrics.Call(SM_CYSCREEN)
+			x = 0
+			y = 0
+			width = int(screenWidth)
+			height = int(screenHeight)
+			applog.LogInfof(s.ctx, "Magpie scaling is active, but dest rect invalid, using fullscreen screenshot: %dx%d", width, height)
+		} else {
+			applog.LogInfof(s.ctx, "Magpie scaling is active, using dest rect screenshot: (%d,%d) %dx%d", x, y, width, height)
+		}
 	} else {
 		hwnd, _, _ := procGetForegroundWindow.Call()
 		if hwnd == 0 {

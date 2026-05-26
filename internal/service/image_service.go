@@ -33,6 +33,8 @@ var (
 	procGetForegroundWindow      = user32.NewProc("GetForegroundWindow")
 	procGetWindowRect            = user32.NewProc("GetWindowRect")
 	procGetWindowThreadProcessId = user32.NewProc("GetWindowThreadProcessId")
+	procGetSystemMetrics         = user32.NewProc("GetSystemMetrics")
+	procFindWindowW              = user32.NewProc("FindWindowW")
 	// procOpenProcess                = kernel32.NewProc("OpenProcess")
 	// procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
 	// procCloseHandle                = kernel32.NewProc("CloseHandle")
@@ -52,7 +54,9 @@ var (
 )
 
 const (
-	SRCCOPY = 0x00CC0020
+	SRCCOPY     = 0x00CC0020
+	SM_CXSCREEN = 0
+	SM_CYSCREEN = 1
 )
 
 type ImageService struct {
@@ -641,26 +645,47 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 	// 	return "", fmt.Errorf("invalid window dimensions: %dx%d", width, height)
 	// }
 
-	hwnd, _, _ := procGetForegroundWindow.Call()
-	if hwnd == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get foreground window")
-		return
-	}
+	// 检测 Magpie 缩放窗口是否存在（类名：Window_Magpie_967EB565-6F73-4E94-AE53-00CC42592A22）
+	// 只有当这个窗口存在时才表示 Magpie 真正激活了缩放，而不只是进程在运行
+	magpieWindowClassName, _ := syscall.UTF16PtrFromString("Window_Magpie_967EB565-6F73-4E94-AE53-00CC42592A22")
+	hwndMagpie, _, _ := procFindWindowW.Call(uintptr(unsafe.Pointer(magpieWindowClassName)), 0)
 
-	// 获取窗口位置和大小
-	var rect Rect
-	ret, _, _ := procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&rect)))
-	if ret == 0 {
-		applog.LogErrorf(s.ctx, "Failed to get window rectangle")
-		return
-	}
-	rect.Left += 8
-	rect.Bottom -= 8
-	rect.Right -= 8
-	rect.Top += 4
+	var x, y int
+	var width, height int
 
-	width := int(rect.Right - rect.Left)
-	height := int(rect.Bottom - rect.Top)
+	if hwndMagpie != 0 {
+		// Magpie 缩放已激活，使用全屏截图
+		x = 0
+		y = 0
+		screenWidth, _, _ := procGetSystemMetrics.Call(SM_CXSCREEN)
+		screenHeight, _, _ := procGetSystemMetrics.Call(SM_CYSCREEN)
+		width = int(screenWidth)
+		height = int(screenHeight)
+		applog.LogInfof(s.ctx, "Magpie scaling is active, using fullscreen screenshot: %dx%d", width, height)
+	} else {
+		hwnd, _, _ := procGetForegroundWindow.Call()
+		if hwnd == 0 {
+			applog.LogErrorf(s.ctx, "Failed to get foreground window")
+			return
+		}
+
+		// 获取窗口位置和大小
+		var rect Rect
+		ret, _, _ := procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&rect)))
+		if ret == 0 {
+			applog.LogErrorf(s.ctx, "Failed to get window rectangle")
+			return
+		}
+		rect.Left += 8
+		rect.Bottom -= 8
+		rect.Right -= 8
+		rect.Top += 4
+
+		x = int(rect.Left)
+		y = int(rect.Top)
+		width = int(rect.Right - rect.Left)
+		height = int(rect.Bottom - rect.Top)
+	}
 
 	name := uuid.New().String()
 	dataDir, err := utils.GetDataDir()
@@ -693,7 +718,7 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 	// }
 	// 3. 截图指定区域
 	// err = robotgo.SaveJpeg(image, fileName, 90)
-	err = robotgo.SaveCapture(fileName, int(rect.Left), int(rect.Top), width, height)
+	err = robotgo.SaveCapture(fileName, x, y, width, height)
 	if err != nil {
 		applog.LogInfof(s.ctx, "failed to save screenshot: %v", err)
 		return

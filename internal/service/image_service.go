@@ -758,10 +758,7 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 
 	// 发送 Windows 通知
 	go func() {
-		displayPath := fileName
-		if len(displayPath) > 50 {
-			displayPath = "..." + displayPath[len(displayPath)-50:]
-		}
+		uriPath := strings.ReplaceAll(filepath.ToSlash(fileName), " ", "%20")
 		script := fmt.Sprintf(`
 			[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 			[Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
@@ -770,8 +767,8 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 			<toast activationType="protocol" launch="file:///%s">
 				<visual>
 					<binding template="ToastGeneric">
-						<text>截图已保存</text>
-						<text>%s</text>
+						<text>游戏截图已保存</text>
+						<image placement="inline" src="file:///%s" />
 					</binding>
 				</visual>
 			</toast>
@@ -779,8 +776,8 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 			$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
 			$xml.LoadXml($template)
 			$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
-			[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("LunaBox").Show($toast)
-		`, filepath.ToSlash(fileName), displayPath)
+			[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("KaleidoBox").Show($toast)
+		`, uriPath, uriPath)
 		cmd := exec.Command("powershell", "-NoProfile", "-Command", script)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			CreationFlags: 0x08000000,

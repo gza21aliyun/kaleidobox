@@ -1,6 +1,7 @@
 import type { service } from "../../../wailsjs/go/models";
 import { useState } from "react";
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from "@tanstack/react-router";
 import toast from "react-hot-toast";
 import {
   ImportFromPlaynite,
@@ -74,6 +75,7 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
   const [importResult, setImportResult] = useState<service.ImportResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [skipNoPath, setSkipNoPath] = useState(true);
+  const navigate = useNavigate();
 
   const config = importConfigs[source];
 
@@ -407,18 +409,24 @@ export function GameImportModal({ isOpen, source, onClose, onImportComplete }: G
                 )}
               </div>
 
-              {/* Skipped Names */}
-              {importResult.skipped_names && importResult.skipped_names.length > 0 && (
+              {/* Skipped Games */}
+              {importResult.skipped_games && importResult.skipped_games.length > 0 && (
                 <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 p-4">
                   <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
                     {t('import.labels.skippedGames')}:
                   </h4>
                   <div className="max-h-[150px] overflow-y-auto">
                     <ul className="text-sm text-yellow-600 dark:text-yellow-300 space-y-1">
-                      {importResult.skipped_names.map((name, i) => (
-                        <li key={i}>
+                      {importResult.skipped_games.map((game, i) => (
+                        <li 
+                          key={i}
+                          className="cursor-pointer hover:underline"
+                          onClick={() => {
+                            navigate({ to: `/game/${game.id}` });
+                            onClose();
+                      }}>
                           •
-                          {name}
+                          {game.search_name}
                         </li>
                       ))}
                     </ul>

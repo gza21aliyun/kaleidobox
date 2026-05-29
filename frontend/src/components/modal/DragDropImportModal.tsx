@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from "../../store";
+import { useNavigate } from "@tanstack/react-router";
 import { AddGamesToCategories, GetCategories } from "../../../wailsjs/go/service/CategoryService";
 
 import { FetchMetadata, FetchMetadataByName } from "../../../wailsjs/go/service/GameService";
@@ -51,6 +52,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
   const [selectedCategoryVo, setSelectedCategoryVo] = useState<vo.CategoryVO | null>(null);
   const [isSearchFolder, setIsSearchFolder] = useState(false);
   const { config } = useAppStore();
+  const navigate = useNavigate();
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);
@@ -717,18 +719,24 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                 )}
               </div>
 
-              {importResult.skipped_names && importResult.skipped_names.length > 0 && (
+              {importResult.skipped_games && importResult.skipped_games.length > 0 && (
                 <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 p-4">
                   <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
                     {t('import.modals.dragDrop.skippedGames')}
                   </h4>
                   <div className="max-h-[150px] overflow-y-auto">
                     <ul className="text-sm text-yellow-600 dark:text-yellow-300 space-y-1">
-                      {importResult.skipped_names.map(name => (
-                        <li key={name}>
+                      {importResult.skipped_games.map(game => (
+                        <li 
+                          key={game.id}
+                          className="cursor-pointer hover:underline"
+                          onClick={() => {
+                            navigate({ to: `/game/${game.id}` });
+                            onClose();
+                          }}>
                           •
                           {" "}
-                          {name}
+                          {game.search_name}
                         </li>
                       ))}
                     </ul>

@@ -2,6 +2,7 @@ import type { models, service } from "../../../wailsjs/go/models";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from "@tanstack/react-router";
 import { useAppStore } from "../../store"
 import { enums, vo } from "../../../wailsjs/go/models";
 import { AddGamesToCategories, GetCategories } from "../../../wailsjs/go/service/CategoryService";
@@ -43,6 +44,7 @@ interface LocalCandidate {
 
 export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpdate }: BatchImportModalProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("select");
   const [libraryPath, setLibraryPath] = useState("");
   const [candidates, setCandidates] = useState<LocalCandidate[]>([]);
@@ -827,17 +829,24 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
                 )}
               </div>
 
-              {importResult.skipped_names && importResult.skipped_names.length > 0 && (
+              {importResult.skipped_games && importResult.skipped_games.length > 0 && (
                 <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 p-4">
                   <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
                     {t('batchImport.skippedGames')}:
                   </h4>
                   <div className="max-h-[150px] overflow-y-auto">
                     <ul className="text-sm text-yellow-600 dark:text-yellow-300 space-y-1">
-                      {importResult.skipped_names.map((name, i) => (
-                        <li key={i}>
+                      {importResult.skipped_games.map((game, i) => (
+                        <li
+                          key={i}
+                          className="cursor-pointer hover:underline"
+                          onClick={() => {
+                            navigate({ to: `/game/${game.id}` });
+                            onClose();
+                          }}
+                        >
                           •
-                          {name}
+                          {game.search_name}
                         </li>
                       ))}
                     </ul>

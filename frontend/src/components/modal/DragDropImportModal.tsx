@@ -79,6 +79,30 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
     fetchCategories();
   }, []);
 
+  useEffect(() => {
+    if (isOpen && droppedPaths.length > 0 && hasProcessed) {
+      resetState();
+    }
+  }, [isOpen]);
+
+  const resetState = () => {
+    abortMatchRef.current = true;
+    setStep("processing");
+    setCandidates([]);
+    setImportResult(null);
+    setMatchProgress({ current: 0, total: 0, gameName: "" });
+    setShowManualSelect(false);
+    setManualSelectIndex(null);
+    setHasProcessed(false);
+    setManualMatches([]);
+    setManualId("");
+  };
+
+  const resetAndClose = () => {
+    resetState();
+    onClose();
+  };
+
   // 处理拖拽的路径
   const processDroppedPaths = async () => {
     if (hasProcessed || droppedPaths.length === 0)
@@ -93,7 +117,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
       
       if (!processed || processed.length === 0) {
         toast.error(t('import.toasts.noValidGamesDetected'));
-        onClose();
+        resetAndClose();
         return;
       }
 
@@ -115,7 +139,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
     catch (error) {
       console.error("Failed to process dropped paths:", error);
       toast.error(t('import.toasts.processDroppedFilesFailed'));
-      onClose();
+      resetAndClose();
     }
     finally {
       setIsLoading(false);
@@ -349,18 +373,6 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
     finally {
       setIsSearching(false);
     }
-  };
-
-  const resetAndClose = () => {
-    abortMatchRef.current = true;
-    setStep("processing");
-    setCandidates([]);
-    setImportResult(null);
-    setMatchProgress({ current: 0, total: 0, gameName: "" });
-    setShowManualSelect(false);
-    setManualSelectIndex(null);
-    setHasProcessed(false);
-    onClose();
   };
 
   const selectedCount = candidates.filter(c => c.isSelected).length;
@@ -732,7 +744,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                           className="cursor-pointer hover:underline"
                           onClick={() => {
                             navigate({ to: `/game/${game.id}` });
-                            onClose();
+                            resetAndClose();
                           }}>
                           •
                           {" "}

@@ -8,11 +8,12 @@ import { useState, useEffect } from "react";
 import { ScreenshotHotkeyModal } from "../modal/ScreenshotHotkeyModal";
 import { ImageBackupCard, ImageCard } from "../card/ImageCard";
 import { arrayMapString } from "../utils/Utility";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import { BetterButton } from "../ui/BetterButton";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { toast } from "react-hot-toast";
 import { arrayContains } from "../utils/Utility";
+import { EventsOn, EventsOff } from "../../../wailsjs/runtime/runtime";
 // import { 
 //   DeviceType, 
 //   HotkeyActionType, 
@@ -38,10 +39,22 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
   // 检查是否有图片且过滤条件满足
   const hasImages = images && images.length > 0;
   
-  // 加载截图快捷键配置
+  // 加载截图快捷键配置和订阅截图保存事件
   useEffect(() => {
     loadScreenshotHotkey();
     loadScreenshots();
+
+    // 订阅截图保存事件
+    const unsubscribe = EventsOn("screenshot:saved", (savedGameId: string) => {
+      if (savedGameId === game.id) {
+        // 如果是当前游戏的截图，刷新
+        loadScreenshots();
+      }
+    });
+
+    return () => {
+      EventsOff("screenshot:saved");
+    };
   }, [game.id]);
 
   const loadScreenshotHotkey = async () => {

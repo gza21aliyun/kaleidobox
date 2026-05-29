@@ -22,6 +22,7 @@ import (
 	"lunabox/internal/applog"
 
 	"github.com/go-vgo/robotgo"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"github.com/google/uuid"
 )
@@ -755,6 +756,11 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 		ImageType:   3,
 		CreatedAt:   time.Now(),
 	})
+
+	// 发送事件通知前端刷新截图
+	if s.ctx != nil {
+		runtime.EventsEmit(s.ctx, "screenshot:saved", gameId)
+	}
 
 	// 发送 Windows 通知
 	go func() {

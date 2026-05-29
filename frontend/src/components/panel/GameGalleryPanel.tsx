@@ -175,7 +175,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
           {loading ? (
             <div className="text-brand-600 dark:text-brand-400 text-sm">{t('gameGallery.loading')}</div>
           ) : screenshots.length > 0 ? (
-            <div className="grid grid-cols-3 xl:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 xl:grid-cols-3 gap-2">
               {screenshots.map((screenshot, index) => (
                 <ImageBackupCard
                   imageBackup={screenshot}

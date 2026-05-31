@@ -106,7 +106,8 @@ function CategoryGamesPage() {
 
   const onBack = () => {
     localStorage.setItem('scrollDelayMs', '400');
-    navigate({ to: "/category_list" });
+    window.history.back();
+    // navigate({ to: "/category_list" });
   };
 
   const [includedIds, setIncludedIds] = useState<string[] | null>(null);

@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 import { enums } from "../../wailsjs/go/models";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { AddGameToCategory, GetCategories, GetCategoriesByGame, RemoveGameFromCategory } from "../../wailsjs/go/service/CategoryService";
-import { DeleteGame, GetGameByID, SelectCoverImage, SelectGameExecutable, SelectSaveDirectory, SelectSaveFile, UpdateGame, UpdateGameFromRemote } from "../../wailsjs/go/service/GameService";
+import { DeleteGame, GetGameByID, GetGamesByTag, SelectCoverImage, SelectGameExecutable, SelectSaveDirectory, SelectSaveFile, UpdateGame, UpdateGameFromRemote } from "../../wailsjs/go/service/GameService";
 import { StartGameWithTracking } from "../../wailsjs/go/service/StartService";
 import { AddToCategoryModal } from "../components/modal/AddToCategoryModal";
 import { ConfirmModal } from "../components/modal/ConfirmModal";
@@ -49,6 +49,25 @@ function GameDetailPage() {
   const {config, updateGameInGames} = useAppStore();
   const setGames = useAppStore(state => state.setGames);
   const [game, setGame] = useState<models.Game | null>(null);
+  
+  const handleCompanyClick = async (companyName: string) => {
+    try {
+      const games = await GetGamesByTag(companyName);
+      const gameIds = games.map(g => g.id).filter((id): id is string => !!id);
+      if (gameIds.length > 0) {
+        navigate({
+          to: '/category_games',
+          search: {
+            selectedGameIds: gameIds.join(','),
+            title: companyName,
+          } as Record<string, string>
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load games for company:', error);
+      toast.error('Failed to load games for this company');
+    }
+  };
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [activeTab, setActiveTab] = useState("intro");
@@ -685,7 +704,16 @@ function GameDetailPage() {
             </div>
             <div>
               <div className="font-semibold mb-1">{t('game.labels.developer')}</div>
-              <div>{game.company || "-"}</div>
+              <div>
+                {game.company ? (
+                  <button
+                    onClick={() => handleCompanyClick(game.company)}
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                  >
+                    {game.company}
+                  </button>
+                ) : "-"}
+              </div>
             </div>
             <div>
               <div className="font-semibold mb-1">{t('game.labels.addedAt')}</div>

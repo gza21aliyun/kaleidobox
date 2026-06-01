@@ -1595,6 +1595,7 @@
     "search": "搜索",
     "skipMetadata": "跳过元数据",
     "addToCollection": "添加到收藏",
-    "searchVideoAndExe": "搜索视频和EXE"
+    "searchVideoAndExe": "搜索视频和EXE",
+    "notAddToCollection": "不加入收藏"
   }
 }

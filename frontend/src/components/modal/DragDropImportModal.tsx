@@ -400,7 +400,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                   onChange={(value) => {
                     setSelectedCategoryVo(categoryVos.current.find(c => c.id === value) || null);
                   }}
-                  options={categoryVos.current.map(c => ({ value: c.id, label: c.name }))}
+                  options={[{ value: "", label: t('batchImport.notAddToCollection') }, ...categoryVos.current.map(c => ({ value: c.id, label: c.name }))]}
                   className="min-w-[200px] w-[150px]"
                 />
                 {/* <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">

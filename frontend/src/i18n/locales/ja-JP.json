@@ -1245,7 +1245,8 @@
     "search": "検索",
     "skipMetadata": "メタデータをスキップ",
     "addToCollection": "コレクションに追加",
-    "searchVideoAndExe": "動画とEXEを検索"
+    "searchVideoAndExe": "動画とEXEを検索",
+    "notAddToCollection": "コレクションに追加しない"
   },
   "update": {
     "checkOnStartup": "起動時に自動的に更新をチェック",

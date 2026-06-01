@@ -1591,6 +1591,7 @@
     "search": "Search",
     "skipMetadata": "Skip metadata",
     "addToCollection": "Add to collection",
-    "searchVideoAndExe": "Search videos and executables"
+    "searchVideoAndExe": "Search videos and executables",
+    "notAddToCollection": "Do not add to collection"
   }
 }

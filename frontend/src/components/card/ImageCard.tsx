@@ -17,13 +17,31 @@ interface ImageBackupProps {
   referrerPolicy?: React.HTMLAttributeReferrerPolicy | undefined;  
     onDragStart?: React.DragEventHandler | undefined;
     onError?: React.ReactEventHandler | undefined;
+  isShowTime?: boolean;
 }
 
 export function ImageBackupCard({
-    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect
+    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, isShowTime = false
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
+
+    // 格式化时间显示（通用格式，不需要翻译）
+    const formatTime = (time: any) => {
+        if (!time) return '';
+        try {
+            const date = new Date(time);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hour = String(date.getHours()).padStart(2, '0');
+            const minute = String(date.getMinutes()).padStart(2, '0');
+            const second = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hour}:${minute}`;
+        } catch {
+            return '';
+        }
+    };
 
     const getImageUrl = () => {
         if (imageBackup.local_path !== "") {
@@ -73,28 +91,35 @@ export function ImageBackupCard({
     return (
         <>
             <div 
-                className={`image-card cursor-pointer hover:opacity-80 transition-all ${selectMode ? 'ring-2 ring-brand-500 ring-offset-2 dark:ring-offset-brand-900 rounded-md' : ''}`} 
+                className={`cursor-pointer hover:opacity-80 transition-all ${selectMode ? 'ring-2 ring-brand-500 ring-offset-2 dark:ring-offset-brand-900 rounded-md' : ''}`} 
                 onClick={() => handleClickImg()}
             >
-                { imageBackup.local_path !== "" ? 
-                (<img src={getImageUrl()} 
-                alt={alt || "Image"}
-                className={className}
-                style={style}
-                draggable={false}
-                onDragStart={onDragStart}
-                referrerPolicy={referrerPolicy}
-                onError={onError}
-                 />) : 
-                ( <img src={imageBackup.url} alt={alt || "Image"}
-                    className={className}
-                    style={style}         
+                <div 
+                    className={`image-card ${className || ''}`}
+                    style={style}
+                >
+                    { imageBackup.local_path !== "" ? 
+                    (<img src={getImageUrl()} 
+                    alt={alt || "Image"}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     draggable={false}
                     onDragStart={onDragStart}
-                    referrerPolicy={referrerPolicy}   
-                    onError={onError}    
-                /> )}
-                
+                    referrerPolicy={referrerPolicy}
+                    onError={onError}
+                     />) : 
+                    ( <img src={imageBackup.url} alt={alt || "Image"}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}         
+                        draggable={false}
+                        onDragStart={onDragStart}
+                        referrerPolicy={referrerPolicy}   
+                        onError={onError}    
+                    /> )}
+                </div>
+                {isShowTime && imageBackup.created_at && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-1 truncate">
+                        {formatTime(imageBackup.created_at)}
+                    </div>
+                )}
             </div>
 
             {isModalOpen && createPortal(

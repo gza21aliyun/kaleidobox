@@ -195,6 +195,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
                   key={screenshot.url}
                   selectMode={isSelectCover}
                   onSelect={handleSelectCover}
+                  isShowTime={true}
                   />
               ))}
             </div>

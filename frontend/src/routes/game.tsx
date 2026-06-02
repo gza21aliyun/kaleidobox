@@ -14,7 +14,7 @@ import { VideoListPlayModal } from "../components/modal/VideoListPlayModal";
 import { GameBackupPanel } from "../components/panel/GameBackupPanel";
 import { GameEditPanel } from "../components/panel/GameEditPanel";
 import { GameLaunchPanel } from "../components/panel/GameLaunchPanel";
-import { Ps4Panel } from "../components/panel/Ps4Panel";
+import { KeyMappingPanel } from "../components/panel/KeyMappingPanel";
 import { GameStatsPanel } from "../components/panel/GameStatsPanel";
 import { GameDetailSkeleton } from "../components/skeleton/GameDetailSkeleton";
 import { useAppStore } from "../store";
@@ -883,7 +883,7 @@ function GameDetailPage() {
       )}
 
       {activeTab === "joystick" && game && (
-        <Ps4Panel
+        <KeyMappingPanel
           gameId={game.id}
         />
       )}

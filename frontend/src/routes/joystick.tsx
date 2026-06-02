@@ -1,6 +1,6 @@
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { Ps4Panel } from "../components/panel/Ps4Panel";
+import { KeyMappingPanel } from "../components/panel/KeyMappingPanel";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -10,5 +10,5 @@ export const Route = createRoute({
 
 function JoystickPage() {
   // 使用 'global' 作为 gameId 来表示全局手柄设置
-  return <Ps4Panel gameId="global" />;
+  return <KeyMappingPanel gameId="global" />;
 }

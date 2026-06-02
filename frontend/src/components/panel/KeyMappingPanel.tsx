@@ -24,7 +24,7 @@ interface KeyMap {
   keyCode: string;
 }
 
-export function Ps4Panel({ gameId }: Ps4PanelProps) {
+export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
   const [hotkeys, setHotkeys] = useState<models.Hotkey[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMappingDialog, setShowMappingDialog] = useState(false);

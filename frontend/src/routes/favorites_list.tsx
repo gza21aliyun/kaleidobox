@@ -3,6 +3,7 @@ import { createRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { useAppStore } from "../store";
 import {
   AddCategory,
   DeleteCategories,
@@ -25,6 +26,7 @@ export const Route = createRoute({
 
 function FavoritesListPage() {
   const { t } = useTranslation();
+  const categoriesRefreshKey = useAppStore(state => state.categoriesRefreshKey);
   const [categories, setCategories] = useState<vo.CategoryVO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
@@ -67,6 +69,10 @@ function FavoritesListPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadCategories();
+  }, [categoriesRefreshKey]);
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim())
@@ -130,12 +136,12 @@ function FavoritesListPage() {
   };
 
   const filteredCategories = categories
-    .filter((category) => {
+    .filter((category: vo.CategoryVO) => {
       if (!searchQuery)
         return true;
       return category.name.toLowerCase().includes(searchQuery.toLowerCase());
     })
-    .sort((a, b) => {
+    .sort((a: vo.CategoryVO, b: vo.CategoryVO) => {
       let comparison = 0;
       switch (sortBy) {
         case "name":
@@ -175,7 +181,7 @@ function FavoritesListPage() {
   const handleSelectAll = () => {
     setSelectedCategoryIds((prev) => {
       const next = new Set(prev);
-      filteredCategories.forEach((category) => {
+      filteredCategories.forEach((category: vo.CategoryVO) => {
         if (!category.is_system) {
           next.add(category.id);
         }
@@ -211,10 +217,6 @@ function FavoritesListPage() {
       },
     });
   };
-
-  useEffect(() => {
-    loadCategories();
-  }, []);
 
   // 延迟显示骨架屏
   useEffect(() => {
@@ -287,7 +289,7 @@ function FavoritesListPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredCategories.map(category => (
+        {filteredCategories.map((category: vo.CategoryVO) => (
           <FavoritesCard
             key={category.id}
             category={category}

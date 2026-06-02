@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from "../../store";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useLocation } from "@tanstack/react-router";
 import { AddGamesToCategories, GetCategories } from "../../../wailsjs/go/service/CategoryService";
 
 import { FetchMetadata, FetchMetadataByName } from "../../../wailsjs/go/service/GameService";
@@ -51,8 +51,9 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
   const [hasProcessed, setHasProcessed] = useState(false);
   const [selectedCategoryVo, setSelectedCategoryVo] = useState<vo.CategoryVO | null>(null);
   const [isSearchFolder, setIsSearchFolder] = useState(false);
-  const { config } = useAppStore();
+  const { config, triggerCategoriesRefresh } = useAppStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);
@@ -67,7 +68,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
   const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const loadCategoriesForModal = async () => {
       try {
         const vos = await GetCategories();
         categoryVos.current = vos || [];
@@ -76,8 +77,8 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
         console.error("Failed to fetch categories:", error);
       }
     };
-    fetchCategories();
-  }, []);
+    loadCategoriesForModal();
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && droppedPaths.length > 0 && hasProcessed) {
@@ -277,9 +278,12 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
         await AddGamesToCategories(result.skipped_games.map(g => g.id), [selectedCategoryVo.id]);
       }
 
-      if (result.success > 0) {
-        toast.success(t('import.toasts.importSuccess', { count: result.success }));
+      if (selectedCategoryVo?.id) {
+        if (result.success > 0) {
+          toast.success(t('import.toasts.importSuccess', { count: result.success }));
+        }
         onImportComplete();
+        triggerCategoriesRefresh();
       }
     }
     catch (error) {

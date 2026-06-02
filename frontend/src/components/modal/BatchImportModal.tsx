@@ -2,7 +2,7 @@ import type { models, service } from "../../../wailsjs/go/models";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useLocation } from "@tanstack/react-router";
 import { useAppStore } from "../../store"
 import { enums, vo } from "../../../wailsjs/go/models";
 import { AddGamesToCategories, GetCategories } from "../../../wailsjs/go/service/CategoryService";
@@ -45,6 +45,7 @@ interface LocalCandidate {
 export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpdate }: BatchImportModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState<Step>("select");
   const [libraryPath, setLibraryPath] = useState("");
   const [candidates, setCandidates] = useState<LocalCandidate[]>([]);
@@ -53,7 +54,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
   const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0, gameName: "" });
   const [selectedCategoryVo, setSelectedCategoryVo] = useState<vo.CategoryVO | null>(null);
   const [isSearchFolder, setIsSearchFolder] = useState(false);
-  const { config } = useAppStore();
+  const { config, triggerCategoriesRefresh } = useAppStore();
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);
@@ -68,7 +69,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
   const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const loadCategoriesForModal = async () => {
       try {
         const vos = await GetCategories();
         categoryVos.current = vos || [];
@@ -77,7 +78,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
         console.error("Failed to fetch categories:", error);
       }
     };
-    fetchCategories();
+    loadCategoriesForModal();
   }, []);
 
   if (!isOpen)
@@ -162,13 +163,13 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
           if (res.games && res.games.length > 0 && selectedCategoryVo?.id) {
             AddGamesToCategories(res.games.map(g => g.id), [selectedCategoryVo.id])
               .then(() => {
-                
+                triggerCategoriesRefresh();
               })
           }
           if (res.skipped_games && res.skipped_games.length > 0 && selectedCategoryVo?.id) {
             AddGamesToCategories(res.skipped_games.map(g => g.id), [selectedCategoryVo.id])
               .then(() => {
-                
+                triggerCategoriesRefresh();
               })
           }
         
@@ -310,6 +311,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
       if (result.success > 0) {
         toast.success(`成功导入 ${result.success} 个游戏`);
         onImportComplete();
+        triggerCategoriesRefresh();
       }
     }
     catch (error) {

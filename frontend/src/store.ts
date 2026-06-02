@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { appconf, models, vo, enums } from "../wailsjs/go/models";
 
 import { GetAppConfig, UpdateAppConfig } from "../wailsjs/go/service/ConfigService";
+
 import { GetGames, GetGamesByPage, GetGameByID, GetSimpleGamesByPage, GetGamesSendFront } from "../wailsjs/go/service/GameService";
 import { GetHomePageData } from "../wailsjs/go/service/HomeService";
 import { ListTags } from "../wailsjs/go/service/TagService";
@@ -48,6 +49,9 @@ type AppState = {
   setTagsLoaded: (tags: Map<string, models.Tag[]>) => void;
   updateTagInTags: (tags: models.Tag) => void;
   // page: number;
+  // 收藏夹刷新计数器
+  categoriesRefreshKey: number;
+  triggerCategoriesRefresh: () => void;
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -210,6 +214,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   // 标签加载状态
   tagsLoaded: new Map(),
   gameStats: new Map(),
+  categoriesRefreshKey: 0,
+  triggerCategoriesRefresh: () => {
+    set({ categoriesRefreshKey: get().categoriesRefreshKey + 1 });
+  },
   setTagsLoaded: (tags: Map<string, models.Tag[]>) => {
     set({ tagsLoaded: tags });
   },

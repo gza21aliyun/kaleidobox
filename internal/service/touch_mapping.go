@@ -55,8 +55,16 @@ var (
 	procCreateSolidBrush      = tmGdi32.NewProc("CreateSolidBrush")
 	procDeleteObject          = tmGdi32.NewProc("DeleteObject")
 	procGetClientRect         = tmUser32.NewProc("GetClientRect")
+	procRoundRect             = tmGdi32.NewProc("RoundRect")
+	procCreatePen             = tmGdi32.NewProc("CreatePen")
+	procSelectObject          = tmGdi32.NewProc("SelectObject")
+	procGetStockObject        = tmGdi32.NewProc("GetStockObject")
+	procRedrawWindow          = tmUser32.NewProc("RedrawWindow")
 	procSetWindowPos          = tmUser32.NewProc("SetWindowPos")
 	procSetCursor             = tmUser32.NewProc("SetCursor")
+	procBringWindowToTop     = tmUser32.NewProc("BringWindowToTop")
+	procSetWindowRgn          = tmUser32.NewProc("SetWindowRgn")
+	procCreateRoundRectRgn    = tmGdi32.NewProc("CreateRoundRectRgn")
 	// procGetForegroundWindow / procSetForegroundWindow 由同包中 image_service.go / start_service.go 提供
 	procAllowSetForeground = tmUser32.NewProc("AllowSetForegroundWindow")
 	procPeekMessage        = tmUser32.NewProc("PeekMessageW")
@@ -148,6 +156,16 @@ var (
 	pendingEnterDown int32
 	pendingEnterUp   int32
 	savedForeground  uintptr // 按下按钮时的前台窗口（通常就是游戏窗口），keybd_event 前恢复
+
+	// UI 状态：悬停/按下，用于 tmPaintWindow 改变颜色
+	buttonHovered int32 // 0 = 未悬停，1 = 悬停
+	buttonPressed int32 // 0 = 未按下，1 = 按下
+)
+
+// 附加消息（鼠标离开时的通知）
+const (
+	WM_MOUSEMOVE  = 0x0200
+	WM_MOUSELEAVE = 0x02A3
 )
 
 // HTCLIENT 命中测试常量：鼠标事件落在窗口客户区内
@@ -199,6 +217,30 @@ func (tm *TouchMapping) Stop() {
 	fmt.Println("TouchMapping: 请求关闭触摸映射窗口")
 }
 
+// keepOnTopLoop 定期检查并保持窗口在最顶层，防止被全屏应用覆盖
+func (tm *TouchMapping) keepOnTopLoop(hwnd uintptr) {
+	// 间隔：2000ms，在保证置顶效果的同时降低资源消耗
+	ticker := time.NewTicker(2000 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		tm.mu.Lock()
+		running := tm.running
+		tm.mu.Unlock()
+
+		if !running {
+			break
+		}
+
+		// 使用 BringWindowToTop + SetWindowPos 组合，更激进地置顶
+		procBringWindowToTop.Call(hwnd)
+
+		// 使用 SWP_NOACTIVATE 避免激活窗口，但强制置顶
+		procSetWindowPos.Call(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
+			uintptr(SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW))
+	}
+}
+
 // IsRunning 返回窗口是否运行中
 func (tm *TouchMapping) IsRunning() bool {
 	tm.mu.Lock()
@@ -246,13 +288,15 @@ func (tm *TouchMapping) runWindow() {
 		HIconSm       uintptr
 	}
 
+	// NULL_BRUSH = 5（Win32 GetStockObject(NULL_BRUSH)），避免系统先用白色擦除窗口背景
+	const NULL_BRUSH_STOCK = 5
 	wc := WNDCLASSEX{
 		CbSize:        uint32(unsafe.Sizeof(WNDCLASSEX{})),
 		Style:         CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS,
 		LpfnWndProc:   syscall.NewCallback(touchMappingWndProc),
 		HInstance:     hInstance,
 		HCursor:       cursor,
-		HbrBackground: uintptr(COLOR_WINDOW + 1),
+		HbrBackground: uintptr(NULL_BRUSH_STOCK),
 		LpszClassName: className,
 	}
 
@@ -307,8 +351,17 @@ func (tm *TouchMapping) runWindow() {
 	}
 
 	// 6. 设置透明度 (alpha = 180, 约 70% 不透明)
-	const alpha = 180
+	const alpha = 100
 	procSetLayeredWindowAttrs.Call(hwnd, 0, uintptr(alpha), uintptr(LWA_ALPHA))
+
+	// 6.5 设置窗口区域为圆角矩形，裁剪掉圆角外的区域（避免显示深色直角边框）
+	const cornerRadius = 16
+	hRgn, _, _ := procCreateRoundRectRgn.Call(
+		0, 0,
+		uintptr(wndWidth+1), uintptr(wndHeight+1),
+		uintptr(cornerRadius), uintptr(cornerRadius),
+	)
+	procSetWindowRgn.Call(hwnd, hRgn, 1) // 1 = redraw immediately
 
 	// 7. 始终置顶（不抢焦点）
 	procSetWindowPos.Call(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
@@ -323,6 +376,9 @@ func (tm *TouchMapping) runWindow() {
 	tm.mu.Unlock()
 
 	fmt.Printf("TouchMapping: 窗口已创建 (HWND=%d)\n", hwnd)
+
+	// 启动定期置顶检查：每隔500ms检查一次，确保窗口始终在最顶层
+	go tm.keepOnTopLoop(hwnd)
 
 	// 9. 消息循环：使用 PeekMessage 让循环永不阻塞；无消息时 Sleep。
 	//    DispatchMessage 之后再处理挂起的按键注入（始终在 WndProc 之外执行 keybd_event）。
@@ -400,17 +456,28 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 		return 0
 
 	// 鼠标悬停：强制显示箭头光标，避免系统默认的“忙/转圈”光标
-	// wParam 的低 16 位 = 光标所属窗口句柄，lParam 的低 16 位 = 命中测试代码。
-	// 这里只要命中测试返回 HTCLIENT 就在我们窗口上，一律设为箭头。
 	case WM_SETCURSOR:
 		hitTest := int32(lParam & 0xFFFF)
 		if hitTest == HTCLIENT || hitTest == 0 {
-			// 使用模块内加载好的箭头光标
 			cursor, _, _ := procLoadCursor.Call(0, uintptr(IDC_ARROW))
 			procSetCursor.Call(cursor)
-			// 返回 TRUE 表示已处理光标设置，系统不会再覆盖
 			return 1
 		}
+
+	// 鼠标移动 → 进入悬停状态；首次进入时打开 WM_MOUSELEAVE 追踪
+	case WM_MOUSEMOVE:
+		if atomic.LoadInt32(&buttonHovered) == 0 {
+			atomic.StoreInt32(&buttonHovered, 1)
+			tmInvalidateRect(hwnd)
+		}
+		return 0
+
+	case WM_MOUSELEAVE:
+		if atomic.LoadInt32(&buttonHovered) != 0 {
+			atomic.StoreInt32(&buttonHovered, 0)
+			tmInvalidateRect(hwnd)
+		}
+		return 0
 
 	// 按下（鼠标左/右/中/X 按钮、双击、通用触摸/笔）→ 延迟触发 Enter 按下
 	case WM_LBUTTONDOWN, WM_LBUTTONDBLCLK,
@@ -418,12 +485,13 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 		WM_MBUTTONDOWN,
 		WM_XBUTTONDOWN,
 		WM_POINTERDOWN:
-		// 在处理按下前先记录下当时的前台窗口（通常是游戏窗口）。
-		// 因为在我们窗口按下时，系统可能会把我们设为前景（即使 WS_EX_NOACTIVATE），
-		// 我们在 tmPressEnterDirect 里再把焦点还回去，确保 keybd_event 发到游戏。
+		// 记录按下时的前台窗口（通常是游戏窗口）
 		fg, _, _ := procGetForegroundWindow.Call()
 		atomic.StoreUintptr(&savedForeground, fg)
 		atomic.StoreInt32(&pendingEnterDown, 1)
+		// UI: 标记按下状态并重绘
+		atomic.StoreInt32(&buttonPressed, 1)
+		tmInvalidateRect(hwnd)
 		return 0
 
 	// 松开 → 延迟触发 Enter 松开
@@ -433,9 +501,15 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 		WM_XBUTTONUP,
 		WM_POINTERUP:
 		atomic.StoreInt32(&pendingEnterUp, 1)
+		// UI: 清除按下状态并重绘
+		if atomic.CompareAndSwapInt32(&buttonPressed, 1, 0) {
+			tmInvalidateRect(hwnd)
+		}
 		return 0
 
 	case TM_CLOSE, WM_CLOSE:
+		atomic.StoreInt32(&buttonHovered, 0)
+		atomic.StoreInt32(&buttonPressed, 0)
 		procDestroyWindow.Call(hwnd)
 		return 0
 
@@ -447,6 +521,15 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 	// 默认处理
 	ret, _, _ := procDefWindowProc.Call(hwnd, uintptr(msg), wParam, lParam)
 	return ret
+}
+
+// tmInvalidateRect 让窗口立即重绘（用于悬停/按下状态切换后刷新 UI）
+func tmInvalidateRect(hwnd uintptr) {
+	const (
+		RDW_INVALIDATE = 0x0001
+		RDW_UPDATENOW  = 0x0100
+	)
+	procRedrawWindow.Call(hwnd, 0, 0, RDW_INVALIDATE|RDW_UPDATENOW)
 }
 
 // ============================================================
@@ -475,30 +558,129 @@ func tmPaintWindow(hwnd uintptr) {
 	var rc RECT
 	procGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&rc)))
 
-	// 深色背景 (COLORREF = 0x00BBGGRR) 这里用 30,20,20 -> BB=1E, GG=14, RR=14
-	bgColor := uintptr(0x001E1414)
-	hBrush, _, _ := procCreateSolidBrush.Call(bgColor)
-	procFillRect.Call(hdc, uintptr(unsafe.Pointer(&rc)), hBrush)
-	procDeleteObject.Call(hBrush)
+	height := int(rc.Bottom - rc.Top)
 
-	// 透明文字背景
+	// 根据当前状态（悬停/按下）选择配色
+	pressed := atomic.LoadInt32(&buttonPressed) == 1
+	hovered := atomic.LoadInt32(&buttonHovered) == 1
+
+	// 颜色定义 (COLORREF = 0x00BBGGRR)
+	var (
+		// 渐变颜色: 顶部亮 / 底部稍暗
+		gradTop    uintptr
+		gradBottom uintptr
+		borderCol  uintptr
+		textCol    uintptr
+	)
+
+	switch {
+	case pressed:
+		// 按下: 更深色（凹陷感
+		gradTop = 0x004A3232    // 稍深
+		gradBottom = 0x00261818 // 更深
+		borderCol = 0x00E0C090  // 金色边框
+		textCol = RGB_WHITE
+	case hovered:
+		// 悬停: 更亮 + 金色边框
+		gradTop = 0x005A3A3A
+		gradBottom = 0x002A1A1A
+		borderCol = 0x00FFD700 // 金色
+		textCol = RGB_WHITE
+	default:
+		// 默认: 深色渐变
+		gradTop = 0x0045302C
+		gradBottom = 0x001E1414
+		borderCol = 0x00807060 // 暗金
+		textCol = RGB_WHITE
+	}
+
+	// 1) 先在整个窗口绘制深色底色，彻底覆盖系统可能残留的白色背景
+	bgColor := gradBottom
+	hBgBrush, _, _ := procCreateSolidBrush.Call(bgColor)
+	procFillRect.Call(hdc, uintptr(unsafe.Pointer(&rc)), hBgBrush)
+	procDeleteObject.Call(hBgBrush)
+
+	// 2) 用水平色带模拟渐变（从上到下），覆盖整个窗口
+	const bandHeight = 1
+	if height > 0 {
+		for i := 0; i < height; i += bandHeight {
+			t := float64(i) / float64(height)
+			col := tmLerpColor(gradTop, gradBottom, t)
+
+			bandRect := RECT{
+				Left:   rc.Left,
+				Top:    rc.Top + int32(i),
+				Right:  rc.Right,
+				Bottom: rc.Top + int32(i+bandHeight),
+			}
+			if bandRect.Bottom > rc.Bottom {
+				bandRect.Bottom = rc.Bottom
+			}
+			hBrush, _, _ := procCreateSolidBrush.Call(col)
+			procFillRect.Call(hdc, uintptr(unsafe.Pointer(&bandRect)), hBrush)
+			procDeleteObject.Call(hBrush)
+		}
+	}
+
+	// 3) 圆角边框（覆盖整个窗口范围，不留边距）
+	const corner = 16
+	pen, _, _ := procCreatePen.Call(0, 4, borderCol) // PS_SOLID, 4px
+	oldPen, _, _ := procSelectObject.Call(hdc, pen)
+
+	NULL_BRUSH := uintptr(5)
+	oldBrush, _, _ := procGetStockObject.Call(NULL_BRUSH)
+	oldBrush2, _, _ := procSelectObject.Call(hdc, oldBrush)
+
+	procRoundRect.Call(
+		hdc,
+		uintptr(rc.Left),
+		uintptr(rc.Top),
+		uintptr(rc.Right),
+		uintptr(rc.Bottom),
+		uintptr(corner),
+		uintptr(corner),
+	)
+
+	procSelectObject.Call(hdc, oldPen)
+	procSelectObject.Call(hdc, oldBrush2)
+	procDeleteObject.Call(pen)
+
+	// 4) 透明文字背景
 	const TRANSPARENT = 1
 	procSetBkMode.Call(hdc, TRANSPARENT)
 
-	// 白色文字
-	procSetTextColor.Call(hdc, RGB_WHITE)
+	// 5) 文字颜色
+	procSetTextColor.Call(hdc, textCol)
 
-	// 居中绘制 "Enter"
+	// 6) 居中绘制 "Enter"
 	textUTF16, _ := syscall.UTF16PtrFromString("Enter")
+	textRect := rc
 	procDrawText.Call(
 		hdc,
 		uintptr(unsafe.Pointer(textUTF16)),
-		^uintptr(0), // -1 表示字符串以 null 结尾
-		uintptr(unsafe.Pointer(&rc)),
+		^uintptr(0),
+		uintptr(unsafe.Pointer(&textRect)),
 		uintptr(DT_CENTER|DT_VCENTER|DT_SINGLELINE),
 	)
 
 	procEndPaint.Call(hwnd, uintptr(unsafe.Pointer(&ps)))
+}
+
+// tmLerpColor 在两个 COLORREF 之间做线性插值。t=0 取 color1, t=1 取 color2
+func tmLerpColor(color1, color2 uintptr, t float64) uintptr {
+	r1 := byte(color1 & 0xFF)
+	g1 := byte((color1 >> 8) & 0xFF)
+	b1 := byte((color1 >> 16) & 0xFF)
+
+	r2 := byte(color2 & 0xFF)
+	g2 := byte((color2 >> 8) & 0xFF)
+	b2 := byte((color2 >> 16) & 0xFF)
+
+	r := byte(float64(r1) + t*(float64(r2)-float64(r1)))
+	g := byte(float64(g1) + t*(float64(g2)-float64(g1)))
+	b := byte(float64(b1) + t*(float64(b2)-float64(b1)))
+
+	return uintptr(r) | (uintptr(g) << 8) | (uintptr(b) << 16)
 }
 
 // ============================================================

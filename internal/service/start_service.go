@@ -299,12 +299,18 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		}
 		applog.InfoLogSaveAppLog("Steam process ID: %d", launcherPID)
 
+		// 启动触摸映射小窗口 (屏幕右侧 Enter 按钮)
+		go GetTouchMapping().Start()
+
 		go s.detectAndMonitorProcess(cmd, sessionID, gameID, startTime, launcherPID, "steam.exe", processName, useLE, useMagpie, path, savePath)
 
 		// 传入一个虚拟的 launcherExeName,让 detectAndMonitorProcess 进入正确的分支
 
 		return true, nil
 	}
+
+	// 启动触摸映射小窗口 (屏幕右侧 Enter 按钮)
+	go GetTouchMapping().Start()
 
 	// 启动进程检测和监控 goroutine
 	applog.InfoLogSaveAppLog("启动进程检测和监控 goroutine")
@@ -571,6 +577,8 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 		return
 	}
 	fmt.Println("start cleanup playsession")
+	// 关闭触摸映射窗口
+	go GetTouchMapping().Stop()
 	//todo: lock
 	go s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 	// 执行统一的会话清理逻辑
@@ -602,6 +610,7 @@ func (s *StartService) monitorProcessByPID(sessionID string, gameID string, star
 	case <-time.After(24 * time.Hour):
 		applog.LogWarningf(s.ctx, "Game %s exceeded maximum runtime (24h), forcing cleanup", gameID)
 	}
+	go GetTouchMapping().Stop()
 	go s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 
 	// 执行统一的会话清理逻辑

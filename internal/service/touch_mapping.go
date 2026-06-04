@@ -478,11 +478,16 @@ func doUpdateButtons() {
 	initButtonStatesLocked()
 
 	// 4. 销毁所有现有窗口
+	// 设置标志阻止 WM_DESTROY 发送退出消息（因为我们要重建窗口，不是真正退出）
+	quitPosted = true // 临时设置为 true，阻止 WM_DESTROY 中的 PostQuitMessage
 	for _, hwnd := range oldHwnds {
 		if hwnd != 0 {
 			procDestroyWindow.Call(hwnd)
 		}
 	}
+	// 清空 hwndToButtonID 映射（窗口已销毁）
+	hwndToButtonID = make(map[uintptr]int)
+	quitPosted = false // 重置标志，允许后续真正的退出
 	tm.hwnds = make(map[int]uintptr)
 
 	tm.mu.Unlock()
@@ -640,9 +645,6 @@ func (tm *TouchMapping) IsRunning() bool {
 // ============================================================
 
 func (tm *TouchMapping) runWindow() {
-	// 初始化按钮状态
-	initButtonStates()
-
 	// Windows 要求：创建窗口的线程 = 消息循环线程 = 接收 WndProc 回调的线程。
 	// Go 默认会把 goroutine 迁移到不同 OS 线程，必须 LockOSThread 防止线程迁移导致消息派发失败。
 	runtime.LockOSThread()
@@ -708,7 +710,12 @@ func (tm *TouchMapping) runWindow() {
 	const alpha = 100
 	const cornerRadius = 16
 
+	// 加锁保护：初始化状态和创建窗口在同一锁范围内，避免竞态条件
+	tm.mu.Lock()
+	// 初始化按钮状态（在锁内，确保与 tm.hwnds 写入原子一致）
+	initButtonStates()
 	tm.hwnds = make(map[int]uintptr)
+
 	for _, btn := range currentButtons {
 		hwnd, _, err := procCreateWindow.Call(
 			exStyle,
@@ -723,7 +730,6 @@ func (tm *TouchMapping) runWindow() {
 		)
 		if hwnd == 0 {
 			fmt.Printf("TouchMapping: 创建按钮窗口失败 (ID=%d): %v\n", btn.ID, err)
-			tm.mu.Lock()
 			tm.running = false
 			tm.mu.Unlock()
 			return
@@ -750,6 +756,7 @@ func (tm *TouchMapping) runWindow() {
 
 		fmt.Printf("TouchMapping: 窗口已创建 (ID=%d, HWND=%d, X=%d, Y=%d)\n", btn.ID, hwnd, btn.X, btn.Y)
 	}
+	tm.mu.Unlock()
 
 	// 如果有待更新的按钮列表，立即处理
 	if len(pendingButtons) > 0 {
@@ -863,14 +870,18 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 			}
 		}
 
-		// 通用：悬停状态
-		atomic.StoreInt32(&buttonState[buttonID].Hovered, 1)
+		// 通用：悬停状态（带 nil 检查，避免 panic）
+		if bs := buttonState[buttonID]; bs != nil {
+			atomic.StoreInt32(&bs.Hovered, 1)
+		}
 		atomic.StoreInt32(&buttonHovered, 1)
 		tmInvalidateRect(hwnd)
 		return 0
 
 	case WM_MOUSELEAVE:
-		atomic.StoreInt32(&buttonState[buttonID].Hovered, 0)
+		if bs := buttonState[buttonID]; bs != nil {
+			atomic.StoreInt32(&bs.Hovered, 0)
+		}
 		atomic.StoreInt32(&buttonHovered, 0)
 		tmInvalidateRect(hwnd)
 		return 0
@@ -897,7 +908,9 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 				ds.StartWinX = wr.Left
 				ds.StartWinY = wr.Top
 			}
-			atomic.StoreInt32(&buttonState[buttonID].Pressed, 1)
+			if bs := buttonState[buttonID]; bs != nil {
+				atomic.StoreInt32(&bs.Pressed, 1)
+			}
 			atomic.StoreInt32(&buttonPressed, 1)
 			tmInvalidateRect(hwnd)
 			return 0
@@ -907,8 +920,12 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 		fg, _, _ := procGetForegroundWindow.Call()
 		atomic.StoreUintptr(&savedForeground, fg)
 
-		atomic.StoreInt32(&buttonState[buttonID].Pressed, 1)
-		atomic.StoreInt32(pendingDown[buttonID], 1)
+		if bs := buttonState[buttonID]; bs != nil {
+			atomic.StoreInt32(&bs.Pressed, 1)
+		}
+		if pd := pendingDown[buttonID]; pd != nil {
+			atomic.StoreInt32(pd, 1)
+		}
 		atomic.StoreInt32(&buttonPressed, 1)
 		atomic.StoreInt32(&clickedButton, int32(buttonID))
 		tmInvalidateRect(hwnd)
@@ -940,15 +957,21 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 					btn.Y = wr.Top
 				}
 			}
-			atomic.StoreInt32(&buttonState[buttonID].Pressed, 0)
+			if bs := buttonState[buttonID]; bs != nil {
+				atomic.StoreInt32(&bs.Pressed, 0)
+			}
 			atomic.StoreInt32(&buttonPressed, 0)
 			tmInvalidateRect(hwnd)
 			return 0
 		}
 
 		// 映射模式：延迟注入按键松开
-		atomic.StoreInt32(pendingUp[buttonID], 1)
-		atomic.StoreInt32(&buttonState[buttonID].Pressed, 0)
+		if pu := pendingUp[buttonID]; pu != nil {
+			atomic.StoreInt32(pu, 1)
+		}
+		if bs := buttonState[buttonID]; bs != nil {
+			atomic.StoreInt32(&bs.Pressed, 0)
+		}
 		atomic.StoreInt32(&buttonPressed, 0)
 		atomic.StoreInt32(&clickedButton, -1)
 		tmInvalidateRect(hwnd)
@@ -1018,8 +1041,13 @@ func tmPaintWindow(hwnd uintptr) {
 	procFillRect.Call(hdc, uintptr(unsafe.Pointer(&rc)), hBgBrush)
 	procDeleteObject.Call(hBgBrush)
 
-	pressed := atomic.LoadInt32(&buttonState[btn.ID].Pressed) == 1
-	hovered := atomic.LoadInt32(&buttonState[btn.ID].Hovered) == 1
+	// 带 nil 检查，避免 panic
+	pressed := false
+	hovered := false
+	if bs := buttonState[btn.ID]; bs != nil {
+		pressed = atomic.LoadInt32(&bs.Pressed) == 1
+		hovered = atomic.LoadInt32(&bs.Hovered) == 1
+	}
 
 	// 颜色定义 (COLORREF = 0x00BBGGRR)
 	var (

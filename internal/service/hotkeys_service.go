@@ -996,14 +996,19 @@ func (s *HotkeyService) GetGlobalHotkeys() ([]models.Hotkey, error) {
 		}
 		hotkeys = append(hotkeys, hotkey)
 	}
-	fmt.Printf("已加载快捷键:%d\n", len(hotkeys))
+	// 打印每个快捷键的详细信息
+	names := make([]string, 0, len(hotkeys))
+	for _, h := range hotkeys {
+		names = append(names, fmt.Sprintf("%s(%s)", h.Name, h.DeviceType))
+	}
+	fmt.Printf("已加载快捷键:%d - [%s]\n", len(hotkeys), strings.Join(names, ", "))
 
 	return hotkeys, nil
 }
 
 // UpdateHotkey 更新快捷键配置
 func (s *HotkeyService) UpdateHotkey(hotkey models.Hotkey) error {
-	applog.LogInfo(s.ctx, "start to UpdateHotkey")
+	applog.LogInfof(s.ctx, "start to UpdateHotkey - name: %s, id: %s", hotkey.Name, hotkey.ID)
 	query := `
 		UPDATE hotkeys 
 		SET name = ?, device_type = ?, key_code = ?, 
@@ -1027,13 +1032,13 @@ func (s *HotkeyService) UpdateHotkey(hotkey models.Hotkey) error {
 		return err
 	}
 
-	applog.LogInfof(s.ctx, "快捷键更新成功: %s", hotkey.ID)
+	applog.LogInfof(s.ctx, "快捷键更新成功: name=%s, id=%s", hotkey.Name, hotkey.ID)
 	return nil
 }
 
 // AddHotkey 添加新的快捷键配置
 func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
-	applog.LogInfo(s.ctx, "start to AddHotkey")
+	applog.LogInfof(s.ctx, "start to AddHotkey - name: %s, device: %s, game_id: %s", hotkey.Name, hotkey.DeviceType, hotkey.GameID)
 	if hotkey.ID == "" {
 		hotkey.ID = generateHotkeyID()
 	}
@@ -1069,7 +1074,7 @@ func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
 		return err
 	}
 
-	applog.LogInfof(s.ctx, "快捷键添加成功: %s", hotkey.ID)
+	applog.LogInfof(s.ctx, "快捷键添加成功: name=%s, id=%s", hotkey.Name, hotkey.ID)
 	return nil
 }
 
@@ -1127,6 +1132,7 @@ func (s *HotkeyService) GetGameHotkeys(gameID string) ([]models.Hotkey, error) {
 
 // DeleteHotkey 删除快捷键配置
 func (s *HotkeyService) DeleteHotkey(hotkeyID string) error {
+	applog.LogInfof(s.ctx, "start to DeleteHotkey - id: %s", hotkeyID)
 	query := `DELETE FROM hotkeys WHERE id = ?`
 
 	_, err := s.db.Exec(query, hotkeyID)

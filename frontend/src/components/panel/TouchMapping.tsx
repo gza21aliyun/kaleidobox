@@ -134,10 +134,11 @@ export const TouchMapping = forwardRef<TouchMappingRef, TouchMappingProps>(({ ga
         (h) => h.device_type === enums.DeviceType.TOUCH
       );
 
-      // 合并 - 游戏特定映射覆盖全局
+      // 合并 - 游戏特定映射覆盖全局（按按键名 action_params 去重）
+      // 同一按键在全局和游戏配置中都有记录时，游戏配置优先
       const merged: models.Hotkey[] = [...globalTouch];
       gameTouch.forEach((gh) => {
-        const idx = merged.findIndex((h) => h.key_code === gh.key_code);
+        const idx = merged.findIndex((h) => h.action_params === gh.action_params);
         if (idx !== -1) {
           merged[idx] = gh;
         } else {
@@ -421,36 +422,64 @@ export const TouchMapping = forwardRef<TouchMappingRef, TouchMappingProps>(({ ga
         (h) => h.device_type === enums.DeviceType.TOUCH
       );
 
-      // 3. 先删除现有所有触摸按钮
+      // 3. 先删除现有所有触摸按钮（包括游戏特定和全局）
+      // 这样可以避免主键冲突，简化保存逻辑
+      const deletedNames = gameTouchHotkeys.map((h) => h.name).join(', ');
+      console.log(`[保存触摸按钮] 删除游戏按钮: [${deletedNames}] (共${gameTouchHotkeys.length}个)`);
       for (const hk of gameTouchHotkeys) {
         await DeleteHotkey(hk.id);
       }
-
-      // 4. 把当前内存中的按钮按 scope 分组
-      const toAdd = touchButtons.map((btn) => {
-        const hotkey = toHotkey(btn);
-        // 如果 gameId 未设置，存为全局
-        if (!hotkey.game_id || hotkey.game_id === '') {
-          hotkey.game_id = gameId;
-        }
-        return hotkey;
-      });
-
-      // 5. 检查是否已经在全局存在相同 key_code，如果是则保存为游戏特定
-      for (const hotkey of toAdd) {
-        const existingGlobal = globalTouchHotkeys.find(
-          (g) => g.key_code === hotkey.key_code
-        );
-        if (!existingGlobal) {
-          // 没有全局记录，作为全局保存
-          hotkey.game_id = 'global';
-          await AddHotkey(hotkey);
-        } else {
-          // 有全局记录，按游戏特定保存
-          hotkey.game_id = gameId;
-          await AddHotkey(hotkey);
+      // 如果是全局页面，还要删除全局的触摸按钮
+      if (gameId === 'global') {
+        const deletedGlobalNames = globalTouchHotkeys.map((h) => h.name).join(', ');
+        console.log(`[保存触摸按钮] 删除全局按钮: [${deletedGlobalNames}] (共${globalTouchHotkeys.length}个)`);
+        for (const hk of globalTouchHotkeys) {
+          await DeleteHotkey(hk.id);
         }
       }
+
+      // 4. 把当前内存中的按钮转换为 Hotkey 对象，全部使用新的 UUID
+      const addedNames: string[] = [];
+      for (const btn of touchButtons) {
+        const hotkey = new models.Hotkey({
+          id: crypto.randomUUID(), // 强制使用新的 UUID，避免主键冲突
+          game_id: gameId,
+          name: btn.name,
+          device_type: enums.DeviceType.TOUCH,
+          key_code: btn.keyCode,
+          modifiers: [],
+          action_type: enums.HotkeyActionType.CUSTOM,
+          action_params: btn.actionParams,
+          is_enabled: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        // 决定保存为全局还是游戏特定
+        if (gameId === 'global') {
+          // 全局页面：直接保存为全局
+          hotkey.game_id = 'global';
+          await AddHotkey(hotkey);
+          addedNames.push(btn.name);
+        } else {
+          // 游戏页面：检查是否已经在全局存在相同 key_code
+          const existingGlobal = globalTouchHotkeys.find(
+            (g) => g.key_code === hotkey.key_code
+          );
+          if (!existingGlobal) {
+            // 没有全局记录，作为全局保存
+            hotkey.game_id = 'global';
+            await AddHotkey(hotkey);
+            addedNames.push(`${btn.name}(global)`);
+          } else {
+            // 有全局记录，按游戏特定保存
+            hotkey.game_id = gameId;
+            await AddHotkey(hotkey);
+            addedNames.push(`${btn.name}(game)`);
+          }
+        }
+      }
+      console.log(`[保存触摸按钮] 添加按钮: [${addedNames.join(', ')}] (共${touchButtons.length}个)`);
 
       toast.success(t('touchMapping.toastSavedAll'));
     } catch (err) {
@@ -468,23 +497,7 @@ export const TouchMapping = forwardRef<TouchMappingRef, TouchMappingProps>(({ ga
     [handleSaveAll]
   );
 
-  // 返回触摸按钮列表给 KeyMappingPanel 用于保存
-  // 将触摸按钮转换为 Hotkey 对象
-  const toHotkey = (btn: TouchButton): models.Hotkey => {
-    return new models.Hotkey({
-      id: btn.isNew ? Date.now().toString() : btn.hotkeyID,
-      game_id: btn.gameId,
-      name: btn.name,
-      device_type: enums.DeviceType.TOUCH,
-      key_code: btn.keyCode,
-      modifiers: [],
-      action_type: enums.HotkeyActionType.CUSTOM,
-      action_params: btn.actionParams,
-      is_enabled: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
-  };
+
 
   return (
     <div className="w-full h-full p-8 overflow-y-auto">

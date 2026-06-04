@@ -12,8 +12,9 @@ import (
 )
 
 // TouchMapping 管理多个始终置顶的半透明按钮窗口。
-// 每个按钮有独立的窗口，位置由 ButtonConfig 的 X/Y 指定。
-// 当用户用鼠标或触摸按下窗口时，触发对应按键按下；松开时触发按键松开。
+// 支持两种模式:
+//   - "mapping": 点击按钮触发对应虚拟键注入（游戏使用）
+//   - "edit":    按钮可拖动改变位置，不注入按键（配置界面使用）
 type TouchMapping struct {
 	mu      sync.Mutex
 	hwnds   map[int]uintptr // buttonID -> 窗口句柄
@@ -63,14 +64,15 @@ var (
 	procRedrawWindow          = tmUser32.NewProc("RedrawWindow")
 	procSetWindowPos          = tmUser32.NewProc("SetWindowPos")
 	procSetCursor             = tmUser32.NewProc("SetCursor")
-	procBringWindowToTop     = tmUser32.NewProc("BringWindowToTop")
+	procBringWindowToTop      = tmUser32.NewProc("BringWindowToTop")
 	procSetWindowRgn          = tmUser32.NewProc("SetWindowRgn")
 	procCreateRoundRectRgn    = tmGdi32.NewProc("CreateRoundRectRgn")
 	// procGetForegroundWindow / procSetForegroundWindow 由同包中 image_service.go / start_service.go 提供
 	procAllowSetForeground = tmUser32.NewProc("AllowSetForegroundWindow")
 	procPeekMessage        = tmUser32.NewProc("PeekMessageW")
 	procUnregisterClass    = tmUser32.NewProc("UnregisterClassW")
-	// procGetSystemMetrics / procKeybdEvent / SM_CXSCREEN / SM_CYSCREEN 由同包中 image_service.go / start_service.go 提供
+	procGetCursorPos       = tmUser32.NewProc("GetCursorPos")
+	// procGetWindowRect / procGetSystemMetrics / procKeybdEvent / SM_CXSCREEN / SM_CYSCREEN 由同包中 image_service.go / start_service.go 提供
 )
 
 // Windows 常量
@@ -167,67 +169,90 @@ type PAINTSTRUCT struct {
 	RgbReserved [32]byte
 }
 
+type POINT struct {
+	X, Y int32
+}
+
 // ============================================================
 // 按钮配置与状态
 // ============================================================
 
-// ButtonConfig 定义按钮的显示和功能配置
+// ButtonConfig 定义按钮的显示和功能配置（从数据库读取）
 type ButtonConfig struct {
-	ID         int    // 按钮唯一标识
-	Label      string // 显示文字
-	VirtualKey uintptr // 对应的虚拟键码
-	X          int32  // 按钮左上角 X 坐标（相对于窗口客户区）
-	Y          int32  // 按钮左上角 Y 坐标（相对于窗口客户区）
+	ID         int     // 内部按钮 ID
+	HotkeyID   string  // 数据库 hotkey.id（用于保存时回写位置）
+	Label      string  // 显示文字
+	VirtualKey uintptr // 对应的虚拟键码（映射到哪个键盘按键）
+	X          int32   // 屏幕坐标 X
+	Y          int32   // 屏幕坐标 Y
 }
 
 // ButtonState 跟踪按钮的悬停和按下状态
 type ButtonState struct {
-	Hovered int32 // 0 = 未悬停，1 = 悬停
-	Pressed int32 // 0 = 未按下，1 = 按下
+	Hovered int32
+	Pressed int32
 }
 
-// 定义按钮列表（每个按钮有独立窗口，X/Y 为屏幕绝对坐标）
-var buttonConfigs = []ButtonConfig{
-	{ID: 0, Label: "Enter", VirtualKey: VK_RETURN, X: 1750, Y: 340},
-	{ID: 1, Label: "Ctrl", VirtualKey: VK_CONTROL, X: 1750, Y: 450},
+// DragState 跟踪按钮的拖动状态（编辑模式下使用）
+type DragState struct {
+	Dragging    int32 // 1 = 正在拖动
+	StartMouseX int32 // 拖动起始点的鼠标屏幕坐标
+	StartMouseY int32
+	StartWinX   int32 // 拖动起始点的窗口位置
+	StartWinY   int32
 }
+
+// 运行模式
+const (
+	ModeMapping = "mapping" // 游戏模式：点击触发按键注入
+	ModeEdit    = "edit"    // 编辑模式：可拖动改变位置，不注入按键
+)
 
 // 全局状态
 var (
-	// 待注入按键事件: buttonID -> pendingDown/pendingUp
-	// 使用 *int32 而不是 int32，因为 Go map 的 value 本身不可寻址，
-	// 无法直接对 map[key] 调用 atomic（需要 &val）
-	pendingDown   map[int]*int32 // buttonID -> 1 表示需要按下
-	pendingUp     map[int]*int32 // buttonID -> 1 表示需要松开
-	buttonState   map[int]*ButtonState // buttonID -> 悬停/按下状态
-	buttonHovered int32 // 当前有按钮被悬停（用于鼠标追踪）
-	clickedButton int32 // 当前被点击的按钮ID（-1表示无）
-	savedForeground uintptr // 按下按钮时保存的前台窗口句柄
-	buttonPressed int32 // 是否有按钮处于按下状态（用于UI重绘）
+	currentButtons []ButtonConfig // 当前活动的按钮列表（动态配置）
+	currentMode    string         // 当前运行模式：ModeMapping 或 ModeEdit
+	buttonWidthV   = int32(150)   // 窗口宽度
+	buttonHeightV  = int32(140)   // 窗口高度
+
+	// 待注入按键事件
+	pendingDown map[int]*int32
+	pendingUp   map[int]*int32
+	// 悬停和按下状态
+	buttonState     map[int]*ButtonState
+	buttonHovered   int32
+	clickedButton   int32
+	buttonPressed   int32
+	savedForeground uintptr
+
+	// 拖动状态（编辑模式）
+	dragStates map[int]*DragState
+
+	// 编辑模式下的位置更新记录（key: buttonID）
+	updatedPositions map[int]POINT
 
 	// hwnd <-> buttonID 双向映射
-	hwndToButtonID map[uintptr]int // hwnd -> buttonID
+	hwndToButtonID map[uintptr]int
 
 	// 防止多次调用 PostQuitMessage
 	quitPosted bool
-
-	// 窗口尺寸配置
-	buttonWidth  = 120
-	buttonHeight = 100
 )
 
-// 初始化按钮状态映射
+// 初始化按钮状态映射（使用 currentButtons，可能为空）
 func initButtonStates() {
 	pendingDown = make(map[int]*int32)
 	pendingUp = make(map[int]*int32)
 	buttonState = make(map[int]*ButtonState)
 	hwndToButtonID = make(map[uintptr]int)
-	for _, btn := range buttonConfigs {
+	dragStates = make(map[int]*DragState)
+	updatedPositions = make(map[int]POINT)
+	for _, btn := range currentButtons {
 		pendingDownVal := int32(0)
 		pendingDown[btn.ID] = &pendingDownVal
 		pendingUpVal := int32(0)
 		pendingUp[btn.ID] = &pendingUpVal
 		buttonState[btn.ID] = &ButtonState{}
+		dragStates[btn.ID] = &DragState{}
 	}
 	atomic.StoreInt32(&buttonHovered, 0)
 	atomic.StoreInt32(&clickedButton, -1)
@@ -236,19 +261,29 @@ func initButtonStates() {
 	quitPosted = false
 }
 
+// 根据 buttonID 获取 ButtonConfig
+func getButtonByID(buttonID int) *ButtonConfig {
+	for i := range currentButtons {
+		if currentButtons[i].ID == buttonID {
+			return &currentButtons[i]
+		}
+	}
+	return nil
+}
+
 // GetButtonRect 根据按钮 ID 返回其矩形范围 (x, y, width, height)
 func GetButtonRect(buttonID int) (x, y, width, height int32) {
-	for _, btn := range buttonConfigs {
+	for _, btn := range currentButtons {
 		if btn.ID == buttonID {
-			return btn.X, btn.Y, int32(buttonWidth), int32(buttonHeight)
+			return btn.X, btn.Y, buttonWidthV, buttonHeightV
 		}
 	}
 	return 0, 0, 0, 0
 }
 
-// HitTestButton 根据鼠标坐标确定命中哪个按钮，返回按钮 ID 和是否命中
+// HitTestButton 根据鼠标坐标确定命中哪个按钮
 func HitTestButton(mouseX, mouseY int32) (buttonID int, hit bool) {
-	for _, btn := range buttonConfigs {
+	for _, btn := range currentButtons {
 		btnX, btnY, btnW, btnH := GetButtonRect(btn.ID)
 		if mouseX >= btnX && mouseX < btnX+btnW && mouseY >= btnY && mouseY < btnY+btnH {
 			return btn.ID, true
@@ -278,18 +313,48 @@ func GetTouchMapping() *TouchMapping {
 	return touchMappingInstance
 }
 
-// Start 启动触摸映射窗口。若窗口已运行则直接返回。
-func (tm *TouchMapping) Start() error {
+// SetButtons 设置按钮配置。必须在 Start 之前调用。
+// 按钮位置来自数据库 key_code 字段（格式 "x:123;y:456"），
+// 或由编辑模式下拖动产生。
+func (tm *TouchMapping) SetButtons(buttons []ButtonConfig) {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	// 深拷贝
+	nb := make([]ButtonConfig, len(buttons))
+	copy(nb, buttons)
+	currentButtons = nb
+}
+
+// StartMapping 以“游戏模式”启动（点击按钮触发按键注入）。
+// 若窗口已运行则直接返回。
+func (tm *TouchMapping) StartMapping() error {
 	tm.mu.Lock()
 	if tm.running {
 		tm.mu.Unlock()
-		fmt.Println("TouchMapping: 窗口已在运行")
 		return nil
 	}
 	tm.running = true
+	currentMode = ModeMapping
 	tm.mu.Unlock()
 
-	fmt.Println("TouchMapping: 启动触摸映射窗口")
+	fmt.Println("TouchMapping: 启动映射模式")
+	go tm.runWindow()
+	return nil
+}
+
+// StartEditMode 以“编辑模式”启动（按钮可拖动改变位置，不注入按键）。
+// 若窗口已运行则直接返回。
+func (tm *TouchMapping) StartEditMode() error {
+	tm.mu.Lock()
+	if tm.running {
+		tm.mu.Unlock()
+		return nil
+	}
+	tm.running = true
+	currentMode = ModeEdit
+	tm.mu.Unlock()
+
+	fmt.Println("TouchMapping: 启动编辑模式")
 	go tm.runWindow()
 	return nil
 }
@@ -313,9 +378,233 @@ func (tm *TouchMapping) Stop() {
 	fmt.Println("TouchMapping: 请求关闭触摸映射窗口")
 }
 
-// keepOnTopLoop 定期检查并保持所有按钮窗口在最顶层，防止被全屏应用覆盖
+// GetUpdatedPositions 返回编辑模式下各按钮最终位置（buttonID -> {X, Y}）
+// 在停止编辑模式后调用此函数读取用户拖动结果，然后前端可把位置写回数据库。
+func (tm *TouchMapping) GetUpdatedPositions() map[int]POINT {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	result := make(map[int]POINT)
+	for id, pt := range updatedPositions {
+		result[id] = pt
+	}
+	// 同时把未拖动过的按钮的初始位置也返回（以便前端可以正确保存）
+	for _, btn := range currentButtons {
+		if _, ok := result[btn.ID]; !ok {
+			result[btn.ID] = POINT{X: btn.X, Y: btn.Y}
+		}
+	}
+	return result
+}
+
+// GetMode 返回当前运行模式（"mapping" / "edit" / ""）
+func (tm *TouchMapping) GetMode() string {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	if !tm.running {
+		return ""
+	}
+	return currentMode
+}
+
+// 自定义消息: 更新按钮列表
+const TM_UPDATE_BUTTONS = WM_USER + 2
+
+// pendingButtons 用于临时存储待更新的按钮列表
+var pendingButtons []ButtonConfig
+
+// UpdateEditModeButtons 动态更新编辑模式下的按钮列表。
+// 会销毁所有现有窗口并用新按钮列表重新创建窗口。
+// 必须在编辑模式下调用。
+func (tm *TouchMapping) UpdateEditModeButtons(buttons []ButtonConfig) error {
+	tm.mu.Lock()
+	if !tm.running || currentMode != ModeEdit {
+		tm.mu.Unlock()
+		return fmt.Errorf("not in edit mode")
+	}
+
+	// 如果还没有窗口（初始化中），直接更新 currentButtons
+	if len(tm.hwnds) == 0 {
+		nb := make([]ButtonConfig, len(buttons))
+		copy(nb, buttons)
+		currentButtons = nb
+		tm.mu.Unlock()
+		return nil
+	}
+
+	// 保存待更新的按钮列表
+	pendingButtons = make([]ButtonConfig, len(buttons))
+	copy(pendingButtons, buttons)
+
+	// 向消息循环发送更新请求
+	for _, hwnd := range tm.hwnds {
+		if hwnd != 0 {
+			procPostMessage.Call(hwnd, uintptr(TM_UPDATE_BUTTONS), 0, 0)
+			break // 只发给第一个窗口即可
+		}
+	}
+	tm.mu.Unlock()
+
+	return nil
+}
+
+// doUpdateButtons 在消息循环线程中执行实际的按钮更新操作
+func doUpdateButtons() {
+	tm := GetTouchMapping()
+	tm.mu.Lock()
+
+	if !tm.running || currentMode != ModeEdit {
+		tm.mu.Unlock()
+		return
+	}
+
+	if len(pendingButtons) == 0 {
+		tm.mu.Unlock()
+		return
+	}
+
+	// 1. 保存当前窗口列表
+	oldHwnds := make(map[int]uintptr)
+	for k, v := range tm.hwnds {
+		oldHwnds[k] = v
+	}
+
+	// 2. 更新按钮列表（先复制再清空）
+	nb := make([]ButtonConfig, len(pendingButtons))
+	copy(nb, pendingButtons)
+	pendingButtons = nil
+	currentButtons = nb
+
+	// 3. 初始化按钮状态（在创建窗口之前）
+	initButtonStatesLocked()
+
+	// 4. 销毁所有现有窗口
+	for _, hwnd := range oldHwnds {
+		if hwnd != 0 {
+			procDestroyWindow.Call(hwnd)
+		}
+	}
+	tm.hwnds = make(map[int]uintptr)
+
+	tm.mu.Unlock()
+
+	// 在锁外创建新窗口（避免长时间持有锁）
+	exStyle := uintptr(WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)
+	style := uintptr(WS_POPUP | WS_VISIBLE)
+	const alpha = 100
+	const cornerRadius = 16
+
+	hInstance, _, _ := procGetModuleHandle.Call(0)
+	titleText := syscall.StringToUTF16Ptr("")
+
+	classNameUTF16 := syscall.StringToUTF16(
+		fmt.Sprintf("LunaboxTouchMappingClass_%d_%d",
+			os.Getpid(), time.Now().UnixNano()))
+	className := &classNameUTF16[0]
+
+	type WNDCLASSEX struct {
+		CbSize        uint32
+		Style         uint32
+		LpfnWndProc   uintptr
+		CbClsExtra    int32
+		CbWndExtra    int32
+		HInstance     uintptr
+		HIcon         uintptr
+		HCursor       uintptr
+		HbrBackground uintptr
+		LpszMenuName  *uint16
+		LpszClassName *uint16
+		HIconSm       uintptr
+	}
+	const NULL_BRUSH_STOCK = 5
+	cursor, _, _ := procLoadCursor.Call(0, uintptr(IDC_ARROW))
+	wc := WNDCLASSEX{
+		CbSize:        uint32(unsafe.Sizeof(WNDCLASSEX{})),
+		Style:         CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS,
+		LpfnWndProc:   syscall.NewCallback(touchMappingWndProc),
+		HInstance:     hInstance,
+		HCursor:       cursor,
+		HbrBackground: uintptr(NULL_BRUSH_STOCK),
+		LpszClassName: className,
+	}
+	procRegisterClass.Call(uintptr(unsafe.Pointer(&wc)))
+
+	// 先创建所有窗口并建立映射
+	tm.mu.Lock()
+	for _, btn := range currentButtons {
+		hwnd, _, _ := procCreateWindow.Call(
+			exStyle,
+			uintptr(unsafe.Pointer(className)),
+			uintptr(unsafe.Pointer(titleText)),
+			style,
+			uintptr(btn.X),
+			uintptr(btn.Y),
+			uintptr(buttonWidthV),
+			uintptr(buttonHeightV),
+			0, 0, hInstance, 0,
+		)
+		if hwnd == 0 {
+			continue
+		}
+
+		tm.hwnds[btn.ID] = hwnd
+		hwndToButtonID[hwnd] = btn.ID
+	}
+	tm.mu.Unlock()
+
+	// 设置窗口属性（在锁外执行，允许消息处理）
+	for _, btn := range currentButtons {
+		hwnd := tm.hwnds[btn.ID]
+		if hwnd == 0 {
+			continue
+		}
+
+		procSetLayeredWindowAttrs.Call(hwnd, 0, uintptr(alpha), uintptr(LWA_ALPHA))
+
+		hRgn, _, _ := procCreateRoundRectRgn.Call(
+			0, 0,
+			uintptr(buttonWidthV+1), uintptr(buttonHeightV+1),
+			uintptr(cornerRadius), uintptr(cornerRadius),
+		)
+		procSetWindowRgn.Call(hwnd, hRgn, 1)
+
+		procSetWindowPos.Call(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
+			uintptr(SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW|SWP_NOZORDER))
+
+		procShowWindow.Call(hwnd, SW_SHOWNA)
+		procUpdateWindow.Call(hwnd)
+	}
+
+	// 最后初始化按钮状态（窗口已完全创建并建立映射）
+	tm.mu.Lock()
+	initButtonStatesLocked()
+	tm.mu.Unlock()
+}
+
+// initButtonStatesLocked 在持有锁的情况下初始化按钮状态（供 UpdateEditModeButtons 使用）
+func initButtonStatesLocked() {
+	pendingDown = make(map[int]*int32)
+	pendingUp = make(map[int]*int32)
+	buttonState = make(map[int]*ButtonState)
+	// 注意：这里不再重新初始化 hwndToButtonID，保留现有的窗口映射
+	dragStates = make(map[int]*DragState)
+	updatedPositions = make(map[int]POINT)
+	for _, btn := range currentButtons {
+		pendingDownVal := int32(0)
+		pendingDown[btn.ID] = &pendingDownVal
+		pendingUpVal := int32(0)
+		pendingUp[btn.ID] = &pendingUpVal
+		buttonState[btn.ID] = &ButtonState{}
+		dragStates[btn.ID] = &DragState{}
+	}
+	atomic.StoreInt32(&buttonHovered, 0)
+	atomic.StoreInt32(&clickedButton, -1)
+	atomic.StoreInt32(&buttonPressed, 0)
+	atomic.StoreUintptr(&savedForeground, 0)
+	quitPosted = false
+}
+
+// keepOnTopLoop 定期检查并保持所有按钮窗口在最顶层
 func (tm *TouchMapping) keepOnTopLoop() {
-	// 间隔：2000ms，在保证置顶效果的同时降低资源消耗
 	ticker := time.NewTicker(2000 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -412,7 +701,7 @@ func (tm *TouchMapping) runWindow() {
 		}
 	}
 
-	// 4. 为每个按钮创建独立窗口，位置由 buttonConfigs 的 X/Y 指定
+	// 4. 为每个按钮创建独立窗口，位置由 currentButtons 的 X/Y 指定
 	exStyle := uintptr(WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)
 	style := uintptr(WS_POPUP | WS_VISIBLE)
 
@@ -420,7 +709,7 @@ func (tm *TouchMapping) runWindow() {
 	const cornerRadius = 16
 
 	tm.hwnds = make(map[int]uintptr)
-	for _, btn := range buttonConfigs {
+	for _, btn := range currentButtons {
 		hwnd, _, err := procCreateWindow.Call(
 			exStyle,
 			uintptr(unsafe.Pointer(className)),
@@ -428,8 +717,8 @@ func (tm *TouchMapping) runWindow() {
 			style,
 			uintptr(btn.X),
 			uintptr(btn.Y),
-			uintptr(buttonWidth),
-			uintptr(buttonHeight),
+			uintptr(buttonWidthV),
+			uintptr(buttonHeightV),
 			0, 0, hInstance, 0,
 		)
 		if hwnd == 0 {
@@ -440,8 +729,7 @@ func (tm *TouchMapping) runWindow() {
 			return
 		}
 
-		// 建立 hwnd <-> buttonID 映射（必须在 ShowWindow/UpdateWindow 之前，否则
-		// UpdateWindow 会立即触发 WM_PAINT，此时映射还不存在）
+		// 建立 hwnd <-> buttonID 映射（必须在 ShowWindow/UpdateWindow 之前）
 		tm.hwnds[btn.ID] = hwnd
 		hwndToButtonID[hwnd] = btn.ID
 
@@ -449,7 +737,7 @@ func (tm *TouchMapping) runWindow() {
 
 		hRgn, _, _ := procCreateRoundRectRgn.Call(
 			0, 0,
-			uintptr(buttonWidth+1), uintptr(buttonHeight+1),
+			uintptr(buttonWidthV+1), uintptr(buttonHeightV+1),
 			uintptr(cornerRadius), uintptr(cornerRadius),
 		)
 		procSetWindowRgn.Call(hwnd, hRgn, 1)
@@ -461,6 +749,11 @@ func (tm *TouchMapping) runWindow() {
 		procUpdateWindow.Call(hwnd)
 
 		fmt.Printf("TouchMapping: 窗口已创建 (ID=%d, HWND=%d, X=%d, Y=%d)\n", btn.ID, hwnd, btn.X, btn.Y)
+	}
+
+	// 如果有待更新的按钮列表，立即处理
+	if len(pendingButtons) > 0 {
+		doUpdateButtons()
 	}
 
 	// 启动定期置顶检查
@@ -521,14 +814,26 @@ func (tm *TouchMapping) runWindow() {
 
 func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 	// 从 hwnd 查找对应的按钮 ID
-	buttonID := hwndToButtonID[hwnd]
+	buttonID, exists := hwndToButtonID[hwnd]
+
+	// 如果找不到按钮映射或按钮不存在，直接返回默认处理
+	if !exists || getButtonByID(buttonID) == nil {
+		// 对于窗口消息，确保显示箭头光标
+		if msg == WM_SETCURSOR {
+			cursor, _, _ := procLoadCursor.Call(0, uintptr(IDC_ARROW))
+			procSetCursor.Call(cursor)
+			return 1
+		}
+		result, _, _ := procDefWindowProc.Call(hwnd, uintptr(msg), wParam, lParam)
+		return result
+	}
 
 	switch msg {
 	case WM_PAINT:
 		tmPaintWindow(hwnd)
 		return 0
 
-	// 鼠标悬停：强制显示箭头光标，避免系统默认的“忙/转圈”光标
+	// 鼠标悬停：强制显示箭头光标
 	case WM_SETCURSOR:
 		hitTest := int32(lParam & 0xFFFF)
 		if hitTest == HTCLIENT || hitTest == 0 {
@@ -537,8 +842,28 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 			return 1
 		}
 
-	// 鼠标移动 → 标记当前按钮为悬停
+	// 鼠标移动
 	case WM_MOUSEMOVE:
+		// 编辑模式：如果正在拖动，则移动窗口
+		if currentMode == ModeEdit {
+			ds := dragStates[buttonID]
+			if ds != nil && atomic.LoadInt32(&ds.Dragging) == 1 {
+				// 获取当前鼠标屏幕坐标
+				pt := POINT{}
+				procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
+
+				// 计算新的窗口位置
+				newX := ds.StartWinX + (pt.X - ds.StartMouseX)
+				newY := ds.StartWinY + (pt.Y - ds.StartMouseY)
+
+				// 移动窗口
+				procSetWindowPos.Call(hwnd, HWND_TOPMOST,
+					uintptr(newX), uintptr(newY), 0, 0,
+					uintptr(SWP_NOSIZE|SWP_NOACTIVATE|SWP_NOZORDER))
+			}
+		}
+
+		// 通用：悬停状态
 		atomic.StoreInt32(&buttonState[buttonID].Hovered, 1)
 		atomic.StoreInt32(&buttonHovered, 1)
 		tmInvalidateRect(hwnd)
@@ -550,12 +875,35 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 		tmInvalidateRect(hwnd)
 		return 0
 
-	// 按下 → 延迟触发按键按下
+	// 鼠标按下
 	case WM_LBUTTONDOWN, WM_LBUTTONDBLCLK,
 		WM_RBUTTONDOWN,
 		WM_MBUTTONDOWN,
 		WM_XBUTTONDOWN,
 		WM_POINTERDOWN:
+
+		if currentMode == ModeEdit {
+			// 编辑模式：记录拖动起始点，不注入按键
+			pt := POINT{}
+			procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
+			wr := RECT{}
+			procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&wr)))
+
+			ds := dragStates[buttonID]
+			if ds != nil {
+				atomic.StoreInt32(&ds.Dragging, 1)
+				ds.StartMouseX = pt.X
+				ds.StartMouseY = pt.Y
+				ds.StartWinX = wr.Left
+				ds.StartWinY = wr.Top
+			}
+			atomic.StoreInt32(&buttonState[buttonID].Pressed, 1)
+			atomic.StoreInt32(&buttonPressed, 1)
+			tmInvalidateRect(hwnd)
+			return 0
+		}
+
+		// 映射模式：记录前台窗口，延迟注入按键
 		fg, _, _ := procGetForegroundWindow.Call()
 		atomic.StoreUintptr(&savedForeground, fg)
 
@@ -566,17 +914,49 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 		tmInvalidateRect(hwnd)
 		return 0
 
-	// 松开 → 延迟触发按键松开
+	// 鼠标松开
 	case WM_LBUTTONUP,
 		WM_RBUTTONUP,
 		WM_MBUTTONUP,
 		WM_XBUTTONUP,
 		WM_POINTERUP:
+
+		if currentMode == ModeEdit {
+			// 编辑模式：结束拖动，记录最终位置
+			ds := dragStates[buttonID]
+			if ds != nil && atomic.LoadInt32(&ds.Dragging) == 1 {
+				atomic.StoreInt32(&ds.Dragging, 0)
+
+				wr := RECT{}
+				procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&wr)))
+
+				// 保存位置更新
+				updatedPositions[buttonID] = POINT{X: wr.Left, Y: wr.Top}
+
+				// 同时更新 currentButtons 中对应的按钮位置（以便后续查询到的是最新位置）
+				btn := getButtonByID(buttonID)
+				if btn != nil {
+					btn.X = wr.Left
+					btn.Y = wr.Top
+				}
+			}
+			atomic.StoreInt32(&buttonState[buttonID].Pressed, 0)
+			atomic.StoreInt32(&buttonPressed, 0)
+			tmInvalidateRect(hwnd)
+			return 0
+		}
+
+		// 映射模式：延迟注入按键松开
 		atomic.StoreInt32(pendingUp[buttonID], 1)
 		atomic.StoreInt32(&buttonState[buttonID].Pressed, 0)
 		atomic.StoreInt32(&buttonPressed, 0)
 		atomic.StoreInt32(&clickedButton, -1)
 		tmInvalidateRect(hwnd)
+		return 0
+
+	case TM_UPDATE_BUTTONS:
+		// 在消息循环线程中更新按钮列表
+		doUpdateButtons()
 		return 0
 
 	case TM_CLOSE, WM_CLOSE:
@@ -622,7 +1002,12 @@ func tmPaintWindow(hwnd uintptr) {
 
 	// 根据 hwnd 找到对应的按钮 ID
 	buttonID := hwndToButtonID[hwnd]
-	btn := buttonConfigs[buttonID]
+	btn := getButtonByID(buttonID)
+	if btn == nil {
+		// 按钮不存在，直接结束绘制
+		procEndPaint.Call(hwnd, uintptr(unsafe.Pointer(&ps)))
+		return
+	}
 
 	var rc RECT
 	procGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&rc)))
@@ -713,20 +1098,20 @@ func tmPaintWindow(hwnd uintptr) {
 	// 创建粗体字体: CreateFontW(nHeight, nWidth, nEscapement, nOrientation, fnWeight, ...)
 	// 高度 28, 粗细 FW_BOLD, 其他用默认值 (0)
 	hFont, _, _ := procCreateFontW.Call(
-		28,              // nHeight: 字体高度
-		0,               // nWidth: 0 = 使用默认比例
-		0,               // nEscapement: 水平书写
-		0,               // nOrientation: 字形角度
+		28,               // nHeight: 字体高度
+		0,                // nWidth: 0 = 使用默认比例
+		0,                // nEscapement: 水平书写
+		0,                // nOrientation: 字形角度
 		uintptr(FW_BOLD), // fnWeight: 粗体
-		0,               // fdwItalic: 不斜体
-		0,               // fdwUnderline: 不下划线
-		0,               // fdwStrikeOut: 不删除线
-		0,               // fdwCharSet: DEFAULT_CHARSET
-		0,               // fdwOutputPrecision: 默认
-		0,               // fdwClipPrecision: 默认
-		0,               // fdwQuality: 默认
-		0,               // fdwPitchAndFamily: 默认
-		0,               // lpszFace: 默认字体
+		0,                // fdwItalic: 不斜体
+		0,                // fdwUnderline: 不下划线
+		0,                // fdwStrikeOut: 不删除线
+		0,                // fdwCharSet: DEFAULT_CHARSET
+		0,                // fdwOutputPrecision: 默认
+		0,                // fdwClipPrecision: 默认
+		0,                // fdwQuality: 默认
+		0,                // fdwPitchAndFamily: 默认
+		0,                // lpszFace: 默认字体
 	)
 	oldFont, _, _ := procSelectObject.Call(hdc, hFont)
 
@@ -770,7 +1155,7 @@ func tmLerpColor(color1, color2 uintptr, t float64) uintptr {
 
 // tmProcessPendingKeys 处理所有待注入的按键事件
 func tmProcessPendingKeys() {
-	for _, btn := range buttonConfigs {
+	for _, btn := range currentButtons {
 		// 处理按下
 		if atomic.LoadInt32(pendingDown[btn.ID]) == 1 {
 			if atomic.CompareAndSwapInt32(pendingDown[btn.ID], 1, 0) {

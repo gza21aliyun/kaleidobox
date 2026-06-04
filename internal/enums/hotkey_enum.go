@@ -31,6 +31,7 @@ const (
 	DeviceTypeDualShock4 DeviceType = "dualshock4" // PlayStation 4 DualShock 4
 	DeviceTypeJoyCon     DeviceType = "joycon"     // Nintendo Switch Joy-Con
 	DeviceTypeXInput     DeviceType = "xinput"     // Xbox controllers and compatible devices
+	DeviceTypeTouch      DeviceType = "touch"      // Touch mapping buttons (屏幕触摸按钮)
 )
 
 var AllDeviceTypes = []struct {
@@ -42,6 +43,7 @@ var AllDeviceTypes = []struct {
 	{DeviceTypeDualShock4, "DUALSHOCK4"},
 	{DeviceTypeJoyCon, "JOYCON"},
 	{DeviceTypeXInput, "XINPUT"},
+	{DeviceTypeTouch, "TOUCH"},
 }
 
 type ModifierKey string
@@ -67,23 +69,23 @@ var AllModifierKeys = []struct {
 type JoystickButton string
 
 const (
-	JoystickButtonA      JoystickButton = "a"
-	JoystickButtonB      JoystickButton = "b"
-	JoystickButtonX      JoystickButton = "x"
-	JoystickButtonY      JoystickButton = "y"
-	JoystickButtonLB     JoystickButton = "lb"     // Left Bumper
-	JoystickButtonRB     JoystickButton = "rb"     // Right Bumper
-	JoystickButtonLT     JoystickButton = "lt"     // Left Trigger
-	JoystickButtonRT     JoystickButton = "rt"     // Right Trigger
-	JoystickButtonBack   JoystickButton = "back"   // Back/View button
-	JoystickButtonStart  JoystickButton = "start"  // Start/Menu button
-	JoystickButtonLS     JoystickButton = "ls"     // Left Stick click
-	JoystickButtonRS     JoystickButton = "rs"     // Right Stick click
-	JoystickButtonDPadUp JoystickButton = "dpad_up"
-	JoystickButtonDPadDown JoystickButton = "dpad_down"
-	JoystickButtonDPadLeft JoystickButton = "dpad_left"
+	JoystickButtonA         JoystickButton = "a"
+	JoystickButtonB         JoystickButton = "b"
+	JoystickButtonX         JoystickButton = "x"
+	JoystickButtonY         JoystickButton = "y"
+	JoystickButtonLB        JoystickButton = "lb"    // Left Bumper
+	JoystickButtonRB        JoystickButton = "rb"    // Right Bumper
+	JoystickButtonLT        JoystickButton = "lt"    // Left Trigger
+	JoystickButtonRT        JoystickButton = "rt"    // Right Trigger
+	JoystickButtonBack      JoystickButton = "back"  // Back/View button
+	JoystickButtonStart     JoystickButton = "start" // Start/Menu button
+	JoystickButtonLS        JoystickButton = "ls"    // Left Stick click
+	JoystickButtonRS        JoystickButton = "rs"    // Right Stick click
+	JoystickButtonDPadUp    JoystickButton = "dpad_up"
+	JoystickButtonDPadDown  JoystickButton = "dpad_down"
+	JoystickButtonDPadLeft  JoystickButton = "dpad_left"
 	JoystickButtonDPadRight JoystickButton = "dpad_right"
-	JoystickButtonGuide  JoystickButton = "guide"  // Xbox Guide/PS Home button
+	JoystickButtonGuide     JoystickButton = "guide" // Xbox Guide/PS Home button
 )
 
 var AllJoystickButtons = []struct {

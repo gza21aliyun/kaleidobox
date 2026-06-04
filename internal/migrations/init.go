@@ -174,12 +174,12 @@ func SchemaQueries() []string {
 		`CREATE TABLE IF NOT EXISTS hotkeys (
 			id TEXT PRIMARY KEY,
 			game_id TEXT,              -- 当为 'global' 时表示全局配置
-			name TEXT NOT NULL,
-			device_type TEXT NOT NULL, -- keyboard | dualsense | dualshock4 | joycon | xinput
-			key_code TEXT NOT NULL,    -- 按键码
-			modifiers TEXT,            -- 修饰键 (ctrl,shift,alt,win等)
+			name TEXT NOT NULL,        -- label
+			device_type TEXT NOT NULL, -- keyboard | dualsense | dualshock4 | joycon | xinput | touch
+			key_code TEXT NOT NULL,    -- 原按键码，或触摸按钮位置(格式："x:20;y:20")
+			modifiers TEXT,            -- 映射修饰键 (ctrl,shift,alt,win等，格式："ctrl+shift")
 			action_type TEXT NOT NULL, -- start_game | stop_game | toggle_pause | screenshot | custom
-			action_params TEXT,        -- 动作参数 (JSON格式)
+			action_params TEXT,        -- 映射键盘按键,VirtualKey
 			is_enabled BOOLEAN DEFAULT TRUE,
 			created_at TIMESTAMPTZ,
 			updated_at TIMESTAMPTZ,

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -96,8 +98,10 @@ type HotkeyService struct {
 	keyStates  map[string]bool // key -> is_pressed
 	stateLock4 sync.RWMutex
 
-	// 快捷键管理（特殊用途）
-	// screenshotHotkey *models.Hotkey
+	// 触摸按钮
+	touchButtons  []ButtonConfig // 触摸按钮配置（从数据库解析得到）
+	touchLock     sync.Mutex
+	touchIsActive bool
 
 	// 当前活动游戏
 	activeGameID atomic.Value
@@ -121,10 +125,11 @@ func (s *HotkeyService) SetServices(imageService *ImageService, startService *St
 
 func NewHotkeyService() *HotkeyService {
 	return &HotkeyService{
-		joysticks:   make(map[string]*joystick.Driver),
-		keyMappings: make(map[string]*models.Hotkey),
-		actionKeys:  make(map[string]*models.Hotkey),
-		keyStates:   make(map[string]bool),
+		joysticks:    make(map[string]*joystick.Driver),
+		keyMappings:  make(map[string]*models.Hotkey),
+		actionKeys:   make(map[string]*models.Hotkey),
+		keyStates:    make(map[string]bool),
+		touchButtons: make([]ButtonConfig, 0),
 	}
 }
 
@@ -219,10 +224,13 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 	applog.LogInfof(s.ctx, "Loading hotkey configuration")
 	s.actionkeyLock3.Lock()
 	s.mappingLock2.Lock()
+	s.touchLock.Lock()
 	defer s.mappingLock2.Unlock()
 	defer s.actionkeyLock3.Unlock()
+	defer s.touchLock.Unlock()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
+	s.touchButtons = make([]ButtonConfig, 0)
 	var devicetype enums.DeviceType
 
 	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
@@ -232,8 +240,28 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 	}
 
 	rows, _ := s.fetchHotkeys(query)
+	buttonIDCounter := 0
 
 	for _, hotkey := range rows {
+		if hotkey.DeviceType == enums.DeviceTypeTouch {
+			// 触摸按钮：解析 key_code 为 x,y 坐标，action_params 为虚拟键码
+			x, y := parseTouchPosition(hotkey.KeyCode)
+			vk := parseVirtualKey(hotkey.ActionParams)
+			btn := ButtonConfig{
+				ID:         buttonIDCounter,
+				HotkeyID:   hotkey.ID,
+				Label:      hotkey.Name,
+				VirtualKey: uintptr(vk),
+				X:          x,
+				Y:          y,
+			}
+			s.touchButtons = append(s.touchButtons, btn)
+			buttonIDCounter++
+			devicetype = enums.DeviceTypeTouch
+			fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
+			continue
+		}
+
 		if hotkey.ActionType != enums.HotkeyActionCustom {
 			if !hotkey.IsGlobal() || s.actionKeys[hotkey.KeyCode] == nil {
 				s.actionKeys[hotkey.KeyCode] = hotkey
@@ -262,8 +290,157 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 		statsStr += fmt.Sprintf("%s:%d ", deviceType, count)
 	}
 
-	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s)%d", len(s.keyMappings), statsStr, len(rows))
+	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s)%d touch buttons=%d", len(s.keyMappings), statsStr, len(rows), len(s.touchButtons))
 	return devicetype
+}
+
+// parseTouchPosition 从 "x:123;y:456" 格式中解析坐标
+func parseTouchPosition(keyCode string) (int32, int32) {
+	var x, y int32 = 0, 0
+	parts := strings.Split(keyCode, ";")
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if strings.HasPrefix(p, "x:") {
+			if val, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(p, "x:"))); err == nil {
+				x = int32(val)
+			}
+		} else if strings.HasPrefix(p, "y:") {
+			if val, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(p, "y:"))); err == nil {
+				y = int32(val)
+			}
+		}
+	}
+	// 默认位置（避免未设置时在屏幕左上角）
+	if x == 0 && y == 0 {
+		x = 1700
+		y = 340
+	}
+	return x, y
+}
+
+// parseVirtualKey 从 action_params 解析虚拟键码
+func parseVirtualKey(params string) uint {
+	if params == "" {
+		return 0x0D // 默认为 ENTER
+	}
+	// 尝试解析为数字（虚拟键码）
+	if v, err := strconv.ParseUint(params, 10, 32); err == nil {
+		return uint(v)
+	}
+	// 常见按键名映射
+	switch strings.ToUpper(params) {
+	case "ENTER", "RETURN":
+		return 0x0D
+	case "CTRL", "CONTROL":
+		return 0x11
+	case "SPACE":
+		return 0x20
+	case "ESC":
+		return 0x1B
+	case "TAB":
+		return 0x09
+	case "F1":
+		return 0x70
+	case "F2":
+		return 0x71
+	case "F3":
+		return 0x72
+	case "F4":
+		return 0x73
+	case "F5":
+		return 0x74
+	case "F6":
+		return 0x75
+	case "F7":
+		return 0x76
+	case "F8":
+		return 0x77
+	case "F9":
+		return 0x78
+	case "F10":
+		return 0x79
+	case "F11":
+		return 0x7A
+	case "F12":
+		return 0x7B
+	case "A":
+		return 0x41
+	case "B":
+		return 0x42
+	case "C":
+		return 0x43
+	case "D":
+		return 0x44
+	case "E":
+		return 0x45
+	case "F":
+		return 0x46
+	case "G":
+		return 0x47
+	case "H":
+		return 0x48
+	case "I":
+		return 0x49
+	case "J":
+		return 0x4A
+	case "K":
+		return 0x4B
+	case "L":
+		return 0x4C
+	case "M":
+		return 0x4D
+	case "N":
+		return 0x4E
+	case "O":
+		return 0x4F
+	case "P":
+		return 0x50
+	case "Q":
+		return 0x51
+	case "R":
+		return 0x52
+	case "S":
+		return 0x53
+	case "T":
+		return 0x54
+	case "U":
+		return 0x55
+	case "V":
+		return 0x56
+	case "W":
+		return 0x57
+	case "X":
+		return 0x58
+	case "Y":
+		return 0x59
+	case "Z":
+		return 0x5A
+	case "0":
+		return 0x30
+	case "1":
+		return 0x31
+	case "2":
+		return 0x32
+	case "3":
+		return 0x33
+	case "4":
+		return 0x34
+	case "5":
+		return 0x35
+	case "6":
+		return 0x36
+	case "7":
+		return 0x37
+	case "8":
+		return 0x38
+	case "9":
+		return 0x39
+	case "SHIFT":
+		return 0x10
+	case "ALT":
+		return 0x12
+	}
+	return 0x0D // 默认 ENTER
 }
 
 // loadConnectedDevicesFromDB 从数据库加载已连接设备
@@ -1184,6 +1361,8 @@ func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	devicetype := s.loadHotkeyConfig(gameId)
 	if devicetype == enums.DeviceTypeKeyboard {
 		s.startAlternativeKeyListener()
+	} else if devicetype == enums.DeviceTypeTouch {
+		s.startTouchMapping()
 	} else {
 		s.startJoystickListener(devicetype)
 	}
@@ -1198,6 +1377,10 @@ func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 	s.actionKeys = make(map[string]*models.Hotkey)
 	s.mappingLock2.Unlock()
 	s.actionkeyLock3.Unlock()
+
+	// 停止触摸按钮
+	s.stopTouchMapping()
+
 	s.robotMutex6.Lock()
 	defer s.robotMutex6.Unlock()
 	s.stopKeyboardListener()
@@ -1206,6 +1389,108 @@ func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 		s.robot.Stop()
 		s.robot = nil
 	}
+}
+
+// startTouchMapping 启动触摸按钮（映射模式）
+func (s *HotkeyService) startTouchMapping() {
+	s.touchLock.Lock()
+	buttons := make([]ButtonConfig, len(s.touchButtons))
+	copy(buttons, s.touchButtons)
+	s.touchLock.Unlock()
+
+	if len(buttons) == 0 {
+		fmt.Println("TouchMapping: 没有配置触摸按钮，跳过启动")
+		return
+	}
+
+	tm := GetTouchMapping()
+	tm.SetButtons(buttons)
+	err := tm.StartMapping()
+	if err != nil {
+		fmt.Printf("TouchMapping: 启动失败: %v\n", err)
+	} else {
+		fmt.Printf("TouchMapping: 已启动映射模式，共 %d 个按钮\n", len(buttons))
+	}
+}
+
+// stopTouchMapping 停止触摸按钮窗口
+func (s *HotkeyService) stopTouchMapping() {
+	GetTouchMapping().Stop()
+}
+
+// TouchButtonInfo 前端与后端之间传递的触摸按钮信息结构
+type TouchButtonInfo struct {
+	Index      int    // 在列表中的索引（0-based），用于关联编辑后的位置
+	Name       string // 按钮显示的文字
+	VirtualKey uint32 // 对应的虚拟键码（如 0x0D = Enter），使用 uint32 确保 Wails 序列化兼容
+	X          int32  // 屏幕坐标 X
+	Y          int32  // 屏幕坐标 Y
+}
+
+// TouchButtonPosition 单个按钮的位置更新
+type TouchButtonPosition struct {
+	Index int32
+	X     int32
+	Y     int32
+}
+
+// StartTouchEditMode 启动触摸按钮的编辑模式。
+// 前端调用此方法，把当前按钮列表传进来，后端会在屏幕上显示按钮，用户可用鼠标拖动改变位置。
+func (s *HotkeyService) StartTouchEditMode(buttons []TouchButtonInfo) error {
+	// 转换为内部 ButtonConfig
+	configs := make([]ButtonConfig, len(buttons))
+	for i, b := range buttons {
+		configs[i] = ButtonConfig{
+			ID:         b.Index,
+			HotkeyID:   b.Name,
+			Label:      b.Name,
+			VirtualKey: uintptr(b.VirtualKey),
+			X:          b.X,
+			Y:          b.Y,
+		}
+	}
+
+	tm := GetTouchMapping()
+	tm.SetButtons(configs)
+	return tm.StartEditMode()
+}
+
+// StopTouchEditMode 停止编辑模式。
+// 返回所有按钮的更新后的位置，前端可据此更新列表的 X/Y。
+func (s *HotkeyService) StopTouchEditMode() []TouchButtonPosition {
+	tm := GetTouchMapping()
+	positions := tm.GetUpdatedPositions()
+	tm.Stop()
+
+	result := make([]TouchButtonPosition, 0, len(positions))
+	for idx, pt := range positions {
+		result = append(result, TouchButtonPosition{
+			Index: int32(idx),
+			X:     pt.X,
+			Y:     pt.Y,
+		})
+	}
+	return result
+}
+
+// UpdateTouchEditModeButtons 动态更新编辑模式下的按钮列表。
+// 在编辑模式下，新增/删除/载入按钮时调用此方法同步后端 overlay。
+func (s *HotkeyService) UpdateTouchEditModeButtons(buttons []TouchButtonInfo) error {
+	// 转换为内部 ButtonConfig
+	configs := make([]ButtonConfig, len(buttons))
+	for i, b := range buttons {
+		configs[i] = ButtonConfig{
+			ID:         b.Index,
+			HotkeyID:   b.Name,
+			Label:      b.Name,
+			VirtualKey: uintptr(b.VirtualKey),
+			X:          b.X,
+			Y:          b.Y,
+		}
+	}
+
+	tm := GetTouchMapping()
+	return tm.UpdateEditModeButtons(configs)
 }
 
 // startAlternativeKeyListener 备用键盘监听方案

@@ -185,5 +185,6 @@ func GetSupportedDevices() []DeviceTypeInfo {
 		{enums.DeviceTypeDualShock4, "DualShock 4", "PlayStation 4 DualShock 4手柄"},
 		{enums.DeviceTypeJoyCon, "Joy-Con", "Nintendo Switch Joy-Con手柄"},
 		{enums.DeviceTypeXInput, "XInput", "Xbox手柄及兼容设备"},
+		{enums.DeviceTypeTouch, "Touch", "屏幕触摸按钮映射"},
 	}
 }

@@ -1146,13 +1146,21 @@
     "enterKeyCode": "または手動でキーコードを入力",
     "startKeyCapture": "キーキャプチャを開始するにはクリック",
     "confirmMapping": "マッピングを確認",
-    "touchDeviceName": "タッチボタン"
+    "touchDeviceName": "タッチボタン",
+    "noGlobalMappings": "グローバルキーマッピングがありません",
+    "globalLoaded": "{count}個のグローバルマッピングを読み込みました",
+    "loadFailed": "読み込みに失敗しました"
   },
   "keyMapping": {
     "title": "キーマッピング設定",
     "saveAllMappings": "すべてのマッピングを保存",
+    "refresh": "リフレッシュ",
+    "loadGlobal": "グローバルを読み込む",
     "deviceSelectorLabel": "デバイス選択",
-    "deviceSelectorPlaceholder": "デバイスを選択してください"
+    "deviceSelectorPlaceholder": "デバイスを選択してください",
+    "noGlobalMappings": "グローバルキーマッピングがありません",
+    "globalLoaded": "{count}個のグローバルマッピングを読み込みました",
+    "loadFailed": "読み込みに失敗しました"
   },
   "touchMapping": {
     "title": "タッチボタン設定",

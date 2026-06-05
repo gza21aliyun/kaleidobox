@@ -143,10 +143,12 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
       // 加载游戏特定的按键映射
       const gameHotkeys = await GetHotkeysByGameID(gameId);
       // 加载全局按键映射
-      const globalHotkeys = await GetGlobalHotkeys();
+      // const globalHotkeys = await GetGlobalHotkeys();
       
       // 合并映射，游戏映射优先级高于全局
-      const mergedHotkeys = [...globalHotkeys];
+      // const mergedHotkeys = [...globalHotkeys];
+      
+      const mergedHotkeys: models.Hotkey[] = [];
       const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
       
       // 用游戏特定映射覆盖全局映射
@@ -353,6 +355,45 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     setCurrentMappingButton(null);
   };
 
+  // 从数据库重新加载按键列表
+  const handleRefresh = async () => {
+    await loadHotkeys();
+  };
+
+  // 载入全局配置（覆盖内存中原有的按键列表）
+  const handleLoadGlobal = async () => {
+    try {
+      setLoading(true);
+      const globalHotkeys = await GetGlobalHotkeys();
+      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      const globalMappings = globalHotkeys.filter(
+        (h) => h.device_type === currentDeviceType
+      );
+
+      if (globalMappings.length === 0) {
+        toast.error(t('ps4.noGlobalMappings'));
+        return;
+      }
+
+      // 使用新的 ID 创建新的映射对象
+      const newHotkeys = globalMappings.map((h) =>
+        new models.Hotkey({
+          ...h,
+          id: crypto.randomUUID(),
+          game_id: gameId,
+        })
+      );
+
+      setHotkeys(newHotkeys);
+      toast.success(t('ps4.globalLoaded', { count: newHotkeys.length }));
+    } catch (err) {
+      console.error('载入全局失败:', err);
+      toast.error(t('ps4.loadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 保存所有映射
   const saveAllMappings = async () => {
     try {
@@ -360,22 +401,26 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
       if (selectedDeviceType === null) { 
         return
       }
+      
+      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      
       // 1. 获取所有游戏特定的映射
       const gameHotkeys = await GetHotkeysByGameID(gameId);
       
-      // 2. 删除所有游戏特定的映射
-      for (const hotkey of gameHotkeys) {
+      // 2. 只删除同gameId和同设备类型的映射
+      const deviceGameHotkeys = gameHotkeys.filter(
+        hotkey => hotkey.device_type === currentDeviceType
+      );
+      for (const hotkey of deviceGameHotkeys) {
         await DeleteHotkey(hotkey.id);
       }
       
       // 3. 获取全局映射
       const globalHotkeys = await GetGlobalHotkeys();
       
-      // 4. 处理要添加的映射
-      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      // 4. 处理要添加的映射（只处理当前设备类型）
       const mappingsToAdd = hotkeys.filter(hotkey => {
-        if (hotkey.device_type !== currentDeviceType) return false;
-        return true;
+        return hotkey.device_type === currentDeviceType;
       });
       
       // 5. 添加新的映射
@@ -390,7 +435,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           // 如果全局没有，保存为全局映射
           const globalMapping = new models.Hotkey({
             ...mapping,
-            id: Date.now().toString(),
+            id: crypto.randomUUID(),
             game_id: 'global',
             device_type: currentDeviceType
           });
@@ -399,7 +444,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           // 如果全局有且不同，保存为游戏特定映射
           const gameMapping = new models.Hotkey({
             ...mapping,
-            id: Date.now().toString(),
+            id: crypto.randomUUID(),
             game_id: gameId,
             device_type: currentDeviceType
           });
@@ -431,9 +476,14 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     <div className="ps4-panel flex flex-col w-full h-full min-h-[700px]">
       {/* 顶部标题栏：标题 + 保存按钮 + 设备选择 */}
       <div className="p-6 flex items-start justify-between gap-6">
+        
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {t('keyMapping.title')}
+          { gameId == 'global' && (
+          <>{t('keyMapping.title')}</>
+        )}
+          {}
         </h2>
+        
 
         <div className="flex flex-col items-start gap-3">
           {/* 保存按钮 - 所有设备时显示（包括触摸） */}
@@ -494,9 +544,29 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           <TouchMappingPanel ref={touchMappingRef} gameId={gameId} />
         ) : (
           <>
+            {/* 载入全局和刷新按钮 - 非触摸设备显示，垂直布局 */}
+            <div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
+              {gameId !== 'global' && (
+                <BetterButton
+                  onClick={handleLoadGlobal}
+                  icon="i-mdi-upload"
+                  className="px-6 py-2 bg-white hover:bg-gray-100 text-gray-900 rounded-lg shadow-md transition-colors"
+                >
+                  {t('keyMapping.loadGlobal')}
+                </BetterButton>
+              )}
+              <BetterButton
+                onClick={handleRefresh}
+                icon="i-mdi-refresh"
+                className="px-6 py-2 bg-white hover:bg-gray-100 text-gray-900 rounded-lg shadow-md transition-colors"
+              >
+                {t('keyMapping.refresh')}
+              </BetterButton>
+            </div>
+
             {/* 手柄图片和按钮映射容器 - 动态显示 */}
             {currentDevice && (
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center mt-50">
                 <div className="relative w-[700px] h-[500px]">
                   {/* 手柄背景图 - 位于按钮层下方 */}
                   <img 

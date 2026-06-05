@@ -1149,13 +1149,21 @@
     "enterKeyCode": "或手动输入按键代码",
     "startKeyCapture": "点击开始按键捕获",
     "confirmMapping": "确认映射",
-    "touchDeviceName": "触摸按钮"
+    "touchDeviceName": "触摸按钮",
+    "noGlobalMappings": "没有全局按键映射",
+    "globalLoaded": "已载入 {count} 个全局映射",
+    "loadFailed": "载入失败"
   },
   "keyMapping": {
     "title": "按键映射设置",
     "saveAllMappings": "保存所有映射",
+    "refresh": "刷新",
+    "loadGlobal": "载入全局",
     "deviceSelectorLabel": "设备选择",
-    "deviceSelectorPlaceholder": "请选择设备"
+    "deviceSelectorPlaceholder": "请选择设备",
+    "noGlobalMappings": "没有全局按键映射",
+    "globalLoaded": "已载入 {count} 个全局映射",
+    "loadFailed": "载入失败"
   },
   "touchMapping": {
     "title": "触摸按钮设置",

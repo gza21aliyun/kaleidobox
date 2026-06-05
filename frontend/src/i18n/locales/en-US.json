@@ -1146,13 +1146,21 @@
     "enterKeyCode": "Or enter key code manually",
     "startKeyCapture": "Click to start key capture",
     "confirmMapping": "Confirm mapping",
-    "touchDeviceName": "Touch Buttons"
+    "touchDeviceName": "Touch Buttons",
+    "noGlobalMappings": "No global key mappings",
+    "globalLoaded": "Loaded {count} global mappings",
+    "loadFailed": "Load failed"
   },
   "keyMapping": {
     "title": "Key Mapping Settings",
     "saveAllMappings": "Save All Mappings",
+    "refresh": "Refresh",
+    "loadGlobal": "Load Global",
     "deviceSelectorLabel": "Device Selection",
-    "deviceSelectorPlaceholder": "Select a device"
+    "deviceSelectorPlaceholder": "Select a device",
+    "noGlobalMappings": "No global key mappings",
+    "globalLoaded": "Loaded {count} global mappings",
+    "loadFailed": "Load failed"
   },
   "touchMapping": {
     "title": "Touch Button Settings",

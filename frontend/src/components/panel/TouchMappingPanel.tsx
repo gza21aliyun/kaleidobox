@@ -27,6 +27,7 @@ export interface TouchMappingPanelRef {
   stopEditMode: () => void;
   openAddDialog: () => void;
   refresh: () => Promise<void>;
+  clearAll: () => void;
   touchButtons: TouchButton[];
   editMode: boolean;
 }
@@ -338,6 +339,11 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
     setTouchButtons((prev) => prev.filter((b) => b.id !== id));
   };
 
+  // 清除所有按钮（仅从内存移除，不影响数据库）
+  const handleClearAll = useCallback(() => {
+    setTouchButtons([]);
+  }, []);
+
   // 更新按钮 X/Y 坐标（编辑模式下用）
   const handleUpdatePosition = (id: string, x: number, y: number) => {
     setTouchButtons((prev) =>
@@ -498,10 +504,11 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
       stopEditMode: handleStopEditMode,
       openAddDialog: handleOpenAddDialog,
       refresh: refreshTouchButtons,
+      clearAll: handleClearAll,
       touchButtons,
       editMode,
     }),
-    [handleSaveAll, handleLoadDefaults, handleLoadGlobal, handleStartEditMode, handleStopEditMode, handleOpenAddDialog, refreshTouchButtons, touchButtons, editMode]
+    [handleSaveAll, handleLoadDefaults, handleLoadGlobal, handleStartEditMode, handleStopEditMode, handleOpenAddDialog, refreshTouchButtons, handleClearAll, touchButtons, editMode]
   );
 
 

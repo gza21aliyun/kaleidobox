@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from "react-hot-toast";
 import { models, enums } from '../../../wailsjs/go/models';
 import { GetHotkeysByGameID, UpdateHotkey, AddHotkey, DeleteHotkey, GetGlobalHotkeys } from '../../../wailsjs/go/service/HotkeyService';
@@ -372,6 +372,19 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     await loadHotkeys();
   };
 
+  // 清除当前设备类型的所有按键（仅内存，不影响数据库）
+  const handleClear = useCallback(async () => {
+    if (isTouchDevice) {
+      touchMappingRef.current?.clearAll();
+    } else {
+      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      setHotkeys((prev) =>
+        prev.filter((h) => h.device_type !== currentDeviceType)
+      );
+    }
+    toast.success('已清除所有按键映射，请点击保存按钮确认更改');
+  }, [isTouchDevice, selectedDeviceType]);
+
   // 载入默认配置（覆盖内存中原有的按键列表）
   const handleLoadDefaults = async () => {
     try {
@@ -566,7 +579,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
 
       {/* 统一操作按钮栏 */}
       <div className="px-6 py-4 flex flex-wrap items-center gap-3 border-b border-gray-200 dark:border-brand-700">
-        {isTouchDevice ? (
+        {selectedDeviceType !== null && isTouchDevice ? (
           // 触摸设备按钮
           <>
             {!editMode && (
@@ -601,6 +614,13 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                   <span className="i-mdi-refresh mr-2"></span>
                   {t('touchMapping.refresh')}
                 </button>
+                <button
+                  onClick={handleClear}
+                  className={`${buttonClass} bg-red-600 hover:bg-red-700 text-white`}
+                >
+                  <span className="i-mdi-delete-sweep mr-2"></span>
+                  清除
+                </button>
               </>
             )}
             {/* 编辑模式按钮 */}
@@ -629,34 +649,43 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
             )}
           </>
         ) : (
-          // 非触摸设备按钮
-          <>
-            <button
-              onClick={handleLoadDefaults}
-              className={`${buttonClass} bg-indigo-600 hover:bg-indigo-700 text-white`}
-            >
-              <span className="i-mdi-restore mr-2"></span>
-              {t('keyMapping.loadDefaults')}
-            </button>
-            {gameId !== 'global' && (
+          // 非触摸设备按钮（只有选择了设备类型时才显示）
+          selectedDeviceType !== null && (
+            <>
               <button
-                onClick={handleLoadGlobal}
-                className={`${buttonClass} bg-teal-600 hover:bg-teal-700 text-white`}
+                onClick={handleLoadDefaults}
+                className={`${buttonClass} bg-indigo-600 hover:bg-indigo-700 text-white`}
               >
-                <span className="i-mdi-upload mr-2"></span>
-                {t('keyMapping.loadGlobal')}
+                <span className="i-mdi-restore mr-2"></span>
+                {t('keyMapping.loadDefaults')}
               </button>
-            )}
-            <button
-              onClick={handleRefresh}
-              className={`${buttonClass} bg-blue-600 hover:bg-blue-700 text-white`}
-            >
-              <span className="i-mdi-refresh mr-2"></span>
-              {t('keyMapping.refresh')}
-            </button>
-          </>
+              {gameId !== 'global' && (
+                <button
+                  onClick={handleLoadGlobal}
+                  className={`${buttonClass} bg-teal-600 hover:bg-teal-700 text-white`}
+                >
+                  <span className="i-mdi-upload mr-2"></span>
+                  {t('keyMapping.loadGlobal')}
+                </button>
+              )}
+              <button
+                onClick={handleRefresh}
+                className={`${buttonClass} bg-blue-600 hover:bg-blue-700 text-white`}
+              >
+                <span className="i-mdi-refresh mr-2"></span>
+                {t('keyMapping.refresh')}
+              </button>
+              <button
+                onClick={handleClear}
+                className={`${buttonClass} bg-red-600 hover:bg-red-700 text-white`}
+              >
+                <span className="i-mdi-delete-sweep mr-2"></span>
+                清除
+              </button>
+            </>
+          )
         )}
-        {/* 保存按钮（触摸设备编辑模式下隐藏） */}
+        {/* 保存按钮始终显示 - 包括选择关闭手柄映射时 */}
         {!(isTouchDevice && editMode) && (
           <>
             <div className="flex-1"></div>
@@ -679,11 +708,12 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
         )}
       </div>
 
-      {/* 内容区：触摸按钮或手柄映射 */}
-      <div className="flex-1 relative overflow-hidden">
-        {isTouchDevice ? (
-          <TouchMappingPanel ref={touchMappingRef} gameId={gameId} />
-        ) : (
+      {/* 内容区：触摸按钮或手柄映射 - 只有选择了设备类型时才显示 */}
+      {selectedDeviceType !== null && (
+        <div className="flex-1 relative overflow-hidden">
+          {isTouchDevice ? (
+            <TouchMappingPanel ref={touchMappingRef} gameId={gameId} />
+          ) : (
           <>
             {/* 手柄图片和按钮映射容器 - 动态显示 */}
             {currentDevice && (
@@ -740,8 +770,9 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
             )}
           </>
         )}
-      </div>
-      
+        </div>
+      )}
+
       {/* 映射设置弹窗 */}
       {showMappingDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

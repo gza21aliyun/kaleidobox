@@ -119,35 +119,18 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
     return { x, y };
   };
 
-  // 加载触摸按钮配置
+  // 加载触摸按钮配置（只加载该 gameId 的按钮，不合并全局）
   const loadTouchButtons = useCallback(async () => {
     try {
       setLoading(true);
-      const gameHotkeys = await GetHotkeysByGameID(gameId);
-      const globalHotkeys = await GetGlobalHotkeys();
-
-      // 先获取所有 touch 类型按钮
-      const globalTouch = globalHotkeys.filter(
+      // 只获取该 gameId 的触摸按钮
+      const hotkeys = await GetHotkeysByGameID(gameId);
+      const touchButtons = hotkeys.filter(
         (h) => h.device_type === enums.DeviceType.TOUCH
       );
-      const gameTouch = gameHotkeys.filter(
-        (h) => h.device_type === enums.DeviceType.TOUCH
-      );
-
-      // 合并 - 游戏特定映射覆盖全局（按按键名 action_params 去重）
-      // 同一按键在全局和游戏配置中都有记录时，游戏配置优先
-      const merged: models.Hotkey[] = [...globalTouch];
-      gameTouch.forEach((gh) => {
-        const idx = merged.findIndex((h) => h.action_params === gh.action_params);
-        if (idx !== -1) {
-          merged[idx] = gh;
-        } else {
-          merged.push(gh);
-        }
-      });
 
       // 转换为 TouchButton 数组
-      const buttons: TouchButton[] = merged.map((h) => {
+      const buttons: TouchButton[] = touchButtons.map((h) => {
         const pos = parseKeyCodeToXY(h.key_code);
         return {
           id: h.id,
@@ -163,6 +146,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
       });
 
       setTouchButtons(buttons);
+      console.log(`已加载触摸按钮: ${buttons.length} 个 - [${buttons.map(b => b.name).join(', ')}]`);
     } catch (err) {
       console.error('加载触摸按钮失败:', err);
       toast.error(t('touchMapping.toastLoadFailed'));
@@ -407,38 +391,23 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
     }
   };
 
-  // 保存所有触摸按钮到数据库
+  // 保存所有触摸按钮到数据库（只保存到该 gameId）
   const handleSaveAll = useCallback(async () => {
     try {
-      // 1. 获取当前游戏的所有触摸按钮
-      const gameHotkeys = await GetHotkeysByGameID(gameId);
-      const gameTouchHotkeys = gameHotkeys.filter(
+      // 1. 获取该 gameId 的现有触摸按钮
+      const existingHotkeys = await GetHotkeysByGameID(gameId);
+      const existingTouchHotkeys = existingHotkeys.filter(
         (h) => h.device_type === enums.DeviceType.TOUCH
       );
 
-      // 2. 获取全局触摸按钮
-      const globalHotkeys = await GetGlobalHotkeys();
-      const globalTouchHotkeys = globalHotkeys.filter(
-        (h) => h.device_type === enums.DeviceType.TOUCH
-      );
-
-      // 3. 先删除现有所有触摸按钮（包括游戏特定和全局）
-      // 这样可以避免主键冲突，简化保存逻辑
-      const deletedNames = gameTouchHotkeys.map((h) => h.name).join(', ');
-      console.log(`[保存触摸按钮] 删除游戏按钮: [${deletedNames}] (共${gameTouchHotkeys.length}个)`);
-      for (const hk of gameTouchHotkeys) {
+      // 2. 删除该 gameId 的现有触摸按钮
+      const deletedNames = existingTouchHotkeys.map((h) => h.name).join(', ');
+      console.log(`[保存触摸按钮] 删除现有按钮: [${deletedNames}] (共${existingTouchHotkeys.length}个)`);
+      for (const hk of existingTouchHotkeys) {
         await DeleteHotkey(hk.id);
       }
-      // 如果是全局页面，还要删除全局的触摸按钮
-      if (gameId === 'global') {
-        const deletedGlobalNames = globalTouchHotkeys.map((h) => h.name).join(', ');
-        console.log(`[保存触摸按钮] 删除全局按钮: [${deletedGlobalNames}] (共${globalTouchHotkeys.length}个)`);
-        for (const hk of globalTouchHotkeys) {
-          await DeleteHotkey(hk.id);
-        }
-      }
 
-      // 4. 把当前内存中的按钮转换为 Hotkey 对象，全部使用新的 UUID
+      // 3. 把当前内存中的按钮转换为 Hotkey 对象，全部使用新的 UUID
       const addedNames: string[] = [];
       for (const btn of touchButtons) {
         const hotkey = new models.Hotkey({
@@ -455,29 +424,8 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           updated_at: new Date().toISOString(),
         });
 
-        // 决定保存为全局还是游戏特定
-        if (gameId === 'global') {
-          // 全局页面：直接保存为全局
-          hotkey.game_id = 'global';
-          await AddHotkey(hotkey);
-          addedNames.push(btn.name);
-        } else {
-          // 游戏页面：检查是否已经在全局存在相同 key_code
-          const existingGlobal = globalTouchHotkeys.find(
-            (g) => g.key_code === hotkey.key_code
-          );
-          if (!existingGlobal) {
-            // 没有全局记录，作为全局保存
-            hotkey.game_id = 'global';
-            await AddHotkey(hotkey);
-            addedNames.push(`${btn.name}(global)`);
-          } else {
-            // 有全局记录，按游戏特定保存
-            hotkey.game_id = gameId;
-            await AddHotkey(hotkey);
-            addedNames.push(`${btn.name}(game)`);
-          }
-        }
+        await AddHotkey(hotkey);
+        addedNames.push(btn.name);
       }
       console.log(`[保存触摸按钮] 添加按钮: [${addedNames.join(', ')}] (共${touchButtons.length}个)`);
 
@@ -580,9 +528,6 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
                 {t('touchMapping.colY')}
               </th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
-                {t('touchMapping.colScope')}
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
                 {t('touchMapping.colAction')}
               </th>
             </tr>
@@ -590,13 +535,13 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                   {t('common.loading')}
                 </td>
               </tr>
             ) : touchButtons.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                   {t('touchMapping.noTouchButtons')}
                 </td>
               </tr>
@@ -644,9 +589,6 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
                       }
                       className="w-24 px-2 py-1 border border-gray-300 rounded text-sm dark:bg-brand-900 dark:border-brand-600 dark:text-gray-200"
                     />
-                  </td>
-                  <td className="px-4 py-3 text-gray-800 dark:text-gray-200">
-                    {btn.gameId === 'global' ? t('touchMapping.scopeGlobal') : t('touchMapping.scopeGame')}
                   </td>
                   <td className="px-4 py-3">
                     {!editMode && (

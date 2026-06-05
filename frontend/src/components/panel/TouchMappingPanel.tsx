@@ -47,6 +47,7 @@ interface TouchButton {
 // 功能键选项
 const ACTION_KEYS = [
   { actionType: enums.HotkeyActionType.SCREENSHOT, name: 'SCREENSHOT', label: '截图', icon: '📷' },
+  { actionType: enums.HotkeyActionType.ARROW_KEYS, name: 'ARROW_KEYS', label: '方向键', icon: '⬆️⬇️⬅️➡️' },
 ];
 
 // 常见虚拟键 - 名称和代码映射

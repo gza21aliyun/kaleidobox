@@ -160,12 +160,23 @@ const (
 	LWA_ALPHA = 0x00000002
 
 	// keybd_event
+	VK_UP              = 0x26
+	VK_DOWN            = 0x28
+	VK_LEFT            = 0x25
+	VK_RIGHT           = 0x27
 	VK_RETURN          = 0x0D
 	VK_CONTROL         = 0x11
 	KEYEVENTF_KEYUP_TM = 0x0002
 
 	// 字体粗细 (LOGFONT.lfWeight)
 	FW_BOLD = 700
+
+	// 方向键方向常量
+	ArrowDirNone  = 0
+	ArrowDirUp    = 1
+	ArrowDirDown  = 2
+	ArrowDirLeft  = 3
+	ArrowDirRight = 4
 
 	// 自定义消息: 外部请求关闭窗口
 	TM_CLOSE = WM_USER + 1
@@ -209,8 +220,9 @@ type ButtonConfig struct {
 
 // ButtonState 跟踪按钮的悬停和按下状态
 type ButtonState struct {
-	Hovered int32
-	Pressed int32
+	Hovered        int32
+	Pressed        int32
+	ArrowDirection int32 // 方向键当前按下的方向（ArrowDirNone/Up/Down/Left/Right）
 }
 
 // DragState 跟踪按钮的拖动状态（编辑模式下使用）
@@ -235,9 +247,16 @@ var (
 	buttonWidthV   = int32(150)   // 窗口宽度
 	buttonHeightV  = int32(140)   // 窗口高度
 
+	// 方向键专用尺寸（更大）
+	arrowButtonWidth  = int32(250) // 方向键窗口宽度
+	arrowButtonHeight = int32(240) // 方向键窗口高度
+
 	// 待注入按键事件
 	pendingDown map[int]*int32
 	pendingUp   map[int]*int32
+	// 方向键待注入方向
+	pendingArrowDown map[int]*int32 // buttonID -> 方向（ArrowDirUp/Down/Left/Right）
+	pendingArrowUp   map[int]*int32 // buttonID -> 方向（需要松开的方向）
 	// 悬停和按下状态
 	buttonState     map[int]*ButtonState
 	buttonHovered   int32
@@ -262,6 +281,8 @@ var (
 func initButtonStates() {
 	pendingDown = make(map[int]*int32)
 	pendingUp = make(map[int]*int32)
+	pendingArrowDown = make(map[int]*int32)
+	pendingArrowUp = make(map[int]*int32)
 	buttonState = make(map[int]*ButtonState)
 	hwndToButtonID = make(map[uintptr]int)
 	dragStates = make(map[int]*DragState)
@@ -271,6 +292,10 @@ func initButtonStates() {
 		pendingDown[btn.ID] = &pendingDownVal
 		pendingUpVal := int32(0)
 		pendingUp[btn.ID] = &pendingUpVal
+		pendingArrowDownVal := int32(0)
+		pendingArrowDown[btn.ID] = &pendingArrowDownVal
+		pendingArrowUpVal := int32(0)
+		pendingArrowUp[btn.ID] = &pendingArrowUpVal
 		buttonState[btn.ID] = &ButtonState{}
 		dragStates[btn.ID] = &DragState{}
 	}
@@ -295,6 +320,9 @@ func getButtonByID(buttonID int) *ButtonConfig {
 func GetButtonRect(buttonID int) (x, y, width, height int32) {
 	for _, btn := range currentButtons {
 		if btn.ID == buttonID {
+			if btn.ActionType == "arrow_keys" {
+				return btn.X, btn.Y, arrowButtonWidth, arrowButtonHeight
+			}
 			return btn.X, btn.Y, buttonWidthV, buttonHeightV
 		}
 	}
@@ -524,7 +552,11 @@ func (s *TouchMappingService) doUpdateButtons() {
 	// 在锁外创建新窗口（避免长时间持有锁）
 	exStyle := uintptr(WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)
 	style := uintptr(WS_POPUP | WS_VISIBLE)
-	const alpha = 100
+	// 编辑模式下使用更高的不透明度，方便用户编辑
+	alpha := 100
+	if currentMode == ModeEdit {
+		alpha = 180
+	}
 	const cornerRadius = 16
 
 	hInstance, _, _ := procGetModuleHandle.Call(0)
@@ -565,6 +597,14 @@ func (s *TouchMappingService) doUpdateButtons() {
 	// 先创建所有窗口并建立映射
 	s.mu.Lock()
 	for _, btn := range currentButtons {
+		// 根据按钮类型选择窗口尺寸
+		w := buttonWidthV
+		h := buttonHeightV
+		if btn.ActionType == "arrow_keys" {
+			w = arrowButtonWidth
+			h = arrowButtonHeight
+		}
+
 		hwnd, _, _ := procCreateWindow.Call(
 			exStyle,
 			uintptr(unsafe.Pointer(className)),
@@ -572,8 +612,8 @@ func (s *TouchMappingService) doUpdateButtons() {
 			style,
 			uintptr(btn.X),
 			uintptr(btn.Y),
-			uintptr(buttonWidthV),
-			uintptr(buttonHeightV),
+			uintptr(w),
+			uintptr(h),
 			0, 0, hInstance, 0,
 		)
 		if hwnd == 0 {
@@ -594,9 +634,17 @@ func (s *TouchMappingService) doUpdateButtons() {
 
 		procSetLayeredWindowAttrs.Call(hwnd, 0, uintptr(alpha), uintptr(LWA_ALPHA))
 
+		// 根据按钮类型选择窗口尺寸
+		w := buttonWidthV
+		h := buttonHeightV
+		if btn.ActionType == "arrow_keys" {
+			w = arrowButtonWidth
+			h = arrowButtonHeight
+		}
+
 		hRgn, _, _ := procCreateRoundRectRgn.Call(
 			0, 0,
-			uintptr(buttonWidthV+1), uintptr(buttonHeightV+1),
+			uintptr(w+1), uintptr(h+1),
 			uintptr(cornerRadius), uintptr(cornerRadius),
 		)
 		procSetWindowRgn.Call(hwnd, hRgn, 1)
@@ -618,6 +666,8 @@ func (s *TouchMappingService) doUpdateButtons() {
 func initButtonStatesLocked() {
 	pendingDown = make(map[int]*int32)
 	pendingUp = make(map[int]*int32)
+	pendingArrowDown = make(map[int]*int32)
+	pendingArrowUp = make(map[int]*int32)
 	buttonState = make(map[int]*ButtonState)
 	// 注意：这里不再重新初始化 hwndToButtonID，保留现有的窗口映射
 	dragStates = make(map[int]*DragState)
@@ -627,6 +677,10 @@ func initButtonStatesLocked() {
 		pendingDown[btn.ID] = &pendingDownVal
 		pendingUpVal := int32(0)
 		pendingUp[btn.ID] = &pendingUpVal
+		pendingArrowDownVal := int32(0)
+		pendingArrowDown[btn.ID] = &pendingArrowDownVal
+		pendingArrowUpVal := int32(0)
+		pendingArrowUp[btn.ID] = &pendingArrowUpVal
 		buttonState[btn.ID] = &ButtonState{}
 		dragStates[btn.ID] = &DragState{}
 	}
@@ -736,7 +790,11 @@ func (tm *TouchMappingService) runWindow() {
 	exStyle := uintptr(WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)
 	style := uintptr(WS_POPUP | WS_VISIBLE)
 
-	const alpha = 100
+	// 编辑模式下使用更高的不透明度，方便用户编辑
+	alpha := 100
+	if currentMode == ModeEdit {
+		alpha = 180
+	}
 	const cornerRadius = 16
 
 	// 加锁保护：初始化状态和创建窗口在同一锁范围内，避免竞态条件
@@ -746,6 +804,14 @@ func (tm *TouchMappingService) runWindow() {
 	tm.hwnds = make(map[int]uintptr)
 
 	for _, btn := range currentButtons {
+		// 根据按钮类型选择窗口尺寸
+		w := buttonWidthV
+		h := buttonHeightV
+		if btn.ActionType == "arrow_keys" {
+			w = arrowButtonWidth
+			h = arrowButtonHeight
+		}
+
 		hwnd, _, err := procCreateWindow.Call(
 			exStyle,
 			uintptr(unsafe.Pointer(className)),
@@ -753,8 +819,8 @@ func (tm *TouchMappingService) runWindow() {
 			style,
 			uintptr(btn.X),
 			uintptr(btn.Y),
-			uintptr(buttonWidthV),
-			uintptr(buttonHeightV),
+			uintptr(w),
+			uintptr(h),
 			0, 0, hInstance, 0,
 		)
 		if hwnd == 0 {
@@ -772,7 +838,7 @@ func (tm *TouchMappingService) runWindow() {
 
 		hRgn, _, _ := procCreateRoundRectRgn.Call(
 			0, 0,
-			uintptr(buttonWidthV+1), uintptr(buttonHeightV+1),
+			uintptr(w+1), uintptr(h+1),
 			uintptr(cornerRadius), uintptr(cornerRadius),
 		)
 		procSetWindowRgn.Call(hwnd, hRgn, 1)
@@ -949,11 +1015,40 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 		fg, _, _ := procGetForegroundWindow.Call()
 		atomic.StoreUintptr(&savedForeground, fg)
 
-		if bs := buttonState[buttonID]; bs != nil {
-			atomic.StoreInt32(&bs.Pressed, 1)
-		}
-		if pd := pendingDown[buttonID]; pd != nil {
-			atomic.StoreInt32(pd, 1)
+		btn := getButtonByID(buttonID)
+		if btn != nil && btn.ActionType == "arrow_keys" {
+			// 方向键：计算触摸位置对应的方向
+			// 获取窗口客户区坐标（从 lParam 提取）
+			clientX := int32(lParam & 0xFFFF)
+			clientY := int32((lParam >> 16) & 0xFFFF)
+
+			// 如果是屏幕坐标（WM_POINTERDOWN），需要转换
+			if msg == WM_POINTERDOWN {
+				pt := POINT{X: clientX, Y: clientY}
+				procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
+				// 转换为窗口客户区坐标
+				var wr RECT
+				procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&wr)))
+				clientX = pt.X - wr.Left
+				clientY = pt.Y - wr.Top
+			}
+
+			arrowDir := tmCalcArrowDirection(hwnd, clientX, clientY)
+			if bs := buttonState[buttonID]; bs != nil {
+				atomic.StoreInt32(&bs.Pressed, 1)
+				atomic.StoreInt32(&bs.ArrowDirection, arrowDir)
+			}
+			if pad := pendingArrowDown[buttonID]; pad != nil {
+				atomic.StoreInt32(pad, arrowDir)
+			}
+		} else {
+			// 普通按键
+			if bs := buttonState[buttonID]; bs != nil {
+				atomic.StoreInt32(&bs.Pressed, 1)
+			}
+			if pd := pendingDown[buttonID]; pd != nil {
+				atomic.StoreInt32(pd, 1)
+			}
 		}
 		atomic.StoreInt32(&buttonPressed, 1)
 		atomic.StoreInt32(&clickedButton, int32(buttonID))
@@ -988,6 +1083,7 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 			}
 			if bs := buttonState[buttonID]; bs != nil {
 				atomic.StoreInt32(&bs.Pressed, 0)
+				atomic.StoreInt32(&bs.ArrowDirection, ArrowDirNone)
 			}
 			atomic.StoreInt32(&buttonPressed, 0)
 			tmInvalidateRect(hwnd)
@@ -995,11 +1091,25 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 		}
 
 		// 映射模式：延迟注入按键松开
-		if pu := pendingUp[buttonID]; pu != nil {
-			atomic.StoreInt32(pu, 1)
-		}
-		if bs := buttonState[buttonID]; bs != nil {
-			atomic.StoreInt32(&bs.Pressed, 0)
+		btn := getButtonByID(buttonID)
+		if btn != nil && btn.ActionType == "arrow_keys" {
+			// 方向键：记录当前方向用于松开
+			if bs := buttonState[buttonID]; bs != nil {
+				currentDir := atomic.LoadInt32(&bs.ArrowDirection)
+				if pau := pendingArrowUp[buttonID]; pau != nil && currentDir != ArrowDirNone {
+					atomic.StoreInt32(pau, currentDir)
+				}
+				atomic.StoreInt32(&bs.Pressed, 0)
+				atomic.StoreInt32(&bs.ArrowDirection, ArrowDirNone)
+			}
+		} else {
+			// 普通按键
+			if pu := pendingUp[buttonID]; pu != nil {
+				atomic.StoreInt32(pu, 1)
+			}
+			if bs := buttonState[buttonID]; bs != nil {
+				atomic.StoreInt32(&bs.Pressed, 0)
+			}
 		}
 		atomic.StoreInt32(&buttonPressed, 0)
 		atomic.StoreInt32(&clickedButton, -1)
@@ -1063,6 +1173,13 @@ func tmPaintWindow(hwnd uintptr) {
 
 	var rc RECT
 	procGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&rc)))
+
+	// 检查是否是方向键类型
+	if btn.ActionType == "arrow_keys" {
+		tmPaintArrowKeysWindow(hwnd, hdc, btn, rc)
+		procEndPaint.Call(hwnd, uintptr(unsafe.Pointer(&ps)))
+		return
+	}
 
 	// 绘制深色底色
 	bgColor := uintptr(0x00141414)
@@ -1188,6 +1305,183 @@ func tmPaintWindow(hwnd uintptr) {
 	procEndPaint.Call(hwnd, uintptr(unsafe.Pointer(&ps)))
 }
 
+// tmPaintArrowKeysWindow 绘制方向键窗口（四个区域：上、下、左、右）
+func tmPaintArrowKeysWindow(hwnd uintptr, hdc uintptr, btn *ButtonConfig, rc RECT) {
+	width := int(rc.Right - rc.Left)
+	height := int(rc.Bottom - rc.Top)
+	centerX := width / 2
+	centerY := height / 2
+
+	// 获取当前按下的方向
+	var arrowDir int32 = ArrowDirNone
+	if bs := buttonState[btn.ID]; bs != nil {
+		arrowDir = atomic.LoadInt32(&bs.ArrowDirection)
+	}
+
+	// 颜色定义 (COLORREF = 0x00BBGGRR)
+	// 默认颜色：深色背景
+	defaultBgColor := uintptr(0x001E1414)
+	defaultBorderCol := uintptr(0x00807060)
+	// 悬停/按下颜色：更亮的颜色
+	activeBgColor := uintptr(0x004A3232)
+	activeBorderCol := uintptr(0x00E0C090)
+
+	// 绘制整体背景
+	hBgBrush, _, _ := procCreateSolidBrush.Call(defaultBgColor)
+	procFillRect.Call(hdc, uintptr(unsafe.Pointer(&rc)), hBgBrush)
+	procDeleteObject.Call(hBgBrush)
+
+	// 定义四个区域的矩形（类似键盘方向键的布局）
+	// 上区域：顶部中间，宽度较小
+	// 下区域：底部中间，宽度较小
+	// 左区域：左侧中间
+	// 右区域：右侧中间
+	// 中间有一个空白区域（类似方向键的中心）
+
+	// 区域尺寸计算
+	arrowWidth := width / 3   // 每个箭头区域的宽度
+	arrowHeight := height / 3 // 每个箭头区域的高度
+	gap := 4                  // 区域之间的间隙
+
+	// 上区域 (↑)
+	upRect := RECT{
+		Left:   rc.Left + int32(centerX-arrowWidth/2),
+		Top:    rc.Top + int32(gap),
+		Right:  rc.Left + int32(centerX+arrowWidth/2),
+		Bottom: rc.Top + int32(arrowHeight),
+	}
+	// 下区域 (↓)
+	downRect := RECT{
+		Left:   rc.Left + int32(centerX-arrowWidth/2),
+		Top:    rc.Bottom - int32(arrowHeight+gap),
+		Right:  rc.Left + int32(centerX+arrowWidth/2),
+		Bottom: rc.Bottom - int32(gap),
+	}
+	// 左区域 (←)
+	leftRect := RECT{
+		Left:   rc.Left + int32(gap),
+		Top:    rc.Top + int32(centerY-arrowHeight/2),
+		Right:  rc.Left + int32(arrowWidth),
+		Bottom: rc.Top + int32(centerY+arrowHeight/2),
+	}
+	// 右区域 (→)
+	rightRect := RECT{
+		Left:   rc.Right - int32(arrowWidth+gap),
+		Top:    rc.Top + int32(centerY-arrowHeight/2),
+		Right:  rc.Right - int32(gap),
+		Bottom: rc.Top + int32(centerY+arrowHeight/2),
+	}
+
+	// 绘制四个区域
+	const corner = 8 // 圆角半径
+
+	// 绘制上区域
+	tmDrawArrowRegion(hdc, upRect, arrowDir == ArrowDirUp, "↑", corner, defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol)
+	// 绘制下区域
+	tmDrawArrowRegion(hdc, downRect, arrowDir == ArrowDirDown, "↓", corner, defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol)
+	// 绘制左区域
+	tmDrawArrowRegion(hdc, leftRect, arrowDir == ArrowDirLeft, "←", corner, defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol)
+	// 绘制右区域
+	tmDrawArrowRegion(hdc, rightRect, arrowDir == ArrowDirRight, "→", corner, defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol)
+
+	// 绘制整体圆角边框
+	pen, _, _ := procCreatePen.Call(0, 3, defaultBorderCol)
+	oldPen, _, _ := procSelectObject.Call(hdc, pen)
+
+	NULL_BRUSH := uintptr(5)
+	oldBrush, _, _ := procGetStockObject.Call(NULL_BRUSH)
+	oldBrush2, _, _ := procSelectObject.Call(hdc, oldBrush)
+
+	procRoundRect.Call(
+		hdc,
+		uintptr(rc.Left),
+		uintptr(rc.Top),
+		uintptr(rc.Right),
+		uintptr(rc.Bottom),
+		uintptr(12),
+		uintptr(12),
+	)
+
+	procSelectObject.Call(hdc, oldPen)
+	procSelectObject.Call(hdc, oldBrush2)
+	procDeleteObject.Call(pen)
+}
+
+// tmDrawArrowRegion 绘制单个方向键区域
+func tmDrawArrowRegion(hdc uintptr, rect RECT, active bool, symbol string, corner int,
+	defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol uintptr) {
+	// 选择颜色
+	bgColor := defaultBgColor
+	borderCol := defaultBorderCol
+	if active {
+		bgColor = activeBgColor
+		borderCol = activeBorderCol
+	}
+
+	// 绘制区域背景
+	hBrush, _, _ := procCreateSolidBrush.Call(bgColor)
+	procFillRect.Call(hdc, uintptr(unsafe.Pointer(&rect)), hBrush)
+	procDeleteObject.Call(hBrush)
+
+	// 绘制区域边框
+	pen, _, _ := procCreatePen.Call(0, 2, borderCol)
+	oldPen, _, _ := procSelectObject.Call(hdc, pen)
+
+	NULL_BRUSH := uintptr(5)
+	oldBrush, _, _ := procGetStockObject.Call(NULL_BRUSH)
+	oldBrush2, _, _ := procSelectObject.Call(hdc, oldBrush)
+
+	procRoundRect.Call(
+		hdc,
+		uintptr(rect.Left),
+		uintptr(rect.Top),
+		uintptr(rect.Right),
+		uintptr(rect.Bottom),
+		uintptr(corner),
+		uintptr(corner),
+	)
+
+	procSelectObject.Call(hdc, oldPen)
+	procSelectObject.Call(hdc, oldBrush2)
+	procDeleteObject.Call(pen)
+
+	// 绘制箭头符号
+	const TRANSPARENT = 1
+	procSetBkMode.Call(hdc, TRANSPARENT)
+	procSetTextColor.Call(hdc, RGB_WHITE)
+
+	// 创建字体
+	hFont, _, _ := procCreateFontW.Call(
+		24,               // nHeight: 字体高度
+		0,                // nWidth: 0 = 使用默认比例
+		0,                // nEscapement: 水平书写
+		0,                // nOrientation: 字形角度
+		uintptr(FW_BOLD), // fnWeight: 粗体
+		0,                // fdwItalic: 不斜体
+		0,                // fdwUnderline: 不下划线
+		0,                // fdwStrikeOut: 不删除线
+		0,                // fdwCharSet: DEFAULT_CHARSET
+		0,                // fdwOutputPrecision: 默认
+		0,                // fdwClipPrecision: 默认
+		0,                // fdwQuality: 默认
+		0,                // fdwPitchAndFamily: 默认
+		0,                // lpszFace: 默认字体
+	)
+	oldFont, _, _ := procSelectObject.Call(hdc, hFont)
+
+	textUTF16, _ := syscall.UTF16PtrFromString(symbol)
+	procDrawText.Call(
+		hdc,
+		uintptr(unsafe.Pointer(textUTF16)),
+		^uintptr(0),
+		uintptr(unsafe.Pointer(&rect)),
+		uintptr(DT_CENTER|DT_VCENTER|DT_SINGLELINE),
+	)
+
+	procSelectObject.Call(hdc, oldFont)
+	procDeleteObject.Call(hFont)
+}
+
 // tmLerpColor 在两个 COLORREF 之间做线性插值。t=0 取 color1, t=1 取 color2
 func tmLerpColor(color1, color2 uintptr, t float64) uintptr {
 	r1 := byte(color1 & 0xFF)
@@ -1205,6 +1499,71 @@ func tmLerpColor(color1, color2 uintptr, t float64) uintptr {
 	return uintptr(r) | (uintptr(g) << 8) | (uintptr(b) << 16)
 }
 
+// tmCalcArrowDirection 根据触摸点在窗口中的相对位置计算方向键方向
+func tmCalcArrowDirection(hwnd uintptr, clientX, clientY int32) int32 {
+	var rc RECT
+	procGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&rc)))
+
+	width := int(rc.Right - rc.Left)
+	height := int(rc.Bottom - rc.Top)
+	centerX := width / 2
+	centerY := height / 2
+
+	// 计算相对于中心的位置
+	relX := int(clientX) - centerX
+	relY := int(clientY) - centerY
+
+	// 计算角度来确定方向
+	// 使用 atan2 来计算角度，然后根据角度范围确定方向
+	// 上：-45° 到 45°（以 -90° 为中心）
+	// 下：135° 到 225°（以 180° 为中心）
+	// 左：45° 到 135°（以 90° 为中心）
+	// 右：-135° 到 -45°（以 -90° 为中心）
+
+	// 简化：比较绝对值来确定主方向
+	absX := abs(relX)
+	absY := abs(relY)
+
+	// 如果在中心区域（距离中心太近），返回无方向
+	threshold := min(width, height) / 6
+	if absX < threshold && absY < threshold {
+		return ArrowDirNone
+	}
+
+	// 根据相对位置确定方向
+	if absX > absY {
+		// 水平方向为主
+		if relX > 0 {
+			return ArrowDirRight
+		} else {
+			return ArrowDirLeft
+		}
+	} else {
+		// 垂直方向为主
+		if relY > 0 {
+			return ArrowDirDown
+		} else {
+			return ArrowDirUp
+		}
+	}
+}
+
+// abs 返回整数的绝对值
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// min 返回两个整数的最小值
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // ============================================================
 // 合成按键: 多按钮支持
 // 注意: 仅在消息循环层（WndProc 外）调用，避免在窗口过程内注入输入。
@@ -1219,7 +1578,57 @@ func (s *TouchMappingService) tmProcessPendingKeys() {
 	}
 
 	for _, btn := range currentButtons {
-		// 处理按下
+		// 处理方向键按下
+		if btn.ActionType == "arrow_keys" {
+			if pad := pendingArrowDown[btn.ID]; pad != nil {
+				arrowDir := atomic.LoadInt32(pad)
+				if arrowDir != ArrowDirNone {
+					if atomic.CompareAndSwapInt32(pad, arrowDir, ArrowDirNone) {
+						// 根据方向注入对应的按键
+						var vk uintptr
+						switch arrowDir {
+						case ArrowDirUp:
+							vk = VK_UP
+						case ArrowDirDown:
+							vk = VK_DOWN
+						case ArrowDirLeft:
+							vk = VK_LEFT
+						case ArrowDirRight:
+							vk = VK_RIGHT
+						}
+						if vk != 0 {
+							tmPressKeyDirect(vk, true)
+						}
+					}
+				}
+			}
+			// 处理方向键松开
+			if pau := pendingArrowUp[btn.ID]; pau != nil {
+				arrowDir := atomic.LoadInt32(pau)
+				if arrowDir != ArrowDirNone {
+					if atomic.CompareAndSwapInt32(pau, arrowDir, ArrowDirNone) {
+						// 根据方向松开对应的按键
+						var vk uintptr
+						switch arrowDir {
+						case ArrowDirUp:
+							vk = VK_UP
+						case ArrowDirDown:
+							vk = VK_DOWN
+						case ArrowDirLeft:
+							vk = VK_LEFT
+						case ArrowDirRight:
+							vk = VK_RIGHT
+						}
+						if vk != 0 {
+							tmPressKeyDirect(vk, false)
+						}
+					}
+				}
+			}
+			continue
+		}
+
+		// 处理普通按键按下
 		if atomic.LoadInt32(pendingDown[btn.ID]) == 1 {
 			if atomic.CompareAndSwapInt32(pendingDown[btn.ID], 1, 0) {
 				if btn.ActionType == "screenshot" {
@@ -1230,7 +1639,7 @@ func (s *TouchMappingService) tmProcessPendingKeys() {
 				}
 			}
 		}
-		// 处理松开
+		// 处理普通按键松开
 		if atomic.LoadInt32(pendingUp[btn.ID]) == 1 {
 			if atomic.CompareAndSwapInt32(pendingUp[btn.ID], 1, 0) {
 				if btn.ActionType == "" {

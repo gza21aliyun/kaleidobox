@@ -8,6 +8,7 @@ const (
 	HotkeyActionTogglePause HotkeyActionType = "toggle_pause"
 	HotkeyActionScreenshot  HotkeyActionType = "screenshot"
 	HotkeyActionKeyMapping  HotkeyActionType = "key_mapping" // 按键映射
+	HotkeyActionArrowKeys   HotkeyActionType = "arrow_keys"  // 方向键（上下左右）
 	HotkeyActionCustom      HotkeyActionType = "custom"
 )
 
@@ -20,6 +21,7 @@ var AllHotkeyActionTypes = []struct {
 	{HotkeyActionStopGame, "STOP_GAME"},
 	{HotkeyActionTogglePause, "TOGGLE_PAUSE"},
 	{HotkeyActionScreenshot, "SCREENSHOT"},
+	{HotkeyActionArrowKeys, "ARROW_KEYS"},
 	{HotkeyActionCustom, "CUSTOM"},
 }
 

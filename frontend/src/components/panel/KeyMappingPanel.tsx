@@ -592,7 +592,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                 )}
                 <button
                   onClick={() => touchMappingRef.current?.refresh()}
-                  className={`${buttonClass} bg-gray-600 hover:bg-gray-700 text-white`}
+                  className={`${buttonClass} bg-blue-600 hover:bg-blue-700 text-white`}
                 >
                   <span className="i-mdi-refresh mr-2"></span>
                   {t('touchMapping.refresh')}
@@ -658,6 +658,8 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
             <div className="flex-1"></div>
             <button
               onClick={async () => {
+                // 先保存设备类型到配置（所有设备类型都需要）
+                saveJoystickConfig(selectedDeviceType);
                 if (isTouchDevice) {
                   await touchMappingRef.current?.saveAll();
                 } else {

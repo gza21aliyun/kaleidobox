@@ -218,7 +218,7 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 	return rs, err
 }
 
-func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
+func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enums.DeviceType {
 	applog.LogInfof(s.ctx, "Loading hotkey configuration")
 	s.actionkeyLock3.Lock()
 	s.mappingLock2.Lock()
@@ -226,7 +226,14 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 	defer s.actionkeyLock3.Unlock()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
+	var devicetypes map[enums.DeviceType]enums.DeviceType = make(map[enums.DeviceType]enums.DeviceType)
 	var devicetype enums.DeviceType
+	if s.config.JoystickType != "" {
+		devicetype = enums.DeviceType(s.config.JoystickType)
+		// devicetypes[devicetype] = devicetype
+	} else {
+		devicetype = enums.DeviceTypeKeyboard
+	}
 
 	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
 	FROM hotkeys`
@@ -235,28 +242,62 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 	}
 
 	rows, _ := s.fetchHotkeys(query)
+	// globalHotkeys := []models.Hotkey{}
+	localCount := 0
 
 	for _, hotkey := range rows {
+		if !(hotkey.DeviceType == devicetype || hotkey.DeviceType == enums.DeviceTypeKeyboard) {
+			continue
+		}
 		if hotkey.ActionType != enums.HotkeyActionCustom {
-			if !hotkey.IsGlobal() || s.actionKeys[hotkey.KeyCode] == nil {
+			if !hotkey.IsGlobal() {
 				s.actionKeys[hotkey.KeyCode] = hotkey
-				devicetype = hotkey.DeviceType
-				fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
+				devicetypes[hotkey.DeviceType] = hotkey.DeviceType
+				localCount++
+				// fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
 			}
 		} else {
-			if !hotkey.IsGlobal() || s.keyMappings[hotkey.KeyCode] == nil {
+			if !hotkey.IsGlobal() {
 				s.keyMappings[hotkey.KeyCode] = hotkey
 				if hotkey.DeviceType == enums.DeviceTypeTouch {
 					x, y := parseTouchPosition(hotkey.KeyCode)
 					vk := parseVirtualKey(hotkey.ActionParams)
 					fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
 				}
-				devicetype = hotkey.DeviceType
-				fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
+
+				devicetypes[hotkey.DeviceType] = hotkey.DeviceType
+				localCount++
+				// fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
 			}
 		}
 
 		applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
+	}
+	if localCount == 0 {
+		for _, hotkey := range rows {
+			if !(hotkey.DeviceType == devicetype || hotkey.DeviceType == enums.DeviceTypeKeyboard) {
+				continue
+			}
+			if hotkey.ActionType != enums.HotkeyActionCustom {
+				if hotkey.IsGlobal() {
+					s.actionKeys[hotkey.KeyCode] = hotkey
+					devicetypes[hotkey.DeviceType] = hotkey.DeviceType
+				}
+			} else {
+				if hotkey.IsGlobal() {
+					s.keyMappings[hotkey.KeyCode] = hotkey
+					if hotkey.DeviceType == enums.DeviceTypeTouch {
+						x, y := parseTouchPosition(hotkey.KeyCode)
+						vk := parseVirtualKey(hotkey.ActionParams)
+						fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
+					}
+
+					devicetypes[hotkey.DeviceType] = hotkey.DeviceType
+				}
+			}
+
+			applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
+		}
 	}
 
 	// 统计各类设备的快捷键数量
@@ -270,10 +311,6 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 		statsStr += fmt.Sprintf("%s:%d ", deviceType, count)
 	}
 
-	if s.config.JoystickType != "" && devicetype == enums.DeviceTypeKeyboard {
-		devicetype = enums.DeviceType(s.config.JoystickType)
-	}
-
 	// 统计触摸按钮数量
 	touchButtonCount := 0
 	for _, hotkey := range s.keyMappings {
@@ -282,7 +319,11 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 		}
 	}
 	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s), touch buttons=%d", len(s.keyMappings), statsStr, touchButtonCount)
-	return devicetype
+	// keys := make([]enums.DeviceType, 0, len(devicetypes))
+	// for dt := range devicetypes {
+	// 	keys = append(keys, dt)
+	// }
+	return devicetypes
 }
 
 // parseTouchPosition 从 "x:123;y:456" 格式中解析坐标
@@ -1355,14 +1396,17 @@ func (s *HotkeyService) CancelMonitorKeySetting() {
 
 func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	s.SetActiveGameID(gameId)
-	devicetype := s.loadHotkeyConfig(gameId)
-	if devicetype == enums.DeviceTypeKeyboard {
-		s.startAlternativeKeyListener()
-	} else if devicetype == enums.DeviceTypeTouch {
-		s.startTouchMapping()
-	} else {
-		s.startJoystickListener(devicetype)
+	devicetypes := s.loadHotkeyConfig(gameId)
+	for _, devicetype := range devicetypes {
+		if devicetype == enums.DeviceTypeKeyboard {
+			s.startAlternativeKeyListener()
+		} else if devicetype == enums.DeviceTypeTouch {
+			s.startTouchMapping()
+		} else {
+			s.startJoystickListener(devicetype)
+		}
 	}
+
 }
 
 func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {

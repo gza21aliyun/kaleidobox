@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { BetterButton } from '../ui/BetterButton';
 import { toast } from "react-hot-toast";
 import { models, enums } from '../../../wailsjs/go/models';
 import { GetHotkeysByGameID, UpdateHotkey, AddHotkey, DeleteHotkey, GetGlobalHotkeys } from '../../../wailsjs/go/service/HotkeyService';
@@ -35,13 +34,12 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
   const [selectedDeviceType, setSelectedDeviceType] = useState<enums.DeviceType | null>(null);
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
   const touchMappingRef = useRef<TouchMappingPanelRef>(null);
+  const [editMode, setEditMode] = useState(false);
 
+  // 键盘映射
   const keyboardMap: KeyMap[] = [
     { keyCode: 'ctrl', label: 'Control' }
-
   ]
-
-  
 
   // PS4手柄按键位置定义
   const ds4Mappings: KeyMapping[] = [
@@ -135,6 +133,16 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     { type: enums.DeviceType.XINPUT, name: "XInput", mapping: xinputMappings, img: "/xinput.png", imgWidth: 500, imgHeight: 500 },
     { type: enums.DeviceType.TOUCH, name: t('ps4.touchDeviceName'), mapping: [] as KeyMapping[], img: "", imgWidth: 0, imgHeight: 0 },
   ];
+
+  // 获取当前选中设备的信息
+  const isTouchDevice = selectedDeviceType === enums.DeviceType.TOUCH;
+
+  // 监听触摸面板的编辑模式变化
+  useEffect(() => {
+    if (isTouchDevice && touchMappingRef.current) {
+      setEditMode(touchMappingRef.current.editMode);
+    }
+  }, [isTouchDevice, selectedDeviceType]);
 
   // 加载游戏的快捷键配置
   const loadHotkeys = async () => {
@@ -360,6 +368,45 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     await loadHotkeys();
   };
 
+  // 载入默认配置（覆盖内存中原有的按键列表）
+  const handleLoadDefaults = async () => {
+    try {
+      setLoading(true);
+      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      const device = deviceTypes.find((d) => d.type === currentDeviceType);
+      const defaultMappings = device?.mapping || [];
+
+      if (defaultMappings.length === 0) {
+        toast.error(t('keyMapping.noDefaults'));
+        return;
+      }
+
+      const newHotkeys = defaultMappings.map((m) =>
+        new models.Hotkey({
+          id: crypto.randomUUID(),
+          game_id: gameId,
+          name: m.mappingLabel,
+          device_type: currentDeviceType,
+          key_code: m.button,
+          modifiers: [],
+          action_type: enums.HotkeyActionType.CUSTOM,
+          action_params: m.mappingKey,
+          is_enabled: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+      );
+
+      setHotkeys(newHotkeys);
+      toast.success(t('keyMapping.defaultsLoaded', { count: newHotkeys.length }));
+    } catch (err) {
+      console.error('载入默认失败:', err);
+      toast.error(t('keyMapping.loadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 载入全局配置（覆盖内存中原有的按键列表）
   const handleLoadGlobal = async () => {
     try {
@@ -470,72 +517,160 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
 
   // 获取当前选中设备的信息
   const currentDevice = deviceTypes.find(device => device.type === selectedDeviceType);
-  const isTouchDevice = selectedDeviceType === enums.DeviceType.TOUCH;
+
+  // 统一的按钮样式
+  const buttonClass = "px-4 py-2 rounded-lg shadow-md transition-colors font-medium text-sm";
 
   return (
     <div className="ps4-panel flex flex-col w-full h-full min-h-[700px]">
-      {/* 顶部标题栏：标题 + 保存按钮 + 设备选择 */}
-      <div className="p-6 flex items-start justify-between gap-6">
-        
+      {/* 顶部标题栏 */}
+      <div className="px-6 pt-6 pb-4 flex items-center justify-between gap-4 border-b border-gray-200 dark:border-brand-700">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          { gameId == 'global' && (
-          <>{t('keyMapping.title')}</>
-        )}
-          {}
+          {t('keyMapping.title')}
         </h2>
-        
 
-        <div className="flex flex-col items-start gap-3">
-          {/* 保存按钮 - 所有设备时显示（包括触摸） */}
-          <BetterButton
-            onClick={async () => {
-              if (selectedDeviceType === enums.DeviceType.TOUCH) {
-                // 触摸设备时调用 TouchMappingPanel 的保存方法
-                await touchMappingRef.current?.saveAll();
-              } else {
-                // 非触摸设备时调用原有保存方法
-                saveAllMappings();
-              }
-            }}
-            icon="i-mdi-content-save"
-            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md transition-colors"
+        {/* 设备选择 */}
+        <div className="relative">
+          <button
+            onClick={() => setShowDeviceDropdown(!showDeviceDropdown)}
+            className={`px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg shadow-sm transition-colors flex items-center gap-2 dark:bg-brand-700 dark:text-gray-200 dark:hover:bg-brand-600 ${buttonClass}`}
           >
-            {t('keyMapping.saveAllMappings')}
-          </BetterButton>
+            <span>{deviceTypes.find(d => d.type === selectedDeviceType)?.name || t('keyMapping.deviceSelectorPlaceholder')}</span>
+            <span className="i-mdi-chevron-down text-sm"></span>
+          </button>
 
-          {/* 设备选择 */}
-          <div className="relative">
-            <div className="text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-              {t('keyMapping.deviceSelectorLabel')}
+          {showDeviceDropdown && (
+            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20 dark:bg-brand-800 dark:border-brand-700">
+              {deviceTypes.map(device => (
+                <button
+                  key={device.type || 'disabled'}
+                  onClick={() => {
+                    setSelectedDeviceType(device.type);
+                    setShowDeviceDropdown(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-brand-700 ${
+                    selectedDeviceType === device.type ? "bg-blue-50 text-blue-700 dark:bg-brand-700/50 dark:text-blue-300" : "text-gray-800 dark:text-gray-200"
+                  }`}
+                >
+                  {device.name}
+                </button>
+              ))}
             </div>
-            <button
-              onClick={() => setShowDeviceDropdown(!showDeviceDropdown)}
-              className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg shadow-md transition-colors w-full flex justify-between items-center dark:bg-brand-700 dark:text-gray-200 dark:hover:bg-brand-600"
-            >
-              <span>{deviceTypes.find(d => d.type === selectedDeviceType)?.name || t('keyMapping.deviceSelectorPlaceholder')}</span>
-              <span className="i-mdi-chevron-down text-sm ml-2"></span>
-            </button>
-
-            {showDeviceDropdown && (
-              <div className="absolute top-full right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-20 dark:bg-brand-800 dark:border-brand-700">
-                {deviceTypes.map(device => (
-                  <button
-                    key={device.type || 'disabled'}
-                    onClick={() => {
-                      setSelectedDeviceType(device.type);
-                      setShowDeviceDropdown(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-brand-700 ${
-                      selectedDeviceType === device.type ? "bg-blue-50 text-blue-700 dark:bg-brand-700/50 dark:text-blue-300" : "text-gray-800 dark:text-gray-200"
-                    }`}
-                  >
-                    {device.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </div>
+      </div>
+
+      {/* 统一操作按钮栏 */}
+      <div className="px-6 py-4 flex flex-wrap items-center gap-3 border-b border-gray-200 dark:border-brand-700">
+        {isTouchDevice ? (
+          // 触摸设备按钮
+          <>
+            {!editMode && (
+              <>
+                <button
+                  onClick={() => touchMappingRef.current?.openAddDialog()}
+                  className={`${buttonClass} bg-blue-600 hover:bg-blue-700 text-white`}
+                >
+                  <span className="i-mdi-plus mr-2"></span>
+                  {t('touchMapping.addButton')}
+                </button>
+                <button
+                  onClick={() => touchMappingRef.current?.loadDefaults()}
+                  className={`${buttonClass} bg-indigo-600 hover:bg-indigo-700 text-white`}
+                >
+                  <span className="i-mdi-restore mr-2"></span>
+                  {t('touchMapping.loadDefaults')}
+                </button>
+                {gameId !== 'global' && (
+                  <button
+                    onClick={() => touchMappingRef.current?.loadGlobal()}
+                    className={`${buttonClass} bg-teal-600 hover:bg-teal-700 text-white`}
+                  >
+                    <span className="i-mdi-upload mr-2"></span>
+                    {t('touchMapping.loadGlobal')}
+                  </button>
+                )}
+                <button
+                  onClick={() => touchMappingRef.current?.refresh()}
+                  className={`${buttonClass} bg-gray-600 hover:bg-gray-700 text-white`}
+                >
+                  <span className="i-mdi-refresh mr-2"></span>
+                  {t('touchMapping.refresh')}
+                </button>
+              </>
+            )}
+            {/* 编辑模式按钮 */}
+            {!editMode ? (
+              <button
+                onClick={() => {
+                  touchMappingRef.current?.startEditMode();
+                  setEditMode(true);
+                }}
+                className={`${buttonClass} bg-yellow-600 hover:bg-yellow-700 text-white`}
+              >
+                <span className="i-mdi-pencil mr-2"></span>
+                {t('touchMapping.startEditMode')}
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  touchMappingRef.current?.stopEditMode();
+                  setEditMode(false);
+                }}
+                className={`${buttonClass} bg-green-600 hover:bg-green-700 text-white`}
+              >
+                <span className="i-mdi-check mr-2"></span>
+                {t('touchMapping.finishEdit')}
+              </button>
+            )}
+          </>
+        ) : (
+          // 非触摸设备按钮
+          <>
+            <button
+              onClick={handleLoadDefaults}
+              className={`${buttonClass} bg-indigo-600 hover:bg-indigo-700 text-white`}
+            >
+              <span className="i-mdi-restore mr-2"></span>
+              {t('keyMapping.loadDefaults')}
+            </button>
+            {gameId !== 'global' && (
+              <button
+                onClick={handleLoadGlobal}
+                className={`${buttonClass} bg-teal-600 hover:bg-teal-700 text-white`}
+              >
+                <span className="i-mdi-upload mr-2"></span>
+                {t('keyMapping.loadGlobal')}
+              </button>
+            )}
+            <button
+              onClick={handleRefresh}
+              className={`${buttonClass} bg-blue-600 hover:bg-blue-700 text-white`}
+            >
+              <span className="i-mdi-refresh mr-2"></span>
+              {t('keyMapping.refresh')}
+            </button>
+          </>
+        )}
+        {/* 保存按钮（触摸设备编辑模式下隐藏） */}
+        {!(isTouchDevice && editMode) && (
+          <>
+            <div className="flex-1"></div>
+            <button
+              onClick={async () => {
+                if (isTouchDevice) {
+                  await touchMappingRef.current?.saveAll();
+                } else {
+                  saveAllMappings();
+                }
+              }}
+              className={`${buttonClass} bg-green-600 hover:bg-green-700 text-white`}
+            >
+              <span className="i-mdi-content-save mr-2"></span>
+              {t('keyMapping.saveAllMappings')}
+            </button>
+          </>
+        )}
       </div>
 
       {/* 内容区：触摸按钮或手柄映射 */}
@@ -544,26 +679,6 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           <TouchMappingPanel ref={touchMappingRef} gameId={gameId} />
         ) : (
           <>
-            {/* 载入全局和刷新按钮 - 非触摸设备显示，垂直布局 */}
-            <div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
-              {gameId !== 'global' && (
-                <BetterButton
-                  onClick={handleLoadGlobal}
-                  icon="i-mdi-upload"
-                  className="px-6 py-2 bg-white hover:bg-gray-100 text-gray-900 rounded-lg shadow-md transition-colors"
-                >
-                  {t('keyMapping.loadGlobal')}
-                </BetterButton>
-              )}
-              <BetterButton
-                onClick={handleRefresh}
-                icon="i-mdi-refresh"
-                className="px-6 py-2 bg-white hover:bg-gray-100 text-gray-900 rounded-lg shadow-md transition-colors"
-              >
-                {t('keyMapping.refresh')}
-              </BetterButton>
-            </div>
-
             {/* 手柄图片和按钮映射容器 - 动态显示 */}
             {currentDevice && (
               <div className="absolute inset-0 flex items-center justify-center mt-50">
@@ -595,7 +710,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                           onClick={() => handleButtonClick(mapping.button)}
                           title={hotkey ? `${mapping.buttonLabel} → ${hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '截图' : (hotkey.name || '未设置')}` : mapping.buttonLabel}
                         >
-                          {hotkey ? (hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '📷' : (hotkey.name || mapping.mappingLabel)) : mapping.mappingLabel}
+                          {hotkey ? (hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '📷' : (hotkey.name || mapping.mappingLabel)) : mapping.buttonLabel}
                         </button>
                         
                         {/* 删除按钮 */}

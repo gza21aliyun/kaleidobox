@@ -1154,11 +1154,14 @@
   "keyMapping": {
     "title": "キーマッピング設定",
     "saveAllMappings": "すべてのマッピングを保存",
-    "refresh": "リフレッシュ",
+    "loadDefaults": "デフォルトを読み込む",
     "loadGlobal": "グローバルを読み込む",
+    "refresh": "リフレッシュ",
     "deviceSelectorLabel": "デバイス選択",
     "deviceSelectorPlaceholder": "デバイスを選択してください",
+    "noDefaults": "デフォルトのキーマッピングがありません",
     "noGlobalMappings": "グローバルキーマッピングがありません",
+    "defaultsLoaded": "{count}個のデフォルトマッピングを読み込みました",
     "globalLoaded": "{count}個のグローバルマッピングを読み込みました",
     "loadFailed": "読み込みに失敗しました"
   },

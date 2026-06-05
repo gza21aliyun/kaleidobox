@@ -1157,11 +1157,14 @@
   "keyMapping": {
     "title": "按键映射设置",
     "saveAllMappings": "保存所有映射",
-    "refresh": "刷新",
+    "loadDefaults": "载入默认",
     "loadGlobal": "载入全局",
+    "refresh": "刷新",
     "deviceSelectorLabel": "设备选择",
     "deviceSelectorPlaceholder": "请选择设备",
+    "noDefaults": "没有默认按键映射",
     "noGlobalMappings": "没有全局按键映射",
+    "defaultsLoaded": "已载入 {count} 个默认映射",
     "globalLoaded": "已载入 {count} 个全局映射",
     "loadFailed": "载入失败"
   },
@@ -1204,9 +1207,11 @@
     "toastSaveFailed": "保存失败",
     "loadDefaults": "载入默认",
     "loadGlobal": "载入全局",
+    "refresh": "刷新",
     "toastDefaultsLoaded": "已载入默认按钮（仅内存，需保存才写入数据库）",
     "toastNoGlobalButtons": "没有找到全局触摸按钮",
     "toastGlobalLoaded": "已载入 {{count}} 个全局按钮（仅内存，需保存才写入数据库）",
+    "toastRefreshed": "已刷新按钮配置",
     "functionKeys": "功能键",
     "orPressKey": "或按下键盘按键"
   },

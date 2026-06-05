@@ -21,6 +21,14 @@ interface TouchMappingPanelProps {
 
 export interface TouchMappingPanelRef {
   saveAll: () => Promise<void>;
+  loadDefaults: () => Promise<void>;
+  loadGlobal: () => Promise<void>;
+  startEditMode: () => Promise<void>;
+  stopEditMode: () => void;
+  openAddDialog: () => void;
+  refresh: () => Promise<void>;
+  touchButtons: TouchButton[];
+  editMode: boolean;
 }
 
 interface TouchButton {
@@ -163,6 +171,12 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
     }
   }, [gameId]);
 
+  // 刷新按钮配置（从数据库重新加载）
+  const refreshTouchButtons = useCallback(async () => {
+    await loadTouchButtons();
+    toast.success(t('touchMapping.toastRefreshed'));
+  }, [loadTouchButtons]);
+
   useEffect(() => {
     loadTouchButtons();
   }, [loadTouchButtons]);
@@ -247,7 +261,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
   };
 
   // 载入默认按钮（Enter + Ctrl）— 清除原有按钮后仅存入内存
-  const handleLoadDefaults = useCallback(() => {
+  const handleLoadDefaults = useCallback(async () => {
     const defaultButtons: TouchButton[] = [
       {
         id: crypto.randomUUID(),
@@ -472,81 +486,28 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
     }
   }, [gameId, touchButtons]);
 
-  // 暴露保存方法给父组件
+  // 暴露方法给父组件
   useImperativeHandle(
     ref,
     () => ({
       saveAll: handleSaveAll,
+      loadDefaults: handleLoadDefaults,
+      loadGlobal: handleLoadGlobal,
+      startEditMode: handleStartEditMode,
+      stopEditMode: handleStopEditMode,
+      openAddDialog: handleOpenAddDialog,
+      refresh: refreshTouchButtons,
+      touchButtons,
+      editMode,
     }),
-    [handleSaveAll]
+    [handleSaveAll, handleLoadDefaults, handleLoadGlobal, handleStartEditMode, handleStopEditMode, handleOpenAddDialog, refreshTouchButtons, touchButtons, editMode]
   );
 
 
 
   return (
     <div className="w-full h-full p-8 overflow-y-auto">
-      {/* 操作按钮 */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        {!editMode && (
-          <>
-            <BetterButton
-              onClick={handleOpenAddDialog}
-              icon="i-mdi-plus"
-              variant="ghost"
-              className="!bg-blue-600 !hover:bg-blue-700 !text-white !dark:bg-blue-500 !dark:hover:bg-blue-600 !dark:text-white px-6 py-2 rounded-lg shadow-md"
-            >
-              {t('touchMapping.addButton')}
-            </BetterButton>
-
-            {/* 载入默认：Enter + Ctrl */}
-            <BetterButton
-              onClick={handleLoadDefaults}
-              icon="i-mdi-restore"
-              variant="ghost"
-              className="!bg-indigo-600 !hover:bg-indigo-700 !text-white !dark:bg-indigo-500 !dark:hover:bg-indigo-600 !dark:text-white px-6 py-2 rounded-lg shadow-md"
-            >
-              {t('touchMapping.loadDefaults')}
-            </BetterButton>
-
-            {/* 载入全局：仅在游戏页面显示（gameId 不是 'global'） */}
-            {gameId !== 'global' && (
-              <BetterButton
-                onClick={handleLoadGlobal}
-                icon="i-mdi-upload"
-                variant="ghost"
-                className="!bg-teal-600 !hover:bg-teal-700 !text-white !dark:bg-teal-500 !dark:hover:bg-teal-600 !dark:text-white px-6 py-2 rounded-lg shadow-md"
-              >
-                {t('touchMapping.loadGlobal')}
-              </BetterButton>
-            )}
-          </>
-        )}
-
-        {/* 编辑模式按钮：只在按钮列表不为空时显示 */}
-        {touchButtons.length > 0 && (
-          !editMode ? (
-            <BetterButton
-              onClick={handleStartEditMode}
-              icon="i-mdi-pencil"
-              variant="ghost"
-              className="!bg-yellow-600 !hover:bg-yellow-700 !text-white !dark:bg-yellow-500 !dark:hover:bg-yellow-600 !dark:text-white px-6 py-2 rounded-lg shadow-md"
-            >
-              {t('touchMapping.startEditMode')}
-            </BetterButton>
-          ) : (
-            <BetterButton
-              onClick={handleStopEditMode}
-              icon="i-mdi-check"
-              variant="ghost"
-              className="!bg-green-600 !hover:bg-green-700 !text-white !dark:bg-green-500 !dark:hover:bg-green-600 !dark:text-white px-6 py-2 rounded-lg shadow-md"
-            >
-              {t('touchMapping.finishEdit')}
-            </BetterButton>
-          )
-        )}
-      </div>
-
-      {/* 按钮列表 */}
+      {/* 按钮列表（按钮UI已移至 KeyMappingPanel） */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden dark:bg-brand-800">
         <table className="w-full">
           <thead className="bg-gray-100 dark:bg-brand-700">

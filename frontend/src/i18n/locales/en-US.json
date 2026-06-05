@@ -1154,11 +1154,14 @@
   "keyMapping": {
     "title": "Key Mapping Settings",
     "saveAllMappings": "Save All Mappings",
-    "refresh": "Refresh",
+    "loadDefaults": "Load Defaults",
     "loadGlobal": "Load Global",
+    "refresh": "Refresh",
     "deviceSelectorLabel": "Device Selection",
     "deviceSelectorPlaceholder": "Select a device",
+    "noDefaults": "No default key mappings",
     "noGlobalMappings": "No global key mappings",
+    "defaultsLoaded": "Loaded {count} default mappings",
     "globalLoaded": "Loaded {count} global mappings",
     "loadFailed": "Load failed"
   },
@@ -1201,9 +1204,11 @@
     "toastSaveFailed": "Save failed",
     "loadDefaults": "Load Defaults",
     "loadGlobal": "Load Global",
+    "refresh": "Refresh",
     "toastDefaultsLoaded": "Default buttons loaded (memory only, save to persist)",
     "toastNoGlobalButtons": "No global touch buttons found",
     "toastGlobalLoaded": "Loaded {{count}} global buttons (memory only, save to persist)",
+    "toastRefreshed": "Button configuration refreshed",
     "functionKeys": "Function Keys",
     "orPressKey": "Or press a key"
   },

@@ -801,7 +801,7 @@ func combineCharacters(gameEntity models.GameEntity) models.GameEntity {
 func (g *DmmInfoGetter) FetchReviews(id string, token string, page int) (models.GameReview, error) {
 	gameReview := models.GameReview{}
 
-	reviewUrl := fmt.Sprintf("https://dlsoft.dmm.co.jp/ajax/v1/review/%s/?page=1&sort=value_desc&limit=100",
+	reviewUrl := fmt.Sprintf("https://dlsoft.dmm.co.jp/ajax/v1/review/%s/?page=1&sort=value_ignore_purchase_desc&limit=100",
 		id)
 	fmt.Println(reviewUrl)
 	resp3, err := getResp(*g.client, reviewUrl, "")

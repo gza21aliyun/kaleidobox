@@ -253,8 +253,16 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 		if hotkey.ActionType != enums.HotkeyActionCustom {
 			if !hotkey.IsGlobal() {
 				s.actionKeys[hotkey.KeyCode] = hotkey
+				if hotkey.DeviceType == enums.DeviceTypeTouch {
+					x, y := parseTouchPosition(hotkey.KeyCode)
+					vk := parseVirtualKey(hotkey.ActionParams)
+					fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
+				}
 				devicetypes[hotkey.DeviceType] = hotkey.DeviceType
-				localCount++
+				if devicetype == hotkey.DeviceType {
+					localCount++
+				}
+
 				// fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
 			}
 		} else {
@@ -267,7 +275,9 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 				}
 
 				devicetypes[hotkey.DeviceType] = hotkey.DeviceType
-				localCount++
+				if devicetype == hotkey.DeviceType {
+					localCount++
+				}
 				// fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
 			}
 		}
@@ -282,6 +292,11 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 			if hotkey.ActionType != enums.HotkeyActionCustom {
 				if hotkey.IsGlobal() {
 					s.actionKeys[hotkey.KeyCode] = hotkey
+					if hotkey.DeviceType == enums.DeviceTypeTouch {
+						x, y := parseTouchPosition(hotkey.KeyCode)
+						vk := parseVirtualKey(hotkey.ActionParams)
+						fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
+					}
 					devicetypes[hotkey.DeviceType] = hotkey.DeviceType
 				}
 			} else {
@@ -315,6 +330,11 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 	// 统计触摸按钮数量
 	touchButtonCount := 0
 	for _, hotkey := range s.keyMappings {
+		if hotkey.DeviceType == enums.DeviceTypeTouch {
+			touchButtonCount++
+		}
+	}
+	for _, hotkey := range s.actionKeys {
 		if hotkey.DeviceType == enums.DeviceTypeTouch {
 			touchButtonCount++
 		}
@@ -1398,13 +1418,14 @@ func (s *HotkeyService) CancelMonitorKeySetting() {
 func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	s.SetActiveGameID(gameId)
 	devicetypes := s.loadHotkeyConfig(gameId)
+	applog.InfoLogSaveAppLog("readyHotkeysForGame: %s, %v\n", gameId, devicetypes)
 	for _, devicetype := range devicetypes {
 		if devicetype == enums.DeviceTypeKeyboard {
-			s.startAlternativeKeyListener()
+			go s.startAlternativeKeyListener()
 		} else if devicetype == enums.DeviceTypeTouch {
-			s.startTouchMapping()
+			go s.startTouchMapping()
 		} else {
-			s.startJoystickListener(devicetype)
+			go s.startJoystickListener(devicetype)
 		}
 	}
 
@@ -1479,12 +1500,14 @@ func (s *HotkeyService) getTouchButtons() []ButtonConfig {
 
 // startTouchMapping 启动触摸按钮（映射模式）
 func (s *HotkeyService) startTouchMapping() {
+	fmt.Println("TouchMapping: 启动触摸映射窗口")
 	buttons := s.getTouchButtons()
 
 	if len(buttons) == 0 {
 		fmt.Println("TouchMapping: 没有配置触摸按钮，跳过启动")
 		return
 	}
+	fmt.Printf("TouchMapping: 启动触摸映射窗口(%d 个按钮)\n", len(buttons))
 
 	// tm := GetTouchMapping()
 	s.touchMappingService.SetButtons(buttons)
@@ -1591,9 +1614,11 @@ func (s *HotkeyService) startAlternativeKeyListener() {
 	s.keyboardStopChan = make(chan struct{}, 1)
 	// 使用较短的时间间隔以获得更好的响应性
 	s.keyboardTicker = time.NewTicker(50 * time.Millisecond)
+	fmt.Println("startAlternativeKeyListener 10")
 	s.actionkeyLock3.RLock()
 	keys := s.actionKeys
 	s.actionkeyLock3.RUnlock()
+	fmt.Println("startAlternativeKeyListener 11")
 	defer func() {
 		if s.keyboardTicker != nil {
 			s.keyboardTicker.Stop()

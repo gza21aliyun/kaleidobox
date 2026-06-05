@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"runtime"
@@ -9,22 +11,39 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	"lunabox/internal/appconf"
 )
 
-// TouchMapping 管理多个始终置顶的半透明按钮窗口。
+// TouchMappingService 管理多个始终置顶的半透明按钮窗口。
 // 支持两种模式:
 //   - "mapping": 点击按钮触发对应虚拟键注入（游戏使用）
 //   - "edit":    按钮可拖动改变位置，不注入按键（配置界面使用）
-type TouchMapping struct {
-	mu      sync.Mutex
-	hwnds   map[int]uintptr // buttonID -> 窗口句柄
-	running bool
+type TouchMappingService struct {
+	ctx           context.Context
+	config        *appconf.AppConfig
+	mu            sync.Mutex
+	hwnds         map[int]uintptr // buttonID -> 窗口句柄
+	running       bool
+	hotkeyService *HotkeyService
+	ImageService  *ImageService
 }
 
 var (
-	touchMappingInstance *TouchMapping
+	touchMappingInstance *TouchMappingService
 	touchMappingOnce     sync.Once
 )
+
+// NewTouchMappingService 创建触摸映射服务
+func NewTouchMappingService() *TouchMappingService {
+	return &TouchMappingService{}
+}
+
+// Init 初始化服务
+func (s *TouchMappingService) Init(ctx context.Context, db *sql.DB, config *appconf.AppConfig) {
+	s.ctx = ctx
+	s.config = config
+}
 
 // ============================================================
 // Windows API
@@ -185,6 +204,7 @@ type ButtonConfig struct {
 	VirtualKey uintptr // 对应的虚拟键码（映射到哪个键盘按键）
 	X          int32   // 屏幕坐标 X
 	Y          int32   // 屏幕坐标 Y
+	ActionType string  // 动作类型（如 "screenshot"）
 }
 
 // ButtonState 跟踪按钮的悬停和按下状态
@@ -305,18 +325,27 @@ const HTCLIENT = 1
 // TouchMapping 公共 API
 // ============================================================
 
-// GetTouchMapping 获取单例实例
-func GetTouchMapping() *TouchMapping {
-	touchMappingOnce.Do(func() {
-		touchMappingInstance = &TouchMapping{}
-	})
-	return touchMappingInstance
+// GetTouchMapping 获取单例实例（保持向后兼容）
+// func GetTouchMapping() *TouchMappingService {
+// 	touchMappingOnce.Do(func() {
+// 		touchMappingInstance = &TouchMappingService{}
+// 	})
+// 	return touchMappingInstance
+// }
+
+// SetHotkeyService 设置热键服务
+func (tm *TouchMappingService) SetHotkeyService(service *HotkeyService) {
+	tm.hotkeyService = service
+}
+
+func (tm *TouchMappingService) SetImageService(service *ImageService) {
+	tm.ImageService = service
 }
 
 // SetButtons 设置按钮配置。必须在 Start 之前调用。
 // 按钮位置来自数据库 key_code 字段（格式 "x:123;y:456"），
 // 或由编辑模式下拖动产生。
-func (tm *TouchMapping) SetButtons(buttons []ButtonConfig) {
+func (tm *TouchMappingService) SetButtons(buttons []ButtonConfig) {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 	// 深拷贝
@@ -327,7 +356,7 @@ func (tm *TouchMapping) SetButtons(buttons []ButtonConfig) {
 
 // StartMapping 以“游戏模式”启动（点击按钮触发按键注入）。
 // 若窗口已运行则直接返回。
-func (tm *TouchMapping) StartMapping() error {
+func (tm *TouchMappingService) StartMapping() error {
 	tm.mu.Lock()
 	if tm.running {
 		tm.mu.Unlock()
@@ -344,7 +373,7 @@ func (tm *TouchMapping) StartMapping() error {
 
 // StartEditMode 以“编辑模式”启动（按钮可拖动改变位置，不注入按键）。
 // 若窗口已运行则直接返回。
-func (tm *TouchMapping) StartEditMode() error {
+func (tm *TouchMappingService) StartEditMode() error {
 	tm.mu.Lock()
 	if tm.running {
 		tm.mu.Unlock()
@@ -360,7 +389,7 @@ func (tm *TouchMapping) StartEditMode() error {
 }
 
 // Stop 停止并销毁所有触摸映射窗口
-func (tm *TouchMapping) Stop() {
+func (tm *TouchMappingService) Stop() {
 	tm.mu.Lock()
 	hwnds := tm.hwnds
 	running := tm.running
@@ -380,7 +409,7 @@ func (tm *TouchMapping) Stop() {
 
 // GetUpdatedPositions 返回编辑模式下各按钮最终位置（buttonID -> {X, Y}）
 // 在停止编辑模式后调用此函数读取用户拖动结果，然后前端可把位置写回数据库。
-func (tm *TouchMapping) GetUpdatedPositions() map[int]POINT {
+func (tm *TouchMappingService) GetUpdatedPositions() map[int]POINT {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 	result := make(map[int]POINT)
@@ -397,7 +426,7 @@ func (tm *TouchMapping) GetUpdatedPositions() map[int]POINT {
 }
 
 // GetMode 返回当前运行模式（"mapping" / "edit" / ""）
-func (tm *TouchMapping) GetMode() string {
+func (tm *TouchMappingService) GetMode() string {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 	if !tm.running {
@@ -415,7 +444,7 @@ var pendingButtons []ButtonConfig
 // UpdateEditModeButtons 动态更新编辑模式下的按钮列表。
 // 会销毁所有现有窗口并用新按钮列表重新创建窗口。
 // 必须在编辑模式下调用。
-func (tm *TouchMapping) UpdateEditModeButtons(buttons []ButtonConfig) error {
+func (tm *TouchMappingService) UpdateEditModeButtons(buttons []ButtonConfig) error {
 	tm.mu.Lock()
 	if !tm.running || currentMode != ModeEdit {
 		tm.mu.Unlock()
@@ -448,23 +477,23 @@ func (tm *TouchMapping) UpdateEditModeButtons(buttons []ButtonConfig) error {
 }
 
 // doUpdateButtons 在消息循环线程中执行实际的按钮更新操作
-func doUpdateButtons() {
-	tm := GetTouchMapping()
-	tm.mu.Lock()
+func (s *TouchMappingService) doUpdateButtons() {
+	// tm := GetTouchMapping()
+	s.mu.Lock()
 
-	if !tm.running || currentMode != ModeEdit {
-		tm.mu.Unlock()
+	if !s.running || currentMode != ModeEdit {
+		s.mu.Unlock()
 		return
 	}
 
 	if len(pendingButtons) == 0 {
-		tm.mu.Unlock()
+		s.mu.Unlock()
 		return
 	}
 
 	// 1. 保存当前窗口列表
 	oldHwnds := make(map[int]uintptr)
-	for k, v := range tm.hwnds {
+	for k, v := range s.hwnds {
 		oldHwnds[k] = v
 	}
 
@@ -488,9 +517,9 @@ func doUpdateButtons() {
 	// 清空 hwndToButtonID 映射（窗口已销毁）
 	hwndToButtonID = make(map[uintptr]int)
 	quitPosted = false // 重置标志，允许后续真正的退出
-	tm.hwnds = make(map[int]uintptr)
+	s.hwnds = make(map[int]uintptr)
 
-	tm.mu.Unlock()
+	s.mu.Unlock()
 
 	// 在锁外创建新窗口（避免长时间持有锁）
 	exStyle := uintptr(WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)
@@ -525,7 +554,7 @@ func doUpdateButtons() {
 	wc := WNDCLASSEX{
 		CbSize:        uint32(unsafe.Sizeof(WNDCLASSEX{})),
 		Style:         CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS,
-		LpfnWndProc:   syscall.NewCallback(touchMappingWndProc),
+		LpfnWndProc:   syscall.NewCallback(s.touchMappingWndProc),
 		HInstance:     hInstance,
 		HCursor:       cursor,
 		HbrBackground: uintptr(NULL_BRUSH_STOCK),
@@ -534,7 +563,7 @@ func doUpdateButtons() {
 	procRegisterClass.Call(uintptr(unsafe.Pointer(&wc)))
 
 	// 先创建所有窗口并建立映射
-	tm.mu.Lock()
+	s.mu.Lock()
 	for _, btn := range currentButtons {
 		hwnd, _, _ := procCreateWindow.Call(
 			exStyle,
@@ -551,14 +580,14 @@ func doUpdateButtons() {
 			continue
 		}
 
-		tm.hwnds[btn.ID] = hwnd
+		s.hwnds[btn.ID] = hwnd
 		hwndToButtonID[hwnd] = btn.ID
 	}
-	tm.mu.Unlock()
+	s.mu.Unlock()
 
 	// 设置窗口属性（在锁外执行，允许消息处理）
 	for _, btn := range currentButtons {
-		hwnd := tm.hwnds[btn.ID]
+		hwnd := s.hwnds[btn.ID]
 		if hwnd == 0 {
 			continue
 		}
@@ -580,9 +609,9 @@ func doUpdateButtons() {
 	}
 
 	// 最后初始化按钮状态（窗口已完全创建并建立映射）
-	tm.mu.Lock()
+	s.mu.Lock()
 	initButtonStatesLocked()
-	tm.mu.Unlock()
+	s.mu.Unlock()
 }
 
 // initButtonStatesLocked 在持有锁的情况下初始化按钮状态（供 UpdateEditModeButtons 使用）
@@ -609,7 +638,7 @@ func initButtonStatesLocked() {
 }
 
 // keepOnTopLoop 定期检查并保持所有按钮窗口在最顶层
-func (tm *TouchMapping) keepOnTopLoop() {
+func (tm *TouchMappingService) keepOnTopLoop() {
 	ticker := time.NewTicker(2000 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -634,7 +663,7 @@ func (tm *TouchMapping) keepOnTopLoop() {
 }
 
 // IsRunning 返回窗口是否运行中
-func (tm *TouchMapping) IsRunning() bool {
+func (tm *TouchMappingService) IsRunning() bool {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 	return tm.running
@@ -644,7 +673,7 @@ func (tm *TouchMapping) IsRunning() bool {
 // 窗口运行与消息循环
 // ============================================================
 
-func (tm *TouchMapping) runWindow() {
+func (tm *TouchMappingService) runWindow() {
 	// Windows 要求：创建窗口的线程 = 消息循环线程 = 接收 WndProc 回调的线程。
 	// Go 默认会把 goroutine 迁移到不同 OS 线程，必须 LockOSThread 防止线程迁移导致消息派发失败。
 	runtime.LockOSThread()
@@ -685,7 +714,7 @@ func (tm *TouchMapping) runWindow() {
 	wc := WNDCLASSEX{
 		CbSize:        uint32(unsafe.Sizeof(WNDCLASSEX{})),
 		Style:         CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS,
-		LpfnWndProc:   syscall.NewCallback(touchMappingWndProc),
+		LpfnWndProc:   syscall.NewCallback(tm.touchMappingWndProc),
 		HInstance:     hInstance,
 		HCursor:       cursor,
 		HbrBackground: uintptr(NULL_BRUSH_STOCK),
@@ -760,7 +789,7 @@ func (tm *TouchMapping) runWindow() {
 
 	// 如果有待更新的按钮列表，立即处理
 	if len(pendingButtons) > 0 {
-		doUpdateButtons()
+		tm.doUpdateButtons()
 	}
 
 	// 启动定期置顶检查
@@ -793,12 +822,12 @@ func (tm *TouchMapping) runWindow() {
 			procDispatchMessage.Call(uintptr(unsafe.Pointer(&msg)))
 
 			// 延迟执行按键注入（仅在 WndProc 外）。
-			tmProcessPendingKeys()
+			tm.tmProcessPendingKeys()
 			continue
 		}
 
 		// 无消息：仍要检查挂起的按键注入
-		tmProcessPendingKeys()
+		tm.tmProcessPendingKeys()
 
 		// 让出 CPU
 		time.Sleep(5 * time.Millisecond)
@@ -819,7 +848,7 @@ func (tm *TouchMapping) runWindow() {
 // 窗口过程
 // ============================================================
 
-func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
+func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 	// 从 hwnd 查找对应的按钮 ID
 	buttonID, exists := hwndToButtonID[hwnd]
 
@@ -979,7 +1008,7 @@ func touchMappingWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintp
 
 	case TM_UPDATE_BUTTONS:
 		// 在消息循环线程中更新按钮列表
-		doUpdateButtons()
+		s.doUpdateButtons()
 		return 0
 
 	case TM_CLOSE, WM_CLOSE:
@@ -1182,21 +1211,45 @@ func tmLerpColor(color1, color2 uintptr, t float64) uintptr {
 // ============================================================
 
 // tmProcessPendingKeys 处理所有待注入的按键事件
-func tmProcessPendingKeys() {
+func (s *TouchMappingService) tmProcessPendingKeys() {
+	// 在处理任何触摸按钮事件之前，先检查进程状态确保游戏ID是最新的
+	// tm := s.GetTouchMapping()
+	if s.hotkeyService != nil && s.hotkeyService.GetActiveGameID() == "" {
+		s.hotkeyService.processCheck()
+	}
+
 	for _, btn := range currentButtons {
 		// 处理按下
 		if atomic.LoadInt32(pendingDown[btn.ID]) == 1 {
 			if atomic.CompareAndSwapInt32(pendingDown[btn.ID], 1, 0) {
-				tmPressKeyDirect(btn.VirtualKey, true)
+				if btn.ActionType == "screenshot" {
+					// 功能键：截图
+					s.tmTakeScreenshot()
+				} else {
+					tmPressKeyDirect(btn.VirtualKey, true)
+				}
 			}
 		}
 		// 处理松开
 		if atomic.LoadInt32(pendingUp[btn.ID]) == 1 {
 			if atomic.CompareAndSwapInt32(pendingUp[btn.ID], 1, 0) {
-				tmPressKeyDirect(btn.VirtualKey, false)
+				if btn.ActionType == "" {
+					tmPressKeyDirect(btn.VirtualKey, false)
+				}
 			}
 		}
 	}
+}
+
+// tmTakeScreenshot 触发截图功能
+func (s *TouchMappingService) tmTakeScreenshot() {
+	// 获取当前活动游戏的 ID（游戏ID检查已在 tmProcessPendingKeys 中完成）
+	var gameID string
+	if s.hotkeyService != nil {
+		gameID = s.hotkeyService.GetActiveGameID()
+	}
+
+	s.ImageService.TakeScreenshotOfFocusedWindow(gameID)
 }
 
 // tmPressKeyDirect 直接调用 keybd_event（仅在消息循环内部、WndProc 外调用）

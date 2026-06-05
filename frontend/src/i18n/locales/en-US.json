@@ -1195,7 +1195,9 @@
     "loadGlobal": "Load Global",
     "toastDefaultsLoaded": "Default buttons loaded (memory only, save to persist)",
     "toastNoGlobalButtons": "No global touch buttons found",
-    "toastGlobalLoaded": "Loaded {{count}} global buttons (memory only, save to persist)"
+    "toastGlobalLoaded": "Loaded {{count}} global buttons (memory only, save to persist)",
+    "functionKeys": "Function Keys",
+    "orPressKey": "Or press a key"
   },
   "reviews": {
     "dataSource": "Data source",

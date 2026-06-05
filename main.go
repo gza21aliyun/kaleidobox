@@ -190,6 +190,7 @@ func main() {
 	tagService := service.NewTagService()
 	imageService := service.NewImageService()
 	hotkeyService := service.NewHotkeyService()
+	touchMappingService := service.NewTouchMappingService()
 	i18nService := service.NewI18nService()
 	vmService := service.NewVMService()
 
@@ -484,6 +485,7 @@ func main() {
 			tagService.Init(ctx, db, config)
 			imageService.Init(ctx, db, config)
 			hotkeyService.Init(ctx, db, config)
+			touchMappingService.Init(ctx, db, config)
 			i18nService.Init(ctx)
 			workService.Init(ctx, db, config)
 			workService.SetServices(staffService, charactorService, imageService)
@@ -498,7 +500,9 @@ func main() {
 			startService.SetVMService(vmService)
 			startService.SetStasService(statsService)
 
-			hotkeyService.SetServices(imageService, startService)
+			hotkeyService.SetServices(imageService, startService, touchMappingService)
+			touchMappingService.SetHotkeyService(hotkeyService)
+			touchMappingService.SetImageService(imageService)
 
 			// 设置 ImportService 的 SessionService 依赖（用于导入游玩记录）
 			importService.SetSessionService(sessionService)

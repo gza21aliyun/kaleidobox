@@ -1190,7 +1190,14 @@
     "toastEditModeFinished": "編集モードを終了しました。位置が更新されました（保存をして永続化してください",
     "toastStopEditFailed": "編集モードの終了に失敗しました",
     "toastSavedAll": "すべてのタッチボタンを保存しました",
-    "toastSaveFailed": "保存に失敗しました"
+    "toastSaveFailed": "保存に失敗しました",
+    "loadDefaults": "デフォルトを読み込む",
+    "loadGlobal": "グローバルを読み込む",
+    "toastDefaultsLoaded": "デフォルトボタンを読み込みました（メモリのみ、保存をして永続化してください）",
+    "toastNoGlobalButtons": "グローバルタッチボタンが見つかりません",
+    "toastGlobalLoaded": "{{count}} 個のグローバルボタンを読み込みました（メモリのみ、保存をして永続化してください）",
+    "functionKeys": "ファンクションキー",
+    "orPressKey": "またはキーを押してください"
   },
   "reviews": {
     "dataSource": "データソース",

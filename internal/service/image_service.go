@@ -121,8 +121,6 @@ func (s *ImageService) Init(ctx context.Context, db *sql.DB, config *appconf.App
 		go s.downloadWorker()
 	}
 
-	// 设置全局 ImageService 实例
-	SetGlobalImageService(s)
 }
 
 // CreateImageBackup 创建新的 ImageBackup 记录
@@ -521,7 +519,7 @@ func (s *ImageService) DownloadImageBackups(list []models.ImageBackup) ([]models
 			ext = ext[:queryIndex]
 		}
 		fileName := fmt.Sprintf(`%s\%s%s`, path, uuid.New().String(), ext)
-		err = DownloadImage(imageBackup.Url, fileName)
+		err = s.DownloadImage(imageBackup.Url, fileName)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "下载图片3 %s, url:%s, 失败：%v", fileName, imageBackup.Url, err)
 			// 清理下载失败的文件
@@ -583,7 +581,7 @@ func (s *ImageService) DownloadImages() error {
 			ext = ext[:queryIndex]
 		}
 		fileName := fmt.Sprintf(`%s\%s.%s`, path, uuid.New().String(), ext)
-		err = DownloadImage(imageBackup.Url, fileName)
+		err = s.DownloadImage(imageBackup.Url, fileName)
 		if err != nil {
 			fileName := fmt.Sprintf(`%s\%s.%s`, path, uuid.New().String(), ext)
 			applog.LogErrorf(s.ctx, "下载图片2 %s 失败：%v, f:%s", fileName, imageBackup.Url, err)
@@ -656,6 +654,12 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 
 	// 检测 Magpie 缩放窗口是否存在（类名：Window_Magpie_967EB565-6F73-4E94-AE53-00CC42592A22）
 	// 只有当这个窗口存在时才表示 Magpie 真正激活了缩放，而不只是进程在运行
+
+	applog.InfoLogSaveAppLog("截图gameId:%s", gameId)
+	if gameId == "" {
+		return
+	}
+
 	magpieWindowClassName, _ := syscall.UTF16PtrFromString("Window_Magpie_967EB565-6F73-4E94-AE53-00CC42592A22")
 	hwndMagpie, _, _ := procFindWindowW.Call(uintptr(unsafe.Pointer(magpieWindowClassName)), 0)
 
@@ -859,29 +863,16 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 	return err
 }
 
-// 全局 ImageService 实例，用于处理下载队列
-var globalImageService *ImageService
+// // 全局 ImageService 实例，用于处理下载队列
+// var globalImageService *ImageService
 
-// SetGlobalImageService 设置全局 ImageService 实例
-func SetGlobalImageService(service *ImageService) {
-	globalImageService = service
-}
+// // SetGlobalImageService 设置全局 ImageService 实例
+// func SetGlobalImageService(service *ImageService) {
+// 	globalImageService = service
+// }
 
 // DownloadImage 将下载任务加入队列并等待完成
-func DownloadImage(imageUrl, fileName string) error {
-	// 如果全局 ImageService 未初始化，使用同步下载
-	if globalImageService == nil {
-		// 创建临时 ImageService 进行同步下载
-		tempService := &ImageService{}
-		// 创建带超时的上下文
-		timeout := 5 * time.Second
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
-		fmt.Printf("GetImageBackupByUrl 021 url: %s\n", imageUrl)
-		err := tempService.downloadImageInternal(ctx, imageUrl, fileName, timeout)
-		fmt.Printf("GetImageBackupByUrl 031 url: %s\n", imageUrl)
-		return err
-	}
+func (s *ImageService) DownloadImage(imageUrl, fileName string) error {
 
 	// 创建下载任务
 	task := downloadTask{
@@ -892,7 +883,7 @@ func DownloadImage(imageUrl, fileName string) error {
 	}
 
 	// 将任务加入队列
-	globalImageService.downloadQueue <- task
+	s.downloadQueue <- task
 
 	// 等待任务完成
 	err := <-task.result

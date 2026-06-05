@@ -571,8 +571,6 @@ func (s *StartService) waitForGameExit(cmd *exec.Cmd, sessionID string, gameID s
 		return
 	}
 	fmt.Println("start cleanup playsession")
-	// 关闭触摸映射窗口
-	go GetTouchMapping().Stop()
 	//todo: lock
 	go s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 	// 执行统一的会话清理逻辑
@@ -604,7 +602,6 @@ func (s *StartService) monitorProcessByPID(sessionID string, gameID string, star
 	case <-time.After(24 * time.Hour):
 		applog.LogWarningf(s.ctx, "Game %s exceeded maximum runtime (24h), forcing cleanup", gameID)
 	}
-	go GetTouchMapping().Stop()
 	go s.hotkeyService.clearkeysForGame(len(s.gamesLaunched) == 0)
 
 	// 执行统一的会话清理逻辑

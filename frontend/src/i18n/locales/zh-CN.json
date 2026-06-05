@@ -1198,7 +1198,9 @@
     "loadGlobal": "载入全局",
     "toastDefaultsLoaded": "已载入默认按钮（仅内存，需保存才写入数据库）",
     "toastNoGlobalButtons": "没有找到全局触摸按钮",
-    "toastGlobalLoaded": "已载入 {{count}} 个全局按钮（仅内存，需保存才写入数据库）"
+    "toastGlobalLoaded": "已载入 {{count}} 个全局按钮（仅内存，需保存才写入数据库）",
+    "functionKeys": "功能键",
+    "orPressKey": "或按下键盘按键"
   },
   "reviews": {
     "dataSource": "数据源",

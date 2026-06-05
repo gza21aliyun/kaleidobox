@@ -107,17 +107,19 @@ type HotkeyService struct {
 	isMonitoringKeySetting atomic.Bool
 	monitoredKey           atomic.Value
 
-	imageService *ImageService
-	startService *StartService
+	imageService        *ImageService
+	startService        *StartService
+	touchMappingService *TouchMappingService
 
 	processCheckTicker *time.Ticker
 	keyboardTicker     *time.Ticker
 	keyboardStopChan   chan struct{}
 }
 
-func (s *HotkeyService) SetServices(imageService *ImageService, startService *StartService) {
+func (s *HotkeyService) SetServices(imageService *ImageService, startService *StartService, touchMappingService *TouchMappingService) {
 	s.imageService = imageService
 	s.startService = startService
+	s.touchMappingService = touchMappingService
 }
 
 func NewHotkeyService() *HotkeyService {
@@ -1397,22 +1399,36 @@ func hotkeyToButtonConfig(hotkey *models.Hotkey, id int) ButtonConfig {
 		VirtualKey: uintptr(vk),
 		X:          x,
 		Y:          y,
+		ActionType: string(hotkey.ActionType),
 	}
 }
 
-// getTouchButtons 从 keyMappings 中获取所有触摸按钮
+// getTouchButtons 从 keyMappings 和 actionKeys 中获取所有触摸按钮
 func (s *HotkeyService) getTouchButtons() []ButtonConfig {
 	s.mappingLock2.RLock()
+	s.actionkeyLock3.RLock()
 	defer s.mappingLock2.RUnlock()
+	defer s.actionkeyLock3.RUnlock()
 
 	var buttons []ButtonConfig
 	id := 0
+
+	// 从 keyMappings 获取普通按键映射的触摸按钮
 	for _, hotkey := range s.keyMappings {
 		if hotkey.DeviceType == enums.DeviceTypeTouch {
 			buttons = append(buttons, hotkeyToButtonConfig(hotkey, id))
 			id++
 		}
 	}
+
+	// 从 actionKeys 获取功能键类型的触摸按钮（如截图）
+	for _, hotkey := range s.actionKeys {
+		if hotkey.DeviceType == enums.DeviceTypeTouch {
+			buttons = append(buttons, hotkeyToButtonConfig(hotkey, id))
+			id++
+		}
+	}
+
 	return buttons
 }
 
@@ -1425,9 +1441,9 @@ func (s *HotkeyService) startTouchMapping() {
 		return
 	}
 
-	tm := GetTouchMapping()
-	tm.SetButtons(buttons)
-	err := tm.StartMapping()
+	// tm := GetTouchMapping()
+	s.touchMappingService.SetButtons(buttons)
+	err := s.touchMappingService.StartMapping()
 	if err != nil {
 		fmt.Printf("TouchMapping: 启动失败: %v\n", err)
 	} else {
@@ -1437,7 +1453,7 @@ func (s *HotkeyService) startTouchMapping() {
 
 // stopTouchMapping 停止触摸按钮窗口
 func (s *HotkeyService) stopTouchMapping() {
-	GetTouchMapping().Stop()
+	s.touchMappingService.Stop()
 }
 
 // TouchButtonInfo 前端与后端之间传递的触摸按钮信息结构
@@ -1447,6 +1463,7 @@ type TouchButtonInfo struct {
 	VirtualKey uint32 // 对应的虚拟键码（如 0x0D = Enter），使用 uint32 确保 Wails 序列化兼容
 	X          int32  // 屏幕坐标 X
 	Y          int32  // 屏幕坐标 Y
+	ActionType string // 动作类型（如 "screenshot"）
 }
 
 // TouchButtonPosition 单个按钮的位置更新
@@ -1469,20 +1486,21 @@ func (s *HotkeyService) StartTouchEditMode(buttons []TouchButtonInfo) error {
 			VirtualKey: uintptr(b.VirtualKey),
 			X:          b.X,
 			Y:          b.Y,
+			ActionType: b.ActionType,
 		}
 	}
 
-	tm := GetTouchMapping()
-	tm.SetButtons(configs)
-	return tm.StartEditMode()
+	// tm := GetTouchMapping()
+	s.touchMappingService.SetButtons(configs)
+	return s.touchMappingService.StartEditMode()
 }
 
 // StopTouchEditMode 停止编辑模式。
 // 返回所有按钮的更新后的位置，前端可据此更新列表的 X/Y。
 func (s *HotkeyService) StopTouchEditMode() []TouchButtonPosition {
-	tm := GetTouchMapping()
-	positions := tm.GetUpdatedPositions()
-	tm.Stop()
+	// tm := GetTouchMapping()
+	positions := s.touchMappingService.GetUpdatedPositions()
+	s.touchMappingService.Stop()
 
 	result := make([]TouchButtonPosition, 0, len(positions))
 	for idx, pt := range positions {
@@ -1508,11 +1526,12 @@ func (s *HotkeyService) UpdateTouchEditModeButtons(buttons []TouchButtonInfo) er
 			VirtualKey: uintptr(b.VirtualKey),
 			X:          b.X,
 			Y:          b.Y,
+			ActionType: b.ActionType,
 		}
 	}
 
-	tm := GetTouchMapping()
-	return tm.UpdateEditModeButtons(configs)
+	// tm := GetTouchMapping()
+	return s.touchMappingService.UpdateEditModeButtons(configs)
 }
 
 // startAlternativeKeyListener 备用键盘监听方案

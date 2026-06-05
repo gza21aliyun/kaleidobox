@@ -33,7 +33,13 @@ interface TouchButton {
   y: number;
   gameId: string;       // "global" or game specific id
   isNew: boolean;
+  actionType: enums.HotkeyActionType; // 功能键类型，默认 CUSTOM
 }
+
+// 功能键选项
+const ACTION_KEYS = [
+  { actionType: enums.HotkeyActionType.SCREENSHOT, name: 'SCREENSHOT', label: '截图', icon: '📷' },
+];
 
 // 常见虚拟键 - 名称和代码映射
 const VIRTUAL_KEYS = [
@@ -104,6 +110,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [waitingForKey, setWaitingForKey] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [selectedActionKey, setSelectedActionKey] = useState<typeof ACTION_KEYS[0] | null>(null);
 
   // 从 hotkeys 解析坐标
   const parseKeyCodeToXY = (keyCode: string): { x: number; y: number } => {
@@ -142,6 +149,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           y: pos.y,
           gameId: h.game_id,
           isNew: false,
+          actionType: h.action_type || enums.HotkeyActionType.CUSTOM,
         };
       });
 
@@ -161,7 +169,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
 
   // 键盘事件处理 - 监听新增按钮时用户按下的按键
   useEffect(() => {
-    if (waitingForKey) {
+    if (waitingForKey && !selectedActionKey) {
       const handleKeyDown = (e: KeyboardEvent) => {
         e.preventDefault();
         const keyPressed = e.key;
@@ -190,6 +198,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           y: DEFAULT_TOUCH_Y,
           gameId: gameId,
           isNew: true,
+          actionType: enums.HotkeyActionType.CUSTOM,
         };
         setTouchButtons((prev) => [...prev, btn]);
 
@@ -201,18 +210,40 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [waitingForKey, gameId]);
+  }, [waitingForKey, gameId, selectedActionKey]);
 
   // 新增按钮（改为打开监听按键弹窗 - 与 KeyMappingPanel 风格一致）
   const handleOpenAddDialog = () => {
     setShowAddDialog(true);
     setWaitingForKey(true);
+    setSelectedActionKey(null);
   };
 
   // 取消新增按钮
   const handleCancelAdd = () => {
     setShowAddDialog(false);
     setWaitingForKey(false);
+    setSelectedActionKey(null);
+  };
+
+  // 选择功能键
+  const handleSelectActionKey = (actionKey: typeof ACTION_KEYS[0]) => {
+    const btn: TouchButton = {
+      id: crypto.randomUUID(),
+      hotkeyID: '',
+      name: actionKey.label,
+      actionParams: actionKey.name,
+      keyCode: `x:${DEFAULT_TOUCH_X};y:${DEFAULT_TOUCH_Y}`,
+      x: DEFAULT_TOUCH_X,
+      y: DEFAULT_TOUCH_Y,
+      gameId: gameId,
+      isNew: true,
+      actionType: actionKey.actionType,
+    };
+    setTouchButtons((prev) => [...prev, btn]);
+    setSelectedActionKey(null);
+    setShowAddDialog(false);
+    toast.success(t('touchMapping.toastButtonAdded', { buttonName: actionKey.label }));
   };
 
   // 载入默认按钮（Enter + Ctrl）— 清除原有按钮后仅存入内存
@@ -228,6 +259,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
         y: DEFAULT_TOUCH_Y,
         gameId: gameId,
         isNew: true,
+        actionType: enums.HotkeyActionType.CUSTOM,
       },
       {
         id: crypto.randomUUID(),
@@ -239,6 +271,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
         y: DEFAULT_TOUCH_Y + 200,
         gameId: gameId,
         isNew: true,
+        actionType: enums.HotkeyActionType.CUSTOM,
       },
     ];
     setTouchButtons(defaultButtons);
@@ -271,6 +304,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           y: pos.y,
           gameId: gameId,
           isNew: true,
+          actionType: h.action_type || enums.HotkeyActionType.CUSTOM,
         };
       });
 
@@ -321,6 +355,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
       VirtualKey: virtualKeyNameToCode(btn.actionParams),
       X: btn.x,
       Y: btn.y,
+      ActionType: btn.actionType,
     }));
   };
 
@@ -354,6 +389,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
         VirtualKey: virtualKeyNameToCode(btn.actionParams),
         X: btn.x,
         Y: btn.y,
+        ActionType: btn.actionType,
       }));
       await StartTouchEditMode(buttons);
       setEditMode(true);
@@ -417,7 +453,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           device_type: enums.DeviceType.TOUCH,
           key_code: btn.keyCode,
           modifiers: [],
-          action_type: enums.HotkeyActionType.CUSTOM,
+          action_type: btn.actionType,
           action_params: btn.actionParams,
           is_enabled: true,
           created_at: new Date().toISOString(),
@@ -552,6 +588,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
                   className="border-t border-gray-200 dark:border-brand-700 hover:bg-gray-50 dark:hover:bg-brand-700/50"
                 >
                   <td className="px-4 py-3 text-gray-800 dark:text-gray-200">
+                    {btn.actionType === enums.HotkeyActionType.SCREENSHOT && '📷'}
                     {btn.name}
                     {btn.isNew && (
                       <span className="ml-2 px-2 py-0.5 text-xs bg-blue-600 text-white rounded dark:bg-blue-500 dark:text-white font-medium">
@@ -560,7 +597,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-800 dark:text-gray-200">
-                    {btn.actionParams}
+                    {btn.actionType === enums.HotkeyActionType.SCREENSHOT ? '截图' : btn.actionParams}
                   </td>
                   <td className="px-4 py-3 text-gray-800 dark:text-gray-200">
                     <input
@@ -635,9 +672,31 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
               </div>
             </div>
 
+            {/* 功能键选项 */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-                {t('touchMapping.listeningStateLabel')}
+                {t('touchMapping.functionKeys')}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {ACTION_KEYS.map((actionKey) => (
+                  <button
+                    key={actionKey.name}
+                    onClick={() => handleSelectActionKey(actionKey)}
+                    className="flex items-center justify-center gap-2 p-3 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg transition-colors dark:bg-brand-900/50 dark:border-brand-700 dark:hover:bg-brand-800"
+                  >
+                    <span className="text-xl">{actionKey.icon}</span>
+                    <span className="text-sm text-brand-700 dark:text-brand-300">{actionKey.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 分隔线 */}
+            <div className="border-t border-brand-200 dark:border-brand-700 my-4"></div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
+                {t('touchMapping.orPressKey')}
               </label>
               <div className="p-4 bg-brand-50 border border-brand-200 rounded-lg text-brand-900 dark:bg-brand-900/50 dark:border-brand-700 dark:text-white text-center">
                 {waitingForKey ? t('touchMapping.listening') : t('touchMapping.ready')}

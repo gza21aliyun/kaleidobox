@@ -15,11 +15,11 @@ import {
   UpdateTouchEditModeButtons,
 } from '../../../wailsjs/go/service/HotkeyService';
 
-interface TouchMappingProps {
+interface TouchMappingPanelProps {
   gameId: string;
 }
 
-export interface TouchMappingRef {
+export interface TouchMappingPanelRef {
   saveAll: () => Promise<void>;
 }
 
@@ -98,7 +98,7 @@ const VIRTUAL_KEYS = [
 const DEFAULT_TOUCH_X = 1700;
 const DEFAULT_TOUCH_Y = 340;
 
-export const TouchMapping = forwardRef<TouchMappingRef, TouchMappingProps>(({ gameId }, ref) => {
+export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPanelProps>(({ gameId }, ref) => {
   const [touchButtons, setTouchButtons] = useState<TouchButton[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);

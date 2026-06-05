@@ -5,7 +5,7 @@ import { models, enums } from '../../../wailsjs/go/models';
 import { GetHotkeysByGameID, UpdateHotkey, AddHotkey, DeleteHotkey, GetGlobalHotkeys } from '../../../wailsjs/go/service/HotkeyService';
 import { GetAppConfig, UpdateAppConfig } from '../../../wailsjs/go/service/ConfigService';
 import i18next from "../../i18n/i18n";
-import { TouchMapping, TouchMappingRef } from './TouchMapping';
+import { TouchMappingPanel, TouchMappingPanelRef } from './TouchMappingPanel';
 const t = i18next.t;
 
 interface Ps4PanelProps {
@@ -34,7 +34,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
   const [waitingForKey, setWaitingForKey] = useState(false);
   const [selectedDeviceType, setSelectedDeviceType] = useState<enums.DeviceType | null>(null);
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
-  const touchMappingRef = useRef<TouchMappingRef>(null);
+  const touchMappingRef = useRef<TouchMappingPanelRef>(null);
 
   const keyboardMap: KeyMap[] = [
     { keyCode: 'ctrl', label: 'Control' }
@@ -440,7 +440,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           <BetterButton
             onClick={async () => {
               if (selectedDeviceType === enums.DeviceType.TOUCH) {
-                // 触摸设备时调用 TouchMapping 的保存方法
+                // 触摸设备时调用 TouchMappingPanel 的保存方法
                 await touchMappingRef.current?.saveAll();
               } else {
                 // 非触摸设备时调用原有保存方法
@@ -491,7 +491,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
       {/* 内容区：触摸按钮或手柄映射 */}
       <div className="flex-1 relative overflow-hidden">
         {isTouchDevice ? (
-          <TouchMapping ref={touchMappingRef} gameId={gameId} />
+          <TouchMappingPanel ref={touchMappingRef} gameId={gameId} />
         ) : (
           <>
             {/* 手柄图片和按钮映射容器 - 动态显示 */}

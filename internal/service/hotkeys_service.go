@@ -213,7 +213,7 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 		// }
 
 		rs = append(rs, &hotkey)
-		applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
+		// applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
 	}
 	return rs, err
 }
@@ -234,6 +234,7 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 	} else {
 		devicetype = enums.DeviceTypeKeyboard
 	}
+	applog.InfoLogSaveAppLog("deviceType:%v\n", devicetype)
 
 	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
 	FROM hotkeys`
@@ -246,7 +247,7 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 	localCount := 0
 
 	for _, hotkey := range rows {
-		if !(hotkey.DeviceType == devicetype || hotkey.DeviceType == enums.DeviceTypeKeyboard) {
+		if !(hotkey.DeviceType == devicetype || hotkey.DeviceType == enums.DeviceTypeKeyboard) || hotkey.IsGlobal() {
 			continue
 		}
 		if hotkey.ActionType != enums.HotkeyActionCustom {
@@ -271,7 +272,7 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 			}
 		}
 
-		applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
+		applog.LogInfof(s.ctx, "Loaded game hotkey: %s, \n %v\ngameKeyCount:%d\n", hotkey.Name, hotkey, localCount)
 	}
 	if localCount == 0 {
 		for _, hotkey := range rows {
@@ -296,7 +297,7 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 				}
 			}
 
-			applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
+			applog.LogInfof(s.ctx, "Loaded global hotkey: %s, \n %v\n", hotkey.Name, hotkey)
 		}
 	}
 

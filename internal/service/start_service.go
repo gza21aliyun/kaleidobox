@@ -134,7 +134,28 @@ func (s *StartService) StartGameWithTracking(gameID string) (bool, error) {
 	}
 
 	if game.VmId != "" {
-		return s.vmService.StartGameInsideVm(gameID)
+		startTime := time.Now()
+		success, err := s.vmService.StartGameInsideVm(gameID)
+		if err == nil {
+			sessionID, _ := s.sessionService.CreatePendingSession(gameID, startTime)
+			//暂时不详细跟踪时间，当其每次玩1分钟。用于记录次数
+			endTime := startTime.Add(time.Minute)
+			session := models.PlaySession{
+				ID:        sessionID,
+				GameID:    gameID,
+				StartTime: startTime,
+				EndTime:   endTime,
+				Duration:  60,
+			}
+			err = s.sessionService.UpdatePlaySession(session)
+			stats, err := s.statsService.GetSingleGameStats(session.GameID)
+			if err == nil {
+				applog.InfoLogSaveAppLog("stats_update %v\n", stats)
+				runtime.EventsEmit(s.ctx, "data_updates", stats)
+			}
+		}
+
+		return success, err
 	}
 
 	return s.startGame(gameID, LaunchOptions{})

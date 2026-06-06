@@ -166,6 +166,8 @@ const (
 	VK_RIGHT           = 0x27
 	VK_RETURN          = 0x0D
 	VK_CONTROL         = 0x11
+	VK_SHIFT           = 0x10
+	VK_MENU            = 0x12 // Alt key
 	KEYEVENTF_KEYUP_TM = 0x0002
 
 	// 字体粗细 (LOGFONT.lfWeight)
@@ -209,13 +211,14 @@ type POINT struct {
 
 // ButtonConfig 定义按钮的显示和功能配置（从数据库读取）
 type ButtonConfig struct {
-	ID         int     // 内部按钮 ID
-	HotkeyID   string  // 数据库 hotkey.id（用于保存时回写位置）
-	Label      string  // 显示文字
-	VirtualKey uintptr // 对应的虚拟键码（映射到哪个键盘按键）
-	X          int32   // 屏幕坐标 X
-	Y          int32   // 屏幕坐标 Y
-	ActionType string  // 动作类型（如 "screenshot"）
+	ID         int       // 内部按钮 ID
+	HotkeyID   string    // 数据库 hotkey.id（用于保存时回写位置）
+	Label      string    // 显示文字
+	VirtualKey uintptr   // 对应的虚拟键码（映射到哪个键盘按键）
+	X          int32     // 屏幕坐标 X
+	Y          int32     // 屏幕坐标 Y
+	ActionType string    // 动作类型（如 "screenshot"）
+	Modifiers  []uintptr // 修饰键数组（如 VK_CONTROL, VK_SHIFT）
 }
 
 // ButtonState 跟踪按钮的悬停和按下状态
@@ -1016,6 +1019,12 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 		atomic.StoreUintptr(&savedForeground, fg)
 
 		btn := getButtonByID(buttonID)
+		if btn != nil {
+			fmt.Printf(
+				"[WndProc] button press detected: id=%d name=%s action=%s fgHwnd=0x%x modifiers=%v vk=%d\n",
+				btn.ID, btn.Label, btn.ActionType, fg, btn.Modifiers, btn.VirtualKey)
+		}
+
 		if btn != nil && btn.ActionType == "arrow_keys" {
 			// 方向键：计算触摸位置对应的方向
 			// 获取窗口客户区坐标（从 lParam 提取）
@@ -1597,7 +1606,10 @@ func (s *TouchMappingService) tmProcessPendingKeys() {
 							vk = VK_RIGHT
 						}
 						if vk != 0 {
-							tmPressKeyDirect(vk, true)
+							fmt.Printf(
+								"[TouchPress] id=%d name=%s action=arrow_keys dir=%d vk=%d\n",
+								btn.ID, btn.Label, arrowDir, vk)
+							tmPressKeyDirect(btn.ID, vk, true)
 						}
 					}
 				}
@@ -1620,7 +1632,10 @@ func (s *TouchMappingService) tmProcessPendingKeys() {
 							vk = VK_RIGHT
 						}
 						if vk != 0 {
-							tmPressKeyDirect(vk, false)
+							fmt.Printf(
+								"[TouchRelease] id=%d name=%s action=arrow_keys dir=%d vk=%d\n",
+								btn.ID, btn.Label, arrowDir, vk)
+							tmPressKeyDirect(btn.ID, vk, false)
 						}
 					}
 				}
@@ -1633,17 +1648,39 @@ func (s *TouchMappingService) tmProcessPendingKeys() {
 			if atomic.CompareAndSwapInt32(pendingDown[btn.ID], 1, 0) {
 				if btn.ActionType == "screenshot" {
 					// 功能键：截图
+					fmt.Printf(
+						"[TouchPress] id=%d name=%s action=screenshot (no key injection)",
+						btn.ID, btn.Label)
 					s.tmTakeScreenshot()
 				} else {
-					tmPressKeyDirect(btn.VirtualKey, true)
+					// 先按下修饰键，再按主键
+					modifierNames := make([]string, 0, len(btn.Modifiers))
+					for _, modVK := range btn.Modifiers {
+						modifierNames = append(modifierNames, fmt.Sprintf("vk=%d", modVK))
+					}
+					fmt.Printf(
+						"[TouchPress] id=%d name=%s action=%s vk=%d modifiers=%v (pressing modifiers then main key)\n",
+						btn.ID, btn.Label, btn.ActionType, btn.VirtualKey, modifierNames)
+
+					for _, modVK := range btn.Modifiers {
+						tmPressKeyDirect(btn.ID, modVK, true)
+					}
+					tmPressKeyDirect(btn.ID, btn.VirtualKey, true)
 				}
 			}
 		}
 		// 处理普通按键松开
 		if atomic.LoadInt32(pendingUp[btn.ID]) == 1 {
 			if atomic.CompareAndSwapInt32(pendingUp[btn.ID], 1, 0) {
-				if btn.ActionType == "" {
-					tmPressKeyDirect(btn.VirtualKey, false)
+				if btn.ActionType == "custom" {
+					fmt.Printf(
+						"[TouchRelease] id=%d name=%s vk=%d modifiers=%v (releasing main key then modifiers in reverse)\n",
+						btn.ID, btn.Label, btn.VirtualKey, btn.Modifiers)
+					// 先松主键，再按相反顺序松开修饰键
+					tmPressKeyDirect(btn.ID, btn.VirtualKey, false)
+					for i := len(btn.Modifiers) - 1; i >= 0; i-- {
+						tmPressKeyDirect(btn.ID, btn.Modifiers[i], false)
+					}
 				}
 			}
 		}
@@ -1663,12 +1700,17 @@ func (s *TouchMappingService) tmTakeScreenshot() {
 
 // tmPressKeyDirect 直接调用 keybd_event（仅在消息循环内部、WndProc 外调用）
 // 在注入前先确认按键前把焦点恢复到按下我们按钮之前的前台窗口（通常就是游戏窗口）。
-func tmPressKeyDirect(vk uintptr, down bool) {
+func tmPressKeyDirect(btnID int, vk uintptr, down bool) {
+	action := "DOWN"
+	if !down {
+		action = "UP"
+	}
 	// 1. 如果记录的目标 HWND（在按下时的 WndProc 里已保存）
 	target := atomic.LoadUintptr(&savedForeground)
 
 	// 2. 若有目标存在且不是我们自己的窗口，先把焦点还回去
 	//    （我们窗口有 WS_EX_NOACTIVATE，理论上不会抢焦点，但在某些系统配置下仍可能被设为前景。
+	var fgLog string
 	if target != 0 {
 		current, _, _ := procGetForegroundWindow.Call()
 		if current != target {
@@ -1677,7 +1719,12 @@ func tmPressKeyDirect(vk uintptr, down bool) {
 			procSetForegroundWindow.Call(target)
 			// 给系统一点时间处理焦点切换
 			time.Sleep(2 * time.Millisecond)
+			fgLog = fmt.Sprintf(" fg-restored-to-hwnd=0x%x", target)
+		} else {
+			fgLog = " fg-already-correct"
 		}
+	} else {
+		fgLog = " fg-not-set"
 	}
 
 	// 3. 注入按键
@@ -1688,6 +1735,10 @@ func tmPressKeyDirect(vk uintptr, down bool) {
 		dwFlags = KEYEVENTF_KEYUP_TM
 	}
 	procKeybdEvent.Call(vk, 0, dwFlags, 0)
+
+	fmt.Printf(
+		"[KeyInject] btn=%d vk=%d action=%s dwFlags=%d%s\n",
+		btnID, vk, action, dwFlags, fgLog)
 }
 
 // tmPressEnter 兼容旧接口，内部调用 tmProcessPendingKeys

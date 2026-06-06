@@ -185,13 +185,12 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 
 	for rows.Next() {
 		var hotkey models.Hotkey
-		// var modifiersBytes []byte
 		var deviceType string
 		var actionType string
 
 		err := rows.Scan(
 			&hotkey.ID, &hotkey.GameID, &hotkey.Name, &deviceType, &hotkey.KeyCode,
-			// &modifiersBytes,
+			&hotkey.Modifiers,
 			&actionType, &hotkey.ActionParams,
 			&hotkey.IsEnabled, &hotkey.CreatedAt, &hotkey.UpdatedAt,
 		)
@@ -202,18 +201,7 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 			continue
 		}
 
-		// 解析修饰键
-		// if len(modifiersBytes) > 0 {
-		// 	json.Unmarshal(modifiersBytes, &hotkey.Modifiers)
-		// }
-
-		// 解析动作参数
-		// if len(paramsBytes) > 0 {
-		// 	json.Unmarshal(paramsBytes, &hotkey.ActionParams)
-		// }
-
 		rs = append(rs, &hotkey)
-		// applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
 	}
 	return rs, err
 }
@@ -236,7 +224,7 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enu
 	}
 	applog.InfoLogSaveAppLog("deviceType:%v\n", devicetype)
 
-	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
+	query := `SELECT id, game_id, name, device_type, key_code, modifiers, action_type, action_params, is_enabled, created_at, updated_at 
 	FROM hotkeys`
 	if gameId != "" {
 		query += fmt.Sprintf(" WHERE (game_id = '%s' OR game_id = '%s')", gameId, "global")
@@ -1009,7 +997,7 @@ func (s *HotkeyService) RemoveKeyMapping(sourceKey string) {
 // GetGlobalHotkeys 获取所有全局快捷键配置
 func (s *HotkeyService) GetGlobalHotkeys() ([]models.Hotkey, error) {
 	query := `
-		SELECT id, game_id, name, device_type, key_code, 
+		SELECT id, game_id, name, device_type, key_code, modifiers,
 		       action_type, action_params, is_enabled, created_at, updated_at
 		FROM hotkeys 
 		WHERE game_id = ? AND is_enabled = TRUE
@@ -1034,7 +1022,7 @@ func (s *HotkeyService) GetGlobalHotkeys() ([]models.Hotkey, error) {
 			&hotkey.Name,
 			&deviceType,
 			&hotkey.KeyCode,
-			// &hotkey.Modifiers,
+			&hotkey.Modifiers,
 			&actionType,
 			&hotkey.ActionParams,
 			&hotkey.IsEnabled,
@@ -1064,7 +1052,7 @@ func (s *HotkeyService) UpdateHotkey(hotkey models.Hotkey) error {
 	applog.LogInfof(s.ctx, "start to UpdateHotkey - name: %s, id: %s", hotkey.Name, hotkey.ID)
 	query := `
 		UPDATE hotkeys 
-		SET name = ?, device_type = ?, key_code = ?, 
+		SET name = ?, device_type = ?, key_code = ?, modifiers = ?,
 		    action_type = ?, action_params = ?, is_enabled = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`
@@ -1073,7 +1061,7 @@ func (s *HotkeyService) UpdateHotkey(hotkey models.Hotkey) error {
 		hotkey.Name,
 		string(hotkey.DeviceType),
 		hotkey.KeyCode,
-		// hotkey.Modifiers,
+		hotkey.Modifiers,
 		string(hotkey.ActionType),
 		hotkey.ActionParams,
 		hotkey.IsEnabled,
@@ -1103,9 +1091,9 @@ func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
 
 	query := `
 		INSERT INTO hotkeys (
-			id, game_id, name, device_type, key_code, 
+			id, game_id, name, device_type, key_code, modifiers,
 			action_type, action_params, is_enabled, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := s.db.Exec(query,
@@ -1114,7 +1102,7 @@ func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
 		hotkey.Name,
 		string(hotkey.DeviceType),
 		hotkey.KeyCode,
-		// hotkey.Modifiers,
+		hotkey.Modifiers,
 		string(hotkey.ActionType),
 		hotkey.ActionParams,
 		hotkey.IsEnabled,
@@ -1134,7 +1122,7 @@ func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
 // GetHotkeysByGameID 根据游戏ID获取快捷键配置
 func (s *HotkeyService) GetHotkeysByGameID(gameID string) ([]models.Hotkey, error) {
 	query := `
-		SELECT id, game_id, name, device_type, key_code, 
+		SELECT id, game_id, name, device_type, key_code, modifiers,
 		       action_type, action_params, is_enabled, created_at, updated_at
 		FROM hotkeys 
 		WHERE game_id = ? AND is_enabled = TRUE
@@ -1159,7 +1147,7 @@ func (s *HotkeyService) GetHotkeysByGameID(gameID string) ([]models.Hotkey, erro
 			&hotkey.Name,
 			&deviceType,
 			&hotkey.KeyCode,
-			// &hotkey.Modifiers,
+			&hotkey.Modifiers,
 			&actionType,
 			&hotkey.ActionParams,
 			&hotkey.IsEnabled,
@@ -1458,7 +1446,9 @@ func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 func hotkeyToButtonConfig(hotkey *models.Hotkey, id int) ButtonConfig {
 	x, y := parseTouchPosition(hotkey.KeyCode)
 	vk := parseVirtualKey(hotkey.ActionParams)
-	return ButtonConfig{
+	// 解析修饰键为虚拟键码数组
+	modifierVKs := parseModifiers(hotkey.Modifiers)
+	cfg := ButtonConfig{
 		ID:         id,
 		HotkeyID:   hotkey.ID,
 		Label:      hotkey.Name,
@@ -1466,7 +1456,34 @@ func hotkeyToButtonConfig(hotkey *models.Hotkey, id int) ButtonConfig {
 		X:          x,
 		Y:          y,
 		ActionType: string(hotkey.ActionType),
+		Modifiers:  modifierVKs,
 	}
+	fmt.Printf("[TouchButton] id=%d name=%s action=%s vk=%d modifiers=%v modifierVKs=%v pos=(%d,%d)\n",
+		id, hotkey.Name, hotkey.ActionType, vk, hotkey.Modifiers, modifierVKs, x, y)
+	return cfg
+}
+
+// parseModifiers 将修饰键字符串（如 "ctrl+shift+alt"）解析为虚拟键码数组
+func parseModifiers(modifiersStr string) []uintptr {
+	var vks []uintptr
+	if modifiersStr == "" {
+		return vks
+	}
+	parts := strings.Split(modifiersStr, "+")
+	for _, m := range parts {
+		m = strings.TrimSpace(strings.ToLower(m))
+		switch m {
+		case "ctrl":
+			vks = append(vks, VK_CONTROL)
+		case "shift":
+			vks = append(vks, VK_SHIFT)
+		case "alt":
+			vks = append(vks, VK_MENU)
+		case "win":
+			vks = append(vks, VK_LWIN)
+		}
+	}
+	return vks
 }
 
 // getTouchButtons 从 keyMappings 和 actionKeys 中获取所有触摸按钮
@@ -1532,6 +1549,7 @@ type TouchButtonInfo struct {
 	X          int32  // 屏幕坐标 X
 	Y          int32  // 屏幕坐标 Y
 	ActionType string // 动作类型（如 "screenshot"）
+	Modifiers  string // 修饰键组合字符串（如 "ctrl+shift+alt"）
 }
 
 // TouchButtonPosition 单个按钮的位置更新
@@ -1547,6 +1565,7 @@ func (s *HotkeyService) StartTouchEditMode(buttons []TouchButtonInfo) error {
 	// 转换为内部 ButtonConfig
 	configs := make([]ButtonConfig, len(buttons))
 	for i, b := range buttons {
+		modifierVKs := parseModifiers(b.Modifiers)
 		configs[i] = ButtonConfig{
 			ID:         b.Index,
 			HotkeyID:   b.Name,
@@ -1555,6 +1574,7 @@ func (s *HotkeyService) StartTouchEditMode(buttons []TouchButtonInfo) error {
 			X:          b.X,
 			Y:          b.Y,
 			ActionType: b.ActionType,
+			Modifiers:  modifierVKs,
 		}
 	}
 

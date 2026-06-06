@@ -43,6 +43,7 @@ interface TouchButton {
   gameId: string;       // "global" or game specific id
   isNew: boolean;
   actionType: enums.HotkeyActionType; // 功能键类型，默认 CUSTOM
+  modifiers: string;    // 修饰键组合，如 "ctrl+shift"
 }
 
 // 功能键选项
@@ -149,6 +150,8 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
       // 转换为 TouchButton 数组
       const buttons: TouchButton[] = touchButtons.map((h) => {
         const pos = parseKeyCodeToXY(h.key_code);
+        // 从数据库读取修饰键字符串（如 "ctrl+alt"）
+        const modifierStr = (h.modifiers && typeof h.modifiers === 'string') ? h.modifiers : '';
         return {
           id: h.id,
           hotkeyID: h.id,
@@ -160,6 +163,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           gameId: h.game_id,
           isNew: false,
           actionType: h.action_type || enums.HotkeyActionType.CUSTOM,
+          modifiers: modifierStr,
         };
       });
 
@@ -183,31 +187,57 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
     loadTouchButtons();
   }, [loadTouchButtons]);
 
-  // 键盘事件处理 - 监听新增按钮时用户按下的按键
+  // 键盘事件处理 - 监听新增按钮时用户按下的按键（支持组合键）
   useEffect(() => {
     if (waitingForKey && !selectedActionKey) {
       const handleKeyDown = (e: KeyboardEvent) => {
         e.preventDefault();
         const keyPressed = e.key;
-        const keyCode = e.code;
 
-        // 将按键转换为标准化名称（用于 action_params 和显示）
+        // 收集修饰键（只支持 ctrl, shift, alt, win）
+        const modifiers: string[] = [];
+        if (e.ctrlKey) modifiers.push('ctrl');
+        if (e.shiftKey) modifiers.push('shift');
+        if (e.altKey) modifiers.push('alt');
+        if (e.metaKey) modifiers.push('win');
+
+        // 判断是否只是单纯的修饰键按下（还没按主键）
+        const isModifierOnly = keyPressed === 'Control' ||
+                               keyPressed === 'Shift' ||
+                               keyPressed === 'Alt' ||
+                               keyPressed === 'Meta';
+
+        if (isModifierOnly) {
+          // 只是按了修饰键，继续等待主键
+          return;
+        }
+
+        // 将主键转换为标准化名称（用于 action_params 和显示）
         let keyName = keyPressed;
         if (keyPressed === 'Enter') keyName = 'ENTER';
         else if (keyPressed === ' ') keyName = 'SPACE';
         else if (keyPressed === 'Escape') keyName = 'ESC';
         else if (keyPressed === 'Tab') keyName = 'TAB';
-        else if (keyPressed === 'Control') keyName = 'CONTROL';
-        else if (keyPressed === 'Shift') keyName = 'SHIFT';
-        else if (keyPressed === 'Alt') keyName = 'ALT';
         else if (keyPressed.length === 1) keyName = keyPressed.toUpperCase();
         else keyName = keyPressed.toUpperCase().replace('KEY', '');
+
+        // 修饰键字符串："ctrl+shift" 格式
+        const modifierStr = modifiers.join('+');
+
+        // 显示名称：修饰键+主键，如 "Ctrl+Shift+A"
+        let displayName = keyName;
+        if (modifierStr) {
+          const modifierDisplay = modifiers
+            .map(m => m.charAt(0).toUpperCase() + m.slice(1))
+            .join('+');
+          displayName = `${modifierDisplay}+${keyName}`;
+        }
 
         // 创建新按钮
         const btn: TouchButton = {
           id: crypto.randomUUID(),
           hotkeyID: '',
-          name: keyName,
+          name: displayName,
           actionParams: keyName,
           keyCode: `x:${DEFAULT_TOUCH_X};y:${DEFAULT_TOUCH_Y}`,
           x: DEFAULT_TOUCH_X,
@@ -215,12 +245,13 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           gameId: gameId,
           isNew: true,
           actionType: enums.HotkeyActionType.CUSTOM,
+          modifiers: modifierStr,
         };
         setTouchButtons((prev) => [...prev, btn]);
 
         setWaitingForKey(false);
         setShowAddDialog(false);
-        toast.success(t('touchMapping.toastButtonAdded', { buttonName: keyName }));
+        toast.success(t('touchMapping.toastButtonAdded', { buttonName: displayName }));
       };
 
       window.addEventListener('keydown', handleKeyDown);
@@ -255,6 +286,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
       gameId: gameId,
       isNew: true,
       actionType: actionKey.actionType,
+      modifiers: '',
     };
     setTouchButtons((prev) => [...prev, btn]);
     setSelectedActionKey(null);
@@ -276,6 +308,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
         gameId: gameId,
         isNew: true,
         actionType: enums.HotkeyActionType.CUSTOM,
+        modifiers: '',
       },
       {
         id: crypto.randomUUID(),
@@ -288,6 +321,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
         gameId: gameId,
         isNew: true,
         actionType: enums.HotkeyActionType.CUSTOM,
+        modifiers: '',
       },
     ];
     setTouchButtons(defaultButtons);
@@ -310,6 +344,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
 
       const buttons: TouchButton[] = globalTouch.map((h) => {
         const pos = parseKeyCodeToXY(h.key_code);
+        const modifierStr = (h.modifiers && typeof h.modifiers === 'string') ? h.modifiers : '';
         return {
           id: crypto.randomUUID(),
           hotkeyID: '',
@@ -321,6 +356,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
           gameId: gameId,
           isNew: true,
           actionType: h.action_type || enums.HotkeyActionType.CUSTOM,
+          modifiers: modifierStr,
         };
       });
 
@@ -377,6 +413,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
       X: btn.x,
       Y: btn.y,
       ActionType: btn.actionType,
+      Modifiers: btn.modifiers || '',
     }));
   };
 
@@ -411,6 +448,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
         X: btn.x,
         Y: btn.y,
         ActionType: btn.actionType,
+        Modifiers: btn.modifiers || '',
       }));
       await StartTouchEditMode(buttons);
       setEditMode(true);
@@ -467,13 +505,16 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
       // 3. 把当前内存中的按钮转换为 Hotkey 对象，全部使用新的 UUID
       const addedNames: string[] = [];
       for (const btn of touchButtons) {
+        // modifiers 直接使用字符串格式（如 "ctrl+shift"），Go 后端按 string 存储
+        const modifierStr = btn.modifiers || '';
+
         const hotkey = new models.Hotkey({
           id: crypto.randomUUID(), // 强制使用新的 UUID，避免主键冲突
           game_id: gameId,
           name: btn.name,
           device_type: enums.DeviceType.TOUCH,
           key_code: btn.keyCode,
-          modifiers: [],
+          modifiers: modifierStr,
           action_type: btn.actionType,
           action_params: btn.actionParams,
           is_enabled: true,

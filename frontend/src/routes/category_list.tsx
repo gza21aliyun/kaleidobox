@@ -8,10 +8,9 @@ import { CategoryListCard } from "../components/card/CategoryListCard";
 import { Route as rootRoute } from "./__root";
 import { models, vo, enums } from "../../wailsjs/go/models";
 import { GetBrands, GetGenres, GetSeries } from "../../wailsjs/go/service/TagService";
-import { GetGamesByTag } from "../../wailsjs/go/service/GameService";
-import { GetCategories, GetGamesByCategory } from "../../wailsjs/go/service/CategoryService";
-import { GetWorksByStaffIdAndRole } from "../../wailsjs/go/service/WorkService";
+import { GetCategories } from "../../wailsjs/go/service/CategoryService";
 import { GetStaffsByRole } from "../../wailsjs/go/service/StaffService";
+import { getGameIdsForCategory, type CategoryType } from "../utils/categoryGames";
 import { useAppStore } from "../store";
 
 export const Route = createRoute({
@@ -24,7 +23,7 @@ export const Route = createRoute({
 type CategoryItem = {
   id: string;
   name: string;
-  type: 'favorite' | 'brand' | 'series' | 'genre' | 'chara_design' | 'sceneario' | 'parent1' | 'parent2';
+  type: CategoryType;
   game_count?: number;
   use_count?: number;
   original?: models.Tag | vo.CategoryVO | models.Staff;
@@ -108,28 +107,10 @@ function CategoryListPage() {
     const resultMap = new Map<string, string[]>();
     for (const cat of categories) {
       try {
-        let gameIds: string[] = [];
-        if (cat.type === 'parent1' || cat.type === 'parent2') {
-          const prefix = (cat.dirPath || '') + '/';
-          gameIds = games
-            .filter(g => {
-              if (!g.path) return false;
-              const normalized = g.path.replace(/\\/g, '/');
-              return normalized === cat.dirPath || normalized.startsWith(prefix);
-            })
-            .map(g => g.id);
-        } else if (cat.type === 'favorite') {
-          const result = await GetGamesByCategory(cat.id);
-          gameIds = (result || []).map(g => g.id);
-        } else if (cat.type === 'chara_design' || cat.type === 'sceneario') {
-          const staffModel = cat.original as unknown as models.Staff;
-          const role = cat.type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
-          const works: models.Work[] = await GetWorksByStaffIdAndRole(staffModel.id, role);
-          gameIds = works.map((w: models.Work) => w.game_id).filter((id: string | undefined): id is string => !!id);
-        } else {
-          const result = await GetGamesByTag(cat.name);
-          gameIds = (result || []).map(g => g.id);
-        }
+        const gameIds = await getGameIdsForCategory(
+          { type: cat.type, id: cat.id, name: cat.name, dirPath: cat.dirPath, original: cat.original },
+          games,
+        );
         resultMap.set(cat.id, gameIds);
       } catch (error) {
         console.error(`Failed to preload category ${cat.name}:`, error);

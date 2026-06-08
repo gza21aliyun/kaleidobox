@@ -6,10 +6,9 @@ import { UpdateTag } from '../../../wailsjs/go/service/TagService';
 import { GetGamesByTag } from '../../../wailsjs/go/service/GameService';
 import { GetGamesByCategory } from '../../../wailsjs/go/service/CategoryService';
 import { GetWorksByStaffIdAndRole } from '../../../wailsjs/go/service/WorkService';
+import { getGamesForCategory, type CategoryType } from '../../utils/categoryGames';
 import { useAppStore } from '../../store';
 import { ImageCard } from './ImageCard';
-
-type CategoryType = 'favorite' | 'brand' | 'series' | 'genre' | 'chara_design' | 'sceneario' | 'parent1' | 'parent2';
 
 interface CategoryListCardProps {
   id: string;
@@ -176,25 +175,7 @@ export function CategoryListCard({
     setIsLoading(true);
 
     try {
-      let result: models.Game[] = [];
-      if (isPathCategory) {
-        const prefix = dirPath + '/';
-        result = storeGames.filter(g => {
-          if (!g.path) return false;
-          const normalized = g.path.replace(/\\/g, '/');
-          return normalized === dirPath || normalized.startsWith(prefix);
-        });
-      } else if (type === 'favorite') {
-        result = await GetGamesByCategory(id);
-      } else if (type === 'chara_design' || type === 'sceneario') {
-        const staffModel = original as unknown as models.Staff;
-        const role = type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
-        const works = await GetWorksByStaffIdAndRole(staffModel.id, role);
-        const gameIds = works.map(w => w.game_id).filter((id): id is string => !!id);
-        result = storeGames.filter(g => gameIds.includes(g.id));
-      } else {
-        result = await GetGamesByTag(name);
-      }
+      const result = await getGamesForCategory({ type, id, name, dirPath, original }, storeGames);
       setGames(result || []);
       setHasLoaded(true);
       const newGameIds = (result || []).map(g => g.id);

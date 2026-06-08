@@ -578,7 +578,8 @@
     },
     "sortOptions": {
       "name": "Name",
-      "useCount": "Usage count"
+      "useCount": "Usage count",
+      "gameCount": "Game count"
     },
     "viewMode": {
       "list": "List",

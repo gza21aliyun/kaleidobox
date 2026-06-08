@@ -578,7 +578,8 @@
     },
     "sortOptions": {
       "name": "名称",
-      "useCount": "使用次数"
+      "useCount": "使用次数",
+      "gameCount": "游戏数"
     },
     "viewMode": {
       "list": "列表",

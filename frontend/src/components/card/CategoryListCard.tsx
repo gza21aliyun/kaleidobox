@@ -21,6 +21,8 @@ interface CategoryListCardProps {
   original?: models.Tag | vo.CategoryVO | models.Staff;
   dirPath?: string;
   gameIds?: string[];
+  categoryMap?: Map<string, string[]>;
+  onUpdateCategoryMap?: (id: string, gameIds: string[]) => void;
 }
 
 export function CategoryListCard({
@@ -33,6 +35,8 @@ export function CategoryListCard({
   original,
   dirPath,
   gameIds,
+  categoryMap,
+  onUpdateCategoryMap,
 }: CategoryListCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -161,6 +165,14 @@ export function CategoryListCard({
       return;
     }
 
+    const cachedGameIds = categoryMap?.get(id);
+    if (cachedGameIds !== undefined) {
+      const cachedGames = storeGames.filter(g => cachedGameIds.includes(g.id));
+      setGames(cachedGames);
+      setHasLoaded(true);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -185,6 +197,8 @@ export function CategoryListCard({
       }
       setGames(result || []);
       setHasLoaded(true);
+      const newGameIds = (result || []).map(g => g.id);
+      onUpdateCategoryMap?.(id, newGameIds);
     } catch (error) {
       console.error(`Failed to load games for category ${name}:`, error);
     } finally {
@@ -247,10 +261,11 @@ export function CategoryListCard({
     }
   };
 
-  const previewGames = isPathCategory
-    ? games.filter(game => game.cover_url).slice(0, 3)
+  const cachedIds = categoryMap?.get(id);
+  const previewGames = cachedIds && cachedIds.length > 0
+    ? storeGames.filter(g => cachedIds.includes(g.id) && g.cover_url).slice(0, 3)
     : games.filter(game => game.cover_url).slice(0, 3);
-  const actualGameCount = games.length;
+  const actualGameCount = cachedIds !== undefined ? cachedIds.length : games.length;
 
   if (viewMode === "gallery") {
     return (

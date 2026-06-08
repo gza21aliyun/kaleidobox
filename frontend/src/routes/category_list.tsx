@@ -8,7 +8,9 @@ import { CategoryListCard } from "../components/card/CategoryListCard";
 import { Route as rootRoute } from "./__root";
 import { models, vo, enums } from "../../wailsjs/go/models";
 import { GetBrands, GetGenres, GetSeries } from "../../wailsjs/go/service/TagService";
-import { GetCategories } from "../../wailsjs/go/service/CategoryService";
+import { GetGamesByTag } from "../../wailsjs/go/service/GameService";
+import { GetCategories, GetGamesByCategory } from "../../wailsjs/go/service/CategoryService";
+import { GetWorksByStaffIdAndRole } from "../../wailsjs/go/service/WorkService";
 import { GetStaffsByRole } from "../../wailsjs/go/service/StaffService";
 import { useAppStore } from "../store";
 
@@ -40,10 +42,11 @@ function CategoryListPage() {
   const [genres, setGenres] = useState<models.Tag[]>([]);
   const [charaDesigns, setCharaDesigns] = useState<models.Staff[]>([]);
   const [scenearios, setScenearios] = useState<models.Staff[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Map<string, string[]>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "use_count">("name");
+  const [sortBy, setSortBy] = useState<"name" | "use_count" | "game_count">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [categoryFilter, setCategoryFilter] = useState<string>(() => {
     const savedFilter = localStorage.getItem('categoryListFilter');
@@ -98,6 +101,42 @@ function CategoryListPage() {
     finally {
       setIsLoading(false);
     }
+  };
+
+  const preloadCategoryMap = async (categories: CategoryItem[]) => {
+    if (categories.length === 0) return;
+    const newMap = new Map<string, string[]>();
+    const loadPromises = categories.map(async (cat) => {
+      try {
+        if (cat.type === 'parent1' || cat.type === 'parent2') {
+          const prefix = (cat.dirPath || '') + '/';
+          const ids = games
+            .filter(g => {
+              if (!g.path) return false;
+              const normalized = g.path.replace(/\\/g, '/');
+              return normalized === cat.dirPath || normalized.startsWith(prefix);
+            })
+            .map(g => g.id);
+          newMap.set(cat.id, ids);
+        } else if (cat.type === 'favorite') {
+          const result = await GetGamesByCategory(cat.id);
+          newMap.set(cat.id, (result || []).map(g => g.id));
+        } else if (cat.type === 'chara_design' || cat.type === 'sceneario') {
+          const staffModel = cat.original as unknown as models.Staff;
+          const role = cat.type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
+          const works: models.Work[] = await GetWorksByStaffIdAndRole(staffModel.id, role);
+          const ids = works.map((w: models.Work) => w.game_id).filter((id: string | undefined): id is string => !!id);
+          newMap.set(cat.id, ids);
+        } else {
+          const result = await GetGamesByTag(cat.name);
+          newMap.set(cat.id, (result || []).map(g => g.id));
+        }
+      } catch (error) {
+        console.error(`Failed to preload category ${cat.name}:`, error);
+      }
+    });
+    await Promise.all(loadPromises);
+    setCategoryMap(newMap);
   };
 
   useEffect(() => {
@@ -229,13 +268,39 @@ function CategoryListPage() {
           const countB = b.game_count ?? b.use_count ?? 0;
           comparison = countB - countA;
           break;
+        case "game_count":
+          const gcA = categoryMap.get(a.id)?.length ?? 0;
+          const gcB = categoryMap.get(b.id)?.length ?? 0;
+          comparison = gcB - gcA;
+          break;
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
+  const updateCategoryMap = (id: string, gameIds: string[]) => {
+    setCategoryMap(prev => {
+      const newMap = new Map(prev);
+      newMap.set(id, gameIds);
+      return newMap;
+    });
+  };
+
   useEffect(() => {
     loadAllCategories();
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const categoriesToLoad = categoryFilter === 'parent1' || categoryFilter === 'parent2'
+      ? parentDirCategories
+      : mergedCategories.filter(c => c.type === categoryFilter);
+    if (categoriesToLoad.length > 0 && (categoryMap.size === 0 || !categoryMap.has(categoriesToLoad[0]?.id))) {
+      preloadCategoryMap(categoriesToLoad);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [categoryFilter, favorites, brands, series, genres, charaDesigns, scenearios, games]);
 
   useEffect(() => {
     let timer: number;
@@ -295,10 +360,11 @@ function CategoryListPage() {
         onSearchChange={setSearchQuery}
         searchPlaceholder={t('categoryList.searchPlaceholder')}
         sortBy={sortBy}
-        onSortByChange={val => setSortBy(val as "name" | "use_count")}
+        onSortByChange={val => setSortBy(val as "name" | "use_count" | "game_count")}
         sortOptions={[
           { label: t('categoryList.sortOptions.name'), value: "name" },
           { label: t('categoryList.sortOptions.useCount'), value: "use_count" },
+          { label: t('categoryList.sortOptions.gameCount'), value: "game_count" },
         ]}
         sortOrder={sortOrder}
         onSortOrderChange={setSortOrder}
@@ -324,6 +390,8 @@ function CategoryListPage() {
             original={cat.original}
             dirPath={cat.dirPath}
             gameIds={cat.gameIds}
+            categoryMap={categoryMap}
+            onUpdateCategoryMap={updateCategoryMap}
           />
         ))}
       </div>

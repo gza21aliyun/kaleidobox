@@ -1094,7 +1094,7 @@ func SearchVideoExePath(game *models.Game) error {
 
 					if strings.Contains(fileName, "op") || strings.Contains(fileName, "openning") {
 						foundOPVideo = path
-						return filepath.SkipDir // 找到 OP 视频后停止搜索
+						// return filepath.SkipDir // 找到 OP 视频后停止搜索
 					}
 					// 添加到视频文件列表
 					videoFiles = append(videoFiles, path)
@@ -1105,8 +1105,10 @@ func SearchVideoExePath(game *models.Game) error {
 				// 检查文件名是否包含排除关键词
 				filePrefix := strings.ReplaceAll(fileName, filepath.Ext(path), "")
 				lowPrefix := strings.ToLower(filePrefix)
+				applog.InfoLogSaveAppLog("checking exe %s\n", oFileName)
 				if !utils.ArrayContains(excludeExeKeywords, filePrefix) && !strings.Contains(lowPrefix, "setup") {
 					exeFiles = append(exeFiles, oFileName)
+					applog.InfoLogSaveAppLog("exe found %s\n", oFileName)
 				}
 			}
 		}
@@ -1132,8 +1134,10 @@ func SearchVideoExePath(game *models.Game) error {
 	if len(exeFiles) == 1 {
 		game.ProcessName = exeFiles[0]
 		applog.InfoLogSaveAppLog("SearchVideoPath: found exe for game %s: %s", game.Name, exeFiles[0])
-	} else {
+	} else if len(exeFiles) == 0 {
 		applog.InfoLogSaveAppLog("SearchVideoPath: no exe found for game %s", game.Name)
+	} else {
+		applog.InfoLogSaveAppLog("SearchVideoPath: multiple exe found for game %s: %s", game.Name, exeFiles)
 	}
 
 	return nil

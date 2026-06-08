@@ -105,38 +105,38 @@ function CategoryListPage() {
 
   const preloadCategoryMap = async (categories: CategoryItem[]) => {
     if (categories.length === 0) return;
-    const newMap = new Map<string, string[]>();
-    const loadPromises = categories.map(async (cat) => {
+    const resultMap = new Map<string, string[]>();
+    for (const cat of categories) {
       try {
+        let gameIds: string[] = [];
         if (cat.type === 'parent1' || cat.type === 'parent2') {
           const prefix = (cat.dirPath || '') + '/';
-          const ids = games
+          gameIds = games
             .filter(g => {
               if (!g.path) return false;
               const normalized = g.path.replace(/\\/g, '/');
               return normalized === cat.dirPath || normalized.startsWith(prefix);
             })
             .map(g => g.id);
-          newMap.set(cat.id, ids);
         } else if (cat.type === 'favorite') {
           const result = await GetGamesByCategory(cat.id);
-          newMap.set(cat.id, (result || []).map(g => g.id));
+          gameIds = (result || []).map(g => g.id);
         } else if (cat.type === 'chara_design' || cat.type === 'sceneario') {
           const staffModel = cat.original as unknown as models.Staff;
           const role = cat.type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
           const works: models.Work[] = await GetWorksByStaffIdAndRole(staffModel.id, role);
-          const ids = works.map((w: models.Work) => w.game_id).filter((id: string | undefined): id is string => !!id);
-          newMap.set(cat.id, ids);
+          gameIds = works.map((w: models.Work) => w.game_id).filter((id: string | undefined): id is string => !!id);
         } else {
           const result = await GetGamesByTag(cat.name);
-          newMap.set(cat.id, (result || []).map(g => g.id));
+          gameIds = (result || []).map(g => g.id);
         }
+        resultMap.set(cat.id, gameIds);
       } catch (error) {
         console.error(`Failed to preload category ${cat.name}:`, error);
       }
-    });
-    await Promise.all(loadPromises);
-    setCategoryMap(newMap);
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+    }
+    setCategoryMap(resultMap);
   };
 
   useEffect(() => {

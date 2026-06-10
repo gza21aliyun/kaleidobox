@@ -45,11 +45,17 @@ function CategoryListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "use_count" | "game_count">("name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<"name" | "use_count" | "game_count">(() => {
+    const savedFilter = localStorage.getItem('categoryListSortBy') as "name" | "use_count" | "game_count" | null;
+    return savedFilter || "name";
+  });
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    const savedSortBy = localStorage.getItem('categoryListSortOrder') as "asc" | "desc" | null;
+    return savedSortBy || "asc";
+  });
   const [categoryFilter, setCategoryFilter] = useState<string>(() => {
-    const savedFilter = localStorage.getItem('categoryListFilter');
-    return savedFilter || "brand";
+    const savedSortBy = localStorage.getItem('categoryListFilter');
+    return savedSortBy || "brand";
   });
   const [viewMode, setViewMode] = useState<"default" | "gallery">(() => {
     const savedViewMode = localStorage.getItem('categoryListViewMode');
@@ -59,6 +65,14 @@ function CategoryListPage() {
   useEffect(() => {
     localStorage.setItem('categoryListFilter', categoryFilter);
   }, [categoryFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('categoryListSortBy', sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    localStorage.setItem('categoryListSortOrder', sortOrder);
+  }, [sortOrder]);
 
   useEffect(() => {
     localStorage.setItem('categoryListViewMode', viewMode);

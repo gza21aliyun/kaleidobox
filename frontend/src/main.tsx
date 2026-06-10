@@ -12,6 +12,8 @@ localStorage.removeItem('libraryTagsFilter');
 localStorage.removeItem('library_sourceFilter');
 localStorage.removeItem('searchQuery');
 localStorage.removeItem('categoryListFilter');
+localStorage.removeItem('categoryListSortBy');
+localStorage.removeItem('categoryListSortOrder');
 
 const container = document.getElementById("root");
 

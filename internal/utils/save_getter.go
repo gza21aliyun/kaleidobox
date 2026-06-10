@@ -717,32 +717,32 @@ func SearchSave(game models.Game) (models.Game, error) {
 	// 	return newGame, nil
 	// }
 	searchPath := filepath.Join(homeDir, "Documents", "My Games")
-	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine)
+	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
 	}
 	searchPath = filepath.Join(homeDir, "Documents")
-	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine)
+	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
 	}
 	searchPath = filepath.Join(homeDir, "AppData", "Roaming")
-	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine)
+	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
 	}
 
 	searchPath = filepath.Join(homeDir, "AppData", "Local")
-	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine)
+	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
 	}
 	searchPath = filepath.Join(homeDir, "AppData", "LocalLow")
-	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine)
+	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
@@ -760,7 +760,7 @@ func SearchSave(game models.Game) (models.Game, error) {
 	return newGame, err
 }
 
-func searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine string) string {
+func searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine string, mustInFolder bool) string {
 	brandEntries, err := os.ReadDir(searchPath)
 	if err != nil {
 		return ""
@@ -788,6 +788,7 @@ func searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine s
 	}
 
 	return gameEntry
+
 }
 
 /**
@@ -853,7 +854,7 @@ func searchSpSave(exeName, gameName, folderName, brand, engine, exePath string) 
 	}
 	if engine == "unity" {
 		rs = filepath.Join(homeDir, "AppData", "LocalLow")
-		return searchFolderSave(rs, exeName, gameName, folderName, brand, engine)
+		return searchFolderSave(rs, exeName, gameName, folderName, brand, engine, true)
 	}
 	if engine == "gxp" {
 		rs = filepath.Join(homeDir, "Documents", "Astronauts Sirius")
@@ -868,6 +869,10 @@ func searchSpSave(exeName, gameName, folderName, brand, engine, exePath string) 
 	}
 	if engine == "fpk" {
 		return exePath
+	}
+	if engine == "DefaultCompany" {
+		rs = filepath.Join(homeDir, "AppData", "LocalLow", "DefaultCompany")
+		return searchGameSave(rs, exeName, gameName, folderName, engine, 1)
 	}
 	lowBrand := strings.ToLower(brand)
 	if strings.Contains(lowBrand, "anim") && !strings.Contains(lowBrand, "anime") {
@@ -931,6 +936,10 @@ func SearchGamePathSave(game models.Game) (models.Game, string, string, string, 
 			}
 			if strings.Contains(path, ".fpk") {
 				engine = "fpk"
+				return errors.New("found")
+			}
+			if strings.Contains(path, "player_win_x86.pdb") {
+				engine = "DefaultCompany"
 				return errors.New("found")
 			}
 			for _, e := range exts {

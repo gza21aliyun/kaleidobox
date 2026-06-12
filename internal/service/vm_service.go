@@ -363,9 +363,26 @@ func (s *VMService) configureMagpieCropping() error {
 		return err
 	}
 
+	// 获取 profiles 数组
+	profiles, ok := config["profiles"].([]interface{})
+	if !ok || len(profiles) == 0 {
+		applog.LogErrorf(s.ctx, "配置文件中没有 profiles 数组")
+		return fmt.Errorf("配置文件中没有 profiles 数组")
+	}
+
+	// 获取第一个 profile
+	profile, ok := profiles[0].(map[string]interface{})
+	if !ok {
+		applog.LogErrorf(s.ctx, "profiles[0] 不是 map")
+		return fmt.Errorf("profiles[0] 不是 map")
+	}
+
 	// 检查当前配置是否已经正确
-	currentCroppingEnabled, _ := config["croppingEnabled"].(bool)
-	currentCropping, _ := config["cropping"].(map[string]interface{})
+	currentCroppingEnabled := false
+	if val, ok := profile["croppingEnabled"].(bool); ok {
+		currentCroppingEnabled = val
+	}
+	currentCropping, _ := profile["cropping"].(map[string]interface{})
 
 	if currentCroppingEnabled && currentCropping != nil {
 		// 获取当前裁剪参数（JSON解析时数字默认为float64，需转换为int）
@@ -404,8 +421,8 @@ func (s *VMService) configureMagpieCropping() error {
 		"right":  s.config.MagpieCroppingRight,
 		"bottom": s.config.MagpieCroppingBottom,
 	}
-	config["croppingEnabled"] = true
-	config["cropping"] = cropping
+	profile["croppingEnabled"] = true
+	profile["cropping"] = cropping
 
 	// 写回配置文件
 	newData, err := json.MarshalIndent(config, "", "  ")

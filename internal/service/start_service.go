@@ -965,36 +965,90 @@ func (s *StartService) disableMagpieCropping() error {
 	if configPath == "" {
 		// 使用默认路径
 		homeDir := os.Getenv("USERPROFILE")
-		configPath = filepath.Join(homeDir, "AppData", "Local", "Magpie", "config", "config.json")
+		configPath = filepath.Join(homeDir, "AppData", "Local", "Magpie", "config", "v4", "config.json")
 	}
+
+	applog.LogInfof(s.ctx, "禁用 Magpie 裁剪，配置路径: %s", configPath)
 
 	// 如果配置文件不存在，跳过
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		applog.LogInfof(s.ctx, "配置文件不存在，跳过")
 		return nil
 	}
 
 	// 读取配置文件
 	data, err := os.ReadFile(configPath)
 	if err != nil {
+		applog.LogErrorf(s.ctx, "读取配置文件失败: %v", err)
 		return err
+	}
+
+	applog.LogInfof(s.ctx, "读取到配置文件内容长度: %d 字节", len(data))
+	if len(data) > 0 {
+		// 显示前200字节作为调试
+		previewLen := len(data)
+		if previewLen > 200 {
+			previewLen = 200
+		}
+		applog.LogInfof(s.ctx, "配置文件内容预览: %s", string(data[:previewLen]))
 	}
 
 	// 解析 JSON
 	var config map[string]interface{}
 	if err := json.Unmarshal(data, &config); err != nil {
+		applog.LogErrorf(s.ctx, "解析配置文件失败: %v", err)
 		return err
 	}
 
+	applog.LogInfof(s.ctx, "解析后的配置 map 长度: %d", len(config))
+
+	// 获取 profiles 数组
+	profiles, ok := config["profiles"].([]interface{})
+	if !ok || len(profiles) == 0 {
+		applog.LogErrorf(s.ctx, "配置文件中没有 profiles 数组")
+		return fmt.Errorf("配置文件中没有 profiles 数组")
+	}
+
+	// 获取第一个 profile
+	profile, ok := profiles[0].(map[string]interface{})
+	if !ok {
+		applog.LogErrorf(s.ctx, "profiles[0] 不是 map")
+		return fmt.Errorf("profiles[0] 不是 map")
+	}
+
+	applog.LogInfof(s.ctx, "profile 包含 %d 个配置项", len(profile))
+	for k, v := range profile {
+		applog.LogInfof(s.ctx, "profile 配置项: %s = %v (类型: %T)", k, v, v)
+	}
+
+	// 检查当前裁剪状态（处理多种类型）
+	currentCroppingEnabled := false
+	if val, ok := profile["croppingEnabled"].(bool); ok {
+		currentCroppingEnabled = val
+	} else {
+		applog.LogWarningf(s.ctx, "croppingEnabled 类型不是 bool，值: %v, 类型: %T", profile["croppingEnabled"], profile["croppingEnabled"])
+	}
+
+	applog.LogInfof(s.ctx, "当前 croppingEnabled 值: %v", currentCroppingEnabled)
+
+	// 如果裁剪已经关闭，无需修改
+	if !currentCroppingEnabled {
+		applog.LogInfof(s.ctx, "Magpie 裁剪已关闭，无需修改")
+		return nil
+	}
+
 	// 关闭裁剪
-	config["croppingEnabled"] = false
+	profile["croppingEnabled"] = false
 
 	// 写回配置文件
 	newData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
+		applog.LogErrorf(s.ctx, "序列化配置失败: %v", err)
 		return err
 	}
 
 	if err := os.WriteFile(configPath, newData, 0644); err != nil {
+		applog.LogErrorf(s.ctx, "写入配置文件失败: %v", err)
 		return err
 	}
 
@@ -1004,6 +1058,7 @@ func (s *StartService) disableMagpieCropping() error {
 	isRunning, _ := utils.CheckIfProcessRunning("Magpie.exe")
 	if isRunning {
 		// 关闭 Magpie
+		applog.LogInfof(s.ctx, "重启 Magpie 以应用更改...")
 		killCmd := exec.Command("taskkill", "/F", "/IM", "Magpie.exe")
 		_ = killCmd.Run()
 		time.Sleep(1 * time.Second)
@@ -1012,6 +1067,7 @@ func (s *StartService) disableMagpieCropping() error {
 		cmd := exec.Command(s.config.MagpiePath, "-t")
 		cmd.Dir = filepath.Dir(s.config.MagpiePath)
 		if err := cmd.Start(); err != nil {
+			applog.LogErrorf(s.ctx, "重启 Magpie 失败: %v", err)
 			return err
 		}
 		if cmd.Process != nil {

@@ -1110,7 +1110,22 @@
     "magpiePathPlaceholder": "Magpie.exe ファイルパスを選択",
     "magpiePathDescription": "設定すると、ゲーム編集画面で Magpie の超解像度アップスケーリング起動を有効にできます",
     "magpieSelectError": "Magpie の選択に失敗しました",
-    "detectTime": "検出時間 (秒)"
+    "detectTime": "検出時間 (秒)",
+    "magpieHotkey": "Magpie スケーリングホットキー",
+    "magpieHotkeyPlaceholder": "Win+Shift+A",
+    "magpieHotkeyDescription": "入力ボックスをクリックして、設定するホットキーの組み合わせを押してください。Magpie で設定したホットキーと一致する必要があります。",
+    "magpieHotkeyReset": "リセット",
+    "pressHotkey": "ホットキーを押してください...",
+    "magpieCroppingEnabled": "Magpie クロッピングを有効にする（VM モードのみ）",
+    "magpieConfigPath": "Magpie 設定ファイルパス",
+    "magpieConfigPathPlaceholder": "既定のパスを使用する場合は空のまま",
+    "magpieConfigPathDefault": "既定のパス: C:\\Users\\[ユーザー名]\\AppData\\Local\\Magpie\\config\\v4\\config.json",
+    "croppingArea": "クロッピング領域 (ピクセル)",
+    "croppingLeft": "左",
+    "croppingRight": "右",
+    "croppingTop": "上",
+    "croppingBottom": "下",
+    "croppingDescription": "クロップするエッジ領域を設定します（ピクセル）。VM ウィンドウの境界線を削除するために使用されます。"
   },
   "gameStats": {
     "loadStatsFailed": "統計データの読み込みに失敗しました",

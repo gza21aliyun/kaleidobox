@@ -3,14 +3,20 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
 	"lunabox/internal/models"
+	"lunabox/internal/utils"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/google/uuid"
 	"github.com/vmware/govmomi/find"
@@ -261,7 +267,8 @@ func (s *VMService) DeleteVM(vmID string) error {
 }
 
 // StartGameInsideVm 在虚拟机中启动游戏
-func (s *VMService) StartGameInsideVm(gameID string) (bool, error) {
+// useMagpie - 是否启用 Magpie 缩放
+func (s *VMService) StartGameInsideVm(gameID string, useMagpie bool) (bool, error) {
 	// 获取游戏信息
 	game, err := s.gameService.GetGameByID(gameID)
 	if err != nil {
@@ -290,13 +297,238 @@ func (s *VMService) StartGameInsideVm(gameID string) (bool, error) {
 	// 根据虚拟机类型调用不同的启动函数
 	switch vm.VmType {
 	case "workstation":
-		return s.StartGameInsideWs(vm, game.Path, game.Arguments)
+		success, err := s.StartGameInsideWs(vm, game.Path, game.Arguments)
+		if success && err == nil && useMagpie {
+			// 游戏启动成功后配置裁剪并触发 Magpie 缩放
+			s.configureMagpieAndScale()
+		}
+		return success, err
 	case "esx":
-		return s.StartGameInsideEsx(vm, game.Path, game.Arguments)
+		success, err := s.StartGameInsideEsx(vm, game.Path, game.Arguments)
+		if success && err == nil && useMagpie {
+			// 游戏启动成功后配置裁剪并触发 Magpie 缩放
+			s.configureMagpieAndScale()
+		}
+		return success, err
 	default:
 		applog.LogErrorf(s.ctx, "unsupported vm type: %s", vm.VmType)
 		return false, fmt.Errorf("unsupported vm type: %s", vm.VmType)
 	}
+}
+
+// configureMagpieAndScale 配置 Magpie 裁剪并触发缩放
+func (s *VMService) configureMagpieAndScale() {
+	// 如果启用了裁剪参数且不全为 0，先配置裁剪
+	if s.config.MagpieCroppingEnabled && s.hasCroppingParams() {
+		applog.LogInfof(s.ctx, "配置 Magpie 裁剪参数...")
+		if err := s.configureMagpieCropping(); err != nil {
+			applog.LogWarningf(s.ctx, "配置 Magpie 裁剪失败: %v", err)
+			return
+		}
+	}
+
+	// 触发 Magpie 缩放
+	s.triggerMagpieScalingForVM()
+}
+
+// hasCroppingParams 检查裁剪参数是否不全为 0
+func (s *VMService) hasCroppingParams() bool {
+	return s.config.MagpieCroppingLeft != 0 ||
+		s.config.MagpieCroppingTop != 0 ||
+		s.config.MagpieCroppingRight != 0 ||
+		s.config.MagpieCroppingBottom != 0
+}
+
+// configureMagpieCropping 配置 Magpie 裁剪参数
+func (s *VMService) configureMagpieCropping() error {
+	// 确定配置文件路径
+	configPath := s.config.MagpieConfigPath
+	if configPath == "" {
+		// 使用默认路径
+		homeDir := os.Getenv("USERPROFILE")
+		configPath = filepath.Join(homeDir, "AppData", "Local", "Magpie", "config", "v4", "config.json")
+	}
+
+	// 读取配置文件
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "读取 Magpie 配置失败: %v", err)
+		return err
+	}
+
+	// 解析 JSON
+	var config map[string]interface{}
+	if err := json.Unmarshal(data, &config); err != nil {
+		applog.LogErrorf(s.ctx, "解析 Magpie 配置失败: %v", err)
+		return err
+	}
+
+	// 检查当前配置是否已经正确
+	currentCroppingEnabled, _ := config["croppingEnabled"].(bool)
+	currentCropping, _ := config["cropping"].(map[string]interface{})
+
+	if currentCroppingEnabled && currentCropping != nil {
+		// 获取当前裁剪参数（JSON解析时数字默认为float64，需转换为int）
+		currentLeft := 0
+		if v, ok := currentCropping["left"].(float64); ok {
+			currentLeft = int(v)
+		}
+		currentTop := 0
+		if v, ok := currentCropping["top"].(float64); ok {
+			currentTop = int(v)
+		}
+		currentRight := 0
+		if v, ok := currentCropping["right"].(float64); ok {
+			currentRight = int(v)
+		}
+		currentBottom := 0
+		if v, ok := currentCropping["bottom"].(float64); ok {
+			currentBottom = int(v)
+		}
+
+		// 检查是否与目标值相同
+		if currentLeft == s.config.MagpieCroppingLeft &&
+			currentTop == s.config.MagpieCroppingTop &&
+			currentRight == s.config.MagpieCroppingRight &&
+			currentBottom == s.config.MagpieCroppingBottom {
+
+			applog.LogInfof(s.ctx, "Magpie 裁剪参数已正确配置，无需修改")
+			return nil
+		}
+	}
+
+	// 修改裁剪设置
+	cropping := map[string]interface{}{
+		"left":   s.config.MagpieCroppingLeft,
+		"top":    s.config.MagpieCroppingTop,
+		"right":  s.config.MagpieCroppingRight,
+		"bottom": s.config.MagpieCroppingBottom,
+	}
+	config["croppingEnabled"] = true
+	config["cropping"] = cropping
+
+	// 写回配置文件
+	newData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		applog.LogErrorf(s.ctx, "序列化 Magpie 配置失败: %v", err)
+		return err
+	}
+
+	if err := os.WriteFile(configPath, newData, 0644); err != nil {
+		applog.LogErrorf(s.ctx, "写入 Magpie 配置失败: %v", err)
+		return err
+	}
+
+	applog.LogInfof(s.ctx, "Magpie 裁剪参数已配置: left=%.1f, top=%.1f, right=%.1f, bottom=%.1f",
+		s.config.MagpieCroppingLeft, s.config.MagpieCroppingTop,
+		s.config.MagpieCroppingRight, s.config.MagpieCroppingBottom)
+
+	// 重启 Magpie
+	return s.restartMagpie()
+}
+
+// restartMagpie 重启 Magpie 进程
+func (s *VMService) restartMagpie() error {
+	if s.config.MagpiePath == "" {
+		return fmt.Errorf("Magpie 路径未设置")
+	}
+
+	// 关闭现有 Magpie 进程
+	applog.LogInfof(s.ctx, "关闭 Magpie 进程...")
+	killCmd := exec.Command("taskkill", "/F", "/IM", "Magpie.exe")
+	_ = killCmd.Run()
+
+	// 等待进程关闭
+	time.Sleep(1 * time.Second)
+
+	// 启动 Magpie
+	applog.LogInfof(s.ctx, "启动 Magpie...")
+	cmd := exec.Command(s.config.MagpiePath, "-t")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+	}
+
+	if err := cmd.Start(); err != nil {
+		applog.LogErrorf(s.ctx, "启动 Magpie 失败: %v", err)
+		return err
+	}
+
+	// 等待 Magpie 启动
+	time.Sleep(2 * time.Second)
+	applog.LogInfof(s.ctx, "Magpie 已重启")
+
+	return nil
+}
+
+// triggerMagpieScalingForVM 触发 Magpie 缩放（虚拟机模式）
+func (s *VMService) triggerMagpieScalingForVM() {
+	if s.config.MagpiePath == "" {
+		return
+	}
+
+	// 等待游戏窗口出现
+	applog.LogInfof(s.ctx, "等待游戏窗口出现...")
+	time.Sleep(5 * time.Second)
+
+	// 先激活 VMware 窗口
+	applog.LogInfof(s.ctx, "激活 VMware 窗口...")
+	if err := s.activateVMwareWindow(); err != nil {
+		applog.LogWarningf(s.ctx, "激活 VMware 窗口失败: %v", err)
+	}
+
+	// 发送缩放快捷键
+	applog.LogInfof(s.ctx, "发送 Magpie 缩放快捷键: %s", s.config.MagpieHotkey)
+	utils.SendHotkey(s.config.MagpieHotkey)
+}
+
+// activateVMwareWindow 激活 VMware 窗口
+func (s *VMService) activateVMwareWindow() error {
+	// 定义 user32.dll 函数
+	user32 := syscall.NewLazyDLL("user32.dll")
+	procEnumWindows := user32.NewProc("EnumWindows")
+	procGetWindowTextLengthW := user32.NewProc("GetWindowTextLengthW")
+	procGetWindowTextW := user32.NewProc("GetWindowTextW")
+	procSetForegroundWindow := user32.NewProc("SetForegroundWindow")
+
+	var targetHWND uintptr
+
+	// 回调函数用于查找 VMware 窗口
+	callback := syscall.NewCallback(func(hwnd uintptr, lparam uintptr) uintptr {
+		// 获取窗口标题长度
+		ret, _, _ := procGetWindowTextLengthW.Call(hwnd)
+		if ret == 0 {
+			return 1 // 继续枚举
+		}
+
+		// 分配缓冲区
+		buf := make([]uint16, ret+1)
+		procGetWindowTextW.Call(hwnd, uintptr(unsafe.Pointer(&buf[0])), ret+1)
+		title := syscall.UTF16ToString(buf)
+
+		// 检查窗口标题是否包含 VMware 相关内容
+		if strings.Contains(strings.ToLower(title), "vmware") {
+			targetHWND = hwnd
+			return 0 // 停止枚举
+		}
+
+		return 1 // 继续枚举
+	})
+
+	// 枚举所有顶层窗口
+	procEnumWindows.Call(callback, 0)
+
+	if targetHWND == 0 {
+		return fmt.Errorf("未找到 VMware 窗口")
+	}
+
+	// 设置为前台窗口
+	ret, _, err := procSetForegroundWindow.Call(targetHWND)
+	if ret == 0 {
+		return fmt.Errorf("SetForegroundWindow 失败: %v", err)
+	}
+
+	applog.LogInfof(s.ctx, "VMware 窗口已激活")
+	return nil
 }
 
 // StartGameInsideWs 在 Workstation 虚拟机中启动游戏

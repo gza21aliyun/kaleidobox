@@ -76,7 +76,14 @@ type AppConfig struct {
 	LocaleEmulatorPath string `json:"locale_emulator_path,omitempty"` // Locale Emulator 可执行文件路径
 	MagpiePath         string `json:"magpie_path,omitempty"`          // Magpie 可执行文件路径
 	MagpieHotkey       string `json:"magpie_hotkey,omitempty"`        // Magpie 缩放快捷键，格式如: "Win+Shift+A"
-	FfmpegPath         string `json:"ffmpeg_path,omitempty"`          // FFmpeg 可执行文件路径
+	MagpieConfigPath   string `json:"magpie_config_path,omitempty"`   // Magpie 配置文件路径（用于虚拟机裁剪设置）
+	// Magpie 裁剪设置（仅虚拟机启动时使用）
+	MagpieCroppingEnabled bool    `json:"magpie_cropping_enabled"`      // 是否启用裁剪
+	MagpieCroppingLeft   int `json:"magpie_cropping_left"`        // 左边裁剪像素
+	MagpieCroppingTop    int `json:"magpie_cropping_top"`         // 顶部裁剪像素
+	MagpieCroppingRight  int `json:"magpie_cropping_right"`       // 右边裁剪像素
+	MagpieCroppingBottom int `json:"magpie_cropping_bottom"`      // 底部裁剪像素
+	FfmpegPath          string `json:"ffmpeg_path,omitempty"`          // FFmpeg 可执行文件路径
 	// 进程检测配置
 	AutoDetectGameProcess bool `json:"auto_detect_game_process"` // 是否启用自动游戏进程检测（分阶段检测策略）
 	DetectTime            int  `json:"detect_time"`              // 进程检测时间,启动器不一定是自动型的，还有手动型的，用于提示用户快点按进游戏
@@ -158,6 +165,12 @@ func LoadConfig() (*AppConfig, error) {
 		LocaleEmulatorPath:      "",
 		MagpiePath:              "",
 		MagpieHotkey:            "Win+Shift+A",
+		MagpieConfigPath:        "",
+		MagpieCroppingEnabled:   false,
+		MagpieCroppingLeft:      0.0,
+		MagpieCroppingTop:       0.0,
+		MagpieCroppingRight:     0.0,
+		MagpieCroppingBottom:    0.0,
 		FfmpegPath:              "",
 		AutoDetectGameProcess:   true, // 默认启用自动检测，保持向后兼容
 		EroscapeUseMirror:       false,

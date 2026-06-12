@@ -1110,7 +1110,22 @@
     "magpiePathPlaceholder": "Select Magpie.exe file path",
     "magpiePathDescription": "After setting, you can enable Magpie super-resolution scaling launch in the game edit interface",
     "magpieSelectError": "Failed to select Magpie",
-    "detectTime": "Detection time (seconds)"
+    "detectTime": "Detection time (seconds)",
+    "magpieHotkey": "Magpie scaling hotkey",
+    "magpieHotkeyPlaceholder": "Win+Shift+A",
+    "magpieHotkeyDescription": "Click the input box and press the hotkey combination to set. Must match the hotkey set in Magpie.",
+    "magpieHotkeyReset": "Reset",
+    "pressHotkey": "Press hotkey combination...",
+    "magpieCroppingEnabled": "Enable Magpie cropping (VM mode only)",
+    "magpieConfigPath": "Magpie config file path",
+    "magpieConfigPathPlaceholder": "Leave blank for default path",
+    "magpieConfigPathDefault": "Default path: C:\\Users\\[Username]\\AppData\\Local\\Magpie\\config\\v4\\config.json",
+    "croppingArea": "Cropping area (pixels)",
+    "croppingLeft": "Left",
+    "croppingRight": "Right",
+    "croppingTop": "Top",
+    "croppingBottom": "Bottom",
+    "croppingDescription": "Set the edge area to crop out (pixels), used to remove VM window borders"
   },
   "gameStats": {
     "loadStatsFailed": "Failed to load statistics data",

@@ -77,6 +77,7 @@ type AppConfig struct {
 	MagpiePath         string `json:"magpie_path,omitempty"`          // Magpie 可执行文件路径
 	MagpieHotkey       string `json:"magpie_hotkey,omitempty"`        // Magpie 缩放快捷键，格式如: "Win+Shift+A"
 	MagpieConfigPath   string `json:"magpie_config_path,omitempty"`   // Magpie 配置文件路径（用于虚拟机裁剪设置）
+	MagpieEnabled      bool   `json:"magpie_enabled"`                // 全局启用 Magpie（开启后所有游戏都使用 Magpie）
 	// Magpie 裁剪设置（仅虚拟机启动时使用）
 	MagpieCroppingEnabled bool    `json:"magpie_cropping_enabled"`      // 是否启用裁剪
 	MagpieCroppingLeft   int `json:"magpie_cropping_left"`        // 左边裁剪像素

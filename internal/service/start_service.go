@@ -136,7 +136,7 @@ func (s *StartService) StartGameWithTracking(gameID string) (bool, error) {
 
 	if game.VmId != "" {
 		startTime := time.Now()
-		success, err := s.vmService.StartGameInsideVm(gameID, game.UseMagpie)
+		success, err := s.vmService.StartGameInsideVm(gameID, s.config.MagpieEnabled || game.UseMagpie)
 		if err == nil {
 			sessionID, _ := s.sessionService.CreatePendingSession(gameID, startTime)
 			//暂时不详细跟踪时间，当其每次玩1分钟。用于记录次数
@@ -883,7 +883,7 @@ func (s *StartService) getGameLaunchConfig(gameID string) (useLE bool, useMagpie
 	if err != nil {
 		return false, false, err
 	}
-	return game.UseLocaleEmulator, game.UseMagpie, nil
+	return game.UseLocaleEmulator, s.config.MagpieEnabled || game.UseMagpie, nil
 }
 
 var (

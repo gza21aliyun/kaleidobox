@@ -1110,6 +1110,7 @@
     "magpiePathPlaceholder": "Select Magpie.exe file path",
     "magpiePathDescription": "After setting, you can enable Magpie super-resolution scaling launch in the game edit interface",
     "magpieSelectError": "Failed to select Magpie",
+    "magpieConfigSelectError": "Failed to select Magpie config file",
     "detectTime": "Detection time (seconds)",
     "magpieHotkey": "Magpie scaling hotkey",
     "magpieHotkeyPlaceholder": "Win+Shift+A",
@@ -1125,7 +1126,9 @@
     "croppingRight": "Right",
     "croppingTop": "Top",
     "croppingBottom": "Bottom",
-    "croppingDescription": "Set the edge area to crop out (pixels), used to remove VM window borders"
+    "croppingDescription": "Set the edge area to crop (pixels), used to remove VM window borders",
+    "magpieEnabled": "Enable Magpie Globally",
+    "magpieEnabledDescription": "When enabled, all games will use Magpie scaling, ignoring each game's individual Magpie setting"
   },
   "gameStats": {
     "loadStatsFailed": "Failed to load statistics data",

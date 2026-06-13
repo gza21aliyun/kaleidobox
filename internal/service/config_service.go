@@ -189,6 +189,7 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.MagpieCroppingBottom = newConfig.MagpieCroppingBottom
 	s.config.MagpieCroppingLeft = newConfig.MagpieCroppingLeft
 	s.config.MagpieCroppingRight = newConfig.MagpieCroppingRight
+	s.config.MagpieEnabled = newConfig.MagpieEnabled
 	applog.SetLogAll(s.config.LogAll)
 	return nil
 }

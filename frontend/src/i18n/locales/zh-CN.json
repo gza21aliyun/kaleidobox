@@ -1113,6 +1113,7 @@
     "magpiePathPlaceholder": "选择 Magpie.exe 文件路径",
     "magpiePathDescription": "设置后可在游戏编辑界面启用 Magpie 超分辨率缩放启动",
     "magpieSelectError": "选择 Magpie 失败",
+    "magpieConfigSelectError": "选择 Magpie 配置文件失败",
     "detectTime": "检测时间(秒)",
     "magpieHotkey": "Magpie 缩放快捷键",
     "magpieHotkeyPlaceholder": "Win+Shift+A",
@@ -1128,7 +1129,9 @@
     "croppingRight": "右边",
     "croppingTop": "顶部",
     "croppingBottom": "底部",
-    "croppingDescription": "设置要裁剪掉的边缘区域（像素），用于去除虚拟机窗口边框"
+    "croppingDescription": "设置要裁剪掉的边缘区域（像素），用于去除虚拟机窗口边框",
+    "magpieEnabled": "全局启用 Magpie",
+    "magpieEnabledDescription": "开启后所有游戏都将使用 Magpie 缩放，忽略游戏各自的 Magpie 设置"
   },
   "gameStats": {
     "loadStatsFailed": "加载统计数据失败",

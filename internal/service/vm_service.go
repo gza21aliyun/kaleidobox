@@ -451,7 +451,7 @@ func (s *VMService) restartMagpie() error {
 	}
 
 	// 关闭现有 Magpie 进程
-	applog.LogInfof(s.ctx, "关闭 Magpie 进程...")
+	applog.InfoLogSaveAppLog("关闭 Magpie 进程...")
 	killCmd := exec.Command("taskkill", "/F", "/IM", "Magpie.exe")
 	_ = killCmd.Run()
 
@@ -459,7 +459,7 @@ func (s *VMService) restartMagpie() error {
 	time.Sleep(1 * time.Second)
 
 	// 启动 Magpie
-	applog.LogInfof(s.ctx, "启动 Magpie...")
+	applog.InfoLogSaveAppLog("启动 Magpie...")
 	cmd := exec.Command(s.config.MagpiePath, "-t")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
@@ -472,7 +472,7 @@ func (s *VMService) restartMagpie() error {
 
 	// 等待 Magpie 启动
 	time.Sleep(2 * time.Second)
-	applog.LogInfof(s.ctx, "Magpie 已重启")
+	applog.InfoLogSaveAppLog("Magpie 已重启")
 
 	return nil
 }
@@ -485,7 +485,7 @@ func (s *VMService) triggerMagpieScalingForVM() {
 
 	// 等待游戏窗口出现
 	applog.LogInfof(s.ctx, "等待游戏窗口出现...")
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	// 先激活 VMware 窗口
 	applog.LogInfof(s.ctx, "激活 VMware 窗口...")
@@ -493,9 +493,19 @@ func (s *VMService) triggerMagpieScalingForVM() {
 		applog.LogWarningf(s.ctx, "激活 VMware 窗口失败: %v", err)
 	}
 
+	// 等待窗口真正获得焦点
+	applog.LogInfof(s.ctx, "等待窗口获得焦点...")
+	time.Sleep(3 * time.Second)
+
 	// 发送缩放快捷键
-	applog.LogInfof(s.ctx, "发送 Magpie 缩放快捷键: %s", s.config.MagpieHotkey)
+	applog.InfoLogSaveAppLog("发送 Magpie 缩放快捷键: %s", s.config.MagpieHotkey)
+	utils.SendHotkey("ctrl+alt")
+	time.Sleep(500 * time.Millisecond)
 	utils.SendHotkey(s.config.MagpieHotkey)
+
+	// 等待快捷键生效
+	time.Sleep(500 * time.Millisecond)
+	applog.InfoLogSaveAppLog("Magpie trigger: scaling hotkey sent successfully")
 }
 
 // activateVMwareWindow 激活 VMware 窗口

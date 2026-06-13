@@ -983,24 +983,12 @@ func (s *StartService) disableMagpieCropping() error {
 		return err
 	}
 
-	applog.LogInfof(s.ctx, "读取到配置文件内容长度: %d 字节", len(data))
-	if len(data) > 0 {
-		// 显示前200字节作为调试
-		previewLen := len(data)
-		if previewLen > 200 {
-			previewLen = 200
-		}
-		applog.LogInfof(s.ctx, "配置文件内容预览: %s", string(data[:previewLen]))
-	}
-
 	// 解析 JSON
 	var config map[string]interface{}
 	if err := json.Unmarshal(data, &config); err != nil {
 		applog.LogErrorf(s.ctx, "解析配置文件失败: %v", err)
 		return err
 	}
-
-	applog.LogInfof(s.ctx, "解析后的配置 map 长度: %d", len(config))
 
 	// 获取 profiles 数组
 	profiles, ok := config["profiles"].([]interface{})
@@ -1016,24 +1004,14 @@ func (s *StartService) disableMagpieCropping() error {
 		return fmt.Errorf("profiles[0] 不是 map")
 	}
 
-	applog.LogInfof(s.ctx, "profile 包含 %d 个配置项", len(profile))
-	for k, v := range profile {
-		applog.LogInfof(s.ctx, "profile 配置项: %s = %v (类型: %T)", k, v, v)
-	}
-
-	// 检查当前裁剪状态（处理多种类型）
+	// 检查当前裁剪状态
 	currentCroppingEnabled := false
 	if val, ok := profile["croppingEnabled"].(bool); ok {
 		currentCroppingEnabled = val
-	} else {
-		applog.LogWarningf(s.ctx, "croppingEnabled 类型不是 bool，值: %v, 类型: %T", profile["croppingEnabled"], profile["croppingEnabled"])
 	}
-
-	applog.LogInfof(s.ctx, "当前 croppingEnabled 值: %v", currentCroppingEnabled)
 
 	// 如果裁剪已经关闭，无需修改
 	if !currentCroppingEnabled {
-		applog.LogInfof(s.ctx, "Magpie 裁剪已关闭，无需修改")
 		return nil
 	}
 
@@ -1172,12 +1150,12 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 		hotkeyStr = s.config.MagpieHotkey
 	}
 
-	applog.LogInfof(s.ctx, "Magpie trigger: sending configured hotkey: %s", hotkeyStr)
+	applog.InfoLogSaveAppLog("Magpie trigger: sending configured hotkey: %s", hotkeyStr)
 
 	// 使用公共函数发送快捷键
 	utils.SendHotkey(hotkeyStr)
 
-	applog.LogInfof(s.ctx, "Magpie trigger: scaling hotkey sent successfully")
+	applog.InfoLogSaveAppLog("Magpie trigger: scaling hotkey sent successfully")
 }
 
 func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, processName string) *utils.NewProcessInfo {

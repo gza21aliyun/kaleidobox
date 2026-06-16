@@ -105,7 +105,8 @@
     "totalPlayTime": "Total play time:",
     "continuePlaying": "Continue playing",
     "startingGame": "Starting {{name}}",
-    "startGameFailed": "Failed to start game"
+    "startGameFailed": "Failed to start game",
+    "viewGameDetail": "View game details"
   },
   "library": {
     "title": "Game Library",

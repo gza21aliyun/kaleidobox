@@ -105,7 +105,8 @@
     "totalPlayTime": "总游玩时长：",
     "continuePlaying": "继续游戏",
     "startingGame": "正在启动 {{name}}",
-    "startGameFailed": "启动游戏失败"
+    "startGameFailed": "启动游戏失败",
+    "viewGameDetail": "查看游戏详情"
   },
   "library": {
     "title": "游戏库",

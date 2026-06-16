@@ -134,6 +134,13 @@ function HomePage() {
             </div>
           </div>
         </div>
+        <button
+          onClick={() => navigate({ to: "/game/$gameId", params: { gameId: lastPlayed.game.id } })}
+          className="absolute top-24 right-6 flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow-md transition-all hover:scale-105 text-sm font-medium"
+        >
+          <span className="i-mdi-info-outline text-sm" />
+          {t('home.viewGameDetail')}
+        </button>
         <div className="absolute bottom-8 left-8 max-w-lg">
           <h1
             className="text-4xl font-bold text-brand-900 dark:text-white mb-2 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors drop-shadow-lg"

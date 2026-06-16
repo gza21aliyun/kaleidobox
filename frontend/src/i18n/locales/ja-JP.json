@@ -105,7 +105,8 @@
     "totalPlayTime": "総プレイ時間：",
     "continuePlaying": "ゲームを続ける",
     "startingGame": "{{name}} を起動中",
-    "startGameFailed": "ゲームの起動に失敗しました"
+    "startGameFailed": "ゲームの起動に失敗しました",
+    "viewGameDetail": "ゲーム詳細を表示"
   },
   "library": {
     "title": "ゲームライブラリ",

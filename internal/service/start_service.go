@@ -1133,6 +1133,7 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
 		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 1)
 	}
+	time.Sleep(7000 * time.Millisecond)
 
 	// 设置游戏窗口为前景
 	procSetForegroundWindow.Call(gameHWND)
@@ -1143,7 +1144,7 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	}
 
 	// 等待窗口激活
-	time.Sleep(8000 * time.Millisecond)
+	time.Sleep(400 * time.Millisecond)
 
 	hotkeyStr := "Win+Shift+A"
 	if s.config.MagpieHotkey != "" {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"lunabox/internal/applog"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"net/http"
@@ -258,7 +259,7 @@ func (b SaveInfoGetter) FetchSeiyaGuide(name string, fetchType int) (models.Guid
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
-		gameFound, s := searchNameByRegexSimilarity(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
+		gameFound, s := searchNameByRegexSimilarity(potentialGames, name, false, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
 			Title string
 			Link  string
 		}) string {
@@ -687,6 +688,7 @@ func SearchSave(game models.Game) (models.Game, error) {
 		"calcite":      "skdata",
 	}
 	newGame, engine, exeName, folderName, err := SearchGamePathSave(game)
+	applog.InfoLogSaveAppLog("engine: %s, exeName: %s, folderName: %s", engine, exeName, folderName)
 
 	// if err != nil && engine == "" && newGame.SavePath == "" {
 	// 	return game, err
@@ -700,6 +702,7 @@ func SearchSave(game models.Game) (models.Game, error) {
 	}
 	gameName := game.Name
 	savePath := searchSpSave(exeName, gameName, folderName, brand, engine, filepath.Dir(game.Path))
+	applog.InfoLogSaveAppLog("SearchSave searchSpSave savePath: %s", savePath)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
@@ -718,18 +721,22 @@ func SearchSave(game models.Game) (models.Game, error) {
 	// }
 	searchPath := filepath.Join(homeDir, "Documents", "My Games")
 	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
+
+	applog.InfoLogSaveAppLog("SearchSave My Games savePath: %s", savePath)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
 	}
 	searchPath = filepath.Join(homeDir, "Documents")
 	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
+	applog.InfoLogSaveAppLog("SearchSave Documents savePath: %s", savePath)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
 	}
 	searchPath = filepath.Join(homeDir, "AppData", "Roaming")
 	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
+	applog.InfoLogSaveAppLog("SearchSave Roaming savePath: %s", savePath)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
@@ -737,18 +744,21 @@ func SearchSave(game models.Game) (models.Game, error) {
 
 	searchPath = filepath.Join(homeDir, "AppData", "Local")
 	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
+	applog.InfoLogSaveAppLog("SearchSave Local savePath: %s", savePath)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
 	}
 	searchPath = filepath.Join(homeDir, "AppData", "LocalLow")
 	savePath = searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine, false)
+	applog.InfoLogSaveAppLog("SearchSave LocalLow savePath: %s", savePath)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
 	}
 	searchPath = filepath.Join(homeDir, "Documents")
 	savePath = searchGameSave(searchPath, exeName, gameName, folderName, engine, 0.5)
+	applog.InfoLogSaveAppLog("SearchSave Documents savePath: %s", savePath)
 	if savePath != "" {
 		newGame.SavePath = savePath
 		return newGame, nil
@@ -761,12 +771,22 @@ func SearchSave(game models.Game) (models.Game, error) {
 }
 
 func searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine string, mustInFolder bool) string {
+	savePath := searchFolderSaveFolder(searchPath, exeName, gameName, folderName, brand, engine, mustInFolder)
+	if savePath != "" {
+		return savePath
+	}
+	savePath = searchGameSave(searchPath, exeName, gameName, folderName, engine, 0.5)
+	applog.InfoLogSaveAppLog("SearchSave folder searchGameSave savePath: %s, gameName: %s, folderName: %s, exeName: %s, engine: %s, searchPath: %s", savePath, gameName, folderName, exeName, engine, searchPath)
+	return savePath
+}
+
+func searchFolderSaveFolder(searchPath, exeName, gameName, folderName, brand, engine string, mustInFolder bool) string {
 	brandEntries, err := os.ReadDir(searchPath)
 	if err != nil {
 		return ""
 	}
 
-	brandEntry, s := searchNameByRegexSimilarity(brandEntries, brand, []string{}, func(entry os.DirEntry) string {
+	brandEntry, s := searchNameByRegexSimilarity(brandEntries, brand, false, []string{}, func(entry os.DirEntry) string {
 		return entry.Name()
 	})
 	if brandEntry != nil {
@@ -781,6 +801,8 @@ func searchFolderSave(searchPath, exeName, gameName, folderName, brand, engine s
 	}
 	if brandEntry == nil || s < 0.7 {
 		return ""
+	} else {
+
 	}
 	gameEntry := searchGameSave(filepath.Join(searchPath, (*brandEntry).Name()), exeName, gameName, folderName, engine, s)
 	if gameEntry == "" {
@@ -801,7 +823,7 @@ func searchGameSave(searchPath, exeName, gameName, folderName, engine string, la
 		return ""
 	}
 
-	gameEntry, s := searchNameByRegexSimilarity(gameEntries, gameName, []string{}, func(entry os.DirEntry) string {
+	gameEntry, s := searchNameByRegexSimilarity(gameEntries, gameName, false, []string{}, func(entry os.DirEntry) string {
 		return entry.Name()
 	})
 	if gameEntry != nil {
@@ -811,7 +833,7 @@ func searchGameSave(searchPath, exeName, gameName, folderName, engine string, la
 		}
 
 	}
-	gameEntry, s = searchNameByRegexSimilarity(gameEntries, folderName, []string{}, func(entry os.DirEntry) string {
+	gameEntry, s = searchNameByRegexSimilarity(gameEntries, folderName, false, []string{}, func(entry os.DirEntry) string {
 		return entry.Name()
 	})
 	if gameEntry != nil {
@@ -821,14 +843,14 @@ func searchGameSave(searchPath, exeName, gameName, folderName, engine string, la
 
 	}
 	eName := strings.TrimSuffix(exeName, filepath.Ext(exeName))
-	gameEntry, s = searchNameByRegexSimilarity(gameEntries, eName, []string{}, func(entry os.DirEntry) string {
+	gameEntry, s = searchNameByRegexSimilarity(gameEntries, eName, false, []string{}, func(entry os.DirEntry) string {
 		return entry.Name()
 	})
 	if gameEntry != nil && s > 0.6 || len(gameEntries) < 10 {
 		if s < 0.1 {
 			return ""
 		} else if lastSimilarity < 0.84 {
-			if s > 0.7 {
+			if s > 0.8 || (s > 0.7 && lastSimilarity > 0.5) {
 				return filepath.Join(searchPath, (*gameEntry).Name())
 			}
 		} else {

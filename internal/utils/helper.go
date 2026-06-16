@@ -733,16 +733,16 @@ func getGameNameAlternative(searchName string) string {
 	}
 
 	name = strings.TrimSuffix(name, "％")
-	fmt.Printf("getGameNameAlternative:%s\n", name)
+	// fmt.Printf("getGameNameAlternative:%s\n", name)
 	return name
 }
 
 func searchNameByRegex[T1 any](slice1 []T1, searchNameO string, excludeWords []string, fn func(t1 T1) string) *T1 {
-	found, _ := searchNameByRegexSimilarity(slice1, searchNameO, excludeWords, fn)
+	found, _ := searchNameByRegexSimilarity(slice1, searchNameO, true, excludeWords, fn)
 	return found
 }
 
-func searchNameByRegexSimilarity[T1 any](slice1 []T1, searchNameO string, excludeWords []string, fn func(t1 T1) string) (*T1, float32) {
+func searchNameByRegexSimilarity[T1 any](slice1 []T1, searchNameO string, hasLog bool, excludeWords []string, fn func(t1 T1) string) (*T1, float32) {
 	searchName := getGameNameAlternative(searchNameO)
 	searchName = strings.ToLower(searchName)
 	mainTitle, _, num := getTitlesNum(searchName, true)
@@ -810,7 +810,12 @@ func searchNameByRegexSimilarity[T1 any](slice1 []T1, searchNameO string, exclud
 		if !strings.Contains(searchName, "アフター") && strings.Contains(name, "アフター") {
 			similarity -= 0.1
 		}
-		fmt.Printf("searchNameByRegex title: %s, similarity:%0.4f, num:%s\n", name, similarity, gameNum)
+		if IsEnglishWords(name) && IsEnglishWords(searchName) && (!ContainsAtLeastOneWordInStr(name, searchNameO) && !ContainsAtLeastOneWordInStr(searchName, name)) {
+			similarity -= 0.4
+		}
+		if true || hasLog {
+			fmt.Printf("searchNameByRegex title: %s, similarity:%0.4f, num:%s, searchname: %s \n", name, similarity, gameNum, searchNameO)
+		}
 		results = append(results, Result{similarity: similarity, Value: item})
 	}
 	sort.Slice(results, func(i, j int) bool {
@@ -943,4 +948,36 @@ func CamelCaseToSpaces(s string) string {
 		result = append(result, c)
 	}
 	return string(result)
+}
+
+func IsEnglishWords(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, c := range s {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == ' ' || c == ',') {
+			return false
+		}
+	}
+	return true
+}
+
+func ContainsAtLeastOneWordInStr(str string, words string) bool {
+	if words == "" || str == "" {
+		return false
+	}
+	ws := words
+	ws = getGameNameAlternative(ws)
+	ws = CamelCaseToSpaces(ws)
+	ws = strings.ToLower(ws)
+	ws = strings.ReplaceAll(ws, "_", ",")
+	ws = strings.ReplaceAll(ws, " ", ",")
+	wordList := strings.Split(ws, ",")
+	for _, word := range wordList {
+		trimmedWord := strings.TrimSpace(word)
+		if trimmedWord != "" && strings.Contains(str, trimmedWord) {
+			return true
+		}
+	}
+	return false
 }

@@ -10,6 +10,7 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { tagMapForEach, arrayToMap } from "../components/utils/Utility";
 import { useTranslation } from 'react-i18next';
+import { useAppStore } from "../store";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -104,6 +105,14 @@ function TagListPage() {
 
     try {
       await DeleteTagGroup(groupName);
+      
+      // 清空 store 中该分组下所有标签的分组信息
+      tags.forEach(tag => {
+        if (tag.group === groupName) {
+          updateTagInTags({ ...tag, group: '' });
+        }
+      });
+      
       await loadTagsAndGroups();
       toast.success(t('tagList.toasts.groupDeleteSuccess'));
     } catch (error) {
@@ -112,9 +121,21 @@ function TagListPage() {
     }
   };
 
+  const { updateTagInTags } = useAppStore();
+
   const handleSaveGroup = async (groupName: string, selectedTags: string[]) => {
     try {
       await UpdateTagsGroup(selectedTags, groupName);
+      
+      // 更新 store 中的标签分组
+      groupedTags.forEach((categoryTags) => {
+        categoryTags.forEach(tag => {
+          if (selectedTags.includes(tag.name)) {
+            updateTagInTags({ ...tag, group: groupName });
+          }
+        });
+      });
+      
       await loadTagsAndGroups();
     } catch (error) {
       console.error(t('tagList.toasts.saveGroupFailed') + ':', error);
@@ -122,19 +143,20 @@ function TagListPage() {
     }
   };
 
-  
-
-    const handleTagDrop = async (tagName: string, targetGroup: string) => {
+  const handleTagDrop = async (tagName: string, targetGroup: string) => {
     try {
         await UpdateTagsGroup([tagName], targetGroup);
         
         // 局部更新状态而不是重新加载所有数据
         setTags(prevTags => 
-        prevTags.map(tag => 
-            tag.name === tagName 
-            ? { ...tag, group: targetGroup }
-            : tag
-        )
+        prevTags.map(tag => {
+            if (tag.name === tagName) {
+            const updatedTag = { ...tag, group: targetGroup };
+            updateTagInTags(updatedTag);
+            return updatedTag;
+            }
+            return tag;
+        })
         );
         
         // 更新分组统计

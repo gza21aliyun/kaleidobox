@@ -1357,10 +1357,14 @@
       "noTags": "タグがありません",
       "noAvailableTagCategories": "利用可能なタグカテゴリがありません",
       "noTagGroups": "タググループがありません",
-      "canCreateTagGroupsFirst": "まずタグにグループを作成できます"
+      "canCreateTagGroupsFirst": "まずタグにグループを作成できます",
+      "noMatchingTags": "一致するタグが見つかりません"
     },
     "labels": {
       "containsTags": "{{count}} 個のタグを含む"
+    },
+    "placeholders": {
+      "searchTags": "タグを検索..."
     }
   },
   "import": {

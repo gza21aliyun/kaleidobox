@@ -1285,10 +1285,14 @@
       "noTags": "No tags",
       "noAvailableTagCategories": "No available tag categories",
       "noTagGroups": "No tag groups",
-      "canCreateTagGroupsFirst": "You can create groups for tags first"
+      "canCreateTagGroupsFirst": "You can create groups for tags first",
+      "noMatchingTags": "No matching tags found"
     },
     "labels": {
       "containsTags": "Contains {{count}} tags"
+    },
+    "placeholders": {
+      "searchTags": "Search tags..."
     }
   },
   "import": {

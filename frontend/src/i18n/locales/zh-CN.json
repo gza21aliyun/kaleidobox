@@ -1289,10 +1289,14 @@
       "noTags": "暂无标签",
       "noAvailableTagCategories": "没有可用的标签分类",
       "noTagGroups": "暂无标签分组",
-      "canCreateTagGroupsFirst": "可以先为标签创建分组"
+      "canCreateTagGroupsFirst": "可以先为标签创建分组",
+      "noMatchingTags": "未找到匹配的标签"
     },
     "labels": {
       "containsTags": "包含 {{count}} 个标签"
+    },
+    "placeholders": {
+      "searchTags": "搜索标签..."
     }
   },
   "import": {

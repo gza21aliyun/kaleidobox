@@ -23,7 +23,26 @@ export function FilterChooseTagModal({
   const { t } = useTranslation();
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [selectedTagsInCategory, setSelectedTagsInCategory] = useState<Record<string, string[]>>({});
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
   const { updateTagInTags } = useAppStore()
+
+  const filteredAvailableTags = () => {
+    if (!searchKeyword.trim()) {
+      return availableTags;
+    }
+    const lowerKeyword = searchKeyword.toLowerCase();
+    const filtered = new Map<string, models.Tag[]>();
+    availableTags.forEach((tags, category) => {
+      const filteredTags = tags.filter(tag => 
+        tag.name.toLowerCase().includes(lowerKeyword) || 
+        category.toLowerCase().includes(lowerKeyword)
+      );
+      if (filteredTags.length > 0) {
+        filtered.set(category, filteredTags);
+      }
+    });
+    return filtered;
+  };
 
   // 处理分类展开/收起
   const toggleCategory = (category: string) => {
@@ -35,7 +54,7 @@ export function FilterChooseTagModal({
 
   const isAllCategoriesClosed = () => {
     console.log("isAllCategories:start");
-    for (const category of availableTags.keys()) {
+    for (const category of filteredAvailableTags().keys()) {
       if (expandedCategories[category] ?? true) {
         console.log("isAllCategoriesClosed cate " + category + ":", expandedCategories[category]);
         
@@ -49,7 +68,7 @@ export function FilterChooseTagModal({
   const toggleAllCategory = (isExpanded: boolean) => {
     console.log("toggleAll:", isExpanded)
     let rs: Record<string, boolean> = {}
-    availableTags.keys().forEach(category => {
+    filteredAvailableTags().keys().forEach(category => {
       rs[category] = isExpanded;
     });
     setExpandedCategories(rs);
@@ -101,7 +120,7 @@ export function FilterChooseTagModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-brand-900 dark:text-white">{t('filter.modals.chooseTag.title')}</h3>
             {/* 折叠按钮 */}
             <button
@@ -113,6 +132,27 @@ export function FilterChooseTagModal({
                 ${!isAllCategoriesClosed() ? 'rotate-180' : ''}
               `} />
             </button>
+            {/* 搜索栏 */}
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <div className="i-mdi-magnify text-brand-400" />
+              </div>
+              <input
+                type="text"
+                placeholder={t('filter.placeholders.searchTags')}
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-brand-200 dark:border-brand-700 rounded-lg bg-white dark:bg-brand-800 text-brand-900 dark:text-white placeholder-brand-400 dark:placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              />
+              {searchKeyword && (
+                <button
+                  onClick={() => setSearchKeyword('')}
+                  className="absolute inset-y-0 right-3 flex items-center text-brand-400 hover:text-brand-600 dark:hover:text-brand-300"
+                >
+                  <div className="i-mdi-close" />
+                </button>
+              )}
+            </div>
           </div>
           
           <button 
@@ -125,7 +165,7 @@ export function FilterChooseTagModal({
 
         <div className="p-4">
           <div className="space-y-4">
-            {tagMapForEach(availableTags, (category, tags) => {
+            {tagMapForEach(filteredAvailableTags(), (category, tags) => {
               const isExpanded = expandedCategories[category] ?? true;
               const isFullySelected = isCategoryFullySelected(category, tags);
               
@@ -208,11 +248,11 @@ export function FilterChooseTagModal({
               );
             })}
             
-            {availableTags.size === 0 && (
+            {filteredAvailableTags().size === 0 && (
               <div className="text-center py-8">
                 <div className="i-mdi-tag-off text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
                 <p className="text-brand-600 dark:text-brand-400">
-                  {t('filter.messages.noAvailableTagCategories')}
+                  {searchKeyword ? t('filter.messages.noMatchingTags') : t('filter.messages.noAvailableTagCategories')}
                 </p>
               </div>
             )}

@@ -1065,7 +1065,7 @@ func SearchVideoExePath(game *models.Game) error {
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
 	excludeExeKeywords := []string{
 		"courier_i", "courier", "acmp", "curl", "unitycrashhandler64", "krkr", "krkrconf", "krkrfont", "krkrlt", "krkrrel", "krkrsign", "krkrtpc", "tcwfcomp",
-		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2", "autorun",
+		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2", "autorun", "supporttools",
 		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst", "bhvc",
 		"vcredist_x86", "vcredist_x64", "vc_redist.x86", "updchk", "upgrade", "uninstx86", "uninstx64", "uninstcl", "uninstaller",
 		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール", "システム詳細設定", "エンジン設定",

@@ -280,9 +280,10 @@ export function FilterChooseGroupModal({
   tagsFilter,
 }: FilterChooseGroupModalProps) {
   const { t } = useTranslation();
-  // 获取标签分组数据
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const { updateTagInTags } = useAppStore();
+
   const getTagGroups = () => {
     const groupMap: Map<string, models.Tag[]> = new Map();
     const tagArray: models.Tag[] = mapToArray(availableTags || new Map());
@@ -303,22 +304,57 @@ export function FilterChooseGroupModal({
     return groupMap;
   };
 
+  const filteredTagGroups = () => {
+    if (!searchKeyword.trim()) {
+      return getTagGroups();
+    }
+    
+    const keyword = searchKeyword.toLowerCase();
+    const filtered = new Map<string, models.Tag[]>();
+    
+    getTagGroups().forEach((tags, groupName) => {
+      const matchingTags = tags.filter(tag => 
+        tag.name.toLowerCase().includes(keyword) ||
+        groupName.toLowerCase().includes(keyword)
+      );
+      
+      if (matchingTags.length > 0 || groupName.toLowerCase().includes(keyword)) {
+        filtered.set(groupName, matchingTags.length > 0 ? matchingTags : tags);
+      }
+    });
+    
+    return filtered;
+  };
+
+  const isAllGroupsClosed = () => {
+    for (const groupName of getTagGroups().keys()) {
+      if (expandedGroups[groupName] ?? true) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const toggleAllGroups = (isExpanded: boolean) => {
+    let rs: Record<string, boolean> = {};
+    getTagGroups().forEach((_, groupName) => {
+      rs[groupName] = isExpanded;
+    });
+    setExpandedGroups(rs);
+  };
+
   const handleTagsChosen = (tags: string[]) => { 
     var groupTags = [...tagsFilter, ...tags]
     groupTags = [...new Set(groupTags)]
     onTagsFilterChange(groupTags)
   };
 
-  // 处理分组展开/收起
   const toggleGroup = (groupName: string) => {
     setExpandedGroups(prev => ({
       ...prev,
       [groupName]: !prev[groupName]
     }));
   };
-
-
-//   const [tagGroups] = useState<Map<string, string[]>>(() => getTagGroups());
 
   if (!isOpen) return null;
 
@@ -332,7 +368,38 @@ export function FilterChooseGroupModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-brand-200 dark:border-brand-700 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-brand-900 dark:text-white">{t('filter.modals.chooseTagGroup.title')}</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-brand-900 dark:text-white">{t('filter.modals.chooseTagGroup.title')}</h3>
+            <button
+              onClick={() => toggleAllGroups(isAllGroupsClosed())}
+              className="p-1 rounded hover:bg-brand-100 dark:hover:bg-brand-700 transition-colors"
+            >
+              <div className={`
+                i-mdi-chevron-down text-brand-500 transition-transform duration-200
+                ${!isAllGroupsClosed() ? 'rotate-180' : ''}
+              `} />
+            </button>
+            <div className="relative flex-1 max-w-xs">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <div className="i-mdi-magnify text-brand-400" />
+              </div>
+              <input
+                type="text"
+                placeholder={t('filter.placeholders.searchTags')}
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-brand-200 dark:border-brand-700 rounded-lg bg-white dark:bg-brand-800 text-brand-900 dark:text-white placeholder-brand-400 dark:placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              />
+              {searchKeyword && (
+                <button
+                  onClick={() => setSearchKeyword('')}
+                  className="absolute inset-y-0 right-3 flex items-center text-brand-400 hover:text-brand-600 dark:hover:text-brand-300"
+                >
+                  <div className="i-mdi-close" />
+                </button>
+              )}
+            </div>
+          </div>
           <button 
             onClick={onClose}
             className="text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-200"
@@ -342,9 +409,9 @@ export function FilterChooseGroupModal({
         </div>
 
         <div className="p-4">
-          {getTagGroups().size > 0 ? (
+          {filteredTagGroups().size > 0 ? (
             <div className="space-y-3">
-              {Array.from(getTagGroups().entries()).map(([groupName, tags]) => {
+              {Array.from(filteredTagGroups().entries()).map(([groupName, tags]) => {
                 const isExpanded = expandedGroups[groupName] ?? false;
                 
                 return (
@@ -431,10 +498,10 @@ export function FilterChooseGroupModal({
             <div className="text-center py-8">
               <div className="i-mdi-folder-outline text-4xl text-brand-300 dark:text-brand-600 mx-auto mb-3" />
               <p className="text-brand-600 dark:text-brand-400">
-                {t('filter.messages.noTagGroups')}
+                {searchKeyword ? t('filter.messages.noMatchingTags') : t('filter.messages.noTagGroups')}
               </p>
               <p className="text-brand-500 dark:text-brand-400 text-sm mt-2">
-                {t('filter.messages.canCreateTagGroupsFirst')}
+                {searchKeyword ? '' : t('filter.messages.canCreateTagGroupsFirst')}
               </p>
             </div>
           )}

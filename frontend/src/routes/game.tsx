@@ -805,7 +805,7 @@ function GameDetailPage() {
                 {tab === "info" && t('common.gameInfo')}
                 {tab === "gallery" && t('common.gallery')}
                 {tab === "intro" && t('common.introduction')}
-                {tab === "joystick" && t('common.joystick')}
+                {tab === "joystick" && t('common.keyMapping')}
                 {tab === "reviews" && t('common.reviews')}
                 {tab === "guide" && t('common.guide')}
               </button>

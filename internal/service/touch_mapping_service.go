@@ -131,6 +131,7 @@ const (
 
 	// Color (RGB) - Win32 COLORREF = 0x00BBGGRR
 	RGB_WHITE    = 0x00FFFFFF
+	RGB_YELLOW   = 0x00FFFF00
 	COLOR_WINDOW = 5
 	IDC_ARROW    = 32512
 
@@ -1110,8 +1111,7 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 	case WM_LBUTTONUP,
 		WM_RBUTTONUP,
 		WM_MBUTTONUP,
-		WM_XBUTTONUP,
-		WM_POINTERUP:
+		WM_XBUTTONUP:
 
 		if currentMode == ModeEdit {
 			// 编辑模式：结束拖动，记录最终位置
@@ -1142,6 +1142,13 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 		}
 
 		// 映射模式：延迟注入按键松开
+		// 鼠标松开时，检查鼠标是否仍在按钮内来决定悬停状态
+		pt := POINT{}
+		procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
+		wr := RECT{}
+		procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&wr)))
+		isMouseOnButton := pt.X >= wr.Left && pt.X < wr.Right && pt.Y >= wr.Top && pt.Y < wr.Bottom
+
 		btn := getButtonByID(buttonID)
 		if btn != nil && btn.ActionType == "arrow_keys" {
 			// 方向键：记录当前方向用于松开
@@ -1152,6 +1159,12 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 				}
 				atomic.StoreInt32(&bs.Pressed, 0)
 				atomic.StoreInt32(&bs.ArrowDirection, ArrowDirNone)
+				// 鼠标松开后，根据位置决定悬停状态
+				if isMouseOnButton {
+					atomic.StoreInt32(&bs.Hovered, 1)
+				} else {
+					atomic.StoreInt32(&bs.Hovered, 0)
+				}
 			}
 		} else {
 			// 普通按键
@@ -1160,6 +1173,69 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 			}
 			if bs := buttonState[buttonID]; bs != nil {
 				atomic.StoreInt32(&bs.Pressed, 0)
+				// 鼠标松开后，根据位置决定悬停状态
+				if isMouseOnButton {
+					atomic.StoreInt32(&bs.Hovered, 1)
+				} else {
+					atomic.StoreInt32(&bs.Hovered, 0)
+				}
+			}
+		}
+		atomic.StoreInt32(&buttonPressed, 0)
+		atomic.StoreInt32(&clickedButton, -1)
+		tmInvalidateRect(hwnd)
+		return 0
+
+	// 触摸松开（不同于鼠标，触摸松开后不再检查位置，直接取消悬停）
+	case WM_POINTERUP:
+		if currentMode == ModeEdit {
+			// 编辑模式：结束拖动，记录最终位置
+			ds := dragStates[buttonID]
+			if ds != nil && atomic.LoadInt32(&ds.Dragging) == 1 {
+				atomic.StoreInt32(&ds.Dragging, 0)
+
+				wr := RECT{}
+				procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&wr)))
+
+				// 保存位置更新
+				updatedPositions[buttonID] = POINT{X: wr.Left, Y: wr.Top}
+
+				// 同时更新 currentButtons 中对应的按钮位置
+				btn := getButtonByID(buttonID)
+				if btn != nil {
+					btn.X = wr.Left
+					btn.Y = wr.Top
+				}
+			}
+			if bs := buttonState[buttonID]; bs != nil {
+				atomic.StoreInt32(&bs.Pressed, 0)
+				atomic.StoreInt32(&bs.Hovered, 0) // 触摸松开后取消悬停
+				atomic.StoreInt32(&bs.ArrowDirection, ArrowDirNone)
+			}
+			atomic.StoreInt32(&buttonPressed, 0)
+			tmInvalidateRect(hwnd)
+			return 0
+		}
+
+		// 映射模式：触摸松开后直接取消悬停状态
+		btn := getButtonByID(buttonID)
+		if btn != nil && btn.ActionType == "arrow_keys" {
+			if bs := buttonState[buttonID]; bs != nil {
+				currentDir := atomic.LoadInt32(&bs.ArrowDirection)
+				if pau := pendingArrowUp[buttonID]; pau != nil && currentDir != ArrowDirNone {
+					atomic.StoreInt32(pau, currentDir)
+				}
+				atomic.StoreInt32(&bs.Pressed, 0)
+				atomic.StoreInt32(&bs.Hovered, 0) // 触摸松开后取消悬停
+				atomic.StoreInt32(&bs.ArrowDirection, ArrowDirNone)
+			}
+		} else {
+			if pu := pendingUp[buttonID]; pu != nil {
+				atomic.StoreInt32(pu, 1)
+			}
+			if bs := buttonState[buttonID]; bs != nil {
+				atomic.StoreInt32(&bs.Pressed, 0)
+				atomic.StoreInt32(&bs.Hovered, 0) // 触摸松开后取消悬停
 			}
 		}
 		atomic.StoreInt32(&buttonPressed, 0)
@@ -1256,16 +1332,19 @@ func tmPaintWindow(hwnd uintptr) {
 
 	switch {
 	case pressed:
-		gradTop = 0x004A3232
-		gradBottom = 0x00261818
-		borderCol = 0x00E0C090
-		textCol = RGB_WHITE
+		// 按下状态：亮黄色边框，高亮背景
+		gradTop = 0x006A5A50
+		gradBottom = 0x003A2A20
+		borderCol = 0x00FFFF00 // 亮黄色边框
+		textCol = RGB_YELLOW
 	case hovered:
-		gradTop = 0x005A3A3A
-		gradBottom = 0x002A1A1A
-		borderCol = 0x00FFD700
-		textCol = RGB_WHITE
+		// 悬停状态：天蓝色边框，清新背景
+		gradTop = 0x003A4A5A
+		gradBottom = 0x001A2A3A
+		borderCol = 0x0040C0FF // 天蓝色边框
+		textCol = 0x0080E0FF   // 亮蓝色文字
 	default:
+		// 默认状态：灰绿色边框
 		gradTop = 0x0045302C
 		gradBottom = 0x001E1414
 		borderCol = 0x00807060
@@ -1370,12 +1449,14 @@ func tmPaintArrowKeysWindow(hwnd uintptr, hdc uintptr, btn *ButtonConfig, rc REC
 	}
 
 	// 颜色定义 (COLORREF = 0x00BBGGRR)
-	// 默认颜色：深色背景
-	defaultBgColor := uintptr(0x001E1414)
-	defaultBorderCol := uintptr(0x00807060)
-	// 悬停/按下颜色：更亮的颜色
-	activeBgColor := uintptr(0x004A3232)
-	activeBorderCol := uintptr(0x00E0C090)
+	// 整体窗口边框：始终保持默认灰绿色，不变色
+	windowBorderCol := uintptr(0x00807060)
+
+	// 方向键区域的颜色：只有按下该方向时变色
+	defaultBgColor := uintptr(0x004A3232)
+	defaultBorderCol := uintptr(0x00E0C090)
+	pressedBgColor := uintptr(0x006A5A50)
+	pressedBorderCol := uintptr(0x00FFFF00)
 
 	// 绘制整体背景
 	hBgBrush, _, _ := procCreateSolidBrush.Call(defaultBgColor)
@@ -1426,17 +1507,17 @@ func tmPaintArrowKeysWindow(hwnd uintptr, hdc uintptr, btn *ButtonConfig, rc REC
 	// 绘制四个区域
 	const corner = 8 // 圆角半径
 
-	// 绘制上区域
-	tmDrawArrowRegion(hdc, upRect, arrowDir == ArrowDirUp, "↑", corner, defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol)
-	// 绘制下区域
-	tmDrawArrowRegion(hdc, downRect, arrowDir == ArrowDirDown, "↓", corner, defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol)
-	// 绘制左区域
-	tmDrawArrowRegion(hdc, leftRect, arrowDir == ArrowDirLeft, "←", corner, defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol)
-	// 绘制右区域
-	tmDrawArrowRegion(hdc, rightRect, arrowDir == ArrowDirRight, "→", corner, defaultBgColor, defaultBorderCol, activeBgColor, activeBorderCol)
+	// 绘制上区域（只有按下↑时才用激活颜色）
+	tmDrawArrowRegion(hdc, upRect, arrowDir == ArrowDirUp, "↑", corner, defaultBgColor, defaultBorderCol, pressedBgColor, pressedBorderCol)
+	// 绘制下区域（只有按下↓时才用激活颜色）
+	tmDrawArrowRegion(hdc, downRect, arrowDir == ArrowDirDown, "↓", corner, defaultBgColor, defaultBorderCol, pressedBgColor, pressedBorderCol)
+	// 绘制左区域（只有按下←时才用激活颜色）
+	tmDrawArrowRegion(hdc, leftRect, arrowDir == ArrowDirLeft, "←", corner, defaultBgColor, defaultBorderCol, pressedBgColor, pressedBorderCol)
+	// 绘制右区域（只有按下→时才用激活颜色）
+	tmDrawArrowRegion(hdc, rightRect, arrowDir == ArrowDirRight, "→", corner, defaultBgColor, defaultBorderCol, pressedBgColor, pressedBorderCol)
 
-	// 绘制整体圆角边框
-	pen, _, _ := procCreatePen.Call(0, 3, defaultBorderCol)
+	// 绘制整体圆角边框（使用窗口级别的边框颜色）
+	pen, _, _ := procCreatePen.Call(0, 3, windowBorderCol)
 	oldPen, _, _ := procSelectObject.Call(hdc, pen)
 
 	NULL_BRUSH := uintptr(5)

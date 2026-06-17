@@ -480,6 +480,8 @@ func parseVirtualKey(params string) uint {
 		return 0x10
 	case "ALT":
 		return 0x12
+	case "WIN", "LWIN":
+		return 0x5B
 	}
 	return 0x0D // 默认 ENTER
 }

@@ -187,75 +187,184 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
     loadTouchButtons();
   }, [loadTouchButtons]);
 
-  // 键盘事件处理 - 监听新增按钮时用户按下的按键（支持组合键）
+  // 键盘事件处理 - 监听新增按钮时用户按下的按键（支持组合键和单独修饰键）
   useEffect(() => {
     if (waitingForKey && !selectedActionKey) {
+      // 记录当前按下的所有修饰键（用于组合键）
+      let currentModifiers: string[] = [];
+      // 是否已捕获到完整按键组合
+      let captured = false;
+      // 是否已经进入组合修饰键模式（按下了多个修饰键）
+      let isModifierComboMode = false;
+      // 记录首次按下修饰键时是否只有一个修饰键（用于判断是否为单独修饰键）
+      let startedAsSingleModifier = false;
+
       const handleKeyDown = (e: KeyboardEvent) => {
         e.preventDefault();
+        
+        if (captured) return;
+
         const keyPressed = e.key;
 
-        // 收集修饰键（只支持 ctrl, shift, alt, win）
-        const modifiers: string[] = [];
-        if (e.ctrlKey) modifiers.push('ctrl');
-        if (e.shiftKey) modifiers.push('shift');
-        if (e.altKey) modifiers.push('alt');
-        if (e.metaKey) modifiers.push('win');
+        // 收集当前所有按下的修饰键
+        const pressedModifiers: string[] = [];
+        if (e.ctrlKey) pressedModifiers.push('ctrl');
+        if (e.shiftKey) pressedModifiers.push('shift');
+        if (e.altKey) pressedModifiers.push('alt');
+        if (e.metaKey) pressedModifiers.push('win');
 
-        // 判断是否只是单纯的修饰键按下（还没按主键）
+        // 判断是否只是单纯的修饰键按下
         const isModifierOnly = keyPressed === 'Control' ||
                                keyPressed === 'Shift' ||
                                keyPressed === 'Alt' ||
                                keyPressed === 'Meta';
 
-        if (isModifierOnly) {
-          // 只是按了修饰键，继续等待主键
-          return;
+        // 更新当前修饰键状态
+        const prevModifierCount = currentModifiers.length;
+        currentModifiers = pressedModifiers;
+
+        if (!isModifierOnly) {
+          // 按下了非修饰键，创建组合键或单键
+          let keyName = keyPressed;
+          if (keyPressed === 'Enter') keyName = 'ENTER';
+          else if (keyPressed === ' ') keyName = 'SPACE';
+          else if (keyPressed === 'Escape') keyName = 'ESC';
+          else if (keyPressed === 'Tab') keyName = 'TAB';
+          else if (keyPressed.length === 1) keyName = keyPressed.toUpperCase();
+          else keyName = keyPressed.toUpperCase().replace('KEY', '');
+
+          const modifierStr = currentModifiers.join('+');
+
+          let displayName = keyName;
+          if (modifierStr) {
+            const modifierDisplay = currentModifiers
+              .map(m => m.charAt(0).toUpperCase() + m.slice(1))
+              .join('+');
+            displayName = `${modifierDisplay}+${keyName}`;
+          }
+
+          const btn: TouchButton = {
+            id: crypto.randomUUID(),
+            hotkeyID: '',
+            name: displayName,
+            actionParams: keyName,
+            keyCode: `x:${DEFAULT_TOUCH_X};y:${DEFAULT_TOUCH_Y}`,
+            x: DEFAULT_TOUCH_X,
+            y: DEFAULT_TOUCH_Y,
+            gameId: gameId,
+            isNew: true,
+            actionType: enums.HotkeyActionType.CUSTOM,
+            modifiers: modifierStr,
+          };
+
+          setTouchButtons((prev) => [...prev, btn]);
+          toast.success(t('touchMapping.toastButtonAdded', { buttonName: displayName }));
+          setWaitingForKey(false);
+          setShowAddDialog(false);
+          captured = true;
+        } else {
+          // 按下的是修饰键
+          // 如果之前没有修饰键，记录这是单修饰键开始
+          if (prevModifierCount === 0) {
+            startedAsSingleModifier = true;
+          }
+          // 如果现在有多个修饰键，进入组合修饰键模式
+          if (currentModifiers.length > 1) {
+            isModifierComboMode = true;
+          }
         }
+      };
 
-        // 将主键转换为标准化名称（用于 action_params 和显示）
-        let keyName = keyPressed;
-        if (keyPressed === 'Enter') keyName = 'ENTER';
-        else if (keyPressed === ' ') keyName = 'SPACE';
-        else if (keyPressed === 'Escape') keyName = 'ESC';
-        else if (keyPressed === 'Tab') keyName = 'TAB';
-        else if (keyPressed.length === 1) keyName = keyPressed.toUpperCase();
-        else keyName = keyPressed.toUpperCase().replace('KEY', '');
+      const handleKeyUp = (e: KeyboardEvent) => {
+        e.preventDefault();
+        
+        if (captured) return;
 
-        // 修饰键字符串："ctrl+shift" 格式
-        const modifierStr = modifiers.join('+');
+        const keyReleased = e.key;
 
-        // 显示名称：修饰键+主键，如 "Ctrl+Shift+A"
-        let displayName = keyName;
-        if (modifierStr) {
-          const modifierDisplay = modifiers
-            .map(m => m.charAt(0).toUpperCase() + m.slice(1))
-            .join('+');
-          displayName = `${modifierDisplay}+${keyName}`;
+        // 判断释放的是否是修饰键
+        const isModifierReleased = keyReleased === 'Control' ||
+                                   keyReleased === 'Shift' ||
+                                   keyReleased === 'Alt' ||
+                                   keyReleased === 'Meta';
+
+        // 如果释放的是修饰键，且之前没有按下其他键（只有修饰键被按下过）
+        if (isModifierReleased && !captured) {
+          // 检查当前是否还有其他修饰键按下
+          const stillPressed: string[] = [];
+          if (e.ctrlKey) stillPressed.push('ctrl');
+          if (e.shiftKey) stillPressed.push('shift');
+          if (e.altKey) stillPressed.push('alt');
+          if (e.metaKey) stillPressed.push('win');
+
+          // 如果释放后没有其他修饰键按下
+          if (stillPressed.length === 0) {
+            // 判断是单独修饰键还是组合修饰键
+            if (isModifierComboMode) {
+              // 曾经有多个修饰键同时按下，作为组合修饰键处理
+              const modifierDisplay = currentModifiers
+                .map(m => m.charAt(0).toUpperCase() + m.slice(1))
+                .join('+');
+
+              // 使用最后释放的修饰键作为 actionParams（用于映射）
+              const lastModifierKey = keyReleased.toUpperCase()
+                .replace('CONTROL', 'CTRL')
+                .replace('META', 'WIN');
+
+              const btn: TouchButton = {
+                id: crypto.randomUUID(),
+                hotkeyID: '',
+                name: modifierDisplay,
+                actionParams: lastModifierKey,
+                keyCode: `x:${DEFAULT_TOUCH_X};y:${DEFAULT_TOUCH_Y}`,
+                x: DEFAULT_TOUCH_X,
+                y: DEFAULT_TOUCH_Y,
+                gameId: gameId,
+                isNew: true,
+                actionType: enums.HotkeyActionType.CUSTOM,
+                modifiers: currentModifiers.join('+'),
+              };
+
+              setTouchButtons((prev) => [...prev, btn]);
+              toast.success(t('touchMapping.toastButtonAdded', { buttonName: modifierDisplay }));
+            } else if (startedAsSingleModifier) {
+              // 从始至终只有一个修饰键，作为单独修饰键处理
+              const modifierKeyName = keyReleased.toUpperCase()
+                .replace('CONTROL', 'CTRL')
+                .replace('META', 'WIN');
+
+              const btn: TouchButton = {
+                id: crypto.randomUUID(),
+                hotkeyID: '',
+                name: modifierKeyName,
+                actionParams: modifierKeyName,
+                keyCode: `x:${DEFAULT_TOUCH_X};y:${DEFAULT_TOUCH_Y}`,
+                x: DEFAULT_TOUCH_X,
+                y: DEFAULT_TOUCH_Y,
+                gameId: gameId,
+                isNew: true,
+                actionType: enums.HotkeyActionType.CUSTOM,
+                modifiers: '',
+              };
+
+              setTouchButtons((prev) => [...prev, btn]);
+              toast.success(t('touchMapping.toastButtonAdded', { buttonName: modifierKeyName }));
+            }
+
+            setWaitingForKey(false);
+            setShowAddDialog(false);
+            captured = true;
+          }
         }
-
-        // 创建新按钮
-        const btn: TouchButton = {
-          id: crypto.randomUUID(),
-          hotkeyID: '',
-          name: displayName,
-          actionParams: keyName,
-          keyCode: `x:${DEFAULT_TOUCH_X};y:${DEFAULT_TOUCH_Y}`,
-          x: DEFAULT_TOUCH_X,
-          y: DEFAULT_TOUCH_Y,
-          gameId: gameId,
-          isNew: true,
-          actionType: enums.HotkeyActionType.CUSTOM,
-          modifiers: modifierStr,
-        };
-        setTouchButtons((prev) => [...prev, btn]);
-
-        setWaitingForKey(false);
-        setShowAddDialog(false);
-        toast.success(t('touchMapping.toastButtonAdded', { buttonName: displayName }));
       };
 
       window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
+      window.addEventListener('keyup', handleKeyUp);
+
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+      };
     }
   }, [waitingForKey, gameId, selectedActionKey]);
 

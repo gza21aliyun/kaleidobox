@@ -91,6 +91,7 @@ var (
 	procPeekMessage        = tmUser32.NewProc("PeekMessageW")
 	procUnregisterClass    = tmUser32.NewProc("UnregisterClassW")
 	procGetCursorPos       = tmUser32.NewProc("GetCursorPos")
+	procTrackMouseEvent    = tmUser32.NewProc("TrackMouseEvent")
 	// procGetWindowRect / procGetSystemMetrics / procKeybdEvent / SM_CXSCREEN / SM_CYSCREEN 由同包中 image_service.go / start_service.go 提供
 )
 
@@ -149,6 +150,9 @@ const (
 
 	// PeekMessage 标志
 	PM_REMOVE = 0x0001
+
+	// TrackMouseEvent 标志
+	TME_LEAVE = 0x00000002
 
 	// Win32 错误码
 	ERROR_CLASS_ALREADY_EXISTS = 1410
@@ -226,6 +230,15 @@ type ButtonState struct {
 	Hovered        int32
 	Pressed        int32
 	ArrowDirection int32 // 方向键当前按下的方向（ArrowDirNone/Up/Down/Left/Right）
+}
+
+// TRACKMOUSEEVENT 结构体（用于 TrackMouseEvent API）
+// Windows API: TrackMouseEvent
+type TRACKMOUSEEVENT struct {
+	CbSize    uint32
+	DwFlags   uint32
+	HwndTrack uintptr
+	DwHoverTime uint32
 }
 
 // DragState 跟踪按钮的拖动状态（编辑模式下使用）
@@ -969,19 +982,48 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 		}
 
 		// 通用：悬停状态（带 nil 检查，避免 panic）
+		var needRedraw bool
 		if bs := buttonState[buttonID]; bs != nil {
-			atomic.StoreInt32(&bs.Hovered, 1)
+			if atomic.LoadInt32(&bs.Hovered) != 1 {
+				atomic.StoreInt32(&bs.Hovered, 1)
+				needRedraw = true
+			}
 		}
-		atomic.StoreInt32(&buttonHovered, 1)
-		tmInvalidateRect(hwnd)
+		if atomic.LoadInt32(&buttonHovered) != 1 {
+			atomic.StoreInt32(&buttonHovered, 1)
+			needRedraw = true
+		}
+		// 每次都启用鼠标离开跟踪
+		// Windows 文档：重复调用 TrackMouseEvent 不会有问题，且确保从其他按钮移过来时能正确收到 LEAVE
+		var tme TRACKMOUSEEVENT
+		tme.CbSize = uint32(unsafe.Sizeof(tme))
+		tme.DwFlags = TME_LEAVE
+		tme.HwndTrack = hwnd
+		tme.DwHoverTime = 0
+		procTrackMouseEvent.Call(uintptr(unsafe.Pointer(&tme)))
+		if needRedraw {
+			tmInvalidateRect(hwnd)
+		}
 		return 0
 
 	case WM_MOUSELEAVE:
+		var needRedraw bool
 		if bs := buttonState[buttonID]; bs != nil {
-			atomic.StoreInt32(&bs.Hovered, 0)
+			if atomic.LoadInt32(&bs.Hovered) != 0 {
+				atomic.StoreInt32(&bs.Hovered, 0)
+				needRedraw = true
+			}
 		}
-		atomic.StoreInt32(&buttonHovered, 0)
-		tmInvalidateRect(hwnd)
+		if atomic.LoadInt32(&buttonHovered) != 0 {
+			atomic.StoreInt32(&buttonHovered, 0)
+			needRedraw = true
+		}
+		if needRedraw {
+			tmInvalidateRect(hwnd)
+		}
+		// 注意：这里不重新调用 TrackMouseEvent
+		// 因为同窗口内的鼠标移动会持续收到 WM_MOUSEMOVE，届时会再启用
+		// 从其他按钮移动过来时，目标按钮会收到新的 WM_MOUSEMOVE 并启用跟踪
 		return 0
 
 	// 鼠标按下

@@ -48,14 +48,14 @@ const (
 	MappingTypeDirect  MappingType = "direct"  // 直接映射：按下就按下，释放就释放
 	MappingTypeRelease MappingType = "release" // 释放触发：只在释放时触发
 
-	KeyDs4L3Left   string = "l3left"
-	KeyDs4L3Right  string = "l3right"
-	KeyDs4L3Up     string = "l3up"
-	KeyDs4L3Down   string = "l3down"
-	KeyDs4R3Left   string = "r3left"
-	KeyDs4R3Right  string = "r3right"
-	KeyDs4R3Up     string = "r3up"
-	KeyDs4R3Down   string = "r3down"
+	KeyDs4L3Left   string = "l3-left"
+	KeyDs4L3Right  string = "l3-right"
+	KeyDs4L3Up     string = "l3-up"
+	KeyDs4L3Down   string = "l3-down"
+	KeyDs4R3Left   string = "r3-left"
+	KeyDs4R3Right  string = "r3-right"
+	KeyDs4R3Up     string = "r3-up"
+	KeyDs4R3Down   string = "r3-down"
 	KeyDs4L2       string = "l2"
 	KeyDs4R2       string = "r2"
 	KeyDs4L1       string = "l1"
@@ -847,6 +847,8 @@ func (s *HotkeyService) handleDS4Events() {
 		if data.(int) > 5000 {
 
 			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device)
+		} else if data.(int) < 1000 && data.(int) > -1000 {
+
 		} else if data.(int) < 5000 && data.(int) > -5000 {
 			s.toggleKey(KeyDs4L3Right, false, KeyDs4L3Right, device)
 			s.toggleKey(KeyDs4L3Left, false, KeyDs4L3Left, device)
@@ -864,6 +866,8 @@ func (s *HotkeyService) handleDS4Events() {
 		if data.(int) > 5000 {
 
 			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device)
+		} else if data.(int) < 1000 && data.(int) > -1000 {
+
 		} else if data.(int) < 5000 && data.(int) > -5000 {
 			s.toggleKey(KeyDs4R3Right, false, KeyDs4R3Right, device)
 			s.toggleKey(KeyDs4R3Left, false, KeyDs4R3Left, device)
@@ -878,6 +882,8 @@ func (s *HotkeyService) handleDS4Events() {
 		if data.(int) > 5000 {
 
 			s.toggleKey(KeyDs4L3Up, true, KeyDs4L3Up, device)
+		} else if data.(int) < 1000 && data.(int) > -1000 {
+
 		} else if data.(int) < 5000 && data.(int) > -5000 {
 			s.toggleKey(KeyDs4L3Up, false, KeyDs4L3Up, device)
 			s.toggleKey(KeyDs4L3Down, false, KeyDs4L3Down, device)
@@ -891,6 +897,8 @@ func (s *HotkeyService) handleDS4Events() {
 		if data.(int) > 5000 {
 
 			s.toggleKey(KeyDs4R3Up, true, KeyDs4R3Up, device)
+		} else if data.(int) < 1000 && data.(int) > -1000 {
+
 		} else if data.(int) < 5000 && data.(int) > -5000 {
 			s.toggleKey(KeyDs4R3Up, false, KeyDs4R3Up, device)
 			s.toggleKey(KeyDs4R3Down, false, KeyDs4R3Down, device)
@@ -901,21 +909,27 @@ func (s *HotkeyService) handleDS4Events() {
 }
 
 func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device enums.DeviceType) {
-	s.stateLock4.Lock()
 
-	defer s.stateLock4.Unlock()
+	// fmt.Printf("toggle key  %s\n", key)
+	s.stateLock4.Lock()
 
 	if isPress {
 		if !s.keyStates[key] {
 			fmt.Printf("toggle key press %s\n", key)
-			s.handleKeyPress(key, name, device)
 			s.keyStates[key] = true
+			s.stateLock4.Unlock()
+			s.handleKeyPress(key, name, device)
+		} else {
+			s.stateLock4.Unlock()
 		}
 	} else {
 		if s.keyStates[key] {
 			fmt.Printf("toggle key up %s\n", key)
-			s.handleKeyRelease(key, name, device)
 			s.keyStates[key] = false
+			s.stateLock4.Unlock()
+			s.handleKeyRelease(key, name, device)
+		} else {
+			s.stateLock4.Unlock()
 		}
 	}
 
@@ -930,10 +944,16 @@ func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 	// 启动手柄机器人
 	// 创建 joystick 适配器
 
+	applog.LogInfof(s.ctx, "Starting joystick listener...1")
+
 	joystickAdaptor := joystick.NewAdaptor("0")
+
+	applog.LogInfof(s.ctx, "Starting joystick listener...2")
 
 	// 创建手柄驱动
 	stick := joystick.NewDriver(joystickAdaptor, string(devicetype))
+
+	applog.LogInfof(s.ctx, "Starting joystick listener...3")
 
 	s.joysticks[string(devicetype)] = stick
 	if devicetype == enums.DeviceTypeDualShock4 {
@@ -942,10 +962,14 @@ func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 			[]gobot.Device{stick},
 			s.handleDS4Events,
 		)
+
+		applog.LogInfof(s.ctx, "Starting joystick listener...4")
 		go func() {
 			if err := s.robot.Start(); err != nil {
 				applog.LogErrorf(s.ctx, "Failed to start joystick robot: %v", err)
 			}
+
+			applog.LogInfof(s.ctx, "Starting joystick listener...complete")
 		}()
 	}
 

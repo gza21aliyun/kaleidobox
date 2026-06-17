@@ -1027,19 +1027,19 @@ func (s *TouchMappingService) touchMappingWndProc(hwnd uintptr, msg uint32, wPar
 
 		if btn != nil && btn.ActionType == "arrow_keys" {
 			// 方向键：计算触摸位置对应的方向
-			// 获取窗口客户区坐标（从 lParam 提取）
+			// 获取坐标（从 lParam 提取）
 			clientX := int32(lParam & 0xFFFF)
 			clientY := int32((lParam >> 16) & 0xFFFF)
 
-			// 如果是屏幕坐标（WM_POINTERDOWN），需要转换
+			// WM_LBUTTONDOWN 的 lParam 已经是客户区坐标，不需要转换
+			// WM_POINTERDOWN 的 lParam 是屏幕坐标，需要转换为客户区坐标
 			if msg == WM_POINTERDOWN {
-				pt := POINT{X: clientX, Y: clientY}
-				procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
-				// 转换为窗口客户区坐标
+				// 获取窗口在屏幕上的位置
 				var wr RECT
 				procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&wr)))
-				clientX = pt.X - wr.Left
-				clientY = pt.Y - wr.Top
+				// 将屏幕坐标转换为窗口客户区坐标
+				clientX = clientX - wr.Left
+				clientY = clientY - wr.Top
 			}
 
 			arrowDir := tmCalcArrowDirection(hwnd, clientX, clientY)

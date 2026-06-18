@@ -31,8 +31,8 @@ const (
 	DeviceTypeKeyboard   DeviceType = "keyboard"
 	DeviceTypeDualSense  DeviceType = "dualsense"  // PlayStation 5 DualSense
 	DeviceTypeDualShock4 DeviceType = "dualshock4" // PlayStation 4 DualShock 4
-	DeviceTypeJoyCon     DeviceType = "joycon"     // Nintendo Switch Joy-Con
-	DeviceTypeXInput     DeviceType = "xinput"     // Xbox controllers and compatible devices
+	DeviceTypeJoyCon     DeviceType = "joyconPair" // Nintendo Switch Joy-Con
+	DeviceTypeXInput     DeviceType = "xboxOne"    // Xbox controllers and compatible devices
 	DeviceTypeTouch      DeviceType = "touch"      // Touch mapping buttons (屏幕触摸按钮)
 )
 

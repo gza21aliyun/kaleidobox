@@ -622,7 +622,7 @@ func (s *HotkeyService) handleActionKey(key *models.Hotkey) {
 
 // handleKeyRelease 处理按键释放事件
 func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceType) {
-	applog.LogDebugf(s.ctx, "Key released: %s", key)
+	// applog.LogDebugf(s.ctx, "Key released: %s", key)
 	hk := models.Hotkey{
 		KeyCode:    key,
 		Name:       name,
@@ -639,11 +639,13 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 
 	s.mappingLock2.RUnlock()
 
-	fmt.Printf("Key: %v , mappings:%v\n", hotkey, s.keyMappings)
 	if hotkey != nil {
 		s.simulateKeyRelease(hotkey.ActionParams)
 		s.monitoredKey.Store(&hk)
+		fmt.Printf("Key: %v \n", hotkey)
 		return
+	} else {
+		fmt.Printf("handleKeyRelease Key: %v , mappings:%v\n", hotkey, s.keyMappings)
 	}
 	s.actionkeyLock3.RLock()
 	hotkey = s.actionKeys[key]
@@ -773,9 +775,97 @@ func (s *HotkeyService) convertJoystickButton(key int) string {
 
 func (s *HotkeyService) handleDS4Events() {
 	device := enums.DeviceTypeDualShock4
+	s.handleJoypadEvents(device)
+}
+
+func (s *HotkeyService) handleDS5Events() {
+	device := enums.DeviceTypeDualSense
+	s.handleJoypadEvents(device)
+}
+
+func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType) {
+	// device := enums.DeviceTypeDualShock4
 	stick := s.joysticks[string(device)]
 
 	// 监听按钮按下
+
+	stick.On(joystick.XPress, func(data interface{}) {
+		s.handleKeyPress("x", "X", device)
+	})
+	stick.On(joystick.XRelease, func(data interface{}) {
+		s.handleKeyRelease("x", "X", device)
+	})
+	stick.On(joystick.YPress, func(data interface{}) {
+		s.handleKeyPress("y", "Y", device)
+	})
+	stick.On(joystick.YRelease, func(data interface{}) {
+		s.handleKeyRelease("y", "Y", device)
+	})
+	stick.On(joystick.BPress, func(data interface{}) {
+		s.handleKeyPress("b", "B", device)
+	})
+	stick.On(joystick.BRelease, func(data interface{}) {
+		s.handleKeyRelease("b", "B", device)
+	})
+	stick.On(joystick.APress, func(data interface{}) {
+		s.handleKeyPress("a", "A", device)
+	})
+	stick.On(joystick.ARelease, func(data interface{}) {
+		s.handleKeyRelease("a", "A", device)
+	})
+	stick.On(joystick.LBPress, func(data interface{}) {
+		s.handleKeyPress("lb", "LB", device)
+	})
+	stick.On(joystick.LBRelease, func(data interface{}) {
+		s.handleKeyRelease("lb", "LB", device)
+	})
+
+	stick.On(joystick.RBPress, func(data interface{}) {
+		s.handleKeyPress("rb", "RB", device)
+	})
+	stick.On(joystick.RBRelease, func(data interface{}) {
+		s.handleKeyRelease("rb", "RB", device)
+	})
+	stick.On(joystick.LTPress, func(data interface{}) {
+		s.handleKeyPress("lt", "LT", device)
+	})
+	stick.On(joystick.LTRelease, func(data interface{}) {
+		s.handleKeyRelease("lt", "LT", device)
+	})
+	stick.On(joystick.RTPress, func(data interface{}) {
+		s.handleKeyPress("rt", "RT", device)
+	})
+	stick.On(joystick.RTRelease, func(data interface{}) {
+		s.handleKeyRelease("rt", "RT", device)
+	})
+	stick.On(joystick.Xbox360, func(data interface{}) {
+		s.handleKeyPress("xbox", "XBOX", device)
+	})
+	stick.On(joystick.StartPress, func(data interface{}) {
+		s.handleKeyPress("start", "START", device)
+	})
+	stick.On(joystick.StartRelease, func(data interface{}) {
+		s.handleKeyRelease("start", "START", device)
+	})
+	stick.On(joystick.BackPress, func(data interface{}) {
+		s.handleKeyPress("back", "BACK", device)
+	})
+	stick.On(joystick.BackRelease, func(data interface{}) {
+		s.handleKeyRelease("back", "BACK", device)
+	})
+	stick.On(joystick.HomePress, func(data interface{}) {
+		s.handleKeyPress("home", "HOME", device)
+	})
+	stick.On(joystick.HomeRelease, func(data interface{}) {
+		s.handleKeyRelease("home", "HOME", device)
+	})
+	stick.On(joystick.PedalPress, func(data interface{}) {
+		s.handleKeyPress("pedal", "PEDAL", device)
+	})
+	stick.On(joystick.PedalRelease, func(data interface{}) {
+		s.handleKeyRelease("pedal", "PEDAL", device)
+	})
+
 	stick.On(joystick.SquarePress, func(data interface{}) {
 		s.handleKeyPress("square", "□", device)
 	})
@@ -812,43 +902,91 @@ func (s *HotkeyService) handleDS4Events() {
 	stick.On(joystick.L1Press, func(data interface{}) {
 		s.handleKeyPress("l1", "L1", device)
 	})
+	stick.On(joystick.L1Release, func(data interface{}) {
+		s.handleKeyRelease("l1", "L1", device)
+	})
 
 	stick.On(joystick.R1Press, func(data interface{}) {
 		s.handleKeyPress("r1", "R1", device)
+	})
+	stick.On(joystick.R1Release, func(data interface{}) {
+		s.handleKeyRelease("r1", "R1", device)
 	})
 
 	// 监听扳机键 (模拟量)
 	stick.On(joystick.L2Press, func(data interface{}) {
 		s.handleKeyPress("l2", "L2", device)
 	})
+	stick.On(joystick.L2Release, func(data interface{}) {
+		s.handleKeyRelease("l2", "L2", device)
+	})
 
 	stick.On(joystick.R2Press, func(data interface{}) {
 		s.handleKeyPress("r2", "R2", device)
+	})
+	stick.On(joystick.R2Release, func(data interface{}) {
+		s.handleKeyRelease("r2", "R2", device)
 	})
 
 	stick.On(joystick.L3Press, func(data interface{}) {
 		s.handleKeyPress("l3", "L3", device)
 	})
+	stick.On(joystick.L3Release, func(data interface{}) {
+		s.handleKeyRelease("l3", "L3", device)
+	})
 
 	stick.On(joystick.R3Press, func(data interface{}) {
 		s.handleKeyPress("r3", "R3", device)
+	})
+	stick.On(joystick.R3Release, func(data interface{}) {
+		s.handleKeyRelease("r3", "R3", device)
 	})
 
 	// 监听方向键
 	stick.On(joystick.UpPress, func(data interface{}) {
 		s.handleKeyPress("up", "↑", device)
 	})
+	stick.On(joystick.UpRelease, func(data interface{}) {
+		s.handleKeyRelease("up", "↑", device)
+	})
 
 	stick.On(joystick.DownPress, func(data interface{}) {
 		s.handleKeyPress("down", "↓", device)
+	})
+	stick.On(joystick.DownRelease, func(data interface{}) {
+		s.handleKeyRelease("down", "↓", device)
 	})
 
 	stick.On(joystick.LeftPress, func(data interface{}) {
 		s.handleKeyPress("left", "←", device)
 	})
+	stick.On(joystick.LeftRelease, func(data interface{}) {
+		s.handleKeyRelease("left", "←", device)
+	})
 
 	stick.On(joystick.RightPress, func(data interface{}) {
 		s.handleKeyPress("right", "→", device)
+	})
+	stick.On(joystick.RightRelease, func(data interface{}) {
+		s.handleKeyRelease("right", "→", device)
+	})
+	stick.On(joystick.OptionsPress, func(data interface{}) {
+		s.handleKeyRelease("option", "Option", device)
+	})
+	stick.On(joystick.OptionsRelease, func(data interface{}) {
+		s.handleKeyRelease("option", "Option", device)
+	})
+	stick.On(joystick.SharePress, func(data interface{}) {
+		s.handleKeyPress("share", "Share", device)
+	})
+	stick.On(joystick.ShareRelease, func(data interface{}) {
+		s.handleKeyRelease("share", "Share", device)
+	})
+	stick.On(joystick.PSPress, func(data interface{}) {
+		s.handleKeyPress("ps", "PS", device)
+	})
+	stick.On(joystick.PSRelease, func(data interface{}) {
+		s.handleKeyRelease("ps", "PS", device)
 	})
 
 	// 监听摇杆轴 (模拟量)
@@ -857,16 +995,17 @@ func (s *HotkeyService) handleDS4Events() {
 		// var l3LeftIsRelease = true
 		// var l3RightIsRelease = true
 		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
+		cm := fmt.Sprintf("Left X axis: %v", data)
 		if data.(int) > 5000 {
 
-			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device)
+			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device, cm)
 		} else if data.(int) < 1000 && data.(int) > -1000 {
 
 		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4L3Right, false, KeyDs4L3Right, device)
-			s.toggleKey(KeyDs4L3Left, false, KeyDs4L3Left, device)
+			s.toggleKey(KeyDs4L3Right, false, KeyDs4L3Right, device, cm)
+			s.toggleKey(KeyDs4L3Left, false, KeyDs4L3Left, device, cm)
 		} else {
-			s.toggleKey(KeyDs4L3Left, true, KeyDs4L3Left, device)
+			s.toggleKey(KeyDs4L3Left, true, KeyDs4L3Left, device, cm)
 		}
 
 	})
@@ -876,59 +1015,274 @@ func (s *HotkeyService) handleDS4Events() {
 		// var l3LeftIsRelease = true
 		// var l3RightIsRelease = true
 		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
+		cm := fmt.Sprintf("Right X axis: %v", data)
 		if data.(int) > 5000 {
 
-			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device)
+			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device, cm)
 		} else if data.(int) < 1000 && data.(int) > -1000 {
 
 		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4R3Right, false, KeyDs4R3Right, device)
-			s.toggleKey(KeyDs4R3Left, false, KeyDs4R3Left, device)
+			s.toggleKey(KeyDs4R3Right, false, KeyDs4R3Right, device, cm)
+			s.toggleKey(KeyDs4R3Left, false, KeyDs4R3Left, device, cm)
 		} else {
-			s.toggleKey(KeyDs4R3Left, true, KeyDs4R3Left, device)
+			s.toggleKey(KeyDs4R3Left, true, KeyDs4R3Left, device, cm)
 		}
 
 	})
 
 	stick.On(joystick.LeftY, func(data interface{}) {
+		cm := fmt.Sprintf("Left Y axis: %v", data)
 
 		if data.(int) > 5000 {
 
-			s.toggleKey(KeyDs4L3Up, true, KeyDs4L3Up, device)
+			s.toggleKey(KeyDs4L3Up, true, KeyDs4L3Up, device, cm)
 		} else if data.(int) < 1000 && data.(int) > -1000 {
 
 		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4L3Up, false, KeyDs4L3Up, device)
-			s.toggleKey(KeyDs4L3Down, false, KeyDs4L3Down, device)
+			s.toggleKey(KeyDs4L3Up, false, KeyDs4L3Up, device, cm)
+			s.toggleKey(KeyDs4L3Down, false, KeyDs4L3Down, device, cm)
 		} else {
-			s.toggleKey(KeyDs4L3Down, true, KeyDs4L3Down, device)
+			s.toggleKey(KeyDs4L3Down, true, KeyDs4L3Down, device, cm)
 		}
 	})
 
 	stick.On(joystick.RightY, func(data interface{}) {
+		cm := fmt.Sprintf("Right Y axis: %v", data)
 
 		if data.(int) > 5000 {
 
-			s.toggleKey(KeyDs4R3Up, true, KeyDs4R3Up, device)
+			s.toggleKey(KeyDs4R3Up, true, KeyDs4R3Up, device, cm)
 		} else if data.(int) < 1000 && data.(int) > -1000 {
 
 		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4R3Up, false, KeyDs4R3Up, device)
-			s.toggleKey(KeyDs4R3Down, false, KeyDs4R3Down, device)
+			s.toggleKey(KeyDs4R3Up, false, KeyDs4R3Up, device, cm)
+			s.toggleKey(KeyDs4R3Down, false, KeyDs4R3Down, device, cm)
 		} else {
-			s.toggleKey(KeyDs4R3Down, true, KeyDs4R3Down, device)
+			s.toggleKey(KeyDs4R3Down, true, KeyDs4R3Down, device, cm)
 		}
 	})
 }
 
-func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device enums.DeviceType) {
+func (s *HotkeyService) handleXInputEvents() {
+	device := enums.DeviceTypeXInput
+	s.handleJoypadEvents(device)
+}
+
+func (s *HotkeyService) handleJconEvents() {
+	device := enums.DeviceTypeJoyCon
+	s.handleJoypadEvents(device)
+}
+
+// func (s *HotkeyService) handleXInputEvents() {
+// 	device := enums.DeviceTypeDualShock4
+// 	stick := s.joysticks[string(device)]
+
+// 	// 监听按钮按下
+// 	stick.On(joystick.SquarePress, func(data interface{}) {
+// 		s.handleKeyPress("square", "□", device)
+// 	})
+
+// 	stick.On(joystick.SquareRelease, func(data interface{}) {
+// 		s.handleKeyRelease("square", "□", device)
+// 	})
+
+// 	stick.On(joystick.CirclePress, func(data interface{}) {
+// 		s.handleKeyPress("circle", "○", device)
+// 	})
+
+// 	stick.On(joystick.CircleRelease, func(data interface{}) {
+// 		s.handleKeyRelease("circle", "○", device)
+// 	})
+
+// 	stick.On(joystick.TrianglePress, func(data interface{}) {
+// 		s.handleKeyPress("triangle", "△", device)
+// 	})
+
+// 	stick.On(joystick.TriangleRelease, func(data interface{}) {
+// 		s.handleKeyRelease("triangle", "△", device)
+// 	})
+
+// 	stick.On(joystick.XPress, func(data interface{}) {
+// 		s.handleKeyPress("cross", "X", device)
+// 	})
+
+// 	stick.On(joystick.XRelease, func(data interface{}) {
+// 		s.handleKeyRelease("cross", "X", device)
+// 	})
+
+// 	// 监听肩键
+// 	stick.On(joystick.L1Press, func(data interface{}) {
+// 		s.handleKeyPress("l1", "L1", device)
+// 	})
+// 	stick.On(joystick.L1Release, func(data interface{}) {
+// 		s.handleKeyRelease("l1", "L1", device)
+// 	})
+
+// 	stick.On(joystick.R1Press, func(data interface{}) {
+// 		s.handleKeyPress("r1", "R1", device)
+// 	})
+// 	stick.On(joystick.R1Release, func(data interface{}) {
+// 		s.handleKeyRelease("r1", "R1", device)
+// 	})
+
+// 	// 监听扳机键 (模拟量)
+// 	stick.On(joystick.L2Press, func(data interface{}) {
+// 		s.handleKeyPress("l2", "L2", device)
+// 	})
+// 	stick.On(joystick.L2Release, func(data interface{}) {
+// 		s.handleKeyRelease("l2", "L2", device)
+// 	})
+
+// 	stick.On(joystick.R2Press, func(data interface{}) {
+// 		s.handleKeyPress("r2", "R2", device)
+// 	})
+// 	stick.On(joystick.R2Release, func(data interface{}) {
+// 		s.handleKeyRelease("r2", "R2", device)
+// 	})
+
+// 	stick.On(joystick.L3Press, func(data interface{}) {
+// 		s.handleKeyPress("l3", "L3", device)
+// 	})
+// 	stick.On(joystick.L3Release, func(data interface{}) {
+// 		s.handleKeyRelease("l3", "L3", device)
+// 	})
+
+// 	stick.On(joystick.R3Press, func(data interface{}) {
+// 		s.handleKeyPress("r3", "R3", device)
+// 	})
+// 	stick.On(joystick.R3Release, func(data interface{}) {
+// 		s.handleKeyRelease("r3", "R3", device)
+// 	})
+
+// 	// 监听方向键
+// 	stick.On(joystick.UpPress, func(data interface{}) {
+// 		s.handleKeyPress("up", "↑", device)
+// 	})
+// 	stick.On(joystick.UpRelease, func(data interface{}) {
+// 		s.handleKeyRelease("up", "↑", device)
+// 	})
+
+// 	stick.On(joystick.DownPress, func(data interface{}) {
+// 		s.handleKeyPress("down", "↓", device)
+// 	})
+// 	stick.On(joystick.DownRelease, func(data interface{}) {
+// 		s.handleKeyRelease("down", "↓", device)
+// 	})
+
+// 	stick.On(joystick.LeftPress, func(data interface{}) {
+// 		s.handleKeyPress("left", "←", device)
+// 	})
+// 	stick.On(joystick.LeftRelease, func(data interface{}) {
+// 		s.handleKeyRelease("left", "←", device)
+// 	})
+
+// 	stick.On(joystick.RightPress, func(data interface{}) {
+// 		s.handleKeyPress("right", "→", device)
+// 	})
+// 	stick.On(joystick.RightRelease, func(data interface{}) {
+// 		s.handleKeyRelease("right", "→", device)
+// 	})
+// 	stick.On(joystick.OptionsPress, func(data interface{}) {
+// 		s.handleKeyRelease("option", "Option", device)
+// 	})
+// 	stick.On(joystick.OptionsRelease, func(data interface{}) {
+// 		s.handleKeyRelease("option", "Option", device)
+// 	})
+// 	stick.On(joystick.SharePress, func(data interface{}) {
+// 		s.handleKeyPress("share", "Share", device)
+// 	})
+// 	stick.On(joystick.ShareRelease, func(data interface{}) {
+// 		s.handleKeyRelease("share", "Share", device)
+// 	})
+// 	stick.On(joystick.PSPress, func(data interface{}) {
+// 		s.handleKeyPress("ps", "PS", device)
+// 	})
+// 	stick.On(joystick.PSRelease, func(data interface{}) {
+// 		s.handleKeyRelease("ps", "PS", device)
+// 	})
+
+// 	// 监听摇杆轴 (模拟量)
+// 	stick.On(joystick.LeftX, func(data interface{}) {
+// 		// data 包含摇杆位置值 -32768 到 32767
+// 		// var l3LeftIsRelease = true
+// 		// var l3RightIsRelease = true
+// 		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
+// 		cm := fmt.Sprintf("Left X axis: %v", data)
+// 		if data.(int) > 5000 {
+
+// 			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device, cm)
+// 		} else if data.(int) < 1000 && data.(int) > -1000 {
+
+// 		} else if data.(int) < 5000 && data.(int) > -5000 {
+// 			s.toggleKey(KeyDs4L3Right, false, KeyDs4L3Right, device, cm)
+// 			s.toggleKey(KeyDs4L3Left, false, KeyDs4L3Left, device, cm)
+// 		} else {
+// 			s.toggleKey(KeyDs4L3Left, true, KeyDs4L3Left, device, cm)
+// 		}
+
+// 	})
+
+// 	stick.On(joystick.RightX, func(data interface{}) {
+// 		// data 包含摇杆位置值 -32768 到 32767
+// 		// var l3LeftIsRelease = true
+// 		// var l3RightIsRelease = true
+// 		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
+// 		cm := fmt.Sprintf("Right X axis: %v", data)
+// 		if data.(int) > 5000 {
+
+// 			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device, cm)
+// 		} else if data.(int) < 1000 && data.(int) > -1000 {
+
+// 		} else if data.(int) < 5000 && data.(int) > -5000 {
+// 			s.toggleKey(KeyDs4R3Right, false, KeyDs4R3Right, device, cm)
+// 			s.toggleKey(KeyDs4R3Left, false, KeyDs4R3Left, device, cm)
+// 		} else {
+// 			s.toggleKey(KeyDs4R3Left, true, KeyDs4R3Left, device, cm)
+// 		}
+
+// 	})
+
+// 	stick.On(joystick.LeftY, func(data interface{}) {
+// 		cm := fmt.Sprintf("Left Y axis: %v", data)
+
+// 		if data.(int) > 5000 {
+
+// 			s.toggleKey(KeyDs4L3Up, true, KeyDs4L3Up, device, cm)
+// 		} else if data.(int) < 1000 && data.(int) > -1000 {
+
+// 		} else if data.(int) < 5000 && data.(int) > -5000 {
+// 			s.toggleKey(KeyDs4L3Up, false, KeyDs4L3Up, device, cm)
+// 			s.toggleKey(KeyDs4L3Down, false, KeyDs4L3Down, device, cm)
+// 		} else {
+// 			s.toggleKey(KeyDs4L3Down, true, KeyDs4L3Down, device, cm)
+// 		}
+// 	})
+
+// 	stick.On(joystick.RightY, func(data interface{}) {
+// 		cm := fmt.Sprintf("Right Y axis: %v", data)
+
+// 		if data.(int) > 5000 {
+
+// 			s.toggleKey(KeyDs4R3Up, true, KeyDs4R3Up, device, cm)
+// 		} else if data.(int) < 1000 && data.(int) > -1000 {
+
+// 		} else if data.(int) < 5000 && data.(int) > -5000 {
+// 			s.toggleKey(KeyDs4R3Up, false, KeyDs4R3Up, device, cm)
+// 			s.toggleKey(KeyDs4R3Down, false, KeyDs4R3Down, device, cm)
+// 		} else {
+// 			s.toggleKey(KeyDs4R3Down, true, KeyDs4R3Down, device, cm)
+// 		}
+// 	})
+// }
+
+func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device enums.DeviceType, comment string) {
 
 	// fmt.Printf("toggle key  %s\n", key)
 	s.stateLock4.Lock()
 
 	if isPress {
 		if !s.keyStates[key] {
-			fmt.Printf("toggle key press %s\n", key)
+			fmt.Printf("toggle key press %s，comment:%s\n", key, comment)
 			s.keyStates[key] = true
 			s.stateLock4.Unlock()
 			s.handleKeyPress(key, name, device)
@@ -937,7 +1291,7 @@ func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device 
 		}
 	} else {
 		if s.keyStates[key] {
-			fmt.Printf("toggle key up %s\n", key)
+			fmt.Printf("toggle key up %s, comment:%s\n", key, comment)
 			s.keyStates[key] = false
 			s.stateLock4.Unlock()
 			s.handleKeyRelease(key, name, device)
@@ -976,13 +1330,33 @@ func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 			s.handleDS4Events,
 		)
 
-		applog.LogInfof(s.ctx, "Starting joystick listener...4")
+	} else if devicetype == enums.DeviceTypeDualSense {
+		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
+			[]gobot.Connection{joystickAdaptor},
+			[]gobot.Device{stick},
+			s.handleDS5Events,
+		)
+
+	} else if devicetype == enums.DeviceTypeXInput {
+		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
+			[]gobot.Connection{joystickAdaptor},
+			[]gobot.Device{stick},
+			s.handleXInputEvents,
+		)
+	} else if devicetype == enums.DeviceTypeJoyCon {
+		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
+			[]gobot.Connection{joystickAdaptor},
+			[]gobot.Device{stick},
+			s.handleJconEvents,
+		)
+	}
+	applog.LogInfof(s.ctx, "Starting joystick listener...4")
+	if s.robot != nil {
 		go func() {
 			if err := s.robot.Start(); err != nil {
-				applog.LogErrorf(s.ctx, "Failed to start joystick robot: %v", err)
+				applog.ErrorLogSaveAppLog("robot start err: ", err)
 			}
 
-			applog.LogInfof(s.ctx, "Starting joystick listener...complete")
 		}()
 	}
 

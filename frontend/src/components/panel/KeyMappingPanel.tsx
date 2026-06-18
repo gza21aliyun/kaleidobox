@@ -14,8 +14,8 @@ interface Ps4PanelProps {
 interface KeyMapping {
   button: string;
   buttonLabel: string;
-  mappingLabel: string;
-  mappingKey: string;
+  mappingLabel: string | undefined;
+  mappingKey: string | undefined;
   position: { x: number; y: number };
 }
 
@@ -42,33 +42,62 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
   ]
 
   // PS4手柄按键位置定义
-  const ds4Mappings: KeyMapping[] = [
-    { button: 'square', buttonLabel: 'Square', mappingLabel: 'A', mappingKey: 'KeyA', position: { x: 52, y: 17 } },
-    { button: 'cross', buttonLabel: 'Cross', mappingLabel: 'S', mappingKey: 'KeyS', position: { x: 58, y: 25 } },
-    { button: 'circle', buttonLabel: 'Circle', mappingLabel: 'D', mappingKey: 'KeyD', position: { x: 65, y: 17 } },
-    { button: 'triangle', buttonLabel: 'Triangle', mappingLabel: 'W', mappingKey: 'KeyW', position: { x: 58, y: 10 } },
-    { button: 'l1', buttonLabel: 'L1', mappingLabel: 'Q', mappingKey: 'KeyQ', position: { x: 15, y: -5 } },
-    { button: 'r1', buttonLabel: 'R1', mappingLabel: 'E', mappingKey: 'KeyE', position: { x: 60, y: -5 } },
-    { button: 'l2', buttonLabel: 'L2', mappingLabel: 'Z', mappingKey: 'KeyZ', position: { x: 10, y: -15 } },
-    { button: 'r2', buttonLabel: 'R2', mappingLabel: 'C', mappingKey: 'KeyC', position: { x: 65, y: -15 } },
-    { button: 'l3', buttonLabel: 'L3', mappingLabel: '1', mappingKey: 'Digit1', position: { x: 23, y: 40 } },
-    { button: 'r3', buttonLabel: 'R3', mappingLabel: '3', mappingKey: 'Digit3', position: { x: 49, y: 40 } },
-    { button: 'share', buttonLabel: 'Share', mappingLabel: 'V', mappingKey: 'KeyV', position: { x: 22, y: 5 } },
-    { button: 'options', buttonLabel: 'Options', mappingLabel: 'M', mappingKey: 'KeyM', position: { x: 50, y: 5 } },
-    { button: 'ps', buttonLabel: 'PS', mappingLabel: 'B', mappingKey: 'KeyB', position: { x: 37, y: 30 } },
-    { button: 'touchpad', buttonLabel: 'Touchpad', mappingLabel: 'N', mappingKey: 'KeyN', position: { x: 37, y: 13 } },
+  // const ds4Mappings: KeyMapping[] = [
+  //   { button: 'square', buttonLabel: 'Square', mappingLabel: 'A', mappingKey: 'KeyA', position: { x: 52, y: 17 } },
+  //   { button: 'cross', buttonLabel: 'Cross', mappingLabel: 'S', mappingKey: 'KeyS', position: { x: 58, y: 25 } },
+  //   { button: 'circle', buttonLabel: 'Circle', mappingLabel: 'D', mappingKey: 'KeyD', position: { x: 65, y: 17 } },
+  //   { button: 'triangle', buttonLabel: 'Triangle', mappingLabel: 'W', mappingKey: 'KeyW', position: { x: 58, y: 10 } },
+  //   { button: 'l1', buttonLabel: 'L1', mappingLabel: 'Q', mappingKey: 'KeyQ', position: { x: 15, y: -5 } },
+  //   { button: 'r1', buttonLabel: 'R1', mappingLabel: 'E', mappingKey: 'KeyE', position: { x: 60, y: -5 } },
+  //   { button: 'l2', buttonLabel: 'L2', mappingLabel: 'Z', mappingKey: 'KeyZ', position: { x: 10, y: -15 } },
+  //   { button: 'r2', buttonLabel: 'R2', mappingLabel: 'C', mappingKey: 'KeyC', position: { x: 65, y: -15 } },
+  //   { button: 'l3', buttonLabel: 'L3', mappingLabel: '1', mappingKey: 'Digit1', position: { x: 23, y: 40 } },
+  //   { button: 'r3', buttonLabel: 'R3', mappingLabel: '3', mappingKey: 'Digit3', position: { x: 49, y: 40 } },
+  //   { button: 'share', buttonLabel: 'Share', mappingLabel: 'V', mappingKey: 'KeyV', position: { x: 22, y: 5 } },
+  //   { button: 'options', buttonLabel: 'Options', mappingLabel: 'M', mappingKey: 'KeyM', position: { x: 50, y: 5 } },
+  //   { button: 'ps', buttonLabel: 'PS', mappingLabel: 'B', mappingKey: 'KeyB', position: { x: 37, y: 30 } },
+  //   { button: 'touchpad', buttonLabel: 'Touchpad', mappingLabel: 'N', mappingKey: 'KeyN', position: { x: 37, y: 13 } },
+  //   { button: 'l3-left', buttonLabel: 'L3 Left', mappingLabel: '←', mappingKey: 'LEFT', position: { x: 15, y: 40 } },
+  //   { button: 'l3-up', buttonLabel: 'L3 Up', mappingLabel: '↑', mappingKey: 'UP', position: { x: 23, y: 29 } },
+  //   { button: 'l3-right', buttonLabel: 'L3 Right', mappingLabel: '→', mappingKey: 'RIGHT', position: { x: 31, y: 40 } },
+  //   { button: 'l3-down', buttonLabel: 'L3 Down', mappingLabel: '↓', mappingKey: 'DOWN', position: { x: 23, y: 51 } },
+  //   { button: 'r3-left', buttonLabel: 'R3 Left', mappingLabel: 'J', mappingKey: 'KeyJ', position: { x: 41, y: 40 } },
+  //   { button: 'r3-up', buttonLabel: 'R3 Up', mappingLabel: 'I', mappingKey: 'KeyI', position: { x: 49, y: 29 } },
+  //   { button: 'r3-right', buttonLabel: 'R3 Right', mappingLabel: 'L', mappingKey: 'KeyL', position: { x: 57, y: 40 } },
+  //   { button: 'r3-down', buttonLabel: 'R3 Down', mappingLabel: 'K', mappingKey: 'KeyK', position: { x: 49, y: 51 } },
+  //   { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'T', mappingKey: 'KeyT', position: { x: 13, y: 10 } },
+  //   { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'G', mappingKey: 'KeyG', position: { x: 13, y: 25 } },
+  //   { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'F', mappingKey: 'KeyF', position: { x: 8, y: 17 } },
+  //   { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'H', mappingKey: 'KeyH', position: { x: 19, y: 17 } }
+  // ];
+
+   const ds4Mappings: KeyMapping[] = [
+    { button: 'square', buttonLabel: '□', mappingLabel: undefined, mappingKey: undefined, position: { x: 52, y: 17 } },
+    { button: 'cross', buttonLabel: 'X', mappingLabel: 'Esc', mappingKey: 'ESC', position: { x: 58, y: 25 } },
+    { button: 'circle', buttonLabel: '○', mappingLabel: 'Enter', mappingKey: 'ENTER', position: { x: 65, y: 17 } },
+    { button: 'triangle', buttonLabel: '△', mappingLabel: undefined, mappingKey: undefined, position: { x: 58, y: 10 } },
+    { button: 'l1', buttonLabel: 'L1', mappingLabel: 'F6', mappingKey: 'f6', position: { x: 15, y: -5 } },
+    { button: 'r1', buttonLabel: 'R1', mappingLabel: 'Ctrl', mappingKey: 'ctrl', position: { x: 60, y: -5 } },
+    { button: 'l2', buttonLabel: 'L2', mappingLabel: undefined, mappingKey: undefined, position: { x: 10, y: -15 } },
+    { button: 'r2', buttonLabel: 'R2', mappingLabel: undefined, mappingKey: undefined, position: { x: 65, y: -15 } },
+    { button: 'l3', buttonLabel: 'L3', mappingLabel: '1', mappingKey: '', position: { x: 23, y: 40 } },
+    { button: 'r3', buttonLabel: 'R3', mappingLabel: '3', mappingKey: '', position: { x: 49, y: 40 } },
+    { button: 'share', buttonLabel: 'Share', mappingLabel: 'screenshot', mappingKey: 'screenshot', position: { x: 22, y: 5 } },
+    { button: 'options', buttonLabel: 'Options', mappingLabel: 'M', mappingKey: '', position: { x: 50, y: 5 } },
+    { button: 'ps', buttonLabel: 'PS', mappingLabel: 'Win', mappingKey: 'win', position: { x: 37, y: 30 } },
+    { button: 'touchpad', buttonLabel: 'Touchpad', mappingLabel: 'N', mappingKey: '', position: { x: 37, y: 13 } },
     { button: 'l3-left', buttonLabel: 'L3 Left', mappingLabel: '←', mappingKey: 'LEFT', position: { x: 15, y: 40 } },
     { button: 'l3-up', buttonLabel: 'L3 Up', mappingLabel: '↑', mappingKey: 'UP', position: { x: 23, y: 29 } },
     { button: 'l3-right', buttonLabel: 'L3 Right', mappingLabel: '→', mappingKey: 'RIGHT', position: { x: 31, y: 40 } },
     { button: 'l3-down', buttonLabel: 'L3 Down', mappingLabel: '↓', mappingKey: 'DOWN', position: { x: 23, y: 51 } },
-    { button: 'r3-left', buttonLabel: 'R3 Left', mappingLabel: 'J', mappingKey: 'KeyJ', position: { x: 41, y: 40 } },
-    { button: 'r3-up', buttonLabel: 'R3 Up', mappingLabel: 'I', mappingKey: 'KeyI', position: { x: 49, y: 29 } },
-    { button: 'r3-right', buttonLabel: 'R3 Right', mappingLabel: 'L', mappingKey: 'KeyL', position: { x: 57, y: 40 } },
-    { button: 'r3-down', buttonLabel: 'R3 Down', mappingLabel: 'K', mappingKey: 'KeyK', position: { x: 49, y: 51 } },
-    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'T', mappingKey: 'KeyT', position: { x: 13, y: 10 } },
-    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'G', mappingKey: 'KeyG', position: { x: 13, y: 25 } },
-    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'F', mappingKey: 'KeyF', position: { x: 8, y: 17 } },
-    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'H', mappingKey: 'KeyH', position: { x: 19, y: 17 } }
+    { button: 'r3-left', buttonLabel: 'R3 Left', mappingLabel: 'J', mappingKey: '', position: { x: 41, y: 40 } },
+    { button: 'r3-up', buttonLabel: 'R3 Up', mappingLabel: 'I', mappingKey: '', position: { x: 49, y: 29 } },
+    { button: 'r3-right', buttonLabel: 'R3 Right', mappingLabel: 'L', mappingKey: '', position: { x: 57, y: 40 } },
+    { button: 'r3-down', buttonLabel: 'R3 Down', mappingLabel: 'K', mappingKey: '', position: { x: 49, y: 51 } },
+    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: '↑', mappingKey: 'up', position: { x: 13, y: 10 } },
+    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: '↓', mappingKey: 'down', position: { x: 13, y: 25 } },
+    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: '←', mappingKey: 'left', position: { x: 8, y: 17 } },
+    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: '→', mappingKey: 'right', position: { x: 19, y: 17 } }
   ];
 
   // Joy-Con手柄按键位置定义
@@ -102,30 +131,30 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
 
   // XInput手柄按键位置定义
   const xinputMappings: KeyMapping[] = [
-    { button: 'a', buttonLabel: 'A', mappingLabel: 'S', mappingKey: 'KeyS', position: { x: 55, y: 43 } },
-    { button: 'b', buttonLabel: 'B', mappingLabel: 'D', mappingKey: 'KeyD', position: { x: 60, y: 35 } },
-    { button: 'x', buttonLabel: 'X', mappingLabel: 'A', mappingKey: 'KeyA', position: { x: 50, y: 35 } },
-    { button: 'y', buttonLabel: 'Y', mappingLabel: 'W', mappingKey: 'KeyW', position: { x: 55, y: 27 } },
+    { button: 'a', buttonLabel: 'A', mappingLabel: 'Enter', mappingKey: 'Enter', position: { x: 55, y: 43 } },
+    { button: 'b', buttonLabel: 'B', mappingLabel: 'Esc', mappingKey: 'Esc', position: { x: 60, y: 35 } },
+    { button: 'x', buttonLabel: 'X', mappingLabel: 'A', mappingKey: '', position: { x: 50, y: 35 } },
+    { button: 'y', buttonLabel: 'Y', mappingLabel: 'W', mappingKey: '', position: { x: 55, y: 27 } },
     { button: 'lb', buttonLabel: 'LB', mappingLabel: 'Q', mappingKey: 'KeyQ', position: { x: 15, y: 12 } },
     { button: 'rb', buttonLabel: 'RB', mappingLabel: 'E', mappingKey: 'KeyE', position: { x: 55, y: 12 } },
     { button: 'lt', buttonLabel: 'LT', mappingLabel: 'Z', mappingKey: 'KeyZ', position: { x: 15, y: 2 } },
     { button: 'rt', buttonLabel: 'RT', mappingLabel: 'C', mappingKey: 'KeyC', position: { x: 55, y: 2 } },
     { button: 'ls', buttonLabel: 'LS', mappingLabel: '1', mappingKey: 'Digit1', position: { x: 17, y: 32 } },
     { button: 'rs', buttonLabel: 'RS', mappingLabel: '3', mappingKey: 'Digit3', position: { x: 45, y: 53 } },
-    { button: 'back', buttonLabel: 'Back', mappingLabel: 'V', mappingKey: 'KeyV', position: { x: 30, y: 30 } },
-    { button: 'start', buttonLabel: 'Start', mappingLabel: 'M', mappingKey: 'KeyM', position: { x: 42, y: 30 } },
-    { button: 'ls-left', buttonLabel: 'LS Left', mappingLabel: '←', mappingKey: 'ArrowLeft', position: { x: 9, y: 33 } },
-    { button: 'ls-up', buttonLabel: 'LS Up', mappingLabel: '↑', mappingKey: 'ArrowUp', position: { x: 17, y: 23 } },
-    { button: 'ls-right', buttonLabel: 'LS Right', mappingLabel: '→', mappingKey: 'ArrowRight', position: { x: 23, y: 33 } },
-    { button: 'ls-down', buttonLabel: 'LS Down', mappingLabel: '↓', mappingKey: 'ArrowDown', position: { x: 17, y: 43 } },
+    { button: 'back', buttonLabel: 'Back', mappingLabel: 'V', mappingKey: 'screenshot', position: { x: 30, y: 30 } },
+    { button: 'start', buttonLabel: 'Start', mappingLabel: 'M', mappingKey: '', position: { x: 42, y: 30 } },
+    { button: 'ls-left', buttonLabel: 'LS Left', mappingLabel: '←', mappingKey: 'Left', position: { x: 9, y: 33 } },
+    { button: 'ls-up', buttonLabel: 'LS Up', mappingLabel: '↑', mappingKey: 'Up', position: { x: 17, y: 23 } },
+    { button: 'ls-right', buttonLabel: 'LS Right', mappingLabel: '→', mappingKey: 'Right', position: { x: 23, y: 33 } },
+    { button: 'ls-down', buttonLabel: 'LS Down', mappingLabel: '↓', mappingKey: 'Down', position: { x: 17, y: 43 } },
     { button: 'rs-left', buttonLabel: 'RS Left', mappingLabel: 'J', mappingKey: 'KeyJ', position: { x: 37, y: 53 } },
     { button: 'rs-up', buttonLabel: 'RS Up', mappingLabel: 'I', mappingKey: 'KeyI', position: { x: 45, y: 43 } },
     { button: 'rs-right', buttonLabel: 'RS Right', mappingLabel: 'L', mappingKey: 'KeyL', position: { x: 53, y: 53 } },
     { button: 'rs-down', buttonLabel: 'RS Down', mappingLabel: 'K', mappingKey: 'KeyK', position: { x: 45, y: 63 } },
-    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'T', mappingKey: 'KeyT', position: { x: 26, y: 53 } },
-    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'G', mappingKey: 'KeyG', position: { x: 26, y: 68 } },
-    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'F', mappingKey: 'KeyF', position: { x: 21, y: 60 } },
-    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'H', mappingKey: 'KeyH', position: { x: 31, y: 60 } }
+    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'T', mappingKey: '', position: { x: 26, y: 53 } },
+    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'G', mappingKey: '', position: { x: 26, y: 68 } },
+    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'F', mappingKey: '', position: { x: 21, y: 60 } },
+    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'H', mappingKey: '', position: { x: 31, y: 60 } }
   ];
 
   // 设备类型选项（过滤掉键盘）
@@ -160,21 +189,22 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
       // 合并映射，游戏映射优先级高于全局
       // const mergedHotkeys = [...globalHotkeys];
       
-      const mergedHotkeys: models.Hotkey[] = [];
       const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
       
+      const mergedHotkeys: models.Hotkey[] = gameHotkeys.filter(gameHotkey => gameHotkey.device_type === currentDeviceType);
+      
       // 用游戏特定映射覆盖全局映射
-      gameHotkeys.forEach(gameHotkey => {
-        const index = mergedHotkeys.findIndex(
-          hotkey => hotkey.device_type === currentDeviceType && 
-                    hotkey.key_code === gameHotkey.key_code
-        );
-        if (index !== -1) {
-          mergedHotkeys[index] = gameHotkey;
-        } else {
-          mergedHotkeys.push(gameHotkey);
-        }
-      });
+      // gameHotkeys.forEach(gameHotkey => {
+      //   const index = mergedHotkeys.findIndex(
+      //     hotkey => hotkey.device_type === currentDeviceType && 
+      //               hotkey.key_code === gameHotkey.key_code
+      //   );
+      //   if (index !== -1) {
+      //     mergedHotkeys[index] = gameHotkey;
+      //   } else {
+      //     mergedHotkeys.push(gameHotkey);
+      //   }
+      // });
       
       setHotkeys(mergedHotkeys);
     } catch (error) {
@@ -402,17 +432,17 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
         new models.Hotkey({
           id: crypto.randomUUID(),
           game_id: gameId,
-          name: m.mappingLabel,
+          name: m.mappingLabel ?? "",
           device_type: currentDeviceType,
           key_code: m.button,
           modifiers: '',
-          action_type: enums.HotkeyActionType.CUSTOM,
-          action_params: m.mappingKey,
+          action_type: m.mappingKey == "screenshot" ? enums.HotkeyActionType.SCREENSHOT : enums.HotkeyActionType.CUSTOM,
+          action_params: m.mappingKey ?? '',
           is_enabled: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-      );
+      ).filter((h) => h.action_params !== '');
 
       setHotkeys(newHotkeys);
       toast.success(t('keyMapping.defaultsLoaded', { count: newHotkeys.length }));
@@ -742,7 +772,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                              transform: 'translate(-50%, -50%)'
                            }}>
                         <button
-                          className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transform"
+                          className={`w-12 h-12 rounded-full ${hotkey ? 'bg-green-500' : 'bg-blue-500'} ${hotkey ? 'hover:bg-green-600' : 'hover:bg-blue-600'} transition-colors flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transform`}
                           onClick={() => handleButtonClick(mapping.button)}
                           title={hotkey ? `${mapping.buttonLabel} → ${hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '截图' : (hotkey.name || '未设置')}` : mapping.buttonLabel}
                         >

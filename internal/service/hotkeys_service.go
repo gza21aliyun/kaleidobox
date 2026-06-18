@@ -17,7 +17,7 @@ import (
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 
-	"github.com/go-vgo/robotgo"
+	// "github.com/go-vgo/robotgo"
 	"gobot.io/x/gobot/v2"
 	"gobot.io/x/gobot/v2/platforms/joystick"
 	"gobot.io/x/gobot/v2/platforms/keyboard"
@@ -476,6 +476,14 @@ func parseVirtualKey(params string) uint {
 		return 0x38
 	case "9":
 		return 0x39
+	case "LEFT":
+		return 0x25
+	case "RIGHT":
+		return 0x27
+	case "UP":
+		return 0x26
+	case "DOWN":
+		return 0x28
 	case "SHIFT":
 		return 0x10
 	case "ALT":
@@ -601,7 +609,7 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	hotkey := s.keyMappings[key]
 	s.mappingLock2.RUnlock()
 	if hotkey != nil {
-		s.simulateKeyPress(hotkey.ActionParams, []enums.ModifierKey{})
+		s.simulateKeyPress(hotkey.ActionParams)
 	}
 	s.monitoredKey.Store(&hk)
 }
@@ -633,7 +641,7 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 
 	fmt.Printf("Key: %v , mappings:%v\n", hotkey, s.keyMappings)
 	if hotkey != nil {
-		s.simulateKeyRelease(hotkey.ActionParams, []enums.ModifierKey{})
+		s.simulateKeyRelease(hotkey.ActionParams)
 		s.monitoredKey.Store(&hk)
 		return
 	}
@@ -649,29 +657,34 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 }
 
 // simulateKeyPress 模拟按键按下
-func (s *HotkeyService) simulateKeyPress(key string, modifiers []enums.ModifierKey) {
+func (s *HotkeyService) simulateKeyPress(key string) {
 	// 先按下修饰键
 	// for _, mod := range modifiers {
 	// 	robotgo.KeyToggle(s.modifierToKey(mod), "down")
 	// }
 
 	// 按下目标键
-	robotgo.KeyToggle(key, "down")
+	// robotgo.KeyToggle(key, "down")
+	vk := parseVirtualKey(key)
 
-	applog.LogDebugf(s.ctx, "Simulated key press: %s (with modifiers: %v)", key, modifiers)
+	procKeybdEvent.Call(uintptr(vk), 0, 0, 0)
+
+	applog.LogDebugf(s.ctx, "Simulated key press: %s (with modifiers: %v)", key)
 }
 
 // simulateKeyRelease 模拟按键释放
-func (s *HotkeyService) simulateKeyRelease(key string, modifiers []enums.ModifierKey) {
+func (s *HotkeyService) simulateKeyRelease(key string) {
 	// 释放目标键
-	robotgo.KeyToggle(key, "up")
+	// robotgo.KeyToggle(key, "up")
+	vk := parseVirtualKey(key)
+	procKeybdEvent.Call(uintptr(vk), 0, KEYEVENTF_KEYUP_TM, 0)
 
 	// 释放修饰键
 	// for _, mod := range modifiers {
 	// 	robotgo.KeyToggle(s.modifierToKey(mod), "up")
 	// }
 
-	applog.LogDebugf(s.ctx, "Simulated key release: %s (with modifiers: %v)", key, modifiers)
+	applog.LogDebugf(s.ctx, "Simulated key release: %s (with modifiers: %v)", key)
 }
 
 // modifierToKey 修饰键转换

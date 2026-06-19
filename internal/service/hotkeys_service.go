@@ -81,32 +81,7 @@ const (
 
 // 自定义 Xbox 360 配置 JSON，包含 D-pad axis 支持
 // 用于第三方 XInput 手柄
-const xbox360CustomConfigJSON = `{
-	"name": "Xbox 360 Controller",
-	"guid": "030000005c0400008c09000000000000",
-	"axis": [
-		{"Name": "left_x", "ID": 0},
-		{"Name": "left_y", "ID": 1},
-		{"Name": "right_x", "ID": 3},
-		{"Name": "right_y", "ID": 4},
-		{"Name": "left_trigger", "ID": 2},
-		{"Name": "right_trigger", "ID": 5},
-		{"Name": "dpad_x", "ID": 6},
-		{"Name": "dpad_y", "ID": 7}
-	],
-	"buttons": [
-		{"Name": "a", "ID": 0},
-		{"Name": "b", "ID": 1},
-		{"Name": "x", "ID": 2},
-		{"Name": "y", "ID": 3},
-		{"Name": "left_shoulder", "ID": 4},
-		{"Name": "right_shoulder", "ID": 5},
-		{"Name": "back", "ID": 6},
-		{"Name": "start", "ID": 7},
-		{"Name": "left_stick", "ID": 8},
-		{"Name": "right_stick", "ID": 9}
-	]
-}`
+// 注意：配置现在从 JSON 文件读取，此常量已移除
 
 // joystickConfig 是 gobot joystick 配置的 Go 表示
 type joystickConfigJSON struct {
@@ -119,8 +94,8 @@ type joystickConfigJSON struct {
 type axisPair struct {
 	Name      string `json:"Name"`      // 轴的基本名称（如 "trigger", "left_x"）
 	ID        int    `json:"ID"`        // 轴的 ID
-	NameMax   string `json:"NameMax"`   // 最大值端的名称（如 "rt", "l3-right", "l3-down"）
-	NameMin   string `json:"NameMin"`   // 最小值端的名称（如 "lt", "l3-left", "l3-up"）
+	NameMax   string `json:"namemax"`   // 最大值端的名称（如 "rt", "l3-right", "l3-down"）
+	NameMin   string `json:"namemin"`   // 最小值端的名称（如 "lt", "l3-left", "l3-up"）
 	Max       int    `json:"Max"`       // 最大值
 	Min       int    `json:"Min"`       // 最小值
 	Threshold int    `json:"Threshold"` // 无视阈值（中间分界值 ± Threshold 之间被忽略）
@@ -1057,10 +1032,10 @@ type DeviceButtonMapping struct {
 // 请参考 frontend/src/components/panel/KeyMappingPanel.tsx 中的 button 字段名称
 
 func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType, joy js.Joystick, configJSON string) {
-	// 如果配置为空，尝试使用默认配置
-	if configJSON == "" && device == enums.DeviceTypeXInput {
-		configJSON = xbox360CustomConfigJSON
-		fmt.Printf("使用默认Xbox 360配置\n")
+	// 如果配置为空，无法处理事件
+	if configJSON == "" {
+		fmt.Printf("配置为空，无法处理手柄事件\n")
+		return
 	}
 
 	// 解析 JSON 配置
@@ -1098,12 +1073,18 @@ func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType, joy js.Joyst
 				Center:    ax.Center,
 				HasConfig: true,
 			}
+			fmt.Printf("创建详细轴配置: ID=%d, Name=%s, NameMin=%s, NameMax=%s, Threshold=%d, Center=%d\n",
+				ax.ID, ax.Name, ax.NameMin, ax.NameMax, ax.Threshold, ax.Center)
+			// 调试：打印轴的所有字段值
+			fmt.Printf("调试轴字段: ID=%d, Name='%s', NameMin='%s', NameMax='%s', Max=%d, Min=%d, Threshold=%d, Release=%d, Center=%d\n",
+				ax.ID, ax.Name, ax.NameMin, ax.NameMax, ax.Max, ax.Min, ax.Threshold, ax.Release, ax.Center)
 		} else {
 			// 无详细配置，使用简单映射
 			axisConfigs[ax.ID] = AxisConfig{
 				Name:      ax.Name,
 				HasConfig: false,
 			}
+			fmt.Printf("创建简单轴配置: ID=%d, Name=%s\n", ax.ID, ax.Name)
 		}
 	}
 
@@ -1118,6 +1099,8 @@ func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType, joy js.Joyst
 
 // handleAxisWithConfig 处理带配置的轴事件
 func (s *HotkeyService) handleAxisWithConfig(axisName string, value int, device enums.DeviceType, config AxisConfig, cm string) {
+	// fmt.Printf("handleAxisWithConfig: axisName=%s, value=%d, config.Name=%s, config.NameMin=%s, config.NameMax=%s, config.HasConfig=%v\n",
+	// 	axisName, value, config.Name, config.NameMin, config.NameMax, config.HasConfig)
 	switch axisName {
 	case "left_x", "right_x":
 		if value > 5000 {
@@ -1142,6 +1125,7 @@ func (s *HotkeyService) handleAxisWithConfig(axisName string, value int, device 
 		upperThreshold := config.Center + config.Threshold
 
 		if config.NameMax == "" {
+			// fmt.Printf("trigger轴处理: NameMax为空, 使用单向扳机逻辑, NameMin=%s\n", config.NameMin)
 			if value > upperThreshold && value <= upperRelease {
 				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
 			} else if value > upperRelease {
@@ -1150,6 +1134,8 @@ func (s *HotkeyService) handleAxisWithConfig(axisName string, value int, device 
 				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
 			}
 		} else {
+			// fmt.Printf("trigger轴处理: 双向轴逻辑, NameMin=%s, NameMax=%s, value=%d, Center=%d, Threshold=%d, Release=%d\n",
+			// 	config.NameMin, config.NameMax, value, config.Center, config.Threshold, config.Release)
 			lowerRelease := config.Center - config.Release
 			lowerThreshold := config.Center - config.Threshold
 
@@ -1283,7 +1269,10 @@ func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 			availableJoysticks = append(availableJoysticks, i)
 
 			// 根据设备类型选择合适的 joystick
-			if (devicetype == enums.DeviceTypeDualShock4 || devicetype == enums.DeviceTypeDualSense) && joy.ButtonCount() == 14 && joy.AxisCount() == 8 {
+			if devicetype == enums.DeviceTypeDualShock4 && joy.ButtonCount() == 14 && joy.AxisCount() == 8 {
+				selectedIndex = i
+				selectedJoy = joy
+			} else if devicetype == enums.DeviceTypeDualSense && joy.ButtonCount() == 15 && joy.AxisCount() == 8 {
 				selectedIndex = i
 				selectedJoy = joy
 			} else if devicetype == enums.DeviceTypeJoyCon && joy.ButtonCount() == 16 && joy.AxisCount() == 6 {
@@ -1340,13 +1329,8 @@ func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 		_, configContent, err := ensureConfigFile(configFile)
 		if err != nil {
 			applog.LogErrorf(s.ctx, "Failed to load config %s: %v", configFile, err)
-			// 尝试使用默认配置
-			if devicetype == enums.DeviceTypeXInput {
-				applog.LogInfof(s.ctx, "Using default Xbox 360 configuration")
-				configJSON = xbox360CustomConfigJSON
-			} else {
-				configJSON = ""
-			}
+			// 配置文件加载失败，使用空配置
+			configJSON = ""
 		} else {
 			configJSON = configContent
 			applog.LogInfof(s.ctx, "Loaded config: %s", configFile)

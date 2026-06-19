@@ -1,20 +1,20 @@
 {
 	"name": "DualShock 4",
 	"buttons": [
-		{"Name": "square", "ID": 3},
-		{"Name": "cross", "ID": 0},
-		{"Name": "circle", "ID": 1},
-		{"Name": "triangle", "ID": 2},
-		{"Name": "l1", "ID": 4},
-		{"Name": "r1", "ID": 5},
+		{"Name": "cross", "ID": 1},
+		{"Name": "circle", "ID": 2},
+		{"Name": "square", "ID": 0},
+		{"Name": "triangle", "ID": 3},
+		{"Name": "l3", "ID": 10},
+		{"Name": "r3", "ID": 11},
 		{"Name": "l2", "ID": 6},
 		{"Name": "r2", "ID": 7},
+		{"Name": "l1", "ID": 4},
+		{"Name": "r1", "ID": 5},
 		{"Name": "share", "ID": 8},
+		{"Name": "ps", "ID": 12},
 		{"Name": "options", "ID": 9},
-		{"Name": "ps", "ID": 10},
-		{"Name": "touchpad", "ID": 13},
-		{"Name": "l3", "ID": 10},
-		{"Name": "r3", "ID": 11}
+		{"Name": "touchpad", "ID": 13}
 	],
 	"axis": [
 		{
@@ -31,37 +31,27 @@
 		},
 		{
 			"Name": "right_x",
-			"ID": 3,
+			"ID": 2,
 			"NameMin": "r3-left",
 			"NameMax": "r3-right"
 		},
 		{
 			"Name": "right_y",
-			"ID": 4,
+			"ID": 3,
 			"NameMin": "r3-up",
 			"NameMax": "r3-down"
 		},
 		{
-			"Name": "trigger",
-			"ID": 2,
-			"NameMin": "l2",
-			"NameMax": "",
-			"Max": 32767,
-			"Min": -32767,
-			"Threshold": 2000,
-			"Release": 6000,
-			"Center": 0
+			"Name": "dpad_x",
+			"ID": 6,
+			"namemin": "dpad_left",
+			"namemax": "dpad_right"
 		},
 		{
-			"Name": "trigger",
-			"ID": 5,
-			"NameMin": "r2",
-			"NameMax": "",
-			"Max": 32767,
-			"Min": -32767,
-			"Threshold": 2000,
-			"Release": 6000,
-			"Center": 0
+			"Name": "dpad_y",
+			"ID": 7,
+			"namemin": "dpad_up",
+			"namemax": "dpad_down"
 		}
 	]
 }

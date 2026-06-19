@@ -11,9 +11,10 @@
 		{"Name": "zr", "ID": 7},
 		{"Name": "minus", "ID": 8},
 		{"Name": "plus", "ID": 9},
-		{"Name": "home", "ID": 10},
-		{"Name": "l-stick", "ID": 12},
-		{"Name": "r-stick", "ID": 13}
+		{"Name": "home", "ID": 12},
+		{"Name": "guide", "ID": 13},
+		{"Name": "l-stick", "ID": 10},
+		{"Name": "r-stick", "ID": 11}
 	],
 	"axis": [
 		{

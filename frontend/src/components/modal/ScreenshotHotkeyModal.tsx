@@ -56,7 +56,11 @@ export function ScreenshotHotkeyModal({
       if (currentHotkey) {
         setSelectedDeviceType(currentHotkey.device_type);
         setKeyCode(currentHotkey);
-        setModifiers(currentHotkey.modifiers || []);
+        // modifiers: string "ctrl+alt" → string[] ["ctrl", "alt"]
+        const modifierArr = typeof currentHotkey.modifiers === 'string' && currentHotkey.modifiers
+          ? currentHotkey.modifiers.split('+').filter(m => m.length > 0)
+          : [];
+        setModifiers(modifierArr);
       } else {
         setSelectedDeviceType(enums.DeviceType.KEYBOARD);
         setKeyCode(undefined);
@@ -175,7 +179,9 @@ export function ScreenshotHotkeyModal({
         name: keyCode.name,
         device_type: selectedDeviceType,
         key_code: keyCode.key_code,
-        modifiers: selectedDeviceType === enums.DeviceType.KEYBOARD ? modifiers : [],
+        modifiers: selectedDeviceType === enums.DeviceType.KEYBOARD && modifiers.length > 0
+          ? modifiers.join('+')
+          : '',
         action_type: enums.HotkeyActionType.SCREENSHOT,
         action_params: "",
         is_enabled: true,

@@ -155,8 +155,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (page == 1) {
           gameList = result || [];
           set({ games: gameList });
+          
         } else {
           gameList = gameList.concat(result || []);
+          // set({ games: gameList });
+          // await new Promise(r => setTimeout(r, 0));
         }
         
         page++;

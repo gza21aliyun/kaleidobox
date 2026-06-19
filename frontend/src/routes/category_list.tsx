@@ -10,6 +10,7 @@ import { models, vo, enums } from "../../wailsjs/go/models";
 import { GetBrands, GetGenres, GetSeries } from "../../wailsjs/go/service/TagService";
 import { GetCategories } from "../../wailsjs/go/service/CategoryService";
 import { GetStaffsByRole } from "../../wailsjs/go/service/StaffService";
+import { getGameIdsForCategory, type CategoryType } from "../utils/categoryGames";
 import { useAppStore } from "../store";
 
 export const Route = createRoute({
@@ -22,7 +23,7 @@ export const Route = createRoute({
 type CategoryItem = {
   id: string;
   name: string;
-  type: 'favorite' | 'brand' | 'series' | 'genre' | 'chara_design' | 'sceneario' | 'parent1' | 'parent2';
+  type: CategoryType;
   game_count?: number;
   use_count?: number;
   original?: models.Tag | vo.CategoryVO | models.Staff;
@@ -40,14 +41,21 @@ function CategoryListPage() {
   const [genres, setGenres] = useState<models.Tag[]>([]);
   const [charaDesigns, setCharaDesigns] = useState<models.Staff[]>([]);
   const [scenearios, setScenearios] = useState<models.Staff[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Map<string, string[]>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "use_count">("name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<"name" | "use_count" | "game_count">(() => {
+    const savedFilter = localStorage.getItem('categoryListSortBy') as "name" | "use_count" | "game_count" | null;
+    return savedFilter || "name";
+  });
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    const savedSortBy = localStorage.getItem('categoryListSortOrder') as "asc" | "desc" | null;
+    return savedSortBy || "asc";
+  });
   const [categoryFilter, setCategoryFilter] = useState<string>(() => {
-    const savedFilter = localStorage.getItem('categoryListFilter');
-    return savedFilter || "brand";
+    const savedSortBy = localStorage.getItem('categoryListFilter');
+    return savedSortBy || "brand";
   });
   const [viewMode, setViewMode] = useState<"default" | "gallery">(() => {
     const savedViewMode = localStorage.getItem('categoryListViewMode');
@@ -57,6 +65,14 @@ function CategoryListPage() {
   useEffect(() => {
     localStorage.setItem('categoryListFilter', categoryFilter);
   }, [categoryFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('categoryListSortBy', sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    localStorage.setItem('categoryListSortOrder', sortOrder);
+  }, [sortOrder]);
 
   useEffect(() => {
     localStorage.setItem('categoryListViewMode', viewMode);
@@ -98,6 +114,24 @@ function CategoryListPage() {
     finally {
       setIsLoading(false);
     }
+  };
+
+  const preloadCategoryMap = async (categories: CategoryItem[]) => {
+    if (categories.length === 0) return;
+    const resultMap = new Map<string, string[]>();
+    for (const cat of categories) {
+      try {
+        const gameIds = await getGameIdsForCategory(
+          { type: cat.type, id: cat.id, name: cat.name, dirPath: cat.dirPath, original: cat.original },
+          games,
+        );
+        resultMap.set(cat.id, gameIds);
+      } catch (error) {
+        console.error(`Failed to preload category ${cat.name}:`, error);
+      }
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+    }
+    setCategoryMap(resultMap);
   };
 
   useEffect(() => {
@@ -229,13 +263,39 @@ function CategoryListPage() {
           const countB = b.game_count ?? b.use_count ?? 0;
           comparison = countB - countA;
           break;
+        case "game_count":
+          const gcA = categoryMap.get(a.id)?.length ?? 0;
+          const gcB = categoryMap.get(b.id)?.length ?? 0;
+          comparison = gcB - gcA;
+          break;
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
+  const updateCategoryMap = (id: string, gameIds: string[]) => {
+    setCategoryMap(prev => {
+      const newMap = new Map(prev);
+      newMap.set(id, gameIds);
+      return newMap;
+    });
+  };
+
   useEffect(() => {
     loadAllCategories();
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const categoriesToLoad = categoryFilter === 'parent1' || categoryFilter === 'parent2'
+      ? parentDirCategories
+      : mergedCategories.filter(c => c.type === categoryFilter);
+    if (categoriesToLoad.length > 0 && (categoryMap.size === 0 || !categoryMap.has(categoriesToLoad[0]?.id))) {
+      preloadCategoryMap(categoriesToLoad);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [categoryFilter, favorites, brands, series, genres, charaDesigns, scenearios, games]);
 
   useEffect(() => {
     let timer: number;
@@ -295,10 +355,11 @@ function CategoryListPage() {
         onSearchChange={setSearchQuery}
         searchPlaceholder={t('categoryList.searchPlaceholder')}
         sortBy={sortBy}
-        onSortByChange={val => setSortBy(val as "name" | "use_count")}
+        onSortByChange={val => setSortBy(val as "name" | "use_count" | "game_count")}
         sortOptions={[
           { label: t('categoryList.sortOptions.name'), value: "name" },
           { label: t('categoryList.sortOptions.useCount'), value: "use_count" },
+          { label: t('categoryList.sortOptions.gameCount'), value: "game_count" },
         ]}
         sortOrder={sortOrder}
         onSortOrderChange={setSortOrder}
@@ -324,6 +385,8 @@ function CategoryListPage() {
             original={cat.original}
             dirPath={cat.dirPath}
             gameIds={cat.gameIds}
+            categoryMap={categoryMap}
+            onUpdateCategoryMap={updateCategoryMap}
           />
         ))}
       </div>

@@ -1,6 +1,6 @@
 import type { appconf } from "../../../wailsjs/go/models";
 import { toast } from "react-hot-toast";
-import { SelectGameExecutable } from "../../../wailsjs/go/service/GameService";
+import { SelectGameExecutable, SelectFile } from "../../../wailsjs/go/service/GameService";
 import { BetterButton } from "../ui/BetterButton";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useTranslation } from "react-i18next";
@@ -65,6 +65,19 @@ export function GameSettingsPanel({ formData, onChange }: GameSettingsPanelProps
     catch (error) {
       console.error("Failed to select Magpie:", error);
       toast.error(t("gameSettings.magpieSelectError"));
+    }
+  };
+
+  const handleSelectMagpieConfigPath = async () => {
+    try {
+      const path = await SelectFile("JSON Config", "*.json");
+      if (path) {
+        onChange({ ...formData, magpie_config_path: path } as appconf.AppConfig);
+      }
+    }
+    catch (error) {
+      console.error("Failed to select Magpie config:", error);
+      toast.error(t("gameSettings.magpieConfigSelectError"));
     }
   };
   return (
@@ -179,9 +192,26 @@ export function GameSettingsPanel({ formData, onChange }: GameSettingsPanelProps
             </p>
           </div>
 
+          <div className="flex items-center justify-between p-2">
+            <div className="flex-1">
+              <label htmlFor="magpie_enabled" className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+                {t("gameSettings.magpieEnabled")}
+              </label>
+              <p className="text-xs text-brand-500 dark:text-brand-400 mt-1">
+                {t("gameSettings.magpieEnabledDescription")}
+              </p>
+            </div>
+            <BetterSwitch
+              id="magpie_enabled"
+              checked={formData.magpie_enabled || false}
+              onCheckedChange={checked =>
+                onChange({ ...formData, magpie_enabled: checked } as appconf.AppConfig)}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-              Magpie 缩放快捷键
+              {t("gameSettings.magpieHotkey")}
             </label>
             <div className="flex gap-2">
               <div
@@ -216,8 +246,8 @@ export function GameSettingsPanel({ formData, onChange }: GameSettingsPanelProps
               >
                 <span className={recordingHotkey ? "text-blue-500 italic" : ""}>
                   {recordingHotkey
-                    ? "按快捷键组合..."
-                    : formData.magpie_hotkey || "Win+Shift+A"}
+                    ? t("gameSettings.pressHotkey")
+                    : formData.magpie_hotkey || t("gameSettings.magpieHotkeyPlaceholder")}
                 </span>
               </div>
               <BetterButton
@@ -226,12 +256,107 @@ export function GameSettingsPanel({ formData, onChange }: GameSettingsPanelProps
                 }}
                 size="sm"
               >
-                重置
+                {t("gameSettings.magpieHotkeyReset")}
               </BetterButton>
             </div>
             <p className="mt-1 text-xs text-brand-500">
-              点击输入框后直接按下要设置的快捷键组合，需与 Magpie 中设置的快捷键一致
+              {t("gameSettings.magpieHotkeyDescription")}
             </p>
+          </div>
+
+          {/* Magpie 裁剪配置（仅虚拟机启动时使用） */}
+          <div className="mt-6 pt-6 border-t border-brand-200 dark:border-brand-700">
+            <div className="flex items-center justify-between p-2">
+              <div className="flex-1">
+                <label htmlFor="magpie-cropping-enabled" className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+                  {t("gameSettings.magpieCroppingEnabled")}
+                </label>
+                <p className="text-xs text-brand-500 dark:text-brand-400 mt-1">
+                  {t("gameSettings.croppingDescription")}
+                </p>
+              </div>
+              <BetterSwitch
+                id="magpie-cropping-enabled"
+                checked={formData.magpie_cropping_enabled || false}
+                onCheckedChange={checked => onChange({ ...formData, magpie_cropping_enabled: checked } as appconf.AppConfig)}
+              />
+            </div>
+
+            {formData.magpie_cropping_enabled && (
+              <>
+                <div className="mb-4 mt-2">
+                  <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
+                    {t("gameSettings.magpieConfigPath")}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={formData.magpie_config_path || ""}
+                      onChange={e => onChange({ ...formData, magpie_config_path: e.target.value } as appconf.AppConfig)}
+                      placeholder={t("gameSettings.magpieConfigPathPlaceholder")}
+                      className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
+                    />
+                    <BetterButton onClick={handleSelectMagpieConfigPath} icon="i-mdi-file">
+                      {t("common.select")}
+                    </BetterButton>
+                  </div>
+                  <p className="mt-1 text-xs text-brand-500">
+                    {t("gameSettings.magpieConfigPathDefault")}
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
+                    {t("gameSettings.croppingArea")}
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-brand-500 mb-1">{t("gameSettings.croppingLeft")}</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={formData.magpie_cropping_left || 0}
+                        onChange={e => onChange({ ...formData, magpie_cropping_left: Number.parseInt(e.target.value) || 0 } as appconf.AppConfig)}
+                        className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-brand-500 mb-1">{t("gameSettings.croppingRight")}</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={formData.magpie_cropping_right || 0}
+                        onChange={e => onChange({ ...formData, magpie_cropping_right: Number.parseInt(e.target.value) || 0 } as appconf.AppConfig)}
+                        className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-brand-500 mb-1">{t("gameSettings.croppingTop")}</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={formData.magpie_cropping_top || 0}
+                        onChange={e => onChange({ ...formData, magpie_cropping_top: Number.parseInt(e.target.value) || 0 } as appconf.AppConfig)}
+                        className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-brand-500 mb-1">{t("gameSettings.croppingBottom")}</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={formData.magpie_cropping_bottom || 0}
+                        onChange={e => onChange({ ...formData, magpie_cropping_bottom: Number.parseInt(e.target.value) || 0 } as appconf.AppConfig)}
+                        className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-brand-500">
+                    {t("gameSettings.croppingDescription")}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

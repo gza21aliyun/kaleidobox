@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { BetterButton } from '../ui/BetterButton';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from "react-hot-toast";
 import { models, enums } from '../../../wailsjs/go/models';
 import { GetHotkeysByGameID, UpdateHotkey, AddHotkey, DeleteHotkey, GetGlobalHotkeys } from '../../../wailsjs/go/service/HotkeyService';
 import { GetAppConfig, UpdateAppConfig } from '../../../wailsjs/go/service/ConfigService';
 import i18next from "../../i18n/i18n";
+import { TouchMappingPanel, TouchMappingPanelRef } from './TouchMappingPanel';
 const t = i18next.t;
 
 interface Ps4PanelProps {
@@ -14,8 +14,8 @@ interface Ps4PanelProps {
 interface KeyMapping {
   button: string;
   buttonLabel: string;
-  mappingLabel: string;
-  mappingKey: string;
+  mappingLabel: string | undefined;
+  mappingKey: string | undefined;
   position: { x: number; y: number };
 }
 
@@ -33,95 +33,101 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
   const [waitingForKey, setWaitingForKey] = useState(false);
   const [selectedDeviceType, setSelectedDeviceType] = useState<enums.DeviceType | null>(null);
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
+  const touchMappingRef = useRef<TouchMappingPanelRef>(null);
+  const [editMode, setEditMode] = useState(false);
 
+  // 键盘映射
   const keyboardMap: KeyMap[] = [
     { keyCode: 'ctrl', label: 'Control' }
-
   ]
 
-  
-
   // PS4手柄按键位置定义
-  const ds4Mappings: KeyMapping[] = [
-    { button: 'square', buttonLabel: 'Square', mappingLabel: 'A', mappingKey: 'KeyA', position: { x: 52, y: 17 } },
-    { button: 'cross', buttonLabel: 'Cross', mappingLabel: 'S', mappingKey: 'KeyS', position: { x: 58, y: 25 } },
-    { button: 'circle', buttonLabel: 'Circle', mappingLabel: 'D', mappingKey: 'KeyD', position: { x: 65, y: 17 } },
-    { button: 'triangle', buttonLabel: 'Triangle', mappingLabel: 'W', mappingKey: 'KeyW', position: { x: 58, y: 10 } },
-    { button: 'l1', buttonLabel: 'L1', mappingLabel: 'Q', mappingKey: 'KeyQ', position: { x: 15, y: -5 } },
-    { button: 'r1', buttonLabel: 'R1', mappingLabel: 'E', mappingKey: 'KeyE', position: { x: 60, y: -5 } },
-    { button: 'l2', buttonLabel: 'L2', mappingLabel: 'Z', mappingKey: 'KeyZ', position: { x: 10, y: -15 } },
-    { button: 'r2', buttonLabel: 'R2', mappingLabel: 'C', mappingKey: 'KeyC', position: { x: 65, y: -15 } },
-    { button: 'l3', buttonLabel: 'L3', mappingLabel: '1', mappingKey: 'Digit1', position: { x: 23, y: 40 } },
-    { button: 'r3', buttonLabel: 'R3', mappingLabel: '3', mappingKey: 'Digit3', position: { x: 49, y: 40 } },
-    { button: 'share', buttonLabel: 'Share', mappingLabel: 'V', mappingKey: 'KeyV', position: { x: 22, y: 5 } },
-    { button: 'options', buttonLabel: 'Options', mappingLabel: 'M', mappingKey: 'KeyM', position: { x: 50, y: 5 } },
-    { button: 'ps', buttonLabel: 'PS', mappingLabel: 'B', mappingKey: 'KeyB', position: { x: 37, y: 30 } },
-    { button: 'touchpad', buttonLabel: 'Touchpad', mappingLabel: 'N', mappingKey: 'KeyN', position: { x: 37, y: 13 } },
-    { button: 'l3-left', buttonLabel: 'L3 Left', mappingLabel: '←', mappingKey: 'ArrowLeft', position: { x: 15, y: 40 } },
-    { button: 'l3-up', buttonLabel: 'L3 Up', mappingLabel: '↑', mappingKey: 'ArrowUp', position: { x: 23, y: 29 } },
-    { button: 'l3-right', buttonLabel: 'L3 Right', mappingLabel: '→', mappingKey: 'ArrowRight', position: { x: 31, y: 40 } },
-    { button: 'l3-down', buttonLabel: 'L3 Down', mappingLabel: '↓', mappingKey: 'ArrowDown', position: { x: 23, y: 51 } },
-    { button: 'r3-left', buttonLabel: 'R3 Left', mappingLabel: 'J', mappingKey: 'KeyJ', position: { x: 41, y: 40 } },
-    { button: 'r3-up', buttonLabel: 'R3 Up', mappingLabel: 'I', mappingKey: 'KeyI', position: { x: 49, y: 29 } },
-    { button: 'r3-right', buttonLabel: 'R3 Right', mappingLabel: 'L', mappingKey: 'KeyL', position: { x: 57, y: 40 } },
-    { button: 'r3-down', buttonLabel: 'R3 Down', mappingLabel: 'K', mappingKey: 'KeyK', position: { x: 49, y: 51 } },
-    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'T', mappingKey: 'KeyT', position: { x: 13, y: 10 } },
-    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'G', mappingKey: 'KeyG', position: { x: 13, y: 25 } },
-    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'F', mappingKey: 'KeyF', position: { x: 8, y: 17 } },
-    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'H', mappingKey: 'KeyH', position: { x: 19, y: 17 } }
+
+   const ds4Mappings: KeyMapping[] = [
+    { button: 'square', buttonLabel: '□', mappingLabel: undefined, mappingKey: undefined, position: { x: 52, y: 17 } },
+    { button: 'cross', buttonLabel: 'X', mappingLabel: 'Esc', mappingKey: 'ESC', position: { x: 58, y: 25 } },
+    { button: 'circle', buttonLabel: '○', mappingLabel: 'Enter', mappingKey: 'ENTER', position: { x: 65, y: 17 } },
+    { button: 'triangle', buttonLabel: '△', mappingLabel: 'Space', mappingKey: 'space', position: { x: 58, y: 10 } },
+    { button: 'l1', buttonLabel: 'L1', mappingLabel: 'F6', mappingKey: 'f6', position: { x: 15, y: -5 } },
+    { button: 'r1', buttonLabel: 'R1', mappingLabel: 'Ctrl', mappingKey: 'ctrl', position: { x: 60, y: -5 } },
+    { button: 'l2', buttonLabel: 'L2', mappingLabel: undefined, mappingKey: undefined, position: { x: 10, y: -15 } },
+    { button: 'r2', buttonLabel: 'R2', mappingLabel: undefined, mappingKey: undefined, position: { x: 65, y: -15 } },
+    { button: 'l3', buttonLabel: 'L3', mappingLabel: '1', mappingKey: '', position: { x: 23, y: 40 } },
+    { button: 'r3', buttonLabel: 'R3', mappingLabel: '3', mappingKey: '', position: { x: 49, y: 40 } },
+    { button: 'share', buttonLabel: 'Share', mappingLabel: 'screenshot', mappingKey: 'screenshot', position: { x: 22, y: 5 } },
+    { button: 'options', buttonLabel: 'Options', mappingLabel: 'M', mappingKey: '', position: { x: 50, y: 5 } },
+    { button: 'ps', buttonLabel: 'PS', mappingLabel: 'Win', mappingKey: 'win', position: { x: 37, y: 30 } },
+    { button: 'touchpad', buttonLabel: 'Touchpad', mappingLabel: 'N', mappingKey: '', position: { x: 37, y: 13 } },
+    { button: 'l3-left', buttonLabel: 'L3 Left', mappingLabel: '←', mappingKey: 'LEFT', position: { x: 15, y: 40 } },
+    { button: 'l3-up', buttonLabel: 'L3 Up', mappingLabel: '↑', mappingKey: 'UP', position: { x: 23, y: 29 } },
+    { button: 'l3-right', buttonLabel: 'L3 Right', mappingLabel: '→', mappingKey: 'RIGHT', position: { x: 31, y: 40 } },
+    { button: 'l3-down', buttonLabel: 'L3 Down', mappingLabel: '↓', mappingKey: 'DOWN', position: { x: 23, y: 51 } },
+    { button: 'r3-left', buttonLabel: 'R3 Left', mappingLabel: 'J', mappingKey: '', position: { x: 41, y: 40 } },
+    { button: 'r3-up', buttonLabel: 'R3 Up', mappingLabel: 'I', mappingKey: '', position: { x: 49, y: 29 } },
+    { button: 'r3-right', buttonLabel: 'R3 Right', mappingLabel: 'L', mappingKey: '', position: { x: 57, y: 40 } },
+    { button: 'r3-down', buttonLabel: 'R3 Down', mappingLabel: 'K', mappingKey: '', position: { x: 49, y: 51 } },
+    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: '↑', mappingKey: 'up', position: { x: 13, y: 10 } },
+    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: '↓', mappingKey: 'down', position: { x: 13, y: 25 } },
+    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: '←', mappingKey: 'left', position: { x: 8, y: 17 } },
+    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: '→', mappingKey: 'right', position: { x: 19, y: 17 } }
   ];
 
   // Joy-Con手柄按键位置定义
   const joyconMappings: KeyMapping[] = [
-    { button: 'a', buttonLabel: 'A', mappingLabel: 'A', mappingKey: 'KeyA', position: { x: 65, y: 30 } },
-    { button: 'b', buttonLabel: 'B', mappingLabel: 'B', mappingKey: 'KeyB', position: { x: 70, y: 20 } },
-    { button: 'x', buttonLabel: 'X', mappingLabel: 'X', mappingKey: 'KeyX', position: { x: 60, y: 20 } },
-    { button: 'y', buttonLabel: 'Y', mappingLabel: 'Y', mappingKey: 'KeyY', position: { x: 65, y: 10 } },
-    { button: 'l', buttonLabel: 'L', mappingLabel: 'L', mappingKey: 'KeyL', position: { x: 15, y: 15 } },
-    { button: 'r', buttonLabel: 'R', mappingLabel: 'R', mappingKey: 'KeyR', position: { x: 85, y: 15 } },
-    { button: 'zl', buttonLabel: 'ZL', mappingLabel: 'Q', mappingKey: 'KeyQ', position: { x: 10, y: 25 } },
-    { button: 'zr', buttonLabel: 'ZR', mappingLabel: 'E', mappingKey: 'KeyE', position: { x: 90, y: 25 } },
-    { button: 'minus', buttonLabel: 'Minus', mappingLabel: '-', mappingKey: 'Minus', position: { x: 25, y: 5 } },
-    { button: 'plus', buttonLabel: 'Plus', mappingLabel: '+', mappingKey: 'Equal', position: { x: 75, y: 5 } },
-    { button: 'home', buttonLabel: 'Home', mappingLabel: 'Home', mappingKey: 'Home', position: { x: 50, y: 5 } },
-    { button: 'l-stick', buttonLabel: 'L-Stick', mappingLabel: '1', mappingKey: 'Digit1', position: { x: 25, y: 40 } },
-    { button: 'r-stick', buttonLabel: 'R-Stick', mappingLabel: '3', mappingKey: 'Digit3', position: { x: 75, y: 40 } },
-    { button: 'l-stick-left', buttonLabel: 'L-Stick Left', mappingLabel: '←', mappingKey: 'ArrowLeft', position: { x: 15, y: 40 } },
-    { button: 'l-stick-up', buttonLabel: 'L-Stick Up', mappingLabel: '↑', mappingKey: 'ArrowUp', position: { x: 25, y: 30 } },
-    { button: 'l-stick-right', buttonLabel: 'L-Stick Right', mappingLabel: '→', mappingKey: 'ArrowRight', position: { x: 35, y: 40 } },
-    { button: 'l-stick-down', buttonLabel: 'L-Stick Down', mappingLabel: '↓', mappingKey: 'ArrowDown', position: { x: 25, y: 50 } },
-    { button: 'r-stick-left', buttonLabel: 'R-Stick Left', mappingLabel: 'J', mappingKey: 'KeyJ', position: { x: 65, y: 40 } },
-    { button: 'r-stick-up', buttonLabel: 'R-Stick Up', mappingLabel: 'I', mappingKey: 'KeyI', position: { x: 75, y: 30 } },
-    { button: 'r-stick-right', buttonLabel: 'R-Stick Right', mappingLabel: 'L', mappingKey: 'KeyL', position: { x: 85, y: 40 } },
-    { button: 'r-stick-down', buttonLabel: 'R-Stick Down', mappingLabel: 'K', mappingKey: 'KeyK', position: { x: 75, y: 50 } }
+    { button: 'b', buttonLabel: 'A', mappingLabel: 'Enter', mappingKey: 'Enter', position: { x: 58, y: 40 } },
+    { button: 'a', buttonLabel: 'B', mappingLabel: 'Esc', mappingKey: 'Esc', position: { x: 53, y: 48 } },
+    { button: 'y', buttonLabel: 'X', mappingLabel: 'Y', mappingKey: '', position: { x: 53, y: 32 } },
+    { button: 'x', buttonLabel: 'Y', mappingLabel: 'X', mappingKey: '', position: { x: 48, y: 40 } },
+    { button: 'l', buttonLabel: 'L', mappingLabel: 'Q', mappingKey: '', position: { x: 15, y: 15 } },
+    { button: 'r', buttonLabel: 'R', mappingLabel: 'Control', mappingKey: 'ctrl', position: { x: 55, y: 15 } },
+    { button: 'zl', buttonLabel: 'ZL', mappingLabel: 'Z', mappingKey: '', position: { x: 10, y: 5 } },
+    { button: 'zr', buttonLabel: 'ZR', mappingLabel: 'C', mappingKey: '', position: { x: 60, y: 5 } },
+    { button: 'minus', buttonLabel: 'Minus', mappingLabel: 'V', mappingKey: '', position: { x: 25, y: 25 } },
+    { button: 'plus', buttonLabel: 'Plus', mappingLabel: 'M', mappingKey: '', position: { x: 44, y: 25 } },
+    { button: 'home', buttonLabel: 'Home', mappingLabel: 'B', mappingKey: '', position: { x: 40, y: 42 } },
+    { button: 'guide', buttonLabel: 'Guide', mappingLabel: 'Screenshot', mappingKey: 'screenshot', position: { x: 40, y: 42 } },
+    { button: 'l-stick', buttonLabel: 'L-Stick', mappingLabel: '1', mappingKey: '', position: { x: 17, y: 40 } },
+    { button: 'r-stick', buttonLabel: 'R-Stick', mappingLabel: '3', mappingKey: '', position: { x: 45, y: 59 } },
+    { button: 'l3-left', buttonLabel: 'L-Stick Left', mappingLabel: '←', mappingKey: 'Left', position: { x: 7, y: 40 } },
+    { button: 'l3-up', buttonLabel: 'L-Stick Up', mappingLabel: '↑', mappingKey: 'Up', position: { x: 17, y: 30 } },
+    { button: 'l3-right', buttonLabel: 'L-Stick Right', mappingLabel: '→', mappingKey: 'Right', position: { x: 25, y: 40 } },
+    { button: 'l3-down', buttonLabel: 'L-Stick Down', mappingLabel: '↓', mappingKey: 'Down', position: { x: 17, y: 50 } },
+    { button: 'r3-left', buttonLabel: 'R-Stick Left', mappingLabel: 'J', mappingKey: '', position: { x: 38, y: 60 } },
+    { button: 'r3-up', buttonLabel: 'R-Stick Up', mappingLabel: 'I', mappingKey: '', position: { x: 45, y: 50 } },
+    { button: 'r3-right', buttonLabel: 'R-Stick Right', mappingLabel: 'L', mappingKey: '', position: { x: 52, y: 60 } },
+    { button: 'r3-down', buttonLabel: 'R-Stick Down', mappingLabel: 'K', mappingKey: '', position: { x: 45, y: 70 } },
+    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'Up', mappingKey: 'up', position: { x: 26, y: 53 } },
+    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'Down', mappingKey: 'down', position: { x: 26, y: 68 } },
+    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'Left', mappingKey: 'left', position: { x: 21, y: 60 } },
+    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'Right', mappingKey: 'right', position: { x: 31, y: 60 } }
   ];
 
   // XInput手柄按键位置定义
   const xinputMappings: KeyMapping[] = [
-    { button: 'a', buttonLabel: 'A', mappingLabel: 'A', mappingKey: 'KeyA', position: { x: 65, y: 30 } },
-    { button: 'b', buttonLabel: 'B', mappingLabel: 'B', mappingKey: 'KeyB', position: { x: 70, y: 20 } },
-    { button: 'x', buttonLabel: 'X', mappingLabel: 'X', mappingKey: 'KeyX', position: { x: 60, y: 20 } },
-    { button: 'y', buttonLabel: 'Y', mappingLabel: 'Y', mappingKey: 'KeyY', position: { x: 65, y: 10 } },
-    { button: 'lb', buttonLabel: 'LB', mappingLabel: 'Q', mappingKey: 'KeyQ', position: { x: 15, y: -5 } },
-    { button: 'rb', buttonLabel: 'RB', mappingLabel: 'E', mappingKey: 'KeyE', position: { x: 85, y: -5 } },
-    { button: 'lt', buttonLabel: 'LT', mappingLabel: 'Z', mappingKey: 'KeyZ', position: { x: 15, y: 5 } },
-    { button: 'rt', buttonLabel: 'RT', mappingLabel: 'C', mappingKey: 'KeyC', position: { x: 85, y: 5 } },
-    { button: 'ls', buttonLabel: 'LS', mappingLabel: '1', mappingKey: 'Digit1', position: { x: 25, y: 40 } },
-    { button: 'rs', buttonLabel: 'RS', mappingLabel: '3', mappingKey: 'Digit3', position: { x: 75, y: 40 } },
-    { button: 'back', buttonLabel: 'Back', mappingLabel: 'V', mappingKey: 'KeyV', position: { x: 35, y: 15 } },
-    { button: 'start', buttonLabel: 'Start', mappingLabel: 'M', mappingKey: 'KeyM', position: { x: 65, y: 15 } },
-    { button: 'ls-left', buttonLabel: 'LS Left', mappingLabel: '←', mappingKey: 'ArrowLeft', position: { x: 15, y: 40 } },
-    { button: 'ls-up', buttonLabel: 'LS Up', mappingLabel: '↑', mappingKey: 'ArrowUp', position: { x: 25, y: 30 } },
-    { button: 'ls-right', buttonLabel: 'LS Right', mappingLabel: '→', mappingKey: 'ArrowRight', position: { x: 35, y: 40 } },
-    { button: 'ls-down', buttonLabel: 'LS Down', mappingLabel: '↓', mappingKey: 'ArrowDown', position: { x: 25, y: 50 } },
-    { button: 'rs-left', buttonLabel: 'RS Left', mappingLabel: 'J', mappingKey: 'KeyJ', position: { x: 65, y: 40 } },
-    { button: 'rs-up', buttonLabel: 'RS Up', mappingLabel: 'I', mappingKey: 'KeyI', position: { x: 75, y: 30 } },
-    { button: 'rs-right', buttonLabel: 'RS Right', mappingLabel: 'L', mappingKey: 'KeyL', position: { x: 85, y: 40 } },
-    { button: 'rs-down', buttonLabel: 'RS Down', mappingLabel: 'K', mappingKey: 'KeyK', position: { x: 75, y: 50 } },
-    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'T', mappingKey: 'KeyT', position: { x: 15, y: 20 } },
-    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'G', mappingKey: 'KeyG', position: { x: 15, y: 30 } },
-    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'F', mappingKey: 'KeyF', position: { x: 10, y: 25 } },
-    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'H', mappingKey: 'KeyH', position: { x: 20, y: 25 } }
+    { button: 'a', buttonLabel: 'A', mappingLabel: 'Enter', mappingKey: 'Enter', position: { x: 55, y: 43 } },
+    { button: 'b', buttonLabel: 'B', mappingLabel: 'Esc', mappingKey: 'Esc', position: { x: 60, y: 35 } },
+    { button: 'x', buttonLabel: 'X', mappingLabel: 'A', mappingKey: '', position: { x: 50, y: 35 } },
+    { button: 'y', buttonLabel: 'Y', mappingLabel: 'Space', mappingKey: 'space', position: { x: 55, y: 27 } },
+    { button: 'lb', buttonLabel: 'LB', mappingLabel: 'Q', mappingKey: '', position: { x: 15, y: 12 } },
+    { button: 'rb', buttonLabel: 'RB', mappingLabel: 'Control', mappingKey: 'ctrl', position: { x: 55, y: 12 } },
+    { button: 'lt', buttonLabel: 'LT', mappingLabel: 'Z', mappingKey: '', position: { x: 15, y: 2 } },
+    { button: 'rt', buttonLabel: 'RT', mappingLabel: 'C', mappingKey: '', position: { x: 55, y: 2 } },
+    { button: 'ls', buttonLabel: 'LS', mappingLabel: '1', mappingKey: '', position: { x: 17, y: 32 } },
+    { button: 'rs', buttonLabel: 'RS', mappingLabel: '3', mappingKey: '', position: { x: 45, y: 53 } },
+    { button: 'back', buttonLabel: 'Back', mappingLabel: 'V', mappingKey: 'screenshot', position: { x: 30, y: 30 } },
+    { button: 'start', buttonLabel: 'Start', mappingLabel: 'M', mappingKey: '', position: { x: 42, y: 30 } },
+    { button: 'l3-left', buttonLabel: 'LS Left', mappingLabel: '←', mappingKey: 'Left', position: { x: 9, y: 33 } },
+    { button: 'l3-up', buttonLabel: 'LS Up', mappingLabel: '↑', mappingKey: 'Up', position: { x: 17, y: 23 } },
+    { button: 'l3-right', buttonLabel: 'LS Right', mappingLabel: '→', mappingKey: 'Right', position: { x: 23, y: 33 } },
+    { button: 'l3-down', buttonLabel: 'LS Down', mappingLabel: '↓', mappingKey: 'Down', position: { x: 17, y: 43 } },
+    { button: 'r3-left', buttonLabel: 'RS Left', mappingLabel: 'J', mappingKey: '', position: { x: 37, y: 53 } },
+    { button: 'r3-up', buttonLabel: 'RS Up', mappingLabel: 'I', mappingKey: '', position: { x: 45, y: 43 } },
+    { button: 'r3-right', buttonLabel: 'RS Right', mappingLabel: 'L', mappingKey: '', position: { x: 53, y: 53 } },
+    { button: 'r3-down', buttonLabel: 'RS Down', mappingLabel: 'K', mappingKey: '', position: { x: 45, y: 63 } },
+    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'T', mappingKey: 'Up', position: { x: 26, y: 53 } },
+    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'G', mappingKey: 'Down', position: { x: 26, y: 68 } },
+    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'F', mappingKey: 'Left', position: { x: 21, y: 60 } },
+    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'H', mappingKey: 'Right', position: { x: 31, y: 60 } }
   ];
 
   // 设备类型选项（过滤掉键盘）
@@ -130,8 +136,19 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     { type: enums.DeviceType.DUALSENSE, name: "DualSense", mapping: ds4Mappings, img: "/ds4.png", imgWidth: 500, imgHeight: 312 },
     { type: enums.DeviceType.DUALSHOCK4, name: "DualShock 4", mapping: ds4Mappings, img: "/ds4.png", imgWidth: 500, imgHeight: 312 },
     { type: enums.DeviceType.JOYCON, name: "Joy-Con", mapping: joyconMappings, img: "/joycon.jpg", imgWidth: 500, imgHeight: 500 },
-    { type: enums.DeviceType.XINPUT, name: "XInput", mapping: xinputMappings, img: "/xinput.png", imgWidth: 500, imgHeight: 500 }
+    { type: enums.DeviceType.XINPUT, name: "XInput", mapping: xinputMappings, img: "/xinput.png", imgWidth: 500, imgHeight: 500 },
+    { type: enums.DeviceType.TOUCH, name: t('ps4.touchDeviceName'), mapping: [] as KeyMapping[], img: "", imgWidth: 0, imgHeight: 0 },
   ];
+
+  // 获取当前选中设备的信息
+  const isTouchDevice = selectedDeviceType === enums.DeviceType.TOUCH;
+
+  // 监听触摸面板的编辑模式变化
+  useEffect(() => {
+    if (isTouchDevice && touchMappingRef.current) {
+      setEditMode(touchMappingRef.current.editMode);
+    }
+  }, [isTouchDevice, selectedDeviceType]);
 
   // 加载游戏的快捷键配置
   const loadHotkeys = async () => {
@@ -140,24 +157,27 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
       // 加载游戏特定的按键映射
       const gameHotkeys = await GetHotkeysByGameID(gameId);
       // 加载全局按键映射
-      const globalHotkeys = await GetGlobalHotkeys();
+      // const globalHotkeys = await GetGlobalHotkeys();
       
       // 合并映射，游戏映射优先级高于全局
-      const mergedHotkeys = [...globalHotkeys];
+      // const mergedHotkeys = [...globalHotkeys];
+      
       const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
       
+      const mergedHotkeys: models.Hotkey[] = gameHotkeys.filter(gameHotkey => gameHotkey.device_type === currentDeviceType);
+      
       // 用游戏特定映射覆盖全局映射
-      gameHotkeys.forEach(gameHotkey => {
-        const index = mergedHotkeys.findIndex(
-          hotkey => hotkey.device_type === currentDeviceType && 
-                    hotkey.key_code === gameHotkey.key_code
-        );
-        if (index !== -1) {
-          mergedHotkeys[index] = gameHotkey;
-        } else {
-          mergedHotkeys.push(gameHotkey);
-        }
-      });
+      // gameHotkeys.forEach(gameHotkey => {
+      //   const index = mergedHotkeys.findIndex(
+      //     hotkey => hotkey.device_type === currentDeviceType && 
+      //               hotkey.key_code === gameHotkey.key_code
+      //   );
+      //   if (index !== -1) {
+      //     mergedHotkeys[index] = gameHotkey;
+      //   } else {
+      //     mergedHotkeys.push(gameHotkey);
+      //   }
+      // });
       
       setHotkeys(mergedHotkeys);
     } catch (error) {
@@ -309,7 +329,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           name: targetKey,
           device_type: selectedDeviceType || enums.DeviceType.DUALSHOCK4,
           key_code: button,
-          modifiers: [],
+          modifiers: '',
           action_type: enums.HotkeyActionType.CUSTOM,
           action_params: targetKey,
           is_enabled: true,
@@ -350,6 +370,97 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     setCurrentMappingButton(null);
   };
 
+  // 从数据库重新加载按键列表
+  const handleRefresh = async () => {
+    await loadHotkeys();
+  };
+
+  // 清除当前设备类型的所有按键（仅内存，不影响数据库）
+  const handleClear = useCallback(async () => {
+    if (isTouchDevice) {
+      touchMappingRef.current?.clearAll();
+    } else {
+      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      setHotkeys((prev) =>
+        prev.filter((h) => h.device_type !== currentDeviceType)
+      );
+    }
+    toast.success('已清除所有按键映射，请点击保存按钮确认更改');
+  }, [isTouchDevice, selectedDeviceType]);
+
+  // 载入默认配置（覆盖内存中原有的按键列表）
+  const handleLoadDefaults = async () => {
+    try {
+      setLoading(true);
+      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      const device = deviceTypes.find((d) => d.type === currentDeviceType);
+      const defaultMappings = device?.mapping || [];
+
+      if (defaultMappings.length === 0) {
+        toast.error(t('keyMapping.noDefaults'));
+        return;
+      }
+
+      const newHotkeys = defaultMappings.map((m) =>
+        new models.Hotkey({
+          id: crypto.randomUUID(),
+          game_id: gameId,
+          name: m.mappingLabel ?? "",
+          device_type: currentDeviceType,
+          key_code: m.button,
+          modifiers: '',
+          action_type: m.mappingKey == "screenshot" ? enums.HotkeyActionType.SCREENSHOT : enums.HotkeyActionType.CUSTOM,
+          action_params: m.mappingKey ?? '',
+          is_enabled: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+      ).filter((h) => h.action_params !== '');
+
+      setHotkeys(newHotkeys);
+      toast.success(t('keyMapping.defaultsLoaded', { count: newHotkeys.length }));
+    } catch (err) {
+      console.error('载入默认失败:', err);
+      toast.error(t('keyMapping.loadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 载入全局配置（覆盖内存中原有的按键列表）
+  const handleLoadGlobal = async () => {
+    try {
+      setLoading(true);
+      const globalHotkeys = await GetGlobalHotkeys();
+      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      const globalMappings = globalHotkeys.filter(
+        (h) => h.device_type === currentDeviceType
+      );
+
+      if (globalMappings.length === 0) {
+        toast.error(t('ps4.noGlobalMappings'));
+        return;
+      }
+
+      // 使用新的 ID 创建新的映射对象
+      const newHotkeys = globalMappings.map((h) =>
+        new models.Hotkey({
+          ...h,
+          id: crypto.randomUUID(),
+          game_id: gameId,
+        })
+      );
+
+      setHotkeys(newHotkeys);
+      toast.success(t('ps4.globalLoaded', { count: newHotkeys.length }));
+    } catch (err) {
+      console.error('载入全局失败:', err);
+      toast.error(t('ps4.loadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 保存所有映射
   const saveAllMappings = async () => {
     try {
@@ -357,22 +468,26 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
       if (selectedDeviceType === null) { 
         return
       }
+      
+      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      
       // 1. 获取所有游戏特定的映射
       const gameHotkeys = await GetHotkeysByGameID(gameId);
       
-      // 2. 删除所有游戏特定的映射
-      for (const hotkey of gameHotkeys) {
+      // 2. 只删除同gameId和同设备类型的映射
+      const deviceGameHotkeys = gameHotkeys.filter(
+        hotkey => hotkey.device_type === currentDeviceType
+      );
+      for (const hotkey of deviceGameHotkeys) {
         await DeleteHotkey(hotkey.id);
       }
       
       // 3. 获取全局映射
       const globalHotkeys = await GetGlobalHotkeys();
       
-      // 4. 处理要添加的映射
-      const currentDeviceType = selectedDeviceType || enums.DeviceType.DUALSHOCK4;
+      // 4. 处理要添加的映射（只处理当前设备类型）
       const mappingsToAdd = hotkeys.filter(hotkey => {
-        if (hotkey.device_type !== currentDeviceType) return false;
-        return true;
+        return hotkey.device_type === currentDeviceType;
       });
       
       // 5. 添加新的映射
@@ -387,7 +502,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           // 如果全局没有，保存为全局映射
           const globalMapping = new models.Hotkey({
             ...mapping,
-            id: Date.now().toString(),
+            id: crypto.randomUUID(),
             game_id: 'global',
             device_type: currentDeviceType
           });
@@ -396,7 +511,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           // 如果全局有且不同，保存为游戏特定映射
           const gameMapping = new models.Hotkey({
             ...mapping,
-            id: Date.now().toString(),
+            id: crypto.randomUUID(),
             game_id: gameId,
             device_type: currentDeviceType
           });
@@ -423,86 +538,29 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
   // 获取当前选中设备的信息
   const currentDevice = deviceTypes.find(device => device.type === selectedDeviceType);
 
-  return (
-    <div className="ps4-panel relative w-full h-full min-h-[700px]">
-      {/* 手柄图片和按钮映射容器 - 动态显示 */}
-      {currentDevice && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-[700px] h-[500px]">
-            {/* 手柄背景图 - 位于按钮层下方 */}
-            <img 
-              src={currentDevice.img} 
-              alt={`${currentDevice.name} Controller`}
-              className="absolute inset-0" 
-              style={{ 
-                width: `${currentDevice.imgWidth}px`, 
-                height: `${currentDevice.imgHeight}px`,
-                objectFit: 'contain'
-              }}
-            />
+  // 统一的按钮样式
+  const buttonClass = "px-4 py-2 rounded-lg shadow-md transition-colors font-medium text-sm";
 
-            {/* 按钮映射层 - 位于图片上方 */}
-            {currentDevice.mapping.map((mapping) => {
-              const hotkey = findMapping(mapping.button);
-              return (
-                <div key={mapping.button} className="absolute" 
-                     style={{
-                       left: `${mapping.position.x}%`,
-                       top: `${mapping.position.y}%`,
-                       transform: 'translate(-50%, -50%)'
-                     }}>
-                  <button
-                    className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transform"
-                    onClick={() => handleButtonClick(mapping.button)}
-                    title={hotkey ? `${mapping.buttonLabel} → ${hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '截图' : (hotkey.name || '未设置')}` : mapping.buttonLabel}
-                  >
-                    {hotkey ? (hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '📷' : (hotkey.name || mapping.mappingLabel)) : mapping.mappingLabel}
-                  </button>
-                  
-                  {/* 删除按钮 */}
-                  {hotkey && (
-                    <button
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full text-white text-xs flex items-center justify-center shadow-md"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteMapping(hotkey.id);
-                      }}
-                      title="删除映射"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      
-      {/* 保存按钮和设备选择 */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2">
-        <BetterButton 
-          onClick={saveAllMappings}
-          icon="i-mdi-content-save"
-          className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md transition-colors"
-        >
-          保存所有映射
-        </BetterButton>
-        
-        {/* 手柄选择 */}
+  return (
+    <div className="ps4-panel flex flex-col w-full h-full min-h-[700px]">
+      {/* 顶部标题栏 */}
+      <div className="px-6 pt-6 pb-4 flex items-center justify-between gap-4 border-b border-gray-200 dark:border-brand-700">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {t('keyMapping.title')}
+        </h2>
+
+        {/* 设备选择 */}
         <div className="relative">
-          <div className="text-sm font-medium text-gray-700 mb-1">手柄选择</div>
           <button
             onClick={() => setShowDeviceDropdown(!showDeviceDropdown)}
-            className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg shadow-md transition-colors w-full flex justify-between items-center"
+            className={`px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg shadow-sm transition-colors flex items-center gap-2 dark:bg-brand-700 dark:text-gray-200 dark:hover:bg-brand-600 ${buttonClass}`}
           >
-            <span>{deviceTypes.find(d => d.type === selectedDeviceType)?.name || "请选择手柄"}</span>
+            <span>{deviceTypes.find(d => d.type === selectedDeviceType)?.name || t('keyMapping.deviceSelectorPlaceholder')}</span>
             <span className="i-mdi-chevron-down text-sm"></span>
           </button>
-          
-          {/* 下拉菜单 */}
+
           {showDeviceDropdown && (
-            <div className="absolute top-full left-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20 dark:bg-brand-800 dark:border-brand-700">
               {deviceTypes.map(device => (
                 <button
                   key={device.type || 'disabled'}
@@ -510,8 +568,8 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                     setSelectedDeviceType(device.type);
                     setShowDeviceDropdown(false);
                   }}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors ${
-                    selectedDeviceType === device.type ? "bg-blue-50 text-blue-700" : ""
+                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-brand-700 ${
+                    selectedDeviceType === device.type ? "bg-blue-50 text-blue-700 dark:bg-brand-700/50 dark:text-blue-300" : "text-gray-800 dark:text-gray-200"
                   }`}
                 >
                   {device.name}
@@ -521,7 +579,203 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
           )}
         </div>
       </div>
-      
+
+      {/* 统一操作按钮栏 */}
+      <div className="px-6 py-4 flex flex-wrap items-center gap-3 border-b border-gray-200 dark:border-brand-700">
+        {selectedDeviceType !== null && isTouchDevice ? (
+          // 触摸设备按钮
+          <>
+            {!editMode && (
+              <>
+                <button
+                  onClick={() => touchMappingRef.current?.openAddDialog()}
+                  className={`${buttonClass} bg-blue-600 hover:bg-blue-700 text-white`}
+                >
+                  <span className="i-mdi-plus mr-2"></span>
+                  {t('touchMapping.addButton')}
+                </button>
+                <button
+                  onClick={() => touchMappingRef.current?.loadDefaults()}
+                  className={`${buttonClass} bg-indigo-600 hover:bg-indigo-700 text-white`}
+                >
+                  <span className="i-mdi-restore mr-2"></span>
+                  {t('touchMapping.loadDefaults')}
+                </button>
+                {gameId !== 'global' && (
+                  <button
+                    onClick={() => touchMappingRef.current?.loadGlobal()}
+                    className={`${buttonClass} bg-teal-600 hover:bg-teal-700 text-white`}
+                  >
+                    <span className="i-mdi-upload mr-2"></span>
+                    {t('touchMapping.loadGlobal')}
+                  </button>
+                )}
+                <button
+                  onClick={() => touchMappingRef.current?.refresh()}
+                  className={`${buttonClass} bg-blue-600 hover:bg-blue-700 text-white`}
+                >
+                  <span className="i-mdi-refresh mr-2"></span>
+                  {t('touchMapping.refresh')}
+                </button>
+                <button
+                  onClick={handleClear}
+                  className={`${buttonClass} bg-red-600 hover:bg-red-700 text-white`}
+                >
+                  <span className="i-mdi-delete-sweep mr-2"></span>
+                  清除
+                </button>
+              </>
+            )}
+            {/* 编辑模式按钮 */}
+            {!editMode ? (
+              <button
+                onClick={() => {
+                  touchMappingRef.current?.startEditMode();
+                  setEditMode(true);
+                }}
+                className={`${buttonClass} bg-yellow-600 hover:bg-yellow-700 text-white`}
+              >
+                <span className="i-mdi-pencil mr-2"></span>
+                {t('touchMapping.startEditMode')}
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  touchMappingRef.current?.stopEditMode();
+                  setEditMode(false);
+                }}
+                className={`${buttonClass} bg-green-600 hover:bg-green-700 text-white`}
+              >
+                <span className="i-mdi-check mr-2"></span>
+                {t('touchMapping.finishEdit')}
+              </button>
+            )}
+          </>
+        ) : (
+          // 非触摸设备按钮（只有选择了设备类型时才显示）
+          selectedDeviceType !== null && (
+            <>
+              <button
+                onClick={handleLoadDefaults}
+                className={`${buttonClass} bg-indigo-600 hover:bg-indigo-700 text-white`}
+              >
+                <span className="i-mdi-restore mr-2"></span>
+                {t('keyMapping.loadDefaults')}
+              </button>
+              {gameId !== 'global' && (
+                <button
+                  onClick={handleLoadGlobal}
+                  className={`${buttonClass} bg-teal-600 hover:bg-teal-700 text-white`}
+                >
+                  <span className="i-mdi-upload mr-2"></span>
+                  {t('keyMapping.loadGlobal')}
+                </button>
+              )}
+              <button
+                onClick={handleRefresh}
+                className={`${buttonClass} bg-blue-600 hover:bg-blue-700 text-white`}
+              >
+                <span className="i-mdi-refresh mr-2"></span>
+                {t('keyMapping.refresh')}
+              </button>
+              <button
+                onClick={handleClear}
+                className={`${buttonClass} bg-red-600 hover:bg-red-700 text-white`}
+              >
+                <span className="i-mdi-delete-sweep mr-2"></span>
+                清除
+              </button>
+            </>
+          )
+        )}
+        {/* 保存按钮始终显示 - 包括选择关闭手柄映射时 */}
+        {!(isTouchDevice && editMode) && (
+          <>
+            <div className="flex-1"></div>
+            <button
+              onClick={async () => {
+                // 先保存设备类型到配置（所有设备类型都需要）
+                saveJoystickConfig(selectedDeviceType);
+                if (isTouchDevice) {
+                  await touchMappingRef.current?.saveAll();
+                } else {
+                  saveAllMappings();
+                }
+              }}
+              className={`${buttonClass} bg-green-600 hover:bg-green-700 text-white`}
+            >
+              <span className="i-mdi-content-save mr-2"></span>
+              {t('keyMapping.saveAllMappings')}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* 内容区：触摸按钮或手柄映射 - 只有选择了设备类型时才显示 */}
+      {selectedDeviceType !== null && (
+        <div className="flex-1 relative overflow-hidden">
+          {isTouchDevice ? (
+            <TouchMappingPanel ref={touchMappingRef} gameId={gameId} />
+          ) : (
+          <>
+            {/* 手柄图片和按钮映射容器 - 动态显示 */}
+            {currentDevice && (
+              <div className="absolute inset-0 flex items-center justify-center mt-50">
+                <div className="relative w-[700px] h-[500px]">
+                  {/* 手柄背景图 - 位于按钮层下方 */}
+                  <img 
+                    src={currentDevice.img} 
+                    alt={`${currentDevice.name} Controller`}
+                    className="absolute inset-0" 
+                    style={{ 
+                      width: `${currentDevice.imgWidth}px`, 
+                      height: `${currentDevice.imgHeight}px`,
+                      objectFit: 'contain'
+                    }}
+                  />
+
+                  {/* 按钮映射层 - 位于图片上方 */}
+                  {currentDevice.mapping.map((mapping) => {
+                    const hotkey = findMapping(mapping.button);
+                    return (
+                      <div key={mapping.button} className="absolute" 
+                           style={{
+                             left: `${mapping.position.x}%`,
+                             top: `${mapping.position.y}%`,
+                             transform: 'translate(-50%, -50%)'
+                           }}>
+                        <button
+                          className={`w-12 h-12 rounded-full ${hotkey ? 'bg-green-500' : 'bg-blue-500'} ${hotkey ? 'hover:bg-green-600' : 'hover:bg-blue-600'} transition-colors flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transform`}
+                          onClick={() => handleButtonClick(mapping.button)}
+                          title={hotkey ? `${mapping.buttonLabel} → ${hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '截图' : (hotkey.name || '未设置')}` : mapping.buttonLabel}
+                        >
+                          {hotkey ? (hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '📷' : (hotkey.name || mapping.mappingLabel)) : mapping.buttonLabel}
+                        </button>
+                        
+                        {/* 删除按钮 */}
+                        {hotkey && (
+                          <button
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full text-white text-xs flex items-center justify-center shadow-md"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteMapping(hotkey.id);
+                            }}
+                            title="删除映射"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        </div>
+      )}
+
       {/* 映射设置弹窗 */}
       {showMappingDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

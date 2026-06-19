@@ -183,6 +183,13 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.VmUserName = newConfig.VmUserName
 	s.config.VmrunPath = newConfig.VmrunPath
 	s.config.DisplayName = newConfig.DisplayName
+	s.config.MagpieConfigPath = newConfig.MagpieConfigPath
+	s.config.MagpieCroppingEnabled = newConfig.MagpieCroppingEnabled
+	s.config.MagpieCroppingTop = newConfig.MagpieCroppingTop
+	s.config.MagpieCroppingBottom = newConfig.MagpieCroppingBottom
+	s.config.MagpieCroppingLeft = newConfig.MagpieCroppingLeft
+	s.config.MagpieCroppingRight = newConfig.MagpieCroppingRight
+	s.config.MagpieEnabled = newConfig.MagpieEnabled
 	applog.SetLogAll(s.config.LogAll)
 	return nil
 }

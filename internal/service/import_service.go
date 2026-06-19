@@ -1064,8 +1064,8 @@ func SearchVideoExePath(game *models.Game) error {
 	folderPath := filepath.Dir(game.Path)
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
 	excludeExeKeywords := []string{
-		"courier_i", "courier", "acmp", "curl", "unitycrashhandler64",
-		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2", "autorun",
+		"courier_i", "courier", "acmp", "curl", "unitycrashhandler64", "krkr", "krkrconf", "krkrfont", "krkrlt", "krkrrel", "krkrsign", "krkrtpc", "tcwfcomp",
+		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2", "autorun", "supporttools", "filechecker",
 		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst", "bhvc",
 		"vcredist_x86", "vcredist_x64", "vc_redist.x86", "updchk", "upgrade", "uninstx86", "uninstx64", "uninstcl", "uninstaller",
 		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール", "システム詳細設定", "エンジン設定",
@@ -1094,7 +1094,7 @@ func SearchVideoExePath(game *models.Game) error {
 
 					if strings.Contains(fileName, "op") || strings.Contains(fileName, "openning") {
 						foundOPVideo = path
-						return filepath.SkipDir // 找到 OP 视频后停止搜索
+						// return filepath.SkipDir // 找到 OP 视频后停止搜索
 					}
 					// 添加到视频文件列表
 					videoFiles = append(videoFiles, path)
@@ -1105,8 +1105,10 @@ func SearchVideoExePath(game *models.Game) error {
 				// 检查文件名是否包含排除关键词
 				filePrefix := strings.ReplaceAll(fileName, filepath.Ext(path), "")
 				lowPrefix := strings.ToLower(filePrefix)
+				applog.InfoLogSaveAppLog("checking exe %s\n", oFileName)
 				if !utils.ArrayContains(excludeExeKeywords, filePrefix) && !strings.Contains(lowPrefix, "setup") {
 					exeFiles = append(exeFiles, oFileName)
+					applog.InfoLogSaveAppLog("exe found %s\n", oFileName)
 				}
 			}
 		}
@@ -1132,8 +1134,10 @@ func SearchVideoExePath(game *models.Game) error {
 	if len(exeFiles) == 1 {
 		game.ProcessName = exeFiles[0]
 		applog.InfoLogSaveAppLog("SearchVideoPath: found exe for game %s: %s", game.Name, exeFiles[0])
-	} else {
+	} else if len(exeFiles) == 0 {
 		applog.InfoLogSaveAppLog("SearchVideoPath: no exe found for game %s", game.Name)
+	} else {
+		applog.InfoLogSaveAppLog("SearchVideoPath: multiple exe found for game %s: %s", game.Name, exeFiles)
 	}
 
 	return nil

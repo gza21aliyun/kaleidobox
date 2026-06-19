@@ -278,11 +278,11 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
         await AddGamesToCategories(result.skipped_games.map(g => g.id), [selectedCategoryVo.id]);
       }
 
-      if (selectedCategoryVo?.id) {
-        if (result.success > 0) {
-          toast.success(t('import.toasts.importSuccess', { count: result.success }));
-        }
+      if (result.success > 0) {
+        toast.success(t('import.toasts.importSuccess', { count: result.success }));
         onImportComplete();
+      }
+      if (selectedCategoryVo?.id) {
         triggerCategoriesRefresh();
       }
     }

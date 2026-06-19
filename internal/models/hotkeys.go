@@ -61,16 +61,16 @@ const (
 
 // JoystickMapping 手柄按键映射配置
 type JoystickMapping struct {
-	ID                string              `json:"id" db:"id"`
-	DeviceType        enums.DeviceType    `json:"device_type" db:"device_type"`                 // 手柄设备类型
-	Button            JoystickButton      `json:"button" db:"button"`                           // 手柄按钮
-	TargetKey         string              `json:"target_key" db:"target_key"`                   // 目标键盘按键
-	IsLongPress       bool                `json:"is_long_press" db:"is_long_press"`             // 是否为长按映射
-	LongPressDuration int                 `json:"long_press_duration" db:"long_press_duration"` // 长按持续时间(ms)
-	Modifiers         []enums.ModifierKey `json:"modifiers" db:"modifiers"`                     // 修饰键
-	IsEnabled         bool                `json:"is_enabled" db:"is_enabled"`
-	CreatedAt         time.Time           `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time           `json:"updated_at" db:"updated_at"`
+	ID                string           `json:"id" db:"id"`
+	DeviceType        enums.DeviceType `json:"device_type" db:"device_type"`                 // 手柄设备类型
+	Button            JoystickButton   `json:"button" db:"button"`                           // 手柄按钮
+	TargetKey         string           `json:"target_key" db:"target_key"`                   // 目标键盘按键
+	IsLongPress       bool             `json:"is_long_press" db:"is_long_press"`             // 是否为长按映射
+	LongPressDuration int              `json:"long_press_duration" db:"long_press_duration"` // 长按持续时间(ms)
+	Modifiers         string           `json:"modifiers" db:"modifiers"`                     // 修饰键 格式 "ctrl+shift+alt"
+	IsEnabled         bool             `json:"is_enabled" db:"is_enabled"`
+	CreatedAt         time.Time        `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time        `json:"updated_at" db:"updated_at"`
 }
 
 // JoystickButtonState 手柄按钮状态跟踪
@@ -88,7 +88,7 @@ type Hotkey struct {
 	Name         string                 `json:"name" db:"name"`
 	DeviceType   enums.DeviceType       `json:"device_type" db:"device_type"`
 	KeyCode      string                 `json:"key_code" db:"key_code"`
-	Modifiers    []enums.ModifierKey    `json:"modifiers" db:"modifiers"`
+	Modifiers    string                 `json:"modifiers" db:"modifiers"`
 	ActionType   enums.HotkeyActionType `json:"action_type" db:"action_type"`
 	ActionParams string                 `json:"action_params" db:"action_params"`
 	IsEnabled    bool                   `json:"is_enabled" db:"is_enabled"`
@@ -185,5 +185,6 @@ func GetSupportedDevices() []DeviceTypeInfo {
 		{enums.DeviceTypeDualShock4, "DualShock 4", "PlayStation 4 DualShock 4手柄"},
 		{enums.DeviceTypeJoyCon, "Joy-Con", "Nintendo Switch Joy-Con手柄"},
 		{enums.DeviceTypeXInput, "XInput", "Xbox手柄及兼容设备"},
+		{enums.DeviceTypeTouch, "Touch", "屏幕触摸按钮映射"},
 	}
 }

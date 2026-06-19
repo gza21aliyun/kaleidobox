@@ -1,0 +1,64 @@
+{
+	"name": "XInput Controller",
+	"buttons": [
+		{"Name": "a", "ID": 0},
+		{"Name": "b", "ID": 1},
+		{"Name": "x", "ID": 2},
+		{"Name": "y", "ID": 3},
+		{"Name": "lb", "ID": 4},
+		{"Name": "rb", "ID": 5},
+		{"Name": "back", "ID": 6},
+		{"Name": "start", "ID": 7},
+		{"Name": "ls", "ID": 8},
+		{"Name": "rs", "ID": 9}
+	],
+	"axis": [
+		{
+			"Name": "left_x",
+			"ID": 0,
+			"namemin": "l3-left",
+			"namemax": "l3-right"
+		},
+		{
+			"Name": "left_y",
+			"ID": 1,
+			"namemin": "l3-up",
+			"namemax": "l3-down"
+		},
+		{
+			"Name": "right_x",
+			"ID": 3,
+			"namemin": "r3-left",
+			"namemax": "r3-right"
+		},
+		{
+			"Name": "right_y",
+			"ID": 4,
+			"namemin": "r3-up",
+			"namemax": "r3-down"
+		},
+		{
+			"Name": "trigger",
+			"ID": 2,
+			"namemin": "rt",
+			"namemax": "lt",
+			"Max": 32767,
+			"Min": -32767,
+			"Threshold": 2000,
+			"Release": 6000,
+			"Center": 0
+		},
+		{
+			"Name": "dpad_x",
+			"ID": 5,
+			"namemin": "dpad_left",
+			"namemax": "dpad_right"
+		},
+		{
+			"Name": "dpad_y",
+			"ID": 6,
+			"namemin": "dpad_up",
+			"namemax": "dpad_down"
+		}
+	]
+}

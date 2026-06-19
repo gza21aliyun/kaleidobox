@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"lunabox/internal/appconf"
@@ -134,7 +135,28 @@ func (s *StartService) StartGameWithTracking(gameID string) (bool, error) {
 	}
 
 	if game.VmId != "" {
-		return s.vmService.StartGameInsideVm(gameID)
+		startTime := time.Now()
+		success, err := s.vmService.StartGameInsideVm(gameID, s.config.MagpieEnabled || game.UseMagpie)
+		if err == nil {
+			sessionID, _ := s.sessionService.CreatePendingSession(gameID, startTime)
+			//暂时不详细跟踪时间，当其每次玩1分钟。用于记录次数
+			endTime := startTime.Add(time.Minute)
+			session := models.PlaySession{
+				ID:        sessionID,
+				GameID:    gameID,
+				StartTime: startTime,
+				EndTime:   endTime,
+				Duration:  60,
+			}
+			err = s.sessionService.UpdatePlaySession(session)
+			stats, err := s.statsService.GetSingleGameStats(session.GameID)
+			if err == nil {
+				applog.InfoLogSaveAppLog("stats_update %v\n", stats)
+				runtime.EventsEmit(s.ctx, "data_updates", stats)
+			}
+		}
+
+		return success, err
 	}
 
 	return s.startGame(gameID, LaunchOptions{})
@@ -861,7 +883,7 @@ func (s *StartService) getGameLaunchConfig(gameID string) (useLE bool, useMagpie
 	if err != nil {
 		return false, false, err
 	}
-	return game.UseLocaleEmulator, game.UseMagpie, nil
+	return game.UseLocaleEmulator, s.config.MagpieEnabled || game.UseMagpie, nil
 }
 
 var (
@@ -882,6 +904,7 @@ const (
 )
 
 // startMagpie 启动 Magpie 程序（仅启动托盘模式，不触发缩放）
+// 非虚拟机模式下，如果有裁剪参数需要先关闭裁剪再重启
 func (s *StartService) startMagpie() {
 	// 检查 Magpie 是否已经在运行
 	isRunning, err := utils.CheckIfProcessRunning("Magpie.exe")
@@ -892,7 +915,22 @@ func (s *StartService) startMagpie() {
 
 	if isRunning {
 		applog.LogInfof(s.ctx, "Magpie is already running")
+		// 非虚拟机模式：如果有裁剪参数，需要关闭裁剪
+		if s.hasCroppingParams() {
+			applog.LogInfof(s.ctx, "关闭 Magpie 裁剪（非虚拟机模式）...")
+			if err := s.disableMagpieCropping(); err != nil {
+				applog.LogWarningf(s.ctx, "关闭 Magpie 裁剪失败: %v", err)
+			}
+		}
 		return
+	}
+
+	// 如果有裁剪参数，先确保裁剪被关闭
+	if s.hasCroppingParams() {
+		applog.LogInfof(s.ctx, "禁用 Magpie 裁剪（非虚拟机模式）...")
+		if err := s.disableMagpieCropping(); err != nil {
+			applog.LogWarningf(s.ctx, "禁用 Magpie 裁剪失败: %v", err)
+		}
 	}
 
 	// 启动 Magpie (tray 模式)
@@ -910,6 +948,114 @@ func (s *StartService) startMagpie() {
 	}
 
 	applog.LogInfof(s.ctx, "Magpie started successfully")
+}
+
+// hasCroppingParams 检查裁剪参数是否不全为 0
+func (s *StartService) hasCroppingParams() bool {
+	return s.config.MagpieCroppingLeft != 0 ||
+		s.config.MagpieCroppingTop != 0 ||
+		s.config.MagpieCroppingRight != 0 ||
+		s.config.MagpieCroppingBottom != 0
+}
+
+// disableMagpieCropping 禁用 Magpie 裁剪（非虚拟机模式）
+func (s *StartService) disableMagpieCropping() error {
+	// 确定配置文件路径
+	configPath := s.config.MagpieConfigPath
+	if configPath == "" {
+		// 使用默认路径
+		homeDir := os.Getenv("USERPROFILE")
+		configPath = filepath.Join(homeDir, "AppData", "Local", "Magpie", "config", "v4", "config.json")
+	}
+
+	applog.LogInfof(s.ctx, "禁用 Magpie 裁剪，配置路径: %s", configPath)
+
+	// 如果配置文件不存在，跳过
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		applog.LogInfof(s.ctx, "配置文件不存在，跳过")
+		return nil
+	}
+
+	// 读取配置文件
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "读取配置文件失败: %v", err)
+		return err
+	}
+
+	// 解析 JSON
+	var config map[string]interface{}
+	if err := json.Unmarshal(data, &config); err != nil {
+		applog.LogErrorf(s.ctx, "解析配置文件失败: %v", err)
+		return err
+	}
+
+	// 获取 profiles 数组
+	profiles, ok := config["profiles"].([]interface{})
+	if !ok || len(profiles) == 0 {
+		applog.LogErrorf(s.ctx, "配置文件中没有 profiles 数组")
+		return fmt.Errorf("配置文件中没有 profiles 数组")
+	}
+
+	// 获取第一个 profile
+	profile, ok := profiles[0].(map[string]interface{})
+	if !ok {
+		applog.LogErrorf(s.ctx, "profiles[0] 不是 map")
+		return fmt.Errorf("profiles[0] 不是 map")
+	}
+
+	// 检查当前裁剪状态
+	currentCroppingEnabled := false
+	if val, ok := profile["croppingEnabled"].(bool); ok {
+		currentCroppingEnabled = val
+	}
+
+	// 如果裁剪已经关闭，无需修改
+	if !currentCroppingEnabled {
+		return nil
+	}
+
+	// 关闭裁剪
+	profile["croppingEnabled"] = false
+
+	// 写回配置文件
+	newData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		applog.LogErrorf(s.ctx, "序列化配置失败: %v", err)
+		return err
+	}
+
+	if err := os.WriteFile(configPath, newData, 0644); err != nil {
+		applog.LogErrorf(s.ctx, "写入配置文件失败: %v", err)
+		return err
+	}
+
+	applog.LogInfof(s.ctx, "Magpie 裁剪已禁用")
+
+	// 如果 Magpie 正在运行，重启它
+	isRunning, _ := utils.CheckIfProcessRunning("Magpie.exe")
+	if isRunning {
+		// 关闭 Magpie
+		applog.LogInfof(s.ctx, "重启 Magpie 以应用更改...")
+		killCmd := exec.Command("taskkill", "/F", "/IM", "Magpie.exe")
+		_ = killCmd.Run()
+		time.Sleep(1 * time.Second)
+
+		// 重新启动
+		cmd := exec.Command(s.config.MagpiePath, "-t")
+		cmd.Dir = filepath.Dir(s.config.MagpiePath)
+		if err := cmd.Start(); err != nil {
+			applog.LogErrorf(s.ctx, "重启 Magpie 失败: %v", err)
+			return err
+		}
+		if cmd.Process != nil {
+			cmd.Process.Release()
+		}
+		time.Sleep(2 * time.Second)
+		applog.LogInfof(s.ctx, "Magpie 已重启（裁剪已禁用）")
+	}
+
+	return nil
 }
 
 // triggerMagpieScaling 对指定游戏进程触发 Magpie 缩放
@@ -987,6 +1133,7 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
 		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 1)
 	}
+	time.Sleep(8000 * time.Millisecond)
 
 	// 设置游戏窗口为前景
 	procSetForegroundWindow.Call(gameHWND)
@@ -997,126 +1144,19 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	}
 
 	// 等待窗口激活
-	time.Sleep(8000 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	hotkeyStr := "Win+Shift+A"
 	if s.config.MagpieHotkey != "" {
 		hotkeyStr = s.config.MagpieHotkey
 	}
 
-	applog.LogInfof(s.ctx, "Magpie trigger: sending configured hotkey: %s", hotkeyStr)
+	applog.InfoLogSaveAppLog("Magpie trigger: sending configured hotkey: %s", hotkeyStr)
 
-	// 解析并发送快捷键
-	keys := strings.Split(strings.ToLower(hotkeyStr), "+")
-	var vks []uintptr
+	// 使用公共函数发送快捷键
+	utils.SendHotkey(hotkeyStr)
 
-	for _, key := range keys {
-		switch strings.TrimSpace(key) {
-		case "win", "windows", "lwin":
-			vks = append(vks, VK_LWIN)
-		case "ctrl", "control", "lctrl":
-			vks = append(vks, 0x11) // VK_CONTROL
-		case "alt", "lalt", "menu":
-			vks = append(vks, VK_LMENU)
-		case "shift", "lshift":
-			vks = append(vks, VK_LSHIFT)
-		case "a":
-			vks = append(vks, VK_A)
-		case "b":
-			vks = append(vks, 0x42)
-		case "c":
-			vks = append(vks, 0x43)
-		case "d":
-			vks = append(vks, 0x44)
-		case "e":
-			vks = append(vks, 0x45)
-		case "f":
-			vks = append(vks, 0x46)
-		case "g":
-			vks = append(vks, 0x47)
-		case "h":
-			vks = append(vks, 0x48)
-		case "i":
-			vks = append(vks, 0x49)
-		case "j":
-			vks = append(vks, 0x4A)
-		case "k":
-			vks = append(vks, 0x4B)
-		case "l":
-			vks = append(vks, 0x4C)
-		case "m":
-			vks = append(vks, 0x4D)
-		case "n":
-			vks = append(vks, 0x4E)
-		case "o":
-			vks = append(vks, 0x4F)
-		case "p":
-			vks = append(vks, 0x50)
-		case "q":
-			vks = append(vks, 0x51)
-		case "r":
-			vks = append(vks, 0x52)
-		case "s":
-			vks = append(vks, 0x53)
-		case "t":
-			vks = append(vks, 0x54)
-		case "u":
-			vks = append(vks, 0x55)
-		case "v":
-			vks = append(vks, 0x56)
-		case "w":
-			vks = append(vks, 0x57)
-		case "x":
-			vks = append(vks, 0x58)
-		case "y":
-			vks = append(vks, 0x59)
-		case "z":
-			vks = append(vks, 0x5A)
-		case "f1":
-			vks = append(vks, 0x70)
-		case "f2":
-			vks = append(vks, 0x71)
-		case "f3":
-			vks = append(vks, 0x72)
-		case "f4":
-			vks = append(vks, 0x73)
-		case "f5":
-			vks = append(vks, 0x74)
-		case "f6":
-			vks = append(vks, 0x75)
-		case "f7":
-			vks = append(vks, 0x76)
-		case "f8":
-			vks = append(vks, 0x77)
-		case "f9":
-			vks = append(vks, 0x78)
-		case "f10":
-			vks = append(vks, 0x79)
-		case "f11":
-			vks = append(vks, 0x7A)
-		case "f12":
-			vks = append(vks, 0x7B)
-		}
-	}
-
-	// fallback to Win+Shift+A
-	if len(vks) == 0 {
-		vks = []uintptr{VK_LWIN, VK_LSHIFT, VK_A}
-	}
-
-	// 按下所有键
-	for _, vk := range vks {
-		procKeybdEvent.Call(vk, 0, 0, 0)
-		time.Sleep(30 * time.Millisecond)
-	}
-
-	// 松开所有键（逆序）
-	for i := len(vks) - 1; i >= 0; i-- {
-		procKeybdEvent.Call(vks[i], 0, KEYEVENTF_KEYUP, 0)
-		time.Sleep(30 * time.Millisecond)
-	}
-
-	applog.LogInfof(s.ctx, "Magpie trigger: scaling hotkey sent successfully")
+	applog.InfoLogSaveAppLog("Magpie trigger: scaling hotkey sent successfully")
 }
 
 func (s *StartService) detectNewProcesses(targetPID uint32, gameID string, processName string) *utils.NewProcessInfo {

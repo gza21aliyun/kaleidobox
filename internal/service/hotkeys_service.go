@@ -3,8 +3,15 @@ package service
 import (
 	"context"
 	"database/sql"
+	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,11 +22,15 @@ import (
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 
-	"github.com/go-vgo/robotgo"
+	// "github.com/go-vgo/robotgo"
+	js "github.com/0xcafed00d/joystick"
 	"gobot.io/x/gobot/v2"
 	"gobot.io/x/gobot/v2/platforms/joystick"
 	"gobot.io/x/gobot/v2/platforms/keyboard"
 )
+
+//go:embed config/*.json
+var configFS embed.FS
 
 // KeyMapping 按键映射配置
 // type KeyMapping struct {
@@ -46,14 +57,14 @@ const (
 	MappingTypeDirect  MappingType = "direct"  // 直接映射：按下就按下，释放就释放
 	MappingTypeRelease MappingType = "release" // 释放触发：只在释放时触发
 
-	KeyDs4L3Left   string = "l3left"
-	KeyDs4L3Right  string = "l3right"
-	KeyDs4L3Up     string = "l3up"
-	KeyDs4L3Down   string = "l3down"
-	KeyDs4R3Left   string = "r3left"
-	KeyDs4R3Right  string = "r3right"
-	KeyDs4R3Up     string = "r3up"
-	KeyDs4R3Down   string = "r3down"
+	KeyDs4L3Left   string = "l3-left"
+	KeyDs4L3Right  string = "l3-right"
+	KeyDs4L3Up     string = "l3-up"
+	KeyDs4L3Down   string = "l3-down"
+	KeyDs4R3Left   string = "r3-left"
+	KeyDs4R3Right  string = "r3-right"
+	KeyDs4R3Up     string = "r3-up"
+	KeyDs4R3Down   string = "r3-down"
 	KeyDs4L2       string = "l2"
 	KeyDs4R2       string = "r2"
 	KeyDs4L1       string = "l1"
@@ -67,6 +78,145 @@ const (
 	KeyDs4Cross    string = "cross"
 	KeyDs4Square   string = "square"
 )
+
+// 自定义 Xbox 360 配置 JSON，包含 D-pad axis 支持
+// 用于第三方 XInput 手柄
+// 注意：配置现在从 JSON 文件读取，此常量已移除
+
+// joystickConfig 是 gobot joystick 配置的 Go 表示
+type joystickConfigJSON struct {
+	Name    string       `json:"name"`
+	GUID    string       `json:"guid"`
+	Axis    []axisPair   `json:"axis"`
+	Buttons []buttonPair `json:"buttons"`
+}
+
+type axisPair struct {
+	Name      string `json:"Name"`      // 轴的基本名称（如 "trigger", "left_x"）
+	ID        int    `json:"ID"`        // 轴的 ID
+	NameMax   string `json:"namemax"`   // 最大值端的名称（如 "rt", "l3-right", "l3-down"）
+	NameMin   string `json:"namemin"`   // 最小值端的名称（如 "lt", "l3-left", "l3-up"）
+	Max       int    `json:"Max"`       // 最大值
+	Min       int    `json:"Min"`       // 最小值
+	Threshold int    `json:"Threshold"` // 无视阈值（中间分界值 ± Threshold 之间被忽略）
+	Release   int    `json:"Release"`   // Release 阈值（中间分界值 ± Release 之间为 Release 状态）
+	Center    int    `json:"Center"`    // 中间分界值
+}
+
+type buttonPair struct {
+	Name string `json:"Name"`
+	ID   int    `json:"ID"`
+}
+
+// ensureConfigFile 确保配置文件存在于执行目录的 config 文件夹中
+// 如果不存在，从内置资源复制过去，返回配置内容
+func ensureConfigFile(filename string) (string, string, error) {
+	// 获取执行文件所在目录
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", "", fmt.Errorf("获取执行文件路径失败: %v", err)
+	}
+	exeDir := filepath.Dir(exePath)
+
+	// 目标配置文件夹和路径
+	configDir := filepath.Join(exeDir, "config")
+	targetPath := filepath.Join(configDir, filename)
+
+	// 检查目标文件是否存在
+	if _, err := os.Stat(targetPath); err == nil {
+		// 文件已存在，读取内容
+		content, err := os.ReadFile(targetPath)
+		if err != nil {
+			return "", "", fmt.Errorf("读取配置文件失败: %v", err)
+		}
+		fmt.Printf("配置文件已存在: %s\n", targetPath)
+		return targetPath, string(content), nil
+	}
+
+	// 配置文件夹不存在，创建它
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return "", "", fmt.Errorf("创建配置文件夹失败: %v", err)
+	}
+
+	// 从嵌入的文件系统中读取配置内容
+	// 注意：嵌入资源使用正斜杠路径，即使在Windows上也是如此
+	embedPath := filepath.ToSlash(filepath.Join("config", filename))
+	fmt.Printf("尝试从嵌入资源读取: %s\n", embedPath)
+
+	// 首先列出所有嵌入文件以进行调试
+	if entries, err := configFS.ReadDir("config"); err == nil {
+		fmt.Printf("嵌入资源中的配置文件: ")
+		for _, entry := range entries {
+			fmt.Printf("%s ", entry.Name())
+		}
+		fmt.Println()
+	}
+
+	configContent, err := configFS.ReadFile(embedPath)
+	if err != nil {
+		return "", "", fmt.Errorf("从嵌入资源读取配置失败: %v", err)
+	}
+
+	// 写入配置文件
+	if err := os.WriteFile(targetPath, configContent, 0644); err != nil {
+		return "", "", fmt.Errorf("写入配置文件失败: %v", err)
+	}
+
+	fmt.Printf("配置文件已创建: %s\n", targetPath)
+	return targetPath, string(configContent), nil
+}
+
+// applyCustomConfigToDriver 使用反射将自定义配置应用到 joystick.Driver
+// 这允许我们添加自定义的 axis（如 dpad_x, dpad_y）
+func applyCustomConfigToDriver(stick *joystick.Driver, customConfigJSON string) error {
+	// 解析自定义 JSON
+	var rawConfig map[string]interface{}
+	if err := json.Unmarshal([]byte(customConfigJSON), &rawConfig); err != nil {
+		return fmt.Errorf("解析自定义配置失败: %v", err)
+	}
+
+	// 获取 Driver 的 config 字段（使用反射）
+	driverVal := reflect.ValueOf(stick).Elem()
+	configField := driverVal.FieldByName("config")
+
+	if !configField.IsValid() {
+		return fmt.Errorf("无法找到 config 字段")
+	}
+
+	// 获取 axis 数组并添加 dpad_x 和 dpad_y
+	axisField := configField.FieldByName("Axis")
+	if !axisField.IsValid() || !axisField.CanSet() {
+		return fmt.Errorf("无法访问或修改 Axis 字段")
+	}
+
+	// 创建新的 axis 对
+	// pair 结构: {Name: string, ID: int}
+	pairType := axisField.Type().Elem()
+
+	// dpad_x (ID: 6)
+	dpadXVal := reflect.New(pairType)
+	dpadXVal.Elem().FieldByName("Name").SetString("dpad_x")
+	dpadXVal.Elem().FieldByName("ID").SetInt(6)
+	axisField = reflect.Append(axisField, dpadXVal.Elem())
+
+	// dpad_y (ID: 7)
+	dpadYVal := reflect.New(pairType)
+	dpadYVal.Elem().FieldByName("Name").SetString("dpad_y")
+	dpadYVal.Elem().FieldByName("ID").SetInt(7)
+	axisField = reflect.Append(axisField, dpadYVal.Elem())
+
+	// 设置回 config 字段
+	configField.FieldByName("Axis").Set(axisField)
+
+	// 初始化事件
+	// 重新添加 dpad_x 和 dpad_y 事件
+	stick.AddEvent("dpad_x")
+	stick.AddEvent("dpad_y")
+
+	applog.LogInfof(context.Background(), "成功添加自定义 dpad_x 和 dpad_y 轴到配置")
+
+	return nil
+}
 
 // HotkeyService 重构后的热键服务
 type HotkeyService struct {
@@ -86,8 +236,8 @@ type HotkeyService struct {
 	hookMutex1  sync.RWMutex
 
 	// 按键映射管理
-	keyMappings    map[string]*models.Hotkey // source_key -> mapping
-	actionKeys     map[string]*models.Hotkey
+	keyMappings    map[string]*models.Hotkey // actionType是HotkeyActionCustom的映射键
+	actionKeys     map[string]*models.Hotkey //映射其他功能键如截图
 	mappingLock2   sync.RWMutex
 	actionkeyLock3 sync.RWMutex
 	// keyLock     sync.RWMutex
@@ -96,8 +246,7 @@ type HotkeyService struct {
 	keyStates  map[string]bool // key -> is_pressed
 	stateLock4 sync.RWMutex
 
-	// 快捷键管理（特殊用途）
-	// screenshotHotkey *models.Hotkey
+	// 触摸按钮
 
 	// 当前活动游戏
 	activeGameID atomic.Value
@@ -106,17 +255,20 @@ type HotkeyService struct {
 	isMonitoringKeySetting atomic.Bool
 	monitoredKey           atomic.Value
 
-	imageService *ImageService
-	startService *StartService
+	imageService        *ImageService
+	startService        *StartService
+	touchMappingService *TouchMappingService
 
 	processCheckTicker *time.Ticker
 	keyboardTicker     *time.Ticker
 	keyboardStopChan   chan struct{}
+	joystickStopChan   chan struct{}
 }
 
-func (s *HotkeyService) SetServices(imageService *ImageService, startService *StartService) {
+func (s *HotkeyService) SetServices(imageService *ImageService, startService *StartService, touchMappingService *TouchMappingService) {
 	s.imageService = imageService
 	s.startService = startService
+	s.touchMappingService = touchMappingService
 }
 
 func NewHotkeyService() *HotkeyService {
@@ -182,13 +334,12 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 
 	for rows.Next() {
 		var hotkey models.Hotkey
-		// var modifiersBytes []byte
 		var deviceType string
 		var actionType string
 
 		err := rows.Scan(
 			&hotkey.ID, &hotkey.GameID, &hotkey.Name, &deviceType, &hotkey.KeyCode,
-			// &modifiersBytes,
+			&hotkey.Modifiers,
 			&actionType, &hotkey.ActionParams,
 			&hotkey.IsEnabled, &hotkey.CreatedAt, &hotkey.UpdatedAt,
 		)
@@ -199,23 +350,12 @@ func (s *HotkeyService) fetchHotkeys(query string) ([]*models.Hotkey, error) {
 			continue
 		}
 
-		// 解析修饰键
-		// if len(modifiersBytes) > 0 {
-		// 	json.Unmarshal(modifiersBytes, &hotkey.Modifiers)
-		// }
-
-		// 解析动作参数
-		// if len(paramsBytes) > 0 {
-		// 	json.Unmarshal(paramsBytes, &hotkey.ActionParams)
-		// }
-
 		rs = append(rs, &hotkey)
-		applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
 	}
 	return rs, err
 }
 
-func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
+func (s *HotkeyService) loadHotkeyConfig(gameId string) map[enums.DeviceType]enums.DeviceType {
 	applog.LogInfof(s.ctx, "Loading hotkey configuration")
 	s.actionkeyLock3.Lock()
 	s.mappingLock2.Lock()
@@ -223,32 +363,94 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 	defer s.actionkeyLock3.Unlock()
 	s.keyMappings = make(map[string]*models.Hotkey)
 	s.actionKeys = make(map[string]*models.Hotkey)
+	var devicetypes map[enums.DeviceType]enums.DeviceType = make(map[enums.DeviceType]enums.DeviceType)
 	var devicetype enums.DeviceType
+	if s.config.JoystickType != "" {
+		devicetype = enums.DeviceType(s.config.JoystickType)
+		// devicetypes[devicetype] = devicetype
+	} else {
+		devicetype = enums.DeviceTypeKeyboard
+	}
+	applog.InfoLogSaveAppLog("deviceType:%v\n", devicetype)
 
-	query := `SELECT id, game_id, name, device_type, key_code, action_type, action_params, is_enabled, created_at, updated_at 
+	query := `SELECT id, game_id, name, device_type, key_code, modifiers, action_type, action_params, is_enabled, created_at, updated_at 
 	FROM hotkeys`
 	if gameId != "" {
 		query += fmt.Sprintf(" WHERE (game_id = '%s' OR game_id = '%s')", gameId, "global")
 	}
 
 	rows, _ := s.fetchHotkeys(query)
+	// globalHotkeys := []models.Hotkey{}
+	localCount := 0
 
 	for _, hotkey := range rows {
+		if !(hotkey.DeviceType == devicetype || hotkey.DeviceType == enums.DeviceTypeKeyboard) || hotkey.IsGlobal() {
+			continue
+		}
 		if hotkey.ActionType != enums.HotkeyActionCustom {
-			if !hotkey.IsGlobal() || s.actionKeys[hotkey.KeyCode] == nil {
+			if !hotkey.IsGlobal() {
 				s.actionKeys[hotkey.KeyCode] = hotkey
-				devicetype = hotkey.DeviceType
-				fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
+				if hotkey.DeviceType == enums.DeviceTypeTouch {
+					x, y := parseTouchPosition(hotkey.KeyCode)
+					vk := parseVirtualKey(hotkey.ActionParams)
+					fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
+				}
+				devicetypes[hotkey.DeviceType] = hotkey.DeviceType
+				if devicetype == hotkey.DeviceType {
+					localCount++
+				}
+
+				// fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
 			}
 		} else {
-			if !hotkey.IsGlobal() || s.keyMappings[hotkey.KeyCode] == nil {
+			if !hotkey.IsGlobal() {
 				s.keyMappings[hotkey.KeyCode] = hotkey
-				devicetype = hotkey.DeviceType
-				fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
+				if hotkey.DeviceType == enums.DeviceTypeTouch {
+					x, y := parseTouchPosition(hotkey.KeyCode)
+					vk := parseVirtualKey(hotkey.ActionParams)
+					fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
+				}
+
+				devicetypes[hotkey.DeviceType] = hotkey.DeviceType
+				if devicetype == hotkey.DeviceType {
+					localCount++
+				}
+				// fmt.Printf("快捷键设备变为%s,keycode:%s\n", string(devicetype), hotkey.KeyCode)
 			}
 		}
 
-		applog.LogInfof(s.ctx, "Loaded hotkey: %s, \n %v\n", hotkey.Name, hotkey)
+		applog.LogInfof(s.ctx, "Loaded game hotkey: %s, \n %v\ngameKeyCount:%d\n", hotkey.Name, hotkey, localCount)
+	}
+	if localCount == 0 {
+		for _, hotkey := range rows {
+			if !(hotkey.DeviceType == devicetype || hotkey.DeviceType == enums.DeviceTypeKeyboard) {
+				continue
+			}
+			if hotkey.ActionType != enums.HotkeyActionCustom {
+				if hotkey.IsGlobal() {
+					s.actionKeys[hotkey.KeyCode] = hotkey
+					if hotkey.DeviceType == enums.DeviceTypeTouch {
+						x, y := parseTouchPosition(hotkey.KeyCode)
+						vk := parseVirtualKey(hotkey.ActionParams)
+						fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
+					}
+					devicetypes[hotkey.DeviceType] = hotkey.DeviceType
+				}
+			} else {
+				if hotkey.IsGlobal() {
+					s.keyMappings[hotkey.KeyCode] = hotkey
+					if hotkey.DeviceType == enums.DeviceTypeTouch {
+						x, y := parseTouchPosition(hotkey.KeyCode)
+						vk := parseVirtualKey(hotkey.ActionParams)
+						fmt.Printf("触摸按钮加载: name=%s x=%d y=%d vk=%d\n", hotkey.Name, x, y, vk)
+					}
+
+					devicetypes[hotkey.DeviceType] = hotkey.DeviceType
+				}
+			}
+
+			applog.LogInfof(s.ctx, "Loaded global hotkey: %s, \n %v\n", hotkey.Name, hotkey)
+		}
 	}
 
 	// 统计各类设备的快捷键数量
@@ -262,8 +464,183 @@ func (s *HotkeyService) loadHotkeyConfig(gameId string) enums.DeviceType {
 		statsStr += fmt.Sprintf("%s:%d ", deviceType, count)
 	}
 
-	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s)%d", len(s.keyMappings), statsStr, len(rows))
-	return devicetype
+	// 统计触摸按钮数量
+	touchButtonCount := 0
+	for _, hotkey := range s.keyMappings {
+		if hotkey.DeviceType == enums.DeviceTypeTouch {
+			touchButtonCount++
+		}
+	}
+	for _, hotkey := range s.actionKeys {
+		if hotkey.DeviceType == enums.DeviceTypeTouch {
+			touchButtonCount++
+		}
+	}
+	applog.LogInfof(s.ctx, "Loaded %d hotkeys (%s), touch buttons=%d", len(s.keyMappings), statsStr, touchButtonCount)
+	// keys := make([]enums.DeviceType, 0, len(devicetypes))
+	// for dt := range devicetypes {
+	// 	keys = append(keys, dt)
+	// }
+	return devicetypes
+}
+
+// parseTouchPosition 从 "x:123;y:456" 格式中解析坐标
+func parseTouchPosition(keyCode string) (int32, int32) {
+	var x, y int32 = 0, 0
+	parts := strings.Split(keyCode, ";")
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if strings.HasPrefix(p, "x:") {
+			if val, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(p, "x:"))); err == nil {
+				x = int32(val)
+			}
+		} else if strings.HasPrefix(p, "y:") {
+			if val, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(p, "y:"))); err == nil {
+				y = int32(val)
+			}
+		}
+	}
+	// 默认位置（避免未设置时在屏幕左上角）
+	if x == 0 && y == 0 {
+		x = 1700
+		y = 340
+	}
+	return x, y
+}
+
+// parseVirtualKey 从 action_params 解析虚拟键码
+func parseVirtualKey(params string) uint {
+	if params == "" {
+		return 0x0D // 默认为 ENTER
+	}
+	// 尝试解析为数字（虚拟键码）
+	if v, err := strconv.ParseUint(params, 10, 32); err == nil {
+		return uint(v)
+	}
+	// 常见按键名映射
+	switch strings.ToUpper(params) {
+	case "ENTER", "RETURN":
+		return 0x0D
+	case "CTRL", "CONTROL":
+		return 0x11
+	case "SPACE":
+		return 0x20
+	case "ESC":
+		return 0x1B
+	case "TAB":
+		return 0x09
+	case "F1":
+		return 0x70
+	case "F2":
+		return 0x71
+	case "F3":
+		return 0x72
+	case "F4":
+		return 0x73
+	case "F5":
+		return 0x74
+	case "F6":
+		return 0x75
+	case "F7":
+		return 0x76
+	case "F8":
+		return 0x77
+	case "F9":
+		return 0x78
+	case "F10":
+		return 0x79
+	case "F11":
+		return 0x7A
+	case "F12":
+		return 0x7B
+	case "A":
+		return 0x41
+	case "B":
+		return 0x42
+	case "C":
+		return 0x43
+	case "D":
+		return 0x44
+	case "E":
+		return 0x45
+	case "F":
+		return 0x46
+	case "G":
+		return 0x47
+	case "H":
+		return 0x48
+	case "I":
+		return 0x49
+	case "J":
+		return 0x4A
+	case "K":
+		return 0x4B
+	case "L":
+		return 0x4C
+	case "M":
+		return 0x4D
+	case "N":
+		return 0x4E
+	case "O":
+		return 0x4F
+	case "P":
+		return 0x50
+	case "Q":
+		return 0x51
+	case "R":
+		return 0x52
+	case "S":
+		return 0x53
+	case "T":
+		return 0x54
+	case "U":
+		return 0x55
+	case "V":
+		return 0x56
+	case "W":
+		return 0x57
+	case "X":
+		return 0x58
+	case "Y":
+		return 0x59
+	case "Z":
+		return 0x5A
+	case "0":
+		return 0x30
+	case "1":
+		return 0x31
+	case "2":
+		return 0x32
+	case "3":
+		return 0x33
+	case "4":
+		return 0x34
+	case "5":
+		return 0x35
+	case "6":
+		return 0x36
+	case "7":
+		return 0x37
+	case "8":
+		return 0x38
+	case "9":
+		return 0x39
+	case "LEFT":
+		return 0x25
+	case "RIGHT":
+		return 0x27
+	case "UP":
+		return 0x26
+	case "DOWN":
+		return 0x28
+	case "SHIFT":
+		return 0x10
+	case "ALT":
+		return 0x12
+	case "WIN", "LWIN":
+		return 0x5B
+	}
+	return 0x0D // 默认 ENTER
 }
 
 // loadConnectedDevicesFromDB 从数据库加载已连接设备
@@ -355,8 +732,10 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	}
 	//这里true的话每次按键都会去找前台游戏，但可能会增加延迟。注意如果改为true，一开始的loadhotkeys应该改为读取所有hotkeys而不是为单个游戏
 	if /*true ||*/ s.GetActiveGameID() == "" {
+		applog.LogDebugf(s.ctx, "现在游戏id为空，准备检查")
 		s.processCheck()
 		if s.GetActiveGameID() == "" {
+			applog.LogDebugf(s.ctx, "现在游戏id还是为空，判定为设置截图键中")
 			s.monitoredKey.Store(&hk)
 			return
 		}
@@ -381,7 +760,7 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	hotkey := s.keyMappings[key]
 	s.mappingLock2.RUnlock()
 	if hotkey != nil {
-		s.simulateKeyPress(hotkey.ActionParams, []enums.ModifierKey{})
+		s.simulateKeyPress(hotkey.ActionParams)
 	}
 	s.monitoredKey.Store(&hk)
 }
@@ -394,7 +773,7 @@ func (s *HotkeyService) handleActionKey(key *models.Hotkey) {
 
 // handleKeyRelease 处理按键释放事件
 func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceType) {
-	applog.LogDebugf(s.ctx, "Key released: %s", key)
+	// applog.LogDebugf(s.ctx, "Key released: %s", key)
 	hk := models.Hotkey{
 		KeyCode:    key,
 		Name:       name,
@@ -411,11 +790,13 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 
 	s.mappingLock2.RUnlock()
 
-	fmt.Printf("Key: %v , mappings:%v\n", hotkey, s.keyMappings)
 	if hotkey != nil {
-		s.simulateKeyRelease(hotkey.ActionParams, []enums.ModifierKey{})
+		s.simulateKeyRelease(hotkey.ActionParams)
 		s.monitoredKey.Store(&hk)
+		fmt.Printf("Key: %v \n", hotkey)
 		return
+	} else {
+		fmt.Printf("handleKeyRelease Key: %v , mappings:%v\n", hotkey, s.keyMappings)
 	}
 	s.actionkeyLock3.RLock()
 	hotkey = s.actionKeys[key]
@@ -429,29 +810,34 @@ func (s *HotkeyService) handleKeyRelease(key, name string, device enums.DeviceTy
 }
 
 // simulateKeyPress 模拟按键按下
-func (s *HotkeyService) simulateKeyPress(key string, modifiers []enums.ModifierKey) {
+func (s *HotkeyService) simulateKeyPress(key string) {
 	// 先按下修饰键
 	// for _, mod := range modifiers {
 	// 	robotgo.KeyToggle(s.modifierToKey(mod), "down")
 	// }
 
 	// 按下目标键
-	robotgo.KeyToggle(key, "down")
+	// robotgo.KeyToggle(key, "down")
+	vk := parseVirtualKey(key)
 
-	applog.LogDebugf(s.ctx, "Simulated key press: %s (with modifiers: %v)", key, modifiers)
+	procKeybdEvent.Call(uintptr(vk), 0, 0, 0)
+
+	applog.LogDebugf(s.ctx, "Simulated key press: %s (with modifiers: %v)", key)
 }
 
 // simulateKeyRelease 模拟按键释放
-func (s *HotkeyService) simulateKeyRelease(key string, modifiers []enums.ModifierKey) {
+func (s *HotkeyService) simulateKeyRelease(key string) {
 	// 释放目标键
-	robotgo.KeyToggle(key, "up")
+	// robotgo.KeyToggle(key, "up")
+	vk := parseVirtualKey(key)
+	procKeybdEvent.Call(uintptr(vk), 0, KEYEVENTF_KEYUP_TM, 0)
 
 	// 释放修饰键
 	// for _, mod := range modifiers {
 	// 	robotgo.KeyToggle(s.modifierToKey(mod), "up")
 	// }
 
-	applog.LogDebugf(s.ctx, "Simulated key release: %s (with modifiers: %v)", key, modifiers)
+	applog.LogDebugf(s.ctx, "Simulated key release: %s (with modifiers: %v)", key)
 }
 
 // modifierToKey 修饰键转换
@@ -538,164 +924,336 @@ func (s *HotkeyService) convertJoystickButton(key int) string {
 	return ""
 }
 
-func (s *HotkeyService) handleDS4Events() {
-	device := enums.DeviceTypeDualShock4
-	stick := s.joysticks[string(device)]
+// handleAxisEvents 处理轴事件（摇杆和扳机）
+// 已移动到 handleJoypadEvents 方法中
 
-	// 监听按钮按下
-	stick.On(joystick.SquarePress, func(data interface{}) {
-		s.handleKeyPress("square", "□", device)
-	})
-
-	stick.On(joystick.SquareRelease, func(data interface{}) {
-		s.handleKeyRelease("square", "□", device)
-	})
-
-	stick.On(joystick.CirclePress, func(data interface{}) {
-		s.handleKeyPress("circle", "○", device)
-	})
-
-	stick.On(joystick.CircleRelease, func(data interface{}) {
-		s.handleKeyRelease("circle", "○", device)
-	})
-
-	stick.On(joystick.TrianglePress, func(data interface{}) {
-		s.handleKeyPress("triangle", "△", device)
-	})
-
-	stick.On(joystick.TriangleRelease, func(data interface{}) {
-		s.handleKeyRelease("triangle", "△", device)
-	})
-
-	stick.On(joystick.XPress, func(data interface{}) {
-		s.handleKeyPress("cross", "X", device)
-	})
-
-	stick.On(joystick.XRelease, func(data interface{}) {
-		s.handleKeyRelease("cross", "X", device)
-	})
-
-	// 监听肩键
-	stick.On(joystick.L1Press, func(data interface{}) {
-		s.handleKeyPress("l1", "L1", device)
-	})
-
-	stick.On(joystick.R1Press, func(data interface{}) {
-		s.handleKeyPress("r1", "R1", device)
-	})
-
-	// 监听扳机键 (模拟量)
-	stick.On(joystick.L2Press, func(data interface{}) {
-		s.handleKeyPress("l2", "L2", device)
-	})
-
-	stick.On(joystick.R2Press, func(data interface{}) {
-		s.handleKeyPress("r2", "R2", device)
-	})
-
-	stick.On(joystick.L3Press, func(data interface{}) {
-		s.handleKeyPress("l3", "L3", device)
-	})
-
-	stick.On(joystick.R3Press, func(data interface{}) {
-		s.handleKeyPress("r3", "R3", device)
-	})
-
-	// 监听方向键
-	stick.On(joystick.UpPress, func(data interface{}) {
-		s.handleKeyPress("up", "↑", device)
-	})
-
-	stick.On(joystick.DownPress, func(data interface{}) {
-		s.handleKeyPress("down", "↓", device)
-	})
-
-	stick.On(joystick.LeftPress, func(data interface{}) {
-		s.handleKeyPress("left", "←", device)
-	})
-
-	stick.On(joystick.RightPress, func(data interface{}) {
-		s.handleKeyPress("right", "→", device)
-	})
-
-	// 监听摇杆轴 (模拟量)
-	stick.On(joystick.LeftX, func(data interface{}) {
-		// data 包含摇杆位置值 -32768 到 32767
-		// var l3LeftIsRelease = true
-		// var l3RightIsRelease = true
-		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
-		if data.(int) > 5000 {
-
-			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device)
-		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4L3Right, false, KeyDs4L3Right, device)
-			s.toggleKey(KeyDs4L3Left, false, KeyDs4L3Left, device)
+// DeviceButtonMapping 定义每个设备的按钮和轴映射
+func (s *HotkeyService) handleAxisEvents(axisName string, value int, device enums.DeviceType, cm string) {
+	switch axisName {
+	case "left_x":
+		// 左摇杆 X 轴
+		if value > 5000 {
+			s.toggleKey("l3-right", true, "L3 Right", device, cm)
+		} else if value < -5000 {
+			s.toggleKey("l3-left", true, "L3 Left", device, cm)
 		} else {
-			s.toggleKey(KeyDs4L3Left, true, KeyDs4L3Left, device)
+			s.toggleKey("l3-right", false, "L3 Right", device, cm)
+			s.toggleKey("l3-left", false, "L3 Left", device, cm)
 		}
-
-	})
-
-	stick.On(joystick.RightX, func(data interface{}) {
-		// data 包含摇杆位置值 -32768 到 32767
-		// var l3LeftIsRelease = true
-		// var l3RightIsRelease = true
-		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
-		if data.(int) > 5000 {
-
-			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device)
-		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4R3Right, false, KeyDs4R3Right, device)
-			s.toggleKey(KeyDs4R3Left, false, KeyDs4R3Left, device)
+	case "left_y":
+		// 左摇杆 Y 轴
+		if value > 5000 {
+			s.toggleKey("l3-down", true, "L3 Down", device, cm)
+		} else if value < -5000 {
+			s.toggleKey("l3-up", true, "L3 Up", device, cm)
 		} else {
-			s.toggleKey(KeyDs4R3Left, true, KeyDs4R3Left, device)
+			s.toggleKey("l3-down", false, "L3 Down", device, cm)
+			s.toggleKey("l3-up", false, "L3 Up", device, cm)
 		}
-
-	})
-
-	stick.On(joystick.LeftY, func(data interface{}) {
-
-		if data.(int) > 5000 {
-
-			s.toggleKey(KeyDs4L3Up, true, KeyDs4L3Up, device)
-		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4L3Up, false, KeyDs4L3Up, device)
-			s.toggleKey(KeyDs4L3Down, false, KeyDs4L3Down, device)
+	case "right_x":
+		// 右摇杆 X 轴
+		if value > 5000 {
+			s.toggleKey("r3-right", true, "R3 Right", device, cm)
+		} else if value < -5000 {
+			s.toggleKey("r3-left", true, "R3 Left", device, cm)
 		} else {
-			s.toggleKey(KeyDs4L3Down, true, KeyDs4L3Down, device)
+			s.toggleKey("r3-right", false, "R3 Right", device, cm)
+			s.toggleKey("r3-left", false, "R3 Left", device, cm)
 		}
-	})
-
-	stick.On(joystick.RightY, func(data interface{}) {
-
-		if data.(int) > 5000 {
-
-			s.toggleKey(KeyDs4R3Up, true, KeyDs4R3Up, device)
-		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4R3Up, false, KeyDs4R3Up, device)
-			s.toggleKey(KeyDs4R3Down, false, KeyDs4R3Down, device)
+	case "right_y":
+		// 右摇杆 Y 轴
+		if value > 5000 {
+			s.toggleKey("r3-down", true, "R3 Down", device, cm)
+		} else if value < -5000 {
+			s.toggleKey("r3-up", true, "R3 Up", device, cm)
 		} else {
-			s.toggleKey(KeyDs4R3Down, true, KeyDs4R3Down, device)
+			s.toggleKey("r3-down", false, "R3 Down", device, cm)
+			s.toggleKey("r3-up", false, "R3 Up", device, cm)
 		}
-	})
+	case "lt", "l2":
+		// 左扳机 (Xbox: lt, Sony: l2)
+		if value > 5000 {
+			s.toggleKey("lt", true, "LT", device, cm)
+		} else {
+			s.toggleKey("lt", false, "LT", device, cm)
+		}
+	case "rt", "r2":
+		// 右扳机 (Xbox: rt, Sony: r2)
+		if value > 5000 {
+			s.toggleKey("r2", true, "R2", device, cm)
+		} else {
+			s.toggleKey("r2", false, "R2", device, cm)
+		}
+	case "dpad_x":
+		// D-pad 水平方向（某些第三方手柄）
+		if value > 20000 {
+			s.toggleKey("dpad_right", true, "D-Pad Right", device, cm)
+			s.toggleKey("dpad_left", false, "D-Pad Left", device, cm)
+		} else if value < -20000 {
+			s.toggleKey("dpad_left", true, "D-Pad Left", device, cm)
+			s.toggleKey("dpad_right", false, "D-Pad Right", device, cm)
+		} else {
+			s.toggleKey("dpad_left", false, "D-Pad Left", device, cm)
+			s.toggleKey("dpad_right", false, "D-Pad Right", device, cm)
+		}
+	case "dpad_y":
+		// D-pad 垂直方向（某些第三方手柄）
+		if value > 20000 {
+			s.toggleKey("dpad_down", true, "D-Pad Down", device, cm)
+			s.toggleKey("dpad_up", false, "D-Pad Up", device, cm)
+		} else if value < -20000 {
+			s.toggleKey("dpad_up", true, "D-Pad Up", device, cm)
+			s.toggleKey("dpad_down", false, "D-Pad Down", device, cm)
+		} else {
+			s.toggleKey("dpad_up", false, "D-Pad Up", device, cm)
+			s.toggleKey("dpad_down", false, "D-Pad Down", device, cm)
+		}
+	}
 }
 
-func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device enums.DeviceType) {
-	s.stateLock4.Lock()
+// AxisConfig 定义轴的完整配置
+type AxisConfig struct {
+	Name      string // 轴的基本名称
+	NameMax   string // 最大值端的名称（如 "rt", "l3-right", "l3-down"）
+	NameMin   string // 最小值端的名称（如 "lt", "l3-left", "l3-up"）
+	Max       int    // 最大值
+	Min       int    // 最小值
+	Threshold int    // 无视阈值
+	Release   int    // Release 阈值
+	Center    int    // 中间分界值
+	HasConfig bool   // 是否有详细配置
+}
 
-	defer s.stateLock4.Unlock()
+// DeviceButtonMapping 定义每个设备的按钮和轴映射（仅用于 JSON 解析）
+type DeviceButtonMapping struct {
+	Buttons     map[int]string     // buttonID -> eventName
+	Axis        map[int]string     // axisID -> eventName (简单映射，兼容旧逻辑)
+	AxisConfigs map[int]AxisConfig // axisID -> AxisConfig (带属性的完整配置)
+}
+
+// 注意：deviceMappings 已删除，所有按键映射现在由 JSON 配置文件定义
+// 请参考 frontend/src/components/panel/KeyMappingPanel.tsx 中的 button 字段名称
+
+func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType, joy js.Joystick, configJSON string, stopChan <-chan struct{}) {
+	// 如果配置为空，无法处理事件
+	if configJSON == "" {
+		fmt.Printf("配置为空，无法处理手柄事件\n")
+		return
+	}
+
+	// 解析 JSON 配置
+	var config joystickConfigJSON
+	if err := json.Unmarshal([]byte(configJSON), &config); err != nil {
+		fmt.Printf("解析配置失败: %v\n", err)
+		fmt.Printf("配置内容: %s\n", configJSON)
+		return
+	}
+
+	// 创建 ID -> Name 映射
+	buttonMapping := make(map[int]string)
+	for _, btn := range config.Buttons {
+		buttonMapping[btn.ID] = btn.Name
+	}
+
+	// 创建带属性的轴配置
+	axisConfigs := make(map[int]AxisConfig)
+	axisMapping := make(map[int]string)
+
+	for _, ax := range config.Axis {
+		// 简单映射（用于兼容旧逻辑）
+		axisMapping[ax.ID] = ax.Name
+
+		// 检查是否有详细配置（NameMax, NameMin 等字段）
+		if ax.NameMax != "" || ax.Threshold > 0 {
+			axisConfigs[ax.ID] = AxisConfig{
+				Name:      ax.Name,
+				NameMax:   ax.NameMax,
+				NameMin:   ax.NameMin,
+				Max:       ax.Max,
+				Min:       ax.Min,
+				Threshold: ax.Threshold,
+				Release:   ax.Release,
+				Center:    ax.Center,
+				HasConfig: true,
+			}
+			fmt.Printf("创建详细轴配置: ID=%d, Name=%s, NameMin=%s, NameMax=%s, Threshold=%d, Center=%d\n",
+				ax.ID, ax.Name, ax.NameMin, ax.NameMax, ax.Threshold, ax.Center)
+			// 调试：打印轴的所有字段值
+			fmt.Printf("调试轴字段: ID=%d, Name='%s', NameMin='%s', NameMax='%s', Max=%d, Min=%d, Threshold=%d, Release=%d, Center=%d\n",
+				ax.ID, ax.Name, ax.NameMin, ax.NameMax, ax.Max, ax.Min, ax.Threshold, ax.Release, ax.Center)
+		} else {
+			// 无详细配置，使用简单映射
+			axisConfigs[ax.ID] = AxisConfig{
+				Name:      ax.Name,
+				HasConfig: false,
+			}
+			fmt.Printf("创建简单轴配置: ID=%d, Name=%s\n", ax.ID, ax.Name)
+		}
+	}
+
+	mapping := DeviceButtonMapping{
+		Buttons:     buttonMapping,
+		Axis:        axisMapping,
+		AxisConfigs: axisConfigs,
+	}
+
+	s.handleJoypadEventsWithMapping(device, joy, mapping, stopChan)
+}
+
+// handleAxisWithConfig 处理带配置的轴事件
+func (s *HotkeyService) handleAxisWithConfig(axisName string, value int, device enums.DeviceType, config AxisConfig, cm string) {
+	// fmt.Printf("handleAxisWithConfig: axisName=%s, value=%d, config.Name=%s, config.NameMin=%s, config.NameMax=%s, config.HasConfig=%v\n",
+	// 	axisName, value, config.Name, config.NameMin, config.NameMax, config.HasConfig)
+	switch axisName {
+	case "left_x", "right_x":
+		if value > 5000 {
+			s.toggleKey(config.NameMax, true, config.NameMax, device, cm)
+		} else if value < -5000 {
+			s.toggleKey(config.NameMin, true, config.NameMin, device, cm)
+		} else {
+			s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+			s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+		}
+	case "left_y", "right_y":
+		if value > 5000 {
+			s.toggleKey(config.NameMax, true, config.NameMax, device, cm)
+		} else if value < -5000 {
+			s.toggleKey(config.NameMin, true, config.NameMin, device, cm)
+		} else {
+			s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+			s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+		}
+	case "trigger":
+		upperRelease := config.Center + config.Release
+		upperThreshold := config.Center + config.Threshold
+
+		if config.NameMax == "" {
+			// fmt.Printf("trigger轴处理: NameMax为空, 使用单向扳机逻辑, NameMin=%s\n", config.NameMin)
+			if value > upperThreshold && value <= upperRelease {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+			} else if value > upperRelease {
+				s.toggleKey(config.NameMin, true, config.NameMin, device, cm)
+			} else {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+			}
+		} else {
+			// fmt.Printf("trigger轴处理: 双向轴逻辑, NameMin=%s, NameMax=%s, value=%d, Center=%d, Threshold=%d, Release=%d\n",
+			// 	config.NameMin, config.NameMax, value, config.Center, config.Threshold, config.Release)
+			lowerRelease := config.Center - config.Release
+			lowerThreshold := config.Center - config.Threshold
+
+			if value > upperThreshold && value <= upperRelease {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+			} else if value >= lowerRelease && value < lowerThreshold {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+			} else if value > upperRelease {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, true, config.NameMax, device, cm)
+			} else if value < lowerRelease {
+				s.toggleKey(config.NameMin, true, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+			} else {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+			}
+		}
+	default:
+		s.handleAxisEvents(axisName, value, device, cm)
+	}
+}
+
+// handleJoypadEventsWithMapping 使用提供的映射处理手柄事件
+func (s *HotkeyService) handleJoypadEventsWithMapping(device enums.DeviceType, joy js.Joystick, mapping DeviceButtonMapping, stopChan <-chan struct{}) {
+	// 获取设备的按钮和轴数量
+	buttonCount := joy.ButtonCount()
+	axisCount := joy.AxisCount()
+
+	fmt.Printf("手柄事件处理开始 - 设备: %s, 按钮: %d, 轴: %d\n", device, buttonCount, axisCount)
+
+	// 保存上一个状态
+	prevButtons := make([]bool, buttonCount)
+	prevAxis := make([]int, axisCount)
+
+	for {
+		select {
+		case <-stopChan:
+			fmt.Printf("手柄监听已停止\n")
+			return
+		default:
+			// 继续处理事件
+		}
+
+		state, err := joy.Read()
+		if err != nil {
+			fmt.Printf("读取手柄状态失败: %v\n", err)
+			break
+		}
+
+		// 检测按钮变化
+		for i := 0; i < buttonCount; i++ {
+			pressed := state.Buttons&(1<<i) != 0
+			if pressed != prevButtons[i] {
+				// 获取按钮名称
+				buttonName, hasButton := mapping.Buttons[i]
+				if hasButton {
+					if pressed {
+						s.handleKeyPress(buttonName, strings.ToUpper(buttonName), device)
+					} else {
+						s.handleKeyRelease(buttonName, strings.ToUpper(buttonName), device)
+					}
+				}
+				prevButtons[i] = pressed
+			}
+		}
+
+		// 检测轴变化
+		for i := 0; i < axisCount; i++ {
+			if state.AxisData[i] != prevAxis[i] {
+				// 获取轴配置
+				axisConfig, hasAxisConfig := mapping.AxisConfigs[i]
+				if hasAxisConfig {
+					cm := fmt.Sprintf("%s axis: %d", axisConfig.Name, state.AxisData[i])
+					if axisConfig.HasConfig {
+						// 使用带配置的轴处理
+						s.handleAxisWithConfig(axisConfig.Name, state.AxisData[i], device, axisConfig, cm)
+					} else {
+						// 使用旧的轴处理（按名称匹配）
+						s.handleAxisEvents(axisConfig.Name, state.AxisData[i], device, cm)
+					}
+				}
+				prevAxis[i] = state.AxisData[i]
+			}
+		}
+
+		// 短暂休眠，避免过度占用 CPU
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device enums.DeviceType, comment string) {
+
+	// fmt.Printf("toggle key  %s\n", key)
+	s.stateLock4.Lock()
 
 	if isPress {
 		if !s.keyStates[key] {
-			fmt.Printf("toggle key press %s\n", key)
-			s.handleKeyPress(key, name, device)
+			fmt.Printf("toggle key press %s，comment:%s\n", key, comment)
 			s.keyStates[key] = true
+			s.stateLock4.Unlock()
+			s.handleKeyPress(key, name, device)
+		} else {
+			s.stateLock4.Unlock()
 		}
 	} else {
 		if s.keyStates[key] {
-			fmt.Printf("toggle key up %s\n", key)
-			s.handleKeyRelease(key, name, device)
+			fmt.Printf("toggle key up %s, comment:%s\n", key, comment)
 			s.keyStates[key] = false
+			s.stateLock4.Unlock()
+			s.handleKeyRelease(key, name, device)
+		} else {
+			s.stateLock4.Unlock()
 		}
 	}
 
@@ -704,31 +1262,101 @@ func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device 
 // 启动相关方法
 func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 	applog.LogInfof(s.ctx, "Starting joystick listener...")
-	// devicetype := enums.DeviceTypeDualShock4
 	s.robotMutex6.Lock()
 	defer s.robotMutex6.Unlock()
-	// 启动手柄机器人
-	// 创建 joystick 适配器
 
-	joystickAdaptor := joystick.NewAdaptor("0")
+	// 扫描可用的 joystick 设备
+	applog.LogInfof(s.ctx, "Scanning for available joystick devices...")
 
-	// 创建手柄驱动
-	stick := joystick.NewDriver(joystickAdaptor, string(devicetype))
+	availableJoysticks := []int{}
+	selectedIndex := -1
+	var selectedJoy js.Joystick
 
-	s.joysticks[string(devicetype)] = stick
-	if devicetype == enums.DeviceTypeDualShock4 {
-		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
-			[]gobot.Connection{joystickAdaptor},
-			[]gobot.Device{stick},
-			s.handleDS4Events,
-		)
-		go func() {
-			if err := s.robot.Start(); err != nil {
-				applog.LogErrorf(s.ctx, "Failed to start joystick robot: %v", err)
+	for i := 0; i < 7; i++ {
+		joy, err := js.Open(i)
+		if err == nil {
+			applog.LogInfof(s.ctx, "Found joystick at index %d: %s (Axes: %d, Buttons: %d)",
+				i, joy.Name(), joy.AxisCount(), joy.ButtonCount())
+			availableJoysticks = append(availableJoysticks, i)
+
+			// 根据设备类型选择合适的 joystick
+			if devicetype == enums.DeviceTypeDualShock4 && joy.ButtonCount() == 14 && joy.AxisCount() == 8 {
+				selectedIndex = i
+				selectedJoy = joy
+			} else if devicetype == enums.DeviceTypeDualSense && joy.ButtonCount() == 15 && joy.AxisCount() == 8 {
+				selectedIndex = i
+				selectedJoy = joy
+			} else if devicetype == enums.DeviceTypeJoyCon && joy.ButtonCount() == 16 && joy.AxisCount() == 6 {
+				selectedIndex = i
+				selectedJoy = joy
+			} else if devicetype == enums.DeviceTypeXInput && selectedJoy == nil {
+				// 对于 XInput，默认选择第一个可用设备（稍后可能需要根据按钮/轴数量进一步筛选）
+				selectedIndex = i
+				selectedJoy = joy
+			} else {
+				// 关闭不需要的设备
+				joy.Close()
 			}
-		}()
+		}
 	}
 
+	if len(availableJoysticks) == 0 {
+		applog.LogErrorf(s.ctx, "No joystick devices found!")
+		return
+	}
+
+	applog.LogInfof(s.ctx, "Found %d joystick devices at indices: %v", len(availableJoysticks), availableJoysticks)
+
+	// 使用第一个可用的 joystick 设备
+	if selectedIndex == -1 && len(availableJoysticks) > 0 {
+		selectedIndex = availableJoysticks[0]
+		selectedJoy, _ = js.Open(selectedIndex)
+	}
+
+	if selectedJoy == nil {
+		applog.LogErrorf(s.ctx, "Failed to open joystick at index %d", selectedIndex)
+		return
+	}
+
+	applog.LogInfof(s.ctx, "Using joystick at index %d for device type: %s", selectedIndex, devicetype)
+
+	// 加载 JSON 配置
+	var configJSON string
+	var configFile string
+
+	// 根据设备类型选择配置文件
+	switch devicetype {
+	case enums.DeviceTypeXInput:
+		configFile = "xbox360_custom.json"
+	case enums.DeviceTypeDualShock4:
+		configFile = "dualshock4.json"
+	case enums.DeviceTypeDualSense:
+		configFile = "dualsense.json"
+	case enums.DeviceTypeJoyCon:
+		configFile = "joycon.json"
+	}
+
+	if configFile != "" {
+		_, configContent, err := ensureConfigFile(configFile)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "Failed to load config %s: %v", configFile, err)
+			// 配置文件加载失败，使用空配置
+			configJSON = ""
+		} else {
+			configJSON = configContent
+			applog.LogInfof(s.ctx, "Loaded config: %s", configFile)
+		}
+	}
+
+	// 直接启动事件处理循环，不再使用 gobot
+	// 创建新的停止 channel
+	stopChan := make(chan struct{})
+	s.joystickStopChan = stopChan
+
+	go func() {
+		s.handleJoypadEvents(devicetype, selectedJoy, configJSON, stopChan)
+		selectedJoy.Close()
+	}()
 }
 
 // 公共接口方法
@@ -779,7 +1407,7 @@ func (s *HotkeyService) RemoveKeyMapping(sourceKey string) {
 // GetGlobalHotkeys 获取所有全局快捷键配置
 func (s *HotkeyService) GetGlobalHotkeys() ([]models.Hotkey, error) {
 	query := `
-		SELECT id, game_id, name, device_type, key_code, 
+		SELECT id, game_id, name, device_type, key_code, modifiers,
 		       action_type, action_params, is_enabled, created_at, updated_at
 		FROM hotkeys 
 		WHERE game_id = ? AND is_enabled = TRUE
@@ -804,7 +1432,7 @@ func (s *HotkeyService) GetGlobalHotkeys() ([]models.Hotkey, error) {
 			&hotkey.Name,
 			&deviceType,
 			&hotkey.KeyCode,
-			// &hotkey.Modifiers,
+			&hotkey.Modifiers,
 			&actionType,
 			&hotkey.ActionParams,
 			&hotkey.IsEnabled,
@@ -819,17 +1447,22 @@ func (s *HotkeyService) GetGlobalHotkeys() ([]models.Hotkey, error) {
 		}
 		hotkeys = append(hotkeys, hotkey)
 	}
-	fmt.Printf("已加载快捷键:%d\n", len(hotkeys))
+	// 打印每个快捷键的详细信息
+	names := make([]string, 0, len(hotkeys))
+	for _, h := range hotkeys {
+		names = append(names, fmt.Sprintf("%s(%s)", h.Name, h.DeviceType))
+	}
+	fmt.Printf("已加载快捷键:%d - [%s]\n", len(hotkeys), strings.Join(names, ", "))
 
 	return hotkeys, nil
 }
 
 // UpdateHotkey 更新快捷键配置
 func (s *HotkeyService) UpdateHotkey(hotkey models.Hotkey) error {
-	applog.LogInfo(s.ctx, "start to UpdateHotkey")
+	applog.LogInfof(s.ctx, "start to UpdateHotkey - name: %s, id: %s", hotkey.Name, hotkey.ID)
 	query := `
 		UPDATE hotkeys 
-		SET name = ?, device_type = ?, key_code = ?, 
+		SET name = ?, device_type = ?, key_code = ?, modifiers = ?,
 		    action_type = ?, action_params = ?, is_enabled = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`
@@ -838,7 +1471,7 @@ func (s *HotkeyService) UpdateHotkey(hotkey models.Hotkey) error {
 		hotkey.Name,
 		string(hotkey.DeviceType),
 		hotkey.KeyCode,
-		// hotkey.Modifiers,
+		hotkey.Modifiers,
 		string(hotkey.ActionType),
 		hotkey.ActionParams,
 		hotkey.IsEnabled,
@@ -850,13 +1483,13 @@ func (s *HotkeyService) UpdateHotkey(hotkey models.Hotkey) error {
 		return err
 	}
 
-	applog.LogInfof(s.ctx, "快捷键更新成功: %s", hotkey.ID)
+	applog.LogInfof(s.ctx, "快捷键更新成功: name=%s, id=%s", hotkey.Name, hotkey.ID)
 	return nil
 }
 
 // AddHotkey 添加新的快捷键配置
 func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
-	applog.LogInfo(s.ctx, "start to AddHotkey")
+	applog.LogInfof(s.ctx, "start to AddHotkey - name: %s, device: %s, game_id: %s", hotkey.Name, hotkey.DeviceType, hotkey.GameID)
 	if hotkey.ID == "" {
 		hotkey.ID = generateHotkeyID()
 	}
@@ -868,9 +1501,9 @@ func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
 
 	query := `
 		INSERT INTO hotkeys (
-			id, game_id, name, device_type, key_code, 
+			id, game_id, name, device_type, key_code, modifiers,
 			action_type, action_params, is_enabled, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := s.db.Exec(query,
@@ -879,7 +1512,7 @@ func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
 		hotkey.Name,
 		string(hotkey.DeviceType),
 		hotkey.KeyCode,
-		// hotkey.Modifiers,
+		hotkey.Modifiers,
 		string(hotkey.ActionType),
 		hotkey.ActionParams,
 		hotkey.IsEnabled,
@@ -892,14 +1525,14 @@ func (s *HotkeyService) AddHotkey(hotkey models.Hotkey) error {
 		return err
 	}
 
-	applog.LogInfof(s.ctx, "快捷键添加成功: %s", hotkey.ID)
+	applog.LogInfof(s.ctx, "快捷键添加成功: name=%s, id=%s", hotkey.Name, hotkey.ID)
 	return nil
 }
 
 // GetHotkeysByGameID 根据游戏ID获取快捷键配置
 func (s *HotkeyService) GetHotkeysByGameID(gameID string) ([]models.Hotkey, error) {
 	query := `
-		SELECT id, game_id, name, device_type, key_code, 
+		SELECT id, game_id, name, device_type, key_code, modifiers,
 		       action_type, action_params, is_enabled, created_at, updated_at
 		FROM hotkeys 
 		WHERE game_id = ? AND is_enabled = TRUE
@@ -924,7 +1557,7 @@ func (s *HotkeyService) GetHotkeysByGameID(gameID string) ([]models.Hotkey, erro
 			&hotkey.Name,
 			&deviceType,
 			&hotkey.KeyCode,
-			// &hotkey.Modifiers,
+			&hotkey.Modifiers,
 			&actionType,
 			&hotkey.ActionParams,
 			&hotkey.IsEnabled,
@@ -950,6 +1583,7 @@ func (s *HotkeyService) GetGameHotkeys(gameID string) ([]models.Hotkey, error) {
 
 // DeleteHotkey 删除快捷键配置
 func (s *HotkeyService) DeleteHotkey(hotkeyID string) error {
+	applog.LogInfof(s.ctx, "start to DeleteHotkey - id: %s", hotkeyID)
 	query := `DELETE FROM hotkeys WHERE id = ?`
 
 	_, err := s.db.Exec(query, hotkeyID)
@@ -1158,16 +1792,17 @@ func (s *HotkeyService) MonitorKeySetting(devicetype enums.DeviceType) (models.H
 		select {
 		case <-tiker.C:
 			key := s.monitoredKey.Load().(*models.Hotkey)
+			applog.LogDebugf(s.ctx, "MonitorKeySetting: %v", key)
 			if key.KeyCode != "" {
-				s.robot.Stop()
+				s.stopJoystickListener()
 				return *key, nil
 			}
 			if s.isMonitoringKeySetting.Load() == false {
-				s.robot.Stop()
+				s.stopJoystickListener()
 				return models.Hotkey{}, nil
 			}
 		case <-s.ctx.Done():
-			s.robot.Stop()
+			s.stopJoystickListener()
 			return models.Hotkey{}, errors.New("key setting monitoring cancelled")
 		}
 
@@ -1177,16 +1812,23 @@ func (s *HotkeyService) MonitorKeySetting(devicetype enums.DeviceType) (models.H
 
 func (s *HotkeyService) CancelMonitorKeySetting() {
 	s.isMonitoringKeySetting.Store(false)
+	s.stopJoystickListener()
 }
 
 func (s *HotkeyService) readyHotkeysForGame(gameId string) {
 	s.SetActiveGameID(gameId)
-	devicetype := s.loadHotkeyConfig(gameId)
-	if devicetype == enums.DeviceTypeKeyboard {
-		s.startAlternativeKeyListener()
-	} else {
-		s.startJoystickListener(devicetype)
+	devicetypes := s.loadHotkeyConfig(gameId)
+	applog.InfoLogSaveAppLog("readyHotkeysForGame: %s, %v\n", gameId, devicetypes)
+	for _, devicetype := range devicetypes {
+		if devicetype == enums.DeviceTypeKeyboard {
+			go s.startAlternativeKeyListener()
+		} else if devicetype == enums.DeviceTypeTouch {
+			go s.startTouchMapping()
+		} else {
+			go s.startJoystickListener(devicetype)
+		}
 	}
+
 }
 
 func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
@@ -1198,6 +1840,13 @@ func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 	s.actionKeys = make(map[string]*models.Hotkey)
 	s.mappingLock2.Unlock()
 	s.actionkeyLock3.Unlock()
+
+	// 停止触摸按钮
+	s.stopTouchMapping()
+
+	// 停止手柄监听
+	s.stopJoystickListener()
+
 	s.robotMutex6.Lock()
 	defer s.robotMutex6.Unlock()
 	s.stopKeyboardListener()
@@ -1206,6 +1855,209 @@ func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 		s.robot.Stop()
 		s.robot = nil
 	}
+}
+
+// hotkeyToButtonConfig 将 Hotkey 转换为 ButtonConfig
+func hotkeyToButtonConfig(hotkey *models.Hotkey, id int) ButtonConfig {
+	x, y := parseTouchPosition(hotkey.KeyCode)
+	vk := parseVirtualKey(hotkey.ActionParams)
+	// 解析修饰键为虚拟键码数组
+	modifierVKs := parseModifiers(hotkey.Modifiers)
+	cfg := ButtonConfig{
+		ID:         id,
+		HotkeyID:   hotkey.ID,
+		Label:      hotkey.Name,
+		VirtualKey: uintptr(vk),
+		X:          x,
+		Y:          y,
+		ActionType: string(hotkey.ActionType),
+		Modifiers:  modifierVKs,
+	}
+	fmt.Printf("[TouchButton] id=%d name=%s action=%s vk=%d modifiers=%v modifierVKs=%v pos=(%d,%d)\n",
+		id, hotkey.Name, hotkey.ActionType, vk, hotkey.Modifiers, modifierVKs, x, y)
+	return cfg
+}
+
+// parseModifiers 将修饰键字符串（如 "ctrl+shift+alt"）解析为虚拟键码数组
+func parseModifiers(modifiersStr string) []uintptr {
+	var vks []uintptr
+	if modifiersStr == "" {
+		return vks
+	}
+	parts := strings.Split(modifiersStr, "+")
+	for _, m := range parts {
+		m = strings.TrimSpace(strings.ToLower(m))
+		switch m {
+		case "ctrl":
+			vks = append(vks, VK_CONTROL)
+		case "shift":
+			vks = append(vks, VK_SHIFT)
+		case "alt":
+			vks = append(vks, VK_MENU)
+		case "win":
+			vks = append(vks, VK_LWIN)
+		}
+	}
+	return vks
+}
+
+// getTouchButtons 从 keyMappings 和 actionKeys 中获取所有触摸按钮
+func (s *HotkeyService) getTouchButtons() []ButtonConfig {
+	s.mappingLock2.RLock()
+	s.actionkeyLock3.RLock()
+	defer s.mappingLock2.RUnlock()
+	defer s.actionkeyLock3.RUnlock()
+
+	var buttons []ButtonConfig
+	id := 0
+
+	// 从 keyMappings 获取普通按键映射的触摸按钮
+	for _, hotkey := range s.keyMappings {
+		if hotkey.DeviceType == enums.DeviceTypeTouch {
+			buttons = append(buttons, hotkeyToButtonConfig(hotkey, id))
+			id++
+		}
+	}
+
+	// 从 actionKeys 获取功能键类型的触摸按钮（如截图）
+	for _, hotkey := range s.actionKeys {
+		if hotkey.DeviceType == enums.DeviceTypeTouch {
+			buttons = append(buttons, hotkeyToButtonConfig(hotkey, id))
+			id++
+		}
+	}
+
+	return buttons
+}
+
+// startTouchMapping 启动触摸按钮（映射模式）
+func (s *HotkeyService) startTouchMapping() {
+	fmt.Println("TouchMapping: 启动触摸映射窗口")
+	buttons := s.getTouchButtons()
+
+	if len(buttons) == 0 {
+		fmt.Println("TouchMapping: 没有配置触摸按钮，跳过启动")
+		return
+	}
+	fmt.Printf("TouchMapping: 启动触摸映射窗口(%d 个按钮)\n", len(buttons))
+
+	// tm := GetTouchMapping()
+	s.touchMappingService.SetButtons(buttons)
+	err := s.touchMappingService.StartMapping()
+	if err != nil {
+		fmt.Printf("TouchMapping: 启动失败: %v\n", err)
+	} else {
+		fmt.Printf("TouchMapping: 已启动映射模式，共 %d 个按钮\n", len(buttons))
+	}
+}
+
+// stopTouchMapping 停止触摸按钮窗口
+func (s *HotkeyService) stopTouchMapping() {
+	s.touchMappingService.Stop()
+}
+
+// stopJoystickListener 停止手柄监听
+func (s *HotkeyService) stopJoystickListener() {
+	if s.joystickStopChan == nil {
+		return
+	}
+
+	fmt.Printf("停止手柄监听...\n")
+
+	// 发送停止信号（非阻塞）
+	select {
+	case s.joystickStopChan <- struct{}{}:
+		fmt.Printf("手柄停止信号已发送\n")
+	default:
+		// channel 已经有信号了
+	}
+
+	// 等待一小段时间让 goroutine 退出
+	time.Sleep(100 * time.Millisecond)
+
+	s.joystickStopChan = nil
+	fmt.Printf("手柄监听已停止\n")
+}
+
+// TouchButtonInfo 前端与后端之间传递的触摸按钮信息结构
+type TouchButtonInfo struct {
+	Index      int    // 在列表中的索引（0-based），用于关联编辑后的位置
+	Name       string // 按钮显示的文字
+	VirtualKey uint32 // 对应的虚拟键码（如 0x0D = Enter），使用 uint32 确保 Wails 序列化兼容
+	X          int32  // 屏幕坐标 X
+	Y          int32  // 屏幕坐标 Y
+	ActionType string // 动作类型（如 "screenshot"）
+	Modifiers  string // 修饰键组合字符串（如 "ctrl+shift+alt"）
+}
+
+// TouchButtonPosition 单个按钮的位置更新
+type TouchButtonPosition struct {
+	Index int32
+	X     int32
+	Y     int32
+}
+
+// StartTouchEditMode 启动触摸按钮的编辑模式。
+// 前端调用此方法，把当前按钮列表传进来，后端会在屏幕上显示按钮，用户可用鼠标拖动改变位置。
+func (s *HotkeyService) StartTouchEditMode(buttons []TouchButtonInfo) error {
+	// 转换为内部 ButtonConfig
+	configs := make([]ButtonConfig, len(buttons))
+	for i, b := range buttons {
+		modifierVKs := parseModifiers(b.Modifiers)
+		configs[i] = ButtonConfig{
+			ID:         b.Index,
+			HotkeyID:   b.Name,
+			Label:      b.Name,
+			VirtualKey: uintptr(b.VirtualKey),
+			X:          b.X,
+			Y:          b.Y,
+			ActionType: b.ActionType,
+			Modifiers:  modifierVKs,
+		}
+	}
+
+	// tm := GetTouchMapping()
+	s.touchMappingService.SetButtons(configs)
+	return s.touchMappingService.StartEditMode()
+}
+
+// StopTouchEditMode 停止编辑模式。
+// 返回所有按钮的更新后的位置，前端可据此更新列表的 X/Y。
+func (s *HotkeyService) StopTouchEditMode() []TouchButtonPosition {
+	// tm := GetTouchMapping()
+	positions := s.touchMappingService.GetUpdatedPositions()
+	s.touchMappingService.Stop()
+
+	result := make([]TouchButtonPosition, 0, len(positions))
+	for idx, pt := range positions {
+		result = append(result, TouchButtonPosition{
+			Index: int32(idx),
+			X:     pt.X,
+			Y:     pt.Y,
+		})
+	}
+	return result
+}
+
+// UpdateTouchEditModeButtons 动态更新编辑模式下的按钮列表。
+// 在编辑模式下，新增/删除/载入按钮时调用此方法同步后端 overlay。
+func (s *HotkeyService) UpdateTouchEditModeButtons(buttons []TouchButtonInfo) error {
+	// 转换为内部 ButtonConfig
+	configs := make([]ButtonConfig, len(buttons))
+	for i, b := range buttons {
+		configs[i] = ButtonConfig{
+			ID:         b.Index,
+			HotkeyID:   b.Name,
+			Label:      b.Name,
+			VirtualKey: uintptr(b.VirtualKey),
+			X:          b.X,
+			Y:          b.Y,
+			ActionType: b.ActionType,
+		}
+	}
+
+	// tm := GetTouchMapping()
+	return s.touchMappingService.UpdateEditModeButtons(configs)
 }
 
 // startAlternativeKeyListener 备用键盘监听方案
@@ -1220,9 +2072,11 @@ func (s *HotkeyService) startAlternativeKeyListener() {
 	s.keyboardStopChan = make(chan struct{}, 1)
 	// 使用较短的时间间隔以获得更好的响应性
 	s.keyboardTicker = time.NewTicker(50 * time.Millisecond)
+	fmt.Println("startAlternativeKeyListener 10")
 	s.actionkeyLock3.RLock()
 	keys := s.actionKeys
 	s.actionkeyLock3.RUnlock()
+	fmt.Println("startAlternativeKeyListener 11")
 	defer func() {
 		if s.keyboardTicker != nil {
 			s.keyboardTicker.Stop()

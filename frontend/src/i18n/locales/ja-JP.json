@@ -40,6 +40,7 @@
     "gallery": "ギャラリー",
     "introduction": "紹介",
     "joystick": "コントローラー",
+    "keyMapping": "キーマッピング",
     "reviews": "レビュー",
     "guide": "ガイド",
     "deleteGame": "ゲームを削除",
@@ -105,7 +106,8 @@
     "totalPlayTime": "総プレイ時間：",
     "continuePlaying": "ゲームを続ける",
     "startingGame": "{{name}} を起動中",
-    "startGameFailed": "ゲームの起動に失敗しました"
+    "startGameFailed": "ゲームの起動に失敗しました",
+    "viewGameDetail": "ゲーム詳細を表示"
   },
   "library": {
     "title": "ゲームライブラリ",
@@ -578,7 +580,8 @@
     },
     "sortOptions": {
       "name": "名前",
-      "useCount": "使用回数"
+      "useCount": "使用回数",
+      "gameCount": "ゲーム数"
     },
     "viewMode": {
       "list": "リスト",
@@ -1109,7 +1112,25 @@
     "magpiePathPlaceholder": "Magpie.exe ファイルパスを選択",
     "magpiePathDescription": "設定すると、ゲーム編集画面で Magpie の超解像度アップスケーリング起動を有効にできます",
     "magpieSelectError": "Magpie の選択に失敗しました",
-    "detectTime": "検出時間 (秒)"
+    "magpieConfigSelectError": "Magpie 設定ファイルの選択に失敗しました",
+    "detectTime": "検出時間 (秒)",
+    "magpieHotkey": "Magpie スケーリングホットキー",
+    "magpieHotkeyPlaceholder": "Win+Shift+A",
+    "magpieHotkeyDescription": "入力ボックスをクリックして、設定するホットキーの組み合わせを押してください。Magpie で設定したホットキーと一致する必要があります。",
+    "magpieHotkeyReset": "リセット",
+    "pressHotkey": "ホットキーを押してください...",
+    "magpieCroppingEnabled": "Magpie クロッピングを有効にする（VM モードのみ）",
+    "magpieConfigPath": "Magpie 設定ファイルパス",
+    "magpieConfigPathPlaceholder": "既定のパスを使用する場合は空のまま",
+    "magpieConfigPathDefault": "既定のパス: C:\\Users\\[ユーザー名]\\AppData\\Local\\Magpie\\config\\v4\\config.json",
+    "croppingArea": "クロッピング領域 (ピクセル)",
+    "croppingLeft": "左",
+    "croppingRight": "右",
+    "croppingTop": "上",
+    "croppingBottom": "下",
+    "croppingDescription": "クロップするエッジ領域を設定します（ピクセル）。VM ウィンドウの境界線を削除するために使用されます。",
+    "magpieEnabled": "Magpie をグローバルに有効化",
+    "magpieEnabledDescription": "有効にすると、すべてのゲームが Magpie スケーリングを使用し、個々のゲームの Magpie 設定を無視します"
   },
   "gameStats": {
     "loadStatsFailed": "統計データの読み込みに失敗しました",
@@ -1145,7 +1166,70 @@
     "waitingForKeyInput": "キー入力を待っています...",
     "enterKeyCode": "または手動でキーコードを入力",
     "startKeyCapture": "キーキャプチャを開始するにはクリック",
-    "confirmMapping": "マッピングを確認"
+    "confirmMapping": "マッピングを確認",
+    "touchDeviceName": "タッチボタン",
+    "noGlobalMappings": "グローバルキーマッピングがありません",
+    "globalLoaded": "{count}個のグローバルマッピングを読み込みました",
+    "loadFailed": "読み込みに失敗しました"
+  },
+  "keyMapping": {
+    "title": "キーマッピング設定",
+    "saveAllMappings": "すべてのマッピングを保存",
+    "loadDefaults": "デフォルトを読み込む",
+    "loadGlobal": "グローバルを読み込む",
+    "refresh": "リフレッシュ",
+    "deviceSelectorLabel": "デバイス選択",
+    "deviceSelectorPlaceholder": "デバイスを選択してください",
+    "noDefaults": "デフォルトのキーマッピングがありません",
+    "noGlobalMappings": "グローバルキーマッピングがありません",
+    "defaultsLoaded": "{count}個のデフォルトマッピングを読み込みました",
+    "globalLoaded": "{count}個のグローバルマッピングを読み込みました",
+    "loadFailed": "読み込みに失敗しました"
+  },
+  "touchMapping": {
+    "title": "タッチボタン設定",
+    "addButton": "タッチボタンを追加",
+    "saveAllMappings": "すべてのマッピングを保存",
+    "startEditMode": "タッチボタンの表示と編集",
+    "finishEdit": "編集完了",
+    "colName": "名前",
+    "colMappedKey": "マップされたキー",
+    "colX": "X 座標",
+    "colY": "Y 座標",
+    "colScope": "スコープ",
+    "colAction": "操作",
+    "noTouchButtons": "タッチボタンはありません",
+    "isNew": "新",
+    "scopeGlobal": "グローバル",
+    "scopeGame": "このゲーム",
+    "deleteButton": "削除",
+    "hintTitle": "ヒント",
+    "hintMemoryOnly": "新しいボタンはメモリにのみ保存されます。データベースに保存するには「すべてのマッピングを保存」をクリックしてください。",
+    "hintEditMode": "編集モードでは、画面上でボタンをドラッグして位置を変更できます。編集モードを終了すると位置が更新されます。",
+    "hintOnlyInGame": "ボタンは、ゲームの起動時にデバイスタイプが Touch に設定されている場合にのみ画面に表示されます。",
+    "addButtonDialogTitle": "タッチボタンを追加",
+    "addButtonDialogHint": "キーボードのキーを押してタッチボタンを作成してください",
+    "listeningStateLabel": "リスニング状態",
+    "deviceSelectorLabel": "デバイス選択",
+    "deviceSelectorPlaceholder": "デバイスを選択してください",
+    "listening": "リスニング中...キーボードのキーを押してください",
+    "ready": "準備完了",
+    "toastLoadFailed": "タッチボタンの読み込みに失敗しました",
+    "toastButtonAdded": "ボタン \"{{buttonName}}\" を追加しました（メモリのみ、保存をして永続化してください）",
+    "toastNoButtonsToEdit": "編集するタッチボタンがありません",
+    "toastEditModeStarted": "編集モードを開始しました。ボタンをドラッグして位置を変更してください",
+    "toastStartEditFailed": "編集モードの開始に失敗しました",
+    "toastEditModeFinished": "編集モードを終了しました。位置が更新されました（保存をして永続化してください",
+    "toastStopEditFailed": "編集モードの終了に失敗しました",
+    "toastSavedAll": "すべてのタッチボタンを保存しました",
+    "toastSaveFailed": "保存に失敗しました",
+    "loadDefaults": "デフォルトを読み込む",
+    "loadGlobal": "グローバルを読み込む",
+    "toastDefaultsLoaded": "デフォルトボタンを読み込みました（メモリのみ、保存をして永続化してください）",
+    "toastNoGlobalButtons": "グローバルタッチボタンが見つかりません",
+    "toastGlobalLoaded": "{{count}} 個のグローバルボタンを読み込みました（メモリのみ、保存をして永続化してください）",
+    "functionKeys": "ファンクションキー",
+    "orPressKey": "またはキーを押してください"
   },
   "reviews": {
     "dataSource": "データソース",
@@ -1274,10 +1358,14 @@
       "noTags": "タグがありません",
       "noAvailableTagCategories": "利用可能なタグカテゴリがありません",
       "noTagGroups": "タググループがありません",
-      "canCreateTagGroupsFirst": "まずタグにグループを作成できます"
+      "canCreateTagGroupsFirst": "まずタグにグループを作成できます",
+      "noMatchingTags": "一致するタグが見つかりません"
     },
     "labels": {
       "containsTags": "{{count}} 個のタグを含む"
+    },
+    "placeholders": {
+      "searchTags": "タグを検索..."
     }
   },
   "import": {

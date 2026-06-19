@@ -6,10 +6,9 @@ import { UpdateTag } from '../../../wailsjs/go/service/TagService';
 import { GetGamesByTag } from '../../../wailsjs/go/service/GameService';
 import { GetGamesByCategory } from '../../../wailsjs/go/service/CategoryService';
 import { GetWorksByStaffIdAndRole } from '../../../wailsjs/go/service/WorkService';
+import { getGamesForCategory, type CategoryType } from '../../utils/categoryGames';
 import { useAppStore } from '../../store';
 import { ImageCard } from './ImageCard';
-
-type CategoryType = 'favorite' | 'brand' | 'series' | 'genre' | 'chara_design' | 'sceneario' | 'parent1' | 'parent2';
 
 interface CategoryListCardProps {
   id: string;
@@ -21,6 +20,8 @@ interface CategoryListCardProps {
   original?: models.Tag | vo.CategoryVO | models.Staff;
   dirPath?: string;
   gameIds?: string[];
+  categoryMap?: Map<string, string[]>;
+  onUpdateCategoryMap?: (id: string, gameIds: string[]) => void;
 }
 
 export function CategoryListCard({
@@ -33,6 +34,8 @@ export function CategoryListCard({
   original,
   dirPath,
   gameIds,
+  categoryMap,
+  onUpdateCategoryMap,
 }: CategoryListCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -161,30 +164,22 @@ export function CategoryListCard({
       return;
     }
 
+    const cachedGameIds = categoryMap?.get(id);
+    if (cachedGameIds !== undefined) {
+      const cachedGames = storeGames.filter(g => cachedGameIds.includes(g.id));
+      setGames(cachedGames);
+      setHasLoaded(true);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      let result: models.Game[] = [];
-      if (isPathCategory) {
-        const prefix = dirPath + '/';
-        result = storeGames.filter(g => {
-          if (!g.path) return false;
-          const normalized = g.path.replace(/\\/g, '/');
-          return normalized === dirPath || normalized.startsWith(prefix);
-        });
-      } else if (type === 'favorite') {
-        result = await GetGamesByCategory(id);
-      } else if (type === 'chara_design' || type === 'sceneario') {
-        const staffModel = original as unknown as models.Staff;
-        const role = type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
-        const works = await GetWorksByStaffIdAndRole(staffModel.id, role);
-        const gameIds = works.map(w => w.game_id).filter((id): id is string => !!id);
-        result = storeGames.filter(g => gameIds.includes(g.id));
-      } else {
-        result = await GetGamesByTag(name);
-      }
+      const result = await getGamesForCategory({ type, id, name, dirPath, original }, storeGames);
       setGames(result || []);
       setHasLoaded(true);
+      const newGameIds = (result || []).map(g => g.id);
+      onUpdateCategoryMap?.(id, newGameIds);
     } catch (error) {
       console.error(`Failed to load games for category ${name}:`, error);
     } finally {
@@ -247,10 +242,11 @@ export function CategoryListCard({
     }
   };
 
-  const previewGames = isPathCategory
-    ? games.filter(game => game.cover_url).slice(0, 3)
+  const cachedIds = categoryMap?.get(id);
+  const previewGames = cachedIds && cachedIds.length > 0
+    ? storeGames.filter(g => cachedIds.includes(g.id) && g.cover_url).slice(0, 3)
     : games.filter(game => game.cover_url).slice(0, 3);
-  const actualGameCount = games.length;
+  const actualGameCount = cachedIds !== undefined ? cachedIds.length : games.length;
 
   if (viewMode === "gallery") {
     return (

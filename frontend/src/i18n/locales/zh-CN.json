@@ -40,6 +40,7 @@
     "gallery": "画廊",
     "introduction": "介绍",
     "joystick": "手柄",
+    "keyMapping": "键位映射",
     "reviews": "评论",
     "guide": "攻略",
     "deleteGame": "删除游戏",
@@ -105,7 +106,8 @@
     "totalPlayTime": "总游玩时长：",
     "continuePlaying": "继续游戏",
     "startingGame": "正在启动 {{name}}",
-    "startGameFailed": "启动游戏失败"
+    "startGameFailed": "启动游戏失败",
+    "viewGameDetail": "查看游戏详情"
   },
   "library": {
     "title": "游戏库",
@@ -578,7 +580,8 @@
     },
     "sortOptions": {
       "name": "名称",
-      "useCount": "使用次数"
+      "useCount": "使用次数",
+      "gameCount": "游戏数"
     },
     "viewMode": {
       "list": "列表",
@@ -1112,7 +1115,25 @@
     "magpiePathPlaceholder": "选择 Magpie.exe 文件路径",
     "magpiePathDescription": "设置后可在游戏编辑界面启用 Magpie 超分辨率缩放启动",
     "magpieSelectError": "选择 Magpie 失败",
-    "detectTime": "检测时间(秒)"
+    "magpieConfigSelectError": "选择 Magpie 配置文件失败",
+    "detectTime": "检测时间(秒)",
+    "magpieHotkey": "Magpie 缩放快捷键",
+    "magpieHotkeyPlaceholder": "Win+Shift+A",
+    "magpieHotkeyDescription": "点击输入框后直接按下要设置的快捷键组合，需与 Magpie 中设置的快捷键一致",
+    "magpieHotkeyReset": "重置",
+    "pressHotkey": "按快捷键组合...",
+    "magpieCroppingEnabled": "启用 Magpie 裁剪（仅虚拟机模式）",
+    "magpieConfigPath": "Magpie 配置文件路径",
+    "magpieConfigPathPlaceholder": "留空使用默认路径",
+    "magpieConfigPathDefault": "默认路径: C:\\Users\\[用户名]\\AppData\\Local\\Magpie\\config\\v4\\config.json",
+    "croppingArea": "裁剪区域（像素）",
+    "croppingLeft": "左边",
+    "croppingRight": "右边",
+    "croppingTop": "顶部",
+    "croppingBottom": "底部",
+    "croppingDescription": "设置要裁剪掉的边缘区域（像素），用于去除虚拟机窗口边框",
+    "magpieEnabled": "全局启用 Magpie",
+    "magpieEnabledDescription": "开启后所有游戏都将使用 Magpie 缩放，忽略游戏各自的 Magpie 设置"
   },
   "gameStats": {
     "loadStatsFailed": "加载统计数据失败",
@@ -1148,7 +1169,72 @@
     "waitingForKeyInput": "正在等待按键输入...",
     "enterKeyCode": "或手动输入按键代码",
     "startKeyCapture": "点击开始按键捕获",
-    "confirmMapping": "确认映射"
+    "confirmMapping": "确认映射",
+    "touchDeviceName": "触摸按钮",
+    "noGlobalMappings": "没有全局按键映射",
+    "globalLoaded": "已载入 {count} 个全局映射",
+    "loadFailed": "载入失败"
+  },
+  "keyMapping": {
+    "title": "按键映射设置",
+    "saveAllMappings": "保存所有映射",
+    "loadDefaults": "载入默认",
+    "loadGlobal": "载入全局",
+    "refresh": "刷新",
+    "deviceSelectorLabel": "设备选择",
+    "deviceSelectorPlaceholder": "请选择设备",
+    "noDefaults": "没有默认按键映射",
+    "noGlobalMappings": "没有全局按键映射",
+    "defaultsLoaded": "已载入 {count} 个默认映射",
+    "globalLoaded": "已载入 {count} 个全局映射",
+    "loadFailed": "载入失败"
+  },
+  "touchMapping": {
+    "title": "触摸按钮设置",
+    "addButton": "新增触摸按钮",
+    "saveAllMappings": "保存所有映射",
+    "startEditMode": "显示和编辑触摸按钮",
+    "finishEdit": "完成编辑",
+    "colName": "名称",
+    "colMappedKey": "映射按键",
+    "colX": "X 坐标",
+    "colY": "Y 坐标",
+    "colScope": "范围",
+    "colAction": "操作",
+    "noTouchButtons": "暂无触摸按钮",
+    "isNew": "新",
+    "scopeGlobal": "全局",
+    "scopeGame": "此游戏",
+    "deleteButton": "删除",
+    "hintTitle": "提示",
+    "hintMemoryOnly": "新增的按钮只会存放在内存中，需要点击「保存所有映射」才会写入数据库",
+    "hintEditMode": "编辑模式下可以在屏幕上拖动按钮来改变位置，退出编辑模式后位置会自动带回此界面",
+    "hintOnlyInGame": "按钮只有在启动游戏并且设备类型选择为 Touch 时才会显示在屏幕上",
+    "addButtonDialogTitle": "新增触摸按钮",
+    "addButtonDialogHint": "请按下键盘上的按键来创建触摸按钮",
+    "listeningStateLabel": "监听状态",
+    "deviceSelectorLabel": "设备选择",
+    "deviceSelectorPlaceholder": "请选择设备",
+    "listening": "正在监听...请按下键盘按键",
+    "ready": "准备就绪",
+    "toastLoadFailed": "加载触摸按钮失败",
+    "toastButtonAdded": "已添加按钮 \"{{buttonName}}\"（仅内存，需保存才写入数据库）",
+    "toastNoButtonsToEdit": "没有触摸按钮可以编辑",
+    "toastEditModeStarted": "已进入编辑模式，拖动按钮改变位置",
+    "toastStartEditFailed": "启动编辑模式失败",
+    "toastEditModeFinished": "已退出编辑模式，位置已更新（需保存才写入数据库",
+    "toastStopEditFailed": "退出编辑模式失败",
+    "toastSavedAll": "所有触摸按钮已保存",
+    "toastSaveFailed": "保存失败",
+    "loadDefaults": "载入默认",
+    "loadGlobal": "载入全局",
+    "refresh": "刷新",
+    "toastDefaultsLoaded": "已载入默认按钮（仅内存，需保存才写入数据库）",
+    "toastNoGlobalButtons": "没有找到全局触摸按钮",
+    "toastGlobalLoaded": "已载入 {{count}} 个全局按钮（仅内存，需保存才写入数据库）",
+    "toastRefreshed": "已刷新按钮配置",
+    "functionKeys": "功能键",
+    "orPressKey": "或按下键盘按键"
   },
   "reviews": {
     "dataSource": "数据源",
@@ -1204,10 +1290,14 @@
       "noTags": "暂无标签",
       "noAvailableTagCategories": "没有可用的标签分类",
       "noTagGroups": "暂无标签分组",
-      "canCreateTagGroupsFirst": "可以先为标签创建分组"
+      "canCreateTagGroupsFirst": "可以先为标签创建分组",
+      "noMatchingTags": "未找到匹配的标签"
     },
     "labels": {
       "containsTags": "包含 {{count}} 个标签"
+    },
+    "placeholders": {
+      "searchTags": "搜索标签..."
     }
   },
   "import": {

@@ -40,6 +40,7 @@
     "gallery": "Gallery",
     "introduction": "Introduction",
     "joystick": "Controller",
+    "keyMapping": "Key Mapping",
     "reviews": "Reviews",
     "guide": "Guide",
     "deleteGame": "Delete game",
@@ -105,7 +106,8 @@
     "totalPlayTime": "Total play time:",
     "continuePlaying": "Continue playing",
     "startingGame": "Starting {{name}}",
-    "startGameFailed": "Failed to start game"
+    "startGameFailed": "Failed to start game",
+    "viewGameDetail": "View game details"
   },
   "library": {
     "title": "Game Library",
@@ -578,7 +580,8 @@
     },
     "sortOptions": {
       "name": "Name",
-      "useCount": "Usage count"
+      "useCount": "Usage count",
+      "gameCount": "Game count"
     },
     "viewMode": {
       "list": "List",
@@ -1109,7 +1112,25 @@
     "magpiePathPlaceholder": "Select Magpie.exe file path",
     "magpiePathDescription": "After setting, you can enable Magpie super-resolution scaling launch in the game edit interface",
     "magpieSelectError": "Failed to select Magpie",
-    "detectTime": "Detection time (seconds)"
+    "magpieConfigSelectError": "Failed to select Magpie config file",
+    "detectTime": "Detection time (seconds)",
+    "magpieHotkey": "Magpie scaling hotkey",
+    "magpieHotkeyPlaceholder": "Win+Shift+A",
+    "magpieHotkeyDescription": "Click the input box and press the hotkey combination to set. Must match the hotkey set in Magpie.",
+    "magpieHotkeyReset": "Reset",
+    "pressHotkey": "Press hotkey combination...",
+    "magpieCroppingEnabled": "Enable Magpie cropping (VM mode only)",
+    "magpieConfigPath": "Magpie config file path",
+    "magpieConfigPathPlaceholder": "Leave blank for default path",
+    "magpieConfigPathDefault": "Default path: C:\\Users\\[Username]\\AppData\\Local\\Magpie\\config\\v4\\config.json",
+    "croppingArea": "Cropping area (pixels)",
+    "croppingLeft": "Left",
+    "croppingRight": "Right",
+    "croppingTop": "Top",
+    "croppingBottom": "Bottom",
+    "croppingDescription": "Set the edge area to crop (pixels), used to remove VM window borders",
+    "magpieEnabled": "Enable Magpie Globally",
+    "magpieEnabledDescription": "When enabled, all games will use Magpie scaling, ignoring each game's individual Magpie setting"
   },
   "gameStats": {
     "loadStatsFailed": "Failed to load statistics data",
@@ -1145,7 +1166,72 @@
     "waitingForKeyInput": "Waiting for key input...",
     "enterKeyCode": "Or enter key code manually",
     "startKeyCapture": "Click to start key capture",
-    "confirmMapping": "Confirm mapping"
+    "confirmMapping": "Confirm mapping",
+    "touchDeviceName": "Touch Buttons",
+    "noGlobalMappings": "No global key mappings",
+    "globalLoaded": "Loaded {count} global mappings",
+    "loadFailed": "Load failed"
+  },
+  "keyMapping": {
+    "title": "Key Mapping Settings",
+    "saveAllMappings": "Save All Mappings",
+    "loadDefaults": "Load Defaults",
+    "loadGlobal": "Load Global",
+    "refresh": "Refresh",
+    "deviceSelectorLabel": "Device Selection",
+    "deviceSelectorPlaceholder": "Select a device",
+    "noDefaults": "No default key mappings",
+    "noGlobalMappings": "No global key mappings",
+    "defaultsLoaded": "Loaded {count} default mappings",
+    "globalLoaded": "Loaded {count} global mappings",
+    "loadFailed": "Load failed"
+  },
+  "touchMapping": {
+    "title": "Touch Button Settings",
+    "addButton": "Add Touch Button",
+    "saveAllMappings": "Save All Mappings",
+    "startEditMode": "Show and Edit Touch Buttons",
+    "finishEdit": "Finish Editing",
+    "colName": "Name",
+    "colMappedKey": "Mapped Key",
+    "colX": "X Position",
+    "colY": "Y Position",
+    "colScope": "Scope",
+    "colAction": "Action",
+    "noTouchButtons": "No touch buttons yet",
+    "isNew": "New",
+    "scopeGlobal": "Global",
+    "scopeGame": "This Game",
+    "deleteButton": "Delete",
+    "hintTitle": "Tips",
+    "hintMemoryOnly": "New buttons are only stored in memory. Click \"Save All Mappings\" to write them to the database.",
+    "hintEditMode": "In edit mode, you can drag buttons on screen to change their positions. Positions are updated here when you exit edit mode.",
+    "hintOnlyInGame": "Buttons are only displayed on screen when a game is launched and the device type is set to Touch.",
+    "addButtonDialogTitle": "Add Touch Button",
+    "addButtonDialogHint": "Please press a key on your keyboard to create a touch button",
+    "listeningStateLabel": "Listening State",
+    "deviceSelectorLabel": "Device Selection",
+    "deviceSelectorPlaceholder": "Select a device",
+    "listening": "Listening... Press any key on keyboard",
+    "ready": "Ready",
+    "toastLoadFailed": "Failed to load touch buttons",
+    "toastButtonAdded": "Added button \"{{buttonName}}\" (memory only, save to persist)",
+    "toastNoButtonsToEdit": "No touch buttons to edit",
+    "toastEditModeStarted": "Edit mode started. Drag buttons to change positions",
+    "toastStartEditFailed": "Failed to start edit mode",
+    "toastEditModeFinished": "Edit mode finished. Positions updated (save to persist)",
+    "toastStopEditFailed": "Failed to stop edit mode",
+    "toastSavedAll": "All touch buttons saved",
+    "toastSaveFailed": "Save failed",
+    "loadDefaults": "Load Defaults",
+    "loadGlobal": "Load Global",
+    "refresh": "Refresh",
+    "toastDefaultsLoaded": "Default buttons loaded (memory only, save to persist)",
+    "toastNoGlobalButtons": "No global touch buttons found",
+    "toastGlobalLoaded": "Loaded {{count}} global buttons (memory only, save to persist)",
+    "toastRefreshed": "Button configuration refreshed",
+    "functionKeys": "Function Keys",
+    "orPressKey": "Or press a key"
   },
   "reviews": {
     "dataSource": "Data source",
@@ -1200,10 +1286,14 @@
       "noTags": "No tags",
       "noAvailableTagCategories": "No available tag categories",
       "noTagGroups": "No tag groups",
-      "canCreateTagGroupsFirst": "You can create groups for tags first"
+      "canCreateTagGroupsFirst": "You can create groups for tags first",
+      "noMatchingTags": "No matching tags found"
     },
     "labels": {
       "containsTags": "Contains {{count}} tags"
+    },
+    "placeholders": {
+      "searchTags": "Search tags..."
     }
   },
   "import": {

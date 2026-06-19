@@ -169,8 +169,8 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
             <div className="flex items-center gap-2">
               {screenshotHotkey && (
                 <span className="px-2 py-1 bg-brand-100 text-brand-700 text-sm rounded dark:bg-brand-900/30 dark:text-brand-300">
-                  {screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers?.length > 0
-                    ? `${screenshotHotkey.device_type}   ${screenshotHotkey.modifiers.join(" + ")} + ${screenshotHotkey.name}`
+                  {screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers
+                    ? `${screenshotHotkey.device_type}   ${screenshotHotkey.modifiers.split('+').join(' + ')} + ${screenshotHotkey.name}`
                     : `${screenshotHotkey.device_type}   ${screenshotHotkey.name}`
                   }
                 </span>
@@ -203,8 +203,8 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
             <div className="text-brand-600 dark:text-brand-400 text-sm italic">
               {screenshotHotkey 
                 ? t('gameGallery.useHotkey', { 
-                    hotkey: screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers?.length > 0
-                      ? `${screenshotHotkey.modifiers.join(" + ")} + ${screenshotHotkey.key_code}`
+                    hotkey: screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers
+                      ? `${screenshotHotkey.modifiers.split('+').join(' + ')} + ${screenshotHotkey.key_code}`
                       : screenshotHotkey.key_code
                   })
                 : t('gameGallery.noScreenshots')}

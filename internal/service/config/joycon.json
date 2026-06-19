@@ -1,0 +1,44 @@
+{
+	"name": "Joy-Con",
+	"buttons": [
+		{"Name": "b", "ID": 0},
+		{"Name": "a", "ID": 1},
+		{"Name": "y", "ID": 2},
+		{"Name": "x", "ID": 3},
+		{"Name": "l", "ID": 4},
+		{"Name": "r", "ID": 5},
+		{"Name": "zl", "ID": 6},
+		{"Name": "zr", "ID": 7},
+		{"Name": "minus", "ID": 8},
+		{"Name": "plus", "ID": 9},
+		{"Name": "home", "ID": 10},
+		{"Name": "l-stick", "ID": 12},
+		{"Name": "r-stick", "ID": 13}
+	],
+	"axis": [
+		{
+			"Name": "left_x",
+			"ID": 0,
+			"NameMin": "l3-left",
+			"NameMax": "l3-right"
+		},
+		{
+			"Name": "left_y",
+			"ID": 1,
+			"NameMin": "l3-up",
+			"NameMax": "l3-down"
+		},
+		{
+			"Name": "right_x",
+			"ID": 2,
+			"NameMin": "r3-left",
+			"NameMax": "r3-right"
+		},
+		{
+			"Name": "right_y",
+			"ID": 3,
+			"NameMin": "r3-up",
+			"NameMax": "r3-down"
+		}
+	]
+}

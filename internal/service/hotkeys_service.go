@@ -3,8 +3,13 @@ package service
 import (
 	"context"
 	"database/sql"
+	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,6 +28,9 @@ import (
 	"gobot.io/x/gobot/v2/platforms/joystick"
 	"gobot.io/x/gobot/v2/platforms/keyboard"
 )
+
+//go:embed config/*.json
+var configFS embed.FS
 
 // KeyMapping 按键映射配置
 // type KeyMapping struct {
@@ -70,6 +78,170 @@ const (
 	KeyDs4Cross    string = "cross"
 	KeyDs4Square   string = "square"
 )
+
+// 自定义 Xbox 360 配置 JSON，包含 D-pad axis 支持
+// 用于第三方 XInput 手柄
+const xbox360CustomConfigJSON = `{
+	"name": "Xbox 360 Controller",
+	"guid": "030000005c0400008c09000000000000",
+	"axis": [
+		{"Name": "left_x", "ID": 0},
+		{"Name": "left_y", "ID": 1},
+		{"Name": "right_x", "ID": 3},
+		{"Name": "right_y", "ID": 4},
+		{"Name": "left_trigger", "ID": 2},
+		{"Name": "right_trigger", "ID": 5},
+		{"Name": "dpad_x", "ID": 6},
+		{"Name": "dpad_y", "ID": 7}
+	],
+	"buttons": [
+		{"Name": "a", "ID": 0},
+		{"Name": "b", "ID": 1},
+		{"Name": "x", "ID": 2},
+		{"Name": "y", "ID": 3},
+		{"Name": "left_shoulder", "ID": 4},
+		{"Name": "right_shoulder", "ID": 5},
+		{"Name": "back", "ID": 6},
+		{"Name": "start", "ID": 7},
+		{"Name": "left_stick", "ID": 8},
+		{"Name": "right_stick", "ID": 9}
+	]
+}`
+
+// joystickConfig 是 gobot joystick 配置的 Go 表示
+type joystickConfigJSON struct {
+	Name    string       `json:"name"`
+	GUID    string       `json:"guid"`
+	Axis    []axisPair   `json:"axis"`
+	Buttons []buttonPair `json:"buttons"`
+}
+
+type axisPair struct {
+	Name      string `json:"Name"`      // 轴的基本名称（如 "trigger", "left_x"）
+	ID        int    `json:"ID"`        // 轴的 ID
+	NameMax   string `json:"NameMax"`   // 最大值端的名称（如 "rt", "l3-right", "l3-down"）
+	NameMin   string `json:"NameMin"`   // 最小值端的名称（如 "lt", "l3-left", "l3-up"）
+	Max       int    `json:"Max"`       // 最大值
+	Min       int    `json:"Min"`       // 最小值
+	Threshold int    `json:"Threshold"` // 无视阈值（中间分界值 ± Threshold 之间被忽略）
+	Release   int    `json:"Release"`   // Release 阈值（中间分界值 ± Release 之间为 Release 状态）
+	Center    int    `json:"Center"`    // 中间分界值
+}
+
+type buttonPair struct {
+	Name string `json:"Name"`
+	ID   int    `json:"ID"`
+}
+
+// ensureConfigFile 确保配置文件存在于执行目录的 config 文件夹中
+// 如果不存在，从内置资源复制过去，返回配置内容
+func ensureConfigFile(filename string) (string, string, error) {
+	// 获取执行文件所在目录
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", "", fmt.Errorf("获取执行文件路径失败: %v", err)
+	}
+	exeDir := filepath.Dir(exePath)
+
+	// 目标配置文件夹和路径
+	configDir := filepath.Join(exeDir, "config")
+	targetPath := filepath.Join(configDir, filename)
+
+	// 检查目标文件是否存在
+	if _, err := os.Stat(targetPath); err == nil {
+		// 文件已存在，读取内容
+		content, err := os.ReadFile(targetPath)
+		if err != nil {
+			return "", "", fmt.Errorf("读取配置文件失败: %v", err)
+		}
+		fmt.Printf("配置文件已存在: %s\n", targetPath)
+		return targetPath, string(content), nil
+	}
+
+	// 配置文件夹不存在，创建它
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return "", "", fmt.Errorf("创建配置文件夹失败: %v", err)
+	}
+
+	// 从嵌入的文件系统中读取配置内容
+	// 注意：嵌入资源使用正斜杠路径，即使在Windows上也是如此
+	embedPath := filepath.ToSlash(filepath.Join("config", filename))
+	fmt.Printf("尝试从嵌入资源读取: %s\n", embedPath)
+
+	// 首先列出所有嵌入文件以进行调试
+	if entries, err := configFS.ReadDir("config"); err == nil {
+		fmt.Printf("嵌入资源中的配置文件: ")
+		for _, entry := range entries {
+			fmt.Printf("%s ", entry.Name())
+		}
+		fmt.Println()
+	}
+
+	configContent, err := configFS.ReadFile(embedPath)
+	if err != nil {
+		return "", "", fmt.Errorf("从嵌入资源读取配置失败: %v", err)
+	}
+
+	// 写入配置文件
+	if err := os.WriteFile(targetPath, configContent, 0644); err != nil {
+		return "", "", fmt.Errorf("写入配置文件失败: %v", err)
+	}
+
+	fmt.Printf("配置文件已创建: %s\n", targetPath)
+	return targetPath, string(configContent), nil
+}
+
+// applyCustomConfigToDriver 使用反射将自定义配置应用到 joystick.Driver
+// 这允许我们添加自定义的 axis（如 dpad_x, dpad_y）
+func applyCustomConfigToDriver(stick *joystick.Driver, customConfigJSON string) error {
+	// 解析自定义 JSON
+	var rawConfig map[string]interface{}
+	if err := json.Unmarshal([]byte(customConfigJSON), &rawConfig); err != nil {
+		return fmt.Errorf("解析自定义配置失败: %v", err)
+	}
+
+	// 获取 Driver 的 config 字段（使用反射）
+	driverVal := reflect.ValueOf(stick).Elem()
+	configField := driverVal.FieldByName("config")
+
+	if !configField.IsValid() {
+		return fmt.Errorf("无法找到 config 字段")
+	}
+
+	// 获取 axis 数组并添加 dpad_x 和 dpad_y
+	axisField := configField.FieldByName("Axis")
+	if !axisField.IsValid() || !axisField.CanSet() {
+		return fmt.Errorf("无法访问或修改 Axis 字段")
+	}
+
+	// 创建新的 axis 对
+	// pair 结构: {Name: string, ID: int}
+	pairType := axisField.Type().Elem()
+
+	// dpad_x (ID: 6)
+	dpadXVal := reflect.New(pairType)
+	dpadXVal.Elem().FieldByName("Name").SetString("dpad_x")
+	dpadXVal.Elem().FieldByName("ID").SetInt(6)
+	axisField = reflect.Append(axisField, dpadXVal.Elem())
+
+	// dpad_y (ID: 7)
+	dpadYVal := reflect.New(pairType)
+	dpadYVal.Elem().FieldByName("Name").SetString("dpad_y")
+	dpadYVal.Elem().FieldByName("ID").SetInt(7)
+	axisField = reflect.Append(axisField, dpadYVal.Elem())
+
+	// 设置回 config 字段
+	configField.FieldByName("Axis").Set(axisField)
+
+	// 初始化事件
+	// 重新添加 dpad_x 和 dpad_y 事件
+	stick.AddEvent("dpad_x")
+	stick.AddEvent("dpad_y")
+
+	applog.LogInfof(context.Background(), "成功添加自定义 dpad_x 和 dpad_y 轴到配置")
+
+	return nil
+}
 
 // HotkeyService 重构后的热键服务
 type HotkeyService struct {
@@ -774,507 +946,294 @@ func (s *HotkeyService) convertJoystickButton(key int) string {
 	return ""
 }
 
-func (s *HotkeyService) handleDS4Events() {
-	device := enums.DeviceTypeDualShock4
-	s.handleJoypadEvents(device)
-}
+// handleAxisEvents 处理轴事件（摇杆和扳机）
+// 已移动到 handleJoypadEvents 方法中
 
-func (s *HotkeyService) handleDS5Events() {
-	device := enums.DeviceTypeDualSense
-	s.handleJoypadEvents(device)
-}
-
-func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType) {
-	// device := enums.DeviceTypeDualShock4
-	stick := s.joysticks[string(device)]
-
-	// 监听按钮按下
-
-	stick.On(joystick.XPress, func(data interface{}) {
-		s.handleKeyPress("x", "X", device)
-	})
-	stick.On(joystick.XRelease, func(data interface{}) {
-		s.handleKeyRelease("x", "X", device)
-	})
-	stick.On(joystick.YPress, func(data interface{}) {
-		s.handleKeyPress("y", "Y", device)
-	})
-	stick.On(joystick.YRelease, func(data interface{}) {
-		s.handleKeyRelease("y", "Y", device)
-	})
-	stick.On(joystick.BPress, func(data interface{}) {
-		s.handleKeyPress("b", "B", device)
-	})
-	stick.On(joystick.BRelease, func(data interface{}) {
-		s.handleKeyRelease("b", "B", device)
-	})
-	stick.On(joystick.APress, func(data interface{}) {
-		s.handleKeyPress("a", "A", device)
-	})
-	stick.On(joystick.ARelease, func(data interface{}) {
-		s.handleKeyRelease("a", "A", device)
-	})
-	stick.On(joystick.LBPress, func(data interface{}) {
-		s.handleKeyPress("lb", "LB", device)
-	})
-	stick.On(joystick.LBRelease, func(data interface{}) {
-		s.handleKeyRelease("lb", "LB", device)
-	})
-
-	stick.On(joystick.RBPress, func(data interface{}) {
-		s.handleKeyPress("rb", "RB", device)
-	})
-	stick.On(joystick.RBRelease, func(data interface{}) {
-		s.handleKeyRelease("rb", "RB", device)
-	})
-	stick.On(joystick.LTPress, func(data interface{}) {
-		s.handleKeyPress("lt", "LT", device)
-	})
-	stick.On(joystick.LTRelease, func(data interface{}) {
-		s.handleKeyRelease("lt", "LT", device)
-	})
-	stick.On(joystick.RTPress, func(data interface{}) {
-		s.handleKeyPress("rt", "RT", device)
-	})
-	stick.On(joystick.RTRelease, func(data interface{}) {
-		s.handleKeyRelease("rt", "RT", device)
-	})
-	stick.On(joystick.Xbox360, func(data interface{}) {
-		s.handleKeyPress("xbox", "XBOX", device)
-	})
-	stick.On(joystick.StartPress, func(data interface{}) {
-		s.handleKeyPress("start", "START", device)
-	})
-	stick.On(joystick.StartRelease, func(data interface{}) {
-		s.handleKeyRelease("start", "START", device)
-	})
-	stick.On(joystick.BackPress, func(data interface{}) {
-		s.handleKeyPress("back", "BACK", device)
-	})
-	stick.On(joystick.BackRelease, func(data interface{}) {
-		s.handleKeyRelease("back", "BACK", device)
-	})
-	stick.On(joystick.HomePress, func(data interface{}) {
-		s.handleKeyPress("home", "HOME", device)
-	})
-	stick.On(joystick.HomeRelease, func(data interface{}) {
-		s.handleKeyRelease("home", "HOME", device)
-	})
-	stick.On(joystick.PedalPress, func(data interface{}) {
-		s.handleKeyPress("pedal", "PEDAL", device)
-	})
-	stick.On(joystick.PedalRelease, func(data interface{}) {
-		s.handleKeyRelease("pedal", "PEDAL", device)
-	})
-
-	stick.On(joystick.SquarePress, func(data interface{}) {
-		s.handleKeyPress("square", "□", device)
-	})
-
-	stick.On(joystick.SquareRelease, func(data interface{}) {
-		s.handleKeyRelease("square", "□", device)
-	})
-
-	stick.On(joystick.CirclePress, func(data interface{}) {
-		s.handleKeyPress("circle", "○", device)
-	})
-
-	stick.On(joystick.CircleRelease, func(data interface{}) {
-		s.handleKeyRelease("circle", "○", device)
-	})
-
-	stick.On(joystick.TrianglePress, func(data interface{}) {
-		s.handleKeyPress("triangle", "△", device)
-	})
-
-	stick.On(joystick.TriangleRelease, func(data interface{}) {
-		s.handleKeyRelease("triangle", "△", device)
-	})
-
-	stick.On(joystick.XPress, func(data interface{}) {
-		s.handleKeyPress("cross", "X", device)
-	})
-
-	stick.On(joystick.XRelease, func(data interface{}) {
-		s.handleKeyRelease("cross", "X", device)
-	})
-
-	// 监听肩键
-	stick.On(joystick.L1Press, func(data interface{}) {
-		s.handleKeyPress("l1", "L1", device)
-	})
-	stick.On(joystick.L1Release, func(data interface{}) {
-		s.handleKeyRelease("l1", "L1", device)
-	})
-
-	stick.On(joystick.R1Press, func(data interface{}) {
-		s.handleKeyPress("r1", "R1", device)
-	})
-	stick.On(joystick.R1Release, func(data interface{}) {
-		s.handleKeyRelease("r1", "R1", device)
-	})
-
-	// 监听扳机键 (模拟量)
-	stick.On(joystick.L2Press, func(data interface{}) {
-		s.handleKeyPress("l2", "L2", device)
-	})
-	stick.On(joystick.L2Release, func(data interface{}) {
-		s.handleKeyRelease("l2", "L2", device)
-	})
-
-	stick.On(joystick.R2Press, func(data interface{}) {
-		s.handleKeyPress("r2", "R2", device)
-	})
-	stick.On(joystick.R2Release, func(data interface{}) {
-		s.handleKeyRelease("r2", "R2", device)
-	})
-
-	stick.On(joystick.L3Press, func(data interface{}) {
-		s.handleKeyPress("l3", "L3", device)
-	})
-	stick.On(joystick.L3Release, func(data interface{}) {
-		s.handleKeyRelease("l3", "L3", device)
-	})
-
-	stick.On(joystick.R3Press, func(data interface{}) {
-		s.handleKeyPress("r3", "R3", device)
-	})
-	stick.On(joystick.R3Release, func(data interface{}) {
-		s.handleKeyRelease("r3", "R3", device)
-	})
-
-	// 监听方向键
-	stick.On(joystick.UpPress, func(data interface{}) {
-		s.handleKeyPress("up", "↑", device)
-	})
-	stick.On(joystick.UpRelease, func(data interface{}) {
-		s.handleKeyRelease("up", "↑", device)
-	})
-
-	stick.On(joystick.DownPress, func(data interface{}) {
-		s.handleKeyPress("down", "↓", device)
-	})
-	stick.On(joystick.DownRelease, func(data interface{}) {
-		s.handleKeyRelease("down", "↓", device)
-	})
-
-	stick.On(joystick.LeftPress, func(data interface{}) {
-		s.handleKeyPress("left", "←", device)
-	})
-	stick.On(joystick.LeftRelease, func(data interface{}) {
-		s.handleKeyRelease("left", "←", device)
-	})
-
-	stick.On(joystick.RightPress, func(data interface{}) {
-		s.handleKeyPress("right", "→", device)
-	})
-	stick.On(joystick.RightRelease, func(data interface{}) {
-		s.handleKeyRelease("right", "→", device)
-	})
-	stick.On(joystick.OptionsPress, func(data interface{}) {
-		s.handleKeyRelease("option", "Option", device)
-	})
-	stick.On(joystick.OptionsRelease, func(data interface{}) {
-		s.handleKeyRelease("option", "Option", device)
-	})
-	stick.On(joystick.SharePress, func(data interface{}) {
-		s.handleKeyPress("share", "Share", device)
-	})
-	stick.On(joystick.ShareRelease, func(data interface{}) {
-		s.handleKeyRelease("share", "Share", device)
-	})
-	stick.On(joystick.PSPress, func(data interface{}) {
-		s.handleKeyPress("ps", "PS", device)
-	})
-	stick.On(joystick.PSRelease, func(data interface{}) {
-		s.handleKeyRelease("ps", "PS", device)
-	})
-
-	// 监听摇杆轴 (模拟量)
-	stick.On(joystick.LeftX, func(data interface{}) {
-		// data 包含摇杆位置值 -32768 到 32767
-		// var l3LeftIsRelease = true
-		// var l3RightIsRelease = true
-		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
-		cm := fmt.Sprintf("Left X axis: %v", data)
-		if data.(int) > 5000 {
-
-			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device, cm)
-		} else if data.(int) < 1000 && data.(int) > -1000 {
-
-		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4L3Right, false, KeyDs4L3Right, device, cm)
-			s.toggleKey(KeyDs4L3Left, false, KeyDs4L3Left, device, cm)
+// DeviceButtonMapping 定义每个设备的按钮和轴映射
+func (s *HotkeyService) handleAxisEvents(axisName string, value int, device enums.DeviceType, cm string) {
+	switch axisName {
+	case "left_x":
+		// 左摇杆 X 轴
+		if value > 5000 {
+			s.toggleKey("l3-right", true, "L3 Right", device, cm)
+		} else if value < -5000 {
+			s.toggleKey("l3-left", true, "L3 Left", device, cm)
 		} else {
-			s.toggleKey(KeyDs4L3Left, true, KeyDs4L3Left, device, cm)
+			s.toggleKey("l3-right", false, "L3 Right", device, cm)
+			s.toggleKey("l3-left", false, "L3 Left", device, cm)
+		}
+	case "left_y":
+		// 左摇杆 Y 轴
+		if value > 5000 {
+			s.toggleKey("l3-down", true, "L3 Down", device, cm)
+		} else if value < -5000 {
+			s.toggleKey("l3-up", true, "L3 Up", device, cm)
+		} else {
+			s.toggleKey("l3-down", false, "L3 Down", device, cm)
+			s.toggleKey("l3-up", false, "L3 Up", device, cm)
+		}
+	case "right_x":
+		// 右摇杆 X 轴
+		if value > 5000 {
+			s.toggleKey("r3-right", true, "R3 Right", device, cm)
+		} else if value < -5000 {
+			s.toggleKey("r3-left", true, "R3 Left", device, cm)
+		} else {
+			s.toggleKey("r3-right", false, "R3 Right", device, cm)
+			s.toggleKey("r3-left", false, "R3 Left", device, cm)
+		}
+	case "right_y":
+		// 右摇杆 Y 轴
+		if value > 5000 {
+			s.toggleKey("r3-down", true, "R3 Down", device, cm)
+		} else if value < -5000 {
+			s.toggleKey("r3-up", true, "R3 Up", device, cm)
+		} else {
+			s.toggleKey("r3-down", false, "R3 Down", device, cm)
+			s.toggleKey("r3-up", false, "R3 Up", device, cm)
+		}
+	case "lt", "l2":
+		// 左扳机 (Xbox: lt, Sony: l2)
+		if value > 5000 {
+			s.toggleKey("lt", true, "LT", device, cm)
+		} else {
+			s.toggleKey("lt", false, "LT", device, cm)
+		}
+	case "rt", "r2":
+		// 右扳机 (Xbox: rt, Sony: r2)
+		if value > 5000 {
+			s.toggleKey("r2", true, "R2", device, cm)
+		} else {
+			s.toggleKey("r2", false, "R2", device, cm)
+		}
+	case "dpad_x":
+		// D-pad 水平方向（某些第三方手柄）
+		if value > 20000 {
+			s.toggleKey("dpad_right", true, "D-Pad Right", device, cm)
+			s.toggleKey("dpad_left", false, "D-Pad Left", device, cm)
+		} else if value < -20000 {
+			s.toggleKey("dpad_left", true, "D-Pad Left", device, cm)
+			s.toggleKey("dpad_right", false, "D-Pad Right", device, cm)
+		} else {
+			s.toggleKey("dpad_left", false, "D-Pad Left", device, cm)
+			s.toggleKey("dpad_right", false, "D-Pad Right", device, cm)
+		}
+	case "dpad_y":
+		// D-pad 垂直方向（某些第三方手柄）
+		if value > 20000 {
+			s.toggleKey("dpad_down", true, "D-Pad Down", device, cm)
+			s.toggleKey("dpad_up", false, "D-Pad Up", device, cm)
+		} else if value < -20000 {
+			s.toggleKey("dpad_up", true, "D-Pad Up", device, cm)
+			s.toggleKey("dpad_down", false, "D-Pad Down", device, cm)
+		} else {
+			s.toggleKey("dpad_up", false, "D-Pad Up", device, cm)
+			s.toggleKey("dpad_down", false, "D-Pad Down", device, cm)
+		}
+	}
+}
+
+// AxisConfig 定义轴的完整配置
+type AxisConfig struct {
+	Name      string // 轴的基本名称
+	NameMax   string // 最大值端的名称（如 "rt", "l3-right", "l3-down"）
+	NameMin   string // 最小值端的名称（如 "lt", "l3-left", "l3-up"）
+	Max       int    // 最大值
+	Min       int    // 最小值
+	Threshold int    // 无视阈值
+	Release   int    // Release 阈值
+	Center    int    // 中间分界值
+	HasConfig bool   // 是否有详细配置
+}
+
+// DeviceButtonMapping 定义每个设备的按钮和轴映射（仅用于 JSON 解析）
+type DeviceButtonMapping struct {
+	Buttons     map[int]string     // buttonID -> eventName
+	Axis        map[int]string     // axisID -> eventName (简单映射，兼容旧逻辑)
+	AxisConfigs map[int]AxisConfig // axisID -> AxisConfig (带属性的完整配置)
+}
+
+// 注意：deviceMappings 已删除，所有按键映射现在由 JSON 配置文件定义
+// 请参考 frontend/src/components/panel/KeyMappingPanel.tsx 中的 button 字段名称
+
+func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType, joy js.Joystick, configJSON string) {
+	// 如果配置为空，尝试使用默认配置
+	if configJSON == "" && device == enums.DeviceTypeXInput {
+		configJSON = xbox360CustomConfigJSON
+		fmt.Printf("使用默认Xbox 360配置\n")
+	}
+
+	// 解析 JSON 配置
+	var config joystickConfigJSON
+	if err := json.Unmarshal([]byte(configJSON), &config); err != nil {
+		fmt.Printf("解析配置失败: %v\n", err)
+		fmt.Printf("配置内容: %s\n", configJSON)
+		return
+	}
+
+	// 创建 ID -> Name 映射
+	buttonMapping := make(map[int]string)
+	for _, btn := range config.Buttons {
+		buttonMapping[btn.ID] = btn.Name
+	}
+
+	// 创建带属性的轴配置
+	axisConfigs := make(map[int]AxisConfig)
+	axisMapping := make(map[int]string)
+
+	for _, ax := range config.Axis {
+		// 简单映射（用于兼容旧逻辑）
+		axisMapping[ax.ID] = ax.Name
+
+		// 检查是否有详细配置（NameMax, NameMin 等字段）
+		if ax.NameMax != "" || ax.Threshold > 0 {
+			axisConfigs[ax.ID] = AxisConfig{
+				Name:      ax.Name,
+				NameMax:   ax.NameMax,
+				NameMin:   ax.NameMin,
+				Max:       ax.Max,
+				Min:       ax.Min,
+				Threshold: ax.Threshold,
+				Release:   ax.Release,
+				Center:    ax.Center,
+				HasConfig: true,
+			}
+		} else {
+			// 无详细配置，使用简单映射
+			axisConfigs[ax.ID] = AxisConfig{
+				Name:      ax.Name,
+				HasConfig: false,
+			}
+		}
+	}
+
+	mapping := DeviceButtonMapping{
+		Buttons:     buttonMapping,
+		Axis:        axisMapping,
+		AxisConfigs: axisConfigs,
+	}
+
+	s.handleJoypadEventsWithMapping(device, joy, mapping)
+}
+
+// handleAxisWithConfig 处理带配置的轴事件
+func (s *HotkeyService) handleAxisWithConfig(axisName string, value int, device enums.DeviceType, config AxisConfig, cm string) {
+	switch axisName {
+	case "left_x", "right_x":
+		if value > 5000 {
+			s.toggleKey(config.NameMax, true, config.NameMax, device, cm)
+		} else if value < -5000 {
+			s.toggleKey(config.NameMin, true, config.NameMin, device, cm)
+		} else {
+			s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+			s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+		}
+	case "left_y", "right_y":
+		if value > 5000 {
+			s.toggleKey(config.NameMax, true, config.NameMax, device, cm)
+		} else if value < -5000 {
+			s.toggleKey(config.NameMin, true, config.NameMin, device, cm)
+		} else {
+			s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+			s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+		}
+	case "trigger":
+		upperRelease := config.Center + config.Release
+		upperThreshold := config.Center + config.Threshold
+
+		if config.NameMax == "" {
+			if value > upperThreshold && value <= upperRelease {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+			} else if value > upperRelease {
+				s.toggleKey(config.NameMin, true, config.NameMin, device, cm)
+			} else {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+			}
+		} else {
+			lowerRelease := config.Center - config.Release
+			lowerThreshold := config.Center - config.Threshold
+
+			if value > upperThreshold && value <= upperRelease {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+			} else if value >= lowerRelease && value < lowerThreshold {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+			} else if value > upperRelease {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, true, config.NameMax, device, cm)
+			} else if value < lowerRelease {
+				s.toggleKey(config.NameMin, true, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+			} else {
+				s.toggleKey(config.NameMin, false, config.NameMin, device, cm)
+				s.toggleKey(config.NameMax, false, config.NameMax, device, cm)
+			}
+		}
+	default:
+		s.handleAxisEvents(axisName, value, device, cm)
+	}
+}
+
+// handleJoypadEventsWithMapping 使用提供的映射处理手柄事件
+func (s *HotkeyService) handleJoypadEventsWithMapping(device enums.DeviceType, joy js.Joystick, mapping DeviceButtonMapping) {
+	// 获取设备的按钮和轴数量
+	buttonCount := joy.ButtonCount()
+	axisCount := joy.AxisCount()
+
+	fmt.Printf("手柄事件处理开始 - 设备: %s, 按钮: %d, 轴: %d\n", device, buttonCount, axisCount)
+
+	// 保存上一个状态
+	prevButtons := make([]bool, buttonCount)
+	prevAxis := make([]int, axisCount)
+
+	for {
+		state, err := joy.Read()
+		if err != nil {
+			fmt.Printf("读取手柄状态失败: %v\n", err)
+			break
 		}
 
-	})
-
-	stick.On(joystick.RightX, func(data interface{}) {
-		// data 包含摇杆位置值 -32768 到 32767
-		// var l3LeftIsRelease = true
-		// var l3RightIsRelease = true
-		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
-		cm := fmt.Sprintf("Right X axis: %v", data)
-		if data.(int) > 5000 {
-
-			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device, cm)
-		} else if data.(int) < 1000 && data.(int) > -1000 {
-
-		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4R3Right, false, KeyDs4R3Right, device, cm)
-			s.toggleKey(KeyDs4R3Left, false, KeyDs4R3Left, device, cm)
-		} else {
-			s.toggleKey(KeyDs4R3Left, true, KeyDs4R3Left, device, cm)
+		// 检测按钮变化
+		for i := 0; i < buttonCount; i++ {
+			pressed := state.Buttons&(1<<i) != 0
+			if pressed != prevButtons[i] {
+				// 获取按钮名称
+				buttonName, hasButton := mapping.Buttons[i]
+				if hasButton {
+					if pressed {
+						s.handleKeyPress(buttonName, strings.ToUpper(buttonName), device)
+					} else {
+						s.handleKeyRelease(buttonName, strings.ToUpper(buttonName), device)
+					}
+				}
+				prevButtons[i] = pressed
+			}
 		}
 
-	})
-
-	stick.On(joystick.LeftY, func(data interface{}) {
-		cm := fmt.Sprintf("Left Y axis: %v", data)
-
-		if data.(int) > 5000 {
-
-			s.toggleKey(KeyDs4L3Up, true, KeyDs4L3Up, device, cm)
-		} else if data.(int) < 1000 && data.(int) > -1000 {
-
-		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4L3Up, false, KeyDs4L3Up, device, cm)
-			s.toggleKey(KeyDs4L3Down, false, KeyDs4L3Down, device, cm)
-		} else {
-			s.toggleKey(KeyDs4L3Down, true, KeyDs4L3Down, device, cm)
+		// 检测轴变化
+		for i := 0; i < axisCount; i++ {
+			if state.AxisData[i] != prevAxis[i] {
+				// 获取轴配置
+				axisConfig, hasAxisConfig := mapping.AxisConfigs[i]
+				if hasAxisConfig {
+					cm := fmt.Sprintf("%s axis: %d", axisConfig.Name, state.AxisData[i])
+					if axisConfig.HasConfig {
+						// 使用带配置的轴处理
+						s.handleAxisWithConfig(axisConfig.Name, state.AxisData[i], device, axisConfig, cm)
+					} else {
+						// 使用旧的轴处理（按名称匹配）
+						s.handleAxisEvents(axisConfig.Name, state.AxisData[i], device, cm)
+					}
+				}
+				prevAxis[i] = state.AxisData[i]
+			}
 		}
-	})
 
-	stick.On(joystick.RightY, func(data interface{}) {
-		cm := fmt.Sprintf("Right Y axis: %v", data)
-
-		if data.(int) > 5000 {
-
-			s.toggleKey(KeyDs4R3Up, true, KeyDs4R3Up, device, cm)
-		} else if data.(int) < 1000 && data.(int) > -1000 {
-
-		} else if data.(int) < 5000 && data.(int) > -5000 {
-			s.toggleKey(KeyDs4R3Up, false, KeyDs4R3Up, device, cm)
-			s.toggleKey(KeyDs4R3Down, false, KeyDs4R3Down, device, cm)
-		} else {
-			s.toggleKey(KeyDs4R3Down, true, KeyDs4R3Down, device, cm)
-		}
-	})
+		// 短暂休眠，避免过度占用 CPU
+		time.Sleep(10 * time.Millisecond)
+	}
 }
-
-func (s *HotkeyService) handleXInputEvents() {
-	device := enums.DeviceTypeXInput
-	s.handleJoypadEvents(device)
-}
-
-func (s *HotkeyService) handleJconEvents() {
-	device := enums.DeviceTypeJoyCon
-	s.handleJoypadEvents(device)
-}
-
-// func (s *HotkeyService) handleXInputEvents() {
-// 	device := enums.DeviceTypeDualShock4
-// 	stick := s.joysticks[string(device)]
-
-// 	// 监听按钮按下
-// 	stick.On(joystick.SquarePress, func(data interface{}) {
-// 		s.handleKeyPress("square", "□", device)
-// 	})
-
-// 	stick.On(joystick.SquareRelease, func(data interface{}) {
-// 		s.handleKeyRelease("square", "□", device)
-// 	})
-
-// 	stick.On(joystick.CirclePress, func(data interface{}) {
-// 		s.handleKeyPress("circle", "○", device)
-// 	})
-
-// 	stick.On(joystick.CircleRelease, func(data interface{}) {
-// 		s.handleKeyRelease("circle", "○", device)
-// 	})
-
-// 	stick.On(joystick.TrianglePress, func(data interface{}) {
-// 		s.handleKeyPress("triangle", "△", device)
-// 	})
-
-// 	stick.On(joystick.TriangleRelease, func(data interface{}) {
-// 		s.handleKeyRelease("triangle", "△", device)
-// 	})
-
-// 	stick.On(joystick.XPress, func(data interface{}) {
-// 		s.handleKeyPress("cross", "X", device)
-// 	})
-
-// 	stick.On(joystick.XRelease, func(data interface{}) {
-// 		s.handleKeyRelease("cross", "X", device)
-// 	})
-
-// 	// 监听肩键
-// 	stick.On(joystick.L1Press, func(data interface{}) {
-// 		s.handleKeyPress("l1", "L1", device)
-// 	})
-// 	stick.On(joystick.L1Release, func(data interface{}) {
-// 		s.handleKeyRelease("l1", "L1", device)
-// 	})
-
-// 	stick.On(joystick.R1Press, func(data interface{}) {
-// 		s.handleKeyPress("r1", "R1", device)
-// 	})
-// 	stick.On(joystick.R1Release, func(data interface{}) {
-// 		s.handleKeyRelease("r1", "R1", device)
-// 	})
-
-// 	// 监听扳机键 (模拟量)
-// 	stick.On(joystick.L2Press, func(data interface{}) {
-// 		s.handleKeyPress("l2", "L2", device)
-// 	})
-// 	stick.On(joystick.L2Release, func(data interface{}) {
-// 		s.handleKeyRelease("l2", "L2", device)
-// 	})
-
-// 	stick.On(joystick.R2Press, func(data interface{}) {
-// 		s.handleKeyPress("r2", "R2", device)
-// 	})
-// 	stick.On(joystick.R2Release, func(data interface{}) {
-// 		s.handleKeyRelease("r2", "R2", device)
-// 	})
-
-// 	stick.On(joystick.L3Press, func(data interface{}) {
-// 		s.handleKeyPress("l3", "L3", device)
-// 	})
-// 	stick.On(joystick.L3Release, func(data interface{}) {
-// 		s.handleKeyRelease("l3", "L3", device)
-// 	})
-
-// 	stick.On(joystick.R3Press, func(data interface{}) {
-// 		s.handleKeyPress("r3", "R3", device)
-// 	})
-// 	stick.On(joystick.R3Release, func(data interface{}) {
-// 		s.handleKeyRelease("r3", "R3", device)
-// 	})
-
-// 	// 监听方向键
-// 	stick.On(joystick.UpPress, func(data interface{}) {
-// 		s.handleKeyPress("up", "↑", device)
-// 	})
-// 	stick.On(joystick.UpRelease, func(data interface{}) {
-// 		s.handleKeyRelease("up", "↑", device)
-// 	})
-
-// 	stick.On(joystick.DownPress, func(data interface{}) {
-// 		s.handleKeyPress("down", "↓", device)
-// 	})
-// 	stick.On(joystick.DownRelease, func(data interface{}) {
-// 		s.handleKeyRelease("down", "↓", device)
-// 	})
-
-// 	stick.On(joystick.LeftPress, func(data interface{}) {
-// 		s.handleKeyPress("left", "←", device)
-// 	})
-// 	stick.On(joystick.LeftRelease, func(data interface{}) {
-// 		s.handleKeyRelease("left", "←", device)
-// 	})
-
-// 	stick.On(joystick.RightPress, func(data interface{}) {
-// 		s.handleKeyPress("right", "→", device)
-// 	})
-// 	stick.On(joystick.RightRelease, func(data interface{}) {
-// 		s.handleKeyRelease("right", "→", device)
-// 	})
-// 	stick.On(joystick.OptionsPress, func(data interface{}) {
-// 		s.handleKeyRelease("option", "Option", device)
-// 	})
-// 	stick.On(joystick.OptionsRelease, func(data interface{}) {
-// 		s.handleKeyRelease("option", "Option", device)
-// 	})
-// 	stick.On(joystick.SharePress, func(data interface{}) {
-// 		s.handleKeyPress("share", "Share", device)
-// 	})
-// 	stick.On(joystick.ShareRelease, func(data interface{}) {
-// 		s.handleKeyRelease("share", "Share", device)
-// 	})
-// 	stick.On(joystick.PSPress, func(data interface{}) {
-// 		s.handleKeyPress("ps", "PS", device)
-// 	})
-// 	stick.On(joystick.PSRelease, func(data interface{}) {
-// 		s.handleKeyRelease("ps", "PS", device)
-// 	})
-
-// 	// 监听摇杆轴 (模拟量)
-// 	stick.On(joystick.LeftX, func(data interface{}) {
-// 		// data 包含摇杆位置值 -32768 到 32767
-// 		// var l3LeftIsRelease = true
-// 		// var l3RightIsRelease = true
-// 		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
-// 		cm := fmt.Sprintf("Left X axis: %v", data)
-// 		if data.(int) > 5000 {
-
-// 			s.toggleKey(KeyDs4L3Right, true, KeyDs4L3Right, device, cm)
-// 		} else if data.(int) < 1000 && data.(int) > -1000 {
-
-// 		} else if data.(int) < 5000 && data.(int) > -5000 {
-// 			s.toggleKey(KeyDs4L3Right, false, KeyDs4L3Right, device, cm)
-// 			s.toggleKey(KeyDs4L3Left, false, KeyDs4L3Left, device, cm)
-// 		} else {
-// 			s.toggleKey(KeyDs4L3Left, true, KeyDs4L3Left, device, cm)
-// 		}
-
-// 	})
-
-// 	stick.On(joystick.RightX, func(data interface{}) {
-// 		// data 包含摇杆位置值 -32768 到 32767
-// 		// var l3LeftIsRelease = true
-// 		// var l3RightIsRelease = true
-// 		// applog.LogDebugf(s.ctx, "Left X axis: %v", data)
-// 		cm := fmt.Sprintf("Right X axis: %v", data)
-// 		if data.(int) > 5000 {
-
-// 			s.toggleKey(KeyDs4R3Right, true, KeyDs4R3Right, device, cm)
-// 		} else if data.(int) < 1000 && data.(int) > -1000 {
-
-// 		} else if data.(int) < 5000 && data.(int) > -5000 {
-// 			s.toggleKey(KeyDs4R3Right, false, KeyDs4R3Right, device, cm)
-// 			s.toggleKey(KeyDs4R3Left, false, KeyDs4R3Left, device, cm)
-// 		} else {
-// 			s.toggleKey(KeyDs4R3Left, true, KeyDs4R3Left, device, cm)
-// 		}
-
-// 	})
-
-// 	stick.On(joystick.LeftY, func(data interface{}) {
-// 		cm := fmt.Sprintf("Left Y axis: %v", data)
-
-// 		if data.(int) > 5000 {
-
-// 			s.toggleKey(KeyDs4L3Up, true, KeyDs4L3Up, device, cm)
-// 		} else if data.(int) < 1000 && data.(int) > -1000 {
-
-// 		} else if data.(int) < 5000 && data.(int) > -5000 {
-// 			s.toggleKey(KeyDs4L3Up, false, KeyDs4L3Up, device, cm)
-// 			s.toggleKey(KeyDs4L3Down, false, KeyDs4L3Down, device, cm)
-// 		} else {
-// 			s.toggleKey(KeyDs4L3Down, true, KeyDs4L3Down, device, cm)
-// 		}
-// 	})
-
-// 	stick.On(joystick.RightY, func(data interface{}) {
-// 		cm := fmt.Sprintf("Right Y axis: %v", data)
-
-// 		if data.(int) > 5000 {
-
-// 			s.toggleKey(KeyDs4R3Up, true, KeyDs4R3Up, device, cm)
-// 		} else if data.(int) < 1000 && data.(int) > -1000 {
-
-// 		} else if data.(int) < 5000 && data.(int) > -5000 {
-// 			s.toggleKey(KeyDs4R3Up, false, KeyDs4R3Up, device, cm)
-// 			s.toggleKey(KeyDs4R3Down, false, KeyDs4R3Down, device, cm)
-// 		} else {
-// 			s.toggleKey(KeyDs4R3Down, true, KeyDs4R3Down, device, cm)
-// 		}
-// 	})
-// }
 
 func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device enums.DeviceType, comment string) {
 
@@ -1306,31 +1265,38 @@ func (s *HotkeyService) toggleKey(key string, isPress bool, name string, device 
 // 启动相关方法
 func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 	applog.LogInfof(s.ctx, "Starting joystick listener...")
-	// devicetype := enums.DeviceTypeDualShock4
 	s.robotMutex6.Lock()
 	defer s.robotMutex6.Unlock()
 
 	// 扫描可用的 joystick 设备
 	applog.LogInfof(s.ctx, "Scanning for available joystick devices...")
-	//Found joystick at index 1: Microsoft 电脑游戏杆驱动程序 (Axes: 7, Buttons: 16)xinput
-	//Microsoft 电脑游戏杆驱动程序 (Axes: 8, Buttons: 14) ds4! dualsense
-	//Microsoft 电脑游戏杆驱动程序 (Axes: 7, Buttons: 10)飞智
-	//Microsoft 电脑游戏杆驱动程序 (Axes: 7, Buttons: 10)ns pro Microsoft 电脑游戏杆驱动程序 (Axes: 6, Buttons: 16)
 
 	availableJoysticks := []int{}
 	selectedIndex := -1
+	var selectedJoy js.Joystick
+
 	for i := 0; i < 7; i++ {
 		joy, err := js.Open(i)
 		if err == nil {
 			applog.LogInfof(s.ctx, "Found joystick at index %d: %s (Axes: %d, Buttons: %d)",
 				i, joy.Name(), joy.AxisCount(), joy.ButtonCount())
 			availableJoysticks = append(availableJoysticks, i)
+
+			// 根据设备类型选择合适的 joystick
 			if (devicetype == enums.DeviceTypeDualShock4 || devicetype == enums.DeviceTypeDualSense) && joy.ButtonCount() == 14 && joy.AxisCount() == 8 {
 				selectedIndex = i
+				selectedJoy = joy
 			} else if devicetype == enums.DeviceTypeJoyCon && joy.ButtonCount() == 16 && joy.AxisCount() == 6 {
 				selectedIndex = i
+				selectedJoy = joy
+			} else if devicetype == enums.DeviceTypeXInput && selectedJoy == nil {
+				// 对于 XInput，默认选择第一个可用设备（稍后可能需要根据按钮/轴数量进一步筛选）
+				selectedIndex = i
+				selectedJoy = joy
+			} else {
+				// 关闭不需要的设备
+				joy.Close()
 			}
-			joy.Close()
 		}
 	}
 
@@ -1342,63 +1308,56 @@ func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 	applog.LogInfof(s.ctx, "Found %d joystick devices at indices: %v", len(availableJoysticks), availableJoysticks)
 
 	// 使用第一个可用的 joystick 设备
-	if selectedIndex == -1 {
+	if selectedIndex == -1 && len(availableJoysticks) > 0 {
 		selectedIndex = availableJoysticks[0]
+		selectedJoy, _ = js.Open(selectedIndex)
 	}
+
+	if selectedJoy == nil {
+		applog.LogErrorf(s.ctx, "Failed to open joystick at index %d", selectedIndex)
+		return
+	}
+
 	applog.LogInfof(s.ctx, "Using joystick at index %d for device type: %s", selectedIndex, devicetype)
 
-	// 启动手柄机器人
-	// 创建 joystick 适配器
+	// 加载 JSON 配置
+	var configJSON string
+	var configFile string
 
-	applog.LogInfof(s.ctx, "Starting joystick listener...1")
-
-	joystickAdaptor := joystick.NewAdaptor(fmt.Sprintf("%d", selectedIndex))
-
-	applog.LogInfof(s.ctx, "Starting joystick listener...2")
-
-	// 创建手柄驱动
-	stick := joystick.NewDriver(joystickAdaptor, string(devicetype))
-
-	applog.LogInfof(s.ctx, "Starting joystick listener...3")
-
-	s.joysticks[string(devicetype)] = stick
-	if devicetype == enums.DeviceTypeDualShock4 {
-		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
-			[]gobot.Connection{joystickAdaptor},
-			[]gobot.Device{stick},
-			s.handleDS4Events,
-		)
-
-	} else if devicetype == enums.DeviceTypeDualSense {
-		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
-			[]gobot.Connection{joystickAdaptor},
-			[]gobot.Device{stick},
-			s.handleDS5Events,
-		)
-
-	} else if devicetype == enums.DeviceTypeXInput {
-		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
-			[]gobot.Connection{joystickAdaptor},
-			[]gobot.Device{stick},
-			s.handleXInputEvents,
-		)
-	} else if devicetype == enums.DeviceTypeJoyCon {
-		s.robot = gobot.NewRobot(string(devicetype)+"Robot",
-			[]gobot.Connection{joystickAdaptor},
-			[]gobot.Device{stick},
-			s.handleJconEvents,
-		)
+	// 根据设备类型选择配置文件
+	switch devicetype {
+	case enums.DeviceTypeXInput:
+		configFile = "xbox360_custom.json"
+	case enums.DeviceTypeDualShock4:
+		configFile = "dualshock4.json"
+	case enums.DeviceTypeDualSense:
+		configFile = "dualsense.json"
+	case enums.DeviceTypeJoyCon:
+		configFile = "joycon.json"
 	}
-	applog.LogInfof(s.ctx, "Starting joystick listener...4")
-	if s.robot != nil {
-		go func() {
-			if err := s.robot.Start(); err != nil {
-				applog.ErrorLogSaveAppLog("robot start err: ", err)
+
+	if configFile != "" {
+		_, configContent, err := ensureConfigFile(configFile)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "Failed to load config %s: %v", configFile, err)
+			// 尝试使用默认配置
+			if devicetype == enums.DeviceTypeXInput {
+				applog.LogInfof(s.ctx, "Using default Xbox 360 configuration")
+				configJSON = xbox360CustomConfigJSON
+			} else {
+				configJSON = ""
 			}
-
-		}()
+		} else {
+			configJSON = configContent
+			applog.LogInfof(s.ctx, "Loaded config: %s", configFile)
+		}
 	}
 
+	// 直接启动事件处理循环，不再使用 gobot
+	go func() {
+		s.handleJoypadEvents(devicetype, selectedJoy, configJSON)
+		selectedJoy.Close()
+	}()
 }
 
 // 公共接口方法

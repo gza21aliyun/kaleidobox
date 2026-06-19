@@ -18,6 +18,7 @@ import (
 	"lunabox/internal/models"
 
 	// "github.com/go-vgo/robotgo"
+	js "github.com/0xcafed00d/joystick"
 	"gobot.io/x/gobot/v2"
 	"gobot.io/x/gobot/v2/platforms/joystick"
 	"gobot.io/x/gobot/v2/platforms/keyboard"
@@ -1308,12 +1309,50 @@ func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 	// devicetype := enums.DeviceTypeDualShock4
 	s.robotMutex6.Lock()
 	defer s.robotMutex6.Unlock()
+
+	// 扫描可用的 joystick 设备
+	applog.LogInfof(s.ctx, "Scanning for available joystick devices...")
+	//Found joystick at index 1: Microsoft 电脑游戏杆驱动程序 (Axes: 7, Buttons: 16)xinput
+	//Microsoft 电脑游戏杆驱动程序 (Axes: 8, Buttons: 14) ds4! dualsense
+	//Microsoft 电脑游戏杆驱动程序 (Axes: 7, Buttons: 10)飞智
+	//Microsoft 电脑游戏杆驱动程序 (Axes: 7, Buttons: 10)ns pro Microsoft 电脑游戏杆驱动程序 (Axes: 6, Buttons: 16)
+
+	availableJoysticks := []int{}
+	selectedIndex := -1
+	for i := 0; i < 7; i++ {
+		joy, err := js.Open(i)
+		if err == nil {
+			applog.LogInfof(s.ctx, "Found joystick at index %d: %s (Axes: %d, Buttons: %d)",
+				i, joy.Name(), joy.AxisCount(), joy.ButtonCount())
+			availableJoysticks = append(availableJoysticks, i)
+			if (devicetype == enums.DeviceTypeDualShock4 || devicetype == enums.DeviceTypeDualSense) && joy.ButtonCount() == 14 && joy.AxisCount() == 8 {
+				selectedIndex = i
+			} else if devicetype == enums.DeviceTypeJoyCon && joy.ButtonCount() == 16 && joy.AxisCount() == 6 {
+				selectedIndex = i
+			}
+			joy.Close()
+		}
+	}
+
+	if len(availableJoysticks) == 0 {
+		applog.LogErrorf(s.ctx, "No joystick devices found!")
+		return
+	}
+
+	applog.LogInfof(s.ctx, "Found %d joystick devices at indices: %v", len(availableJoysticks), availableJoysticks)
+
+	// 使用第一个可用的 joystick 设备
+	if selectedIndex == -1 {
+		selectedIndex = availableJoysticks[0]
+	}
+	applog.LogInfof(s.ctx, "Using joystick at index %d for device type: %s", selectedIndex, devicetype)
+
 	// 启动手柄机器人
 	// 创建 joystick 适配器
 
 	applog.LogInfof(s.ctx, "Starting joystick listener...1")
 
-	joystickAdaptor := joystick.NewAdaptor("0")
+	joystickAdaptor := joystick.NewAdaptor(fmt.Sprintf("%d", selectedIndex))
 
 	applog.LogInfof(s.ctx, "Starting joystick listener...2")
 

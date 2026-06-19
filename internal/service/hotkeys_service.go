@@ -262,6 +262,7 @@ type HotkeyService struct {
 	processCheckTicker *time.Ticker
 	keyboardTicker     *time.Ticker
 	keyboardStopChan   chan struct{}
+	joystickStopChan   chan struct{}
 }
 
 func (s *HotkeyService) SetServices(imageService *ImageService, startService *StartService, touchMappingService *TouchMappingService) {
@@ -731,8 +732,10 @@ func (s *HotkeyService) handleKeyPress(key, name string, device enums.DeviceType
 	}
 	//这里true的话每次按键都会去找前台游戏，但可能会增加延迟。注意如果改为true，一开始的loadhotkeys应该改为读取所有hotkeys而不是为单个游戏
 	if /*true ||*/ s.GetActiveGameID() == "" {
+		applog.LogDebugf(s.ctx, "现在游戏id为空，准备检查")
 		s.processCheck()
 		if s.GetActiveGameID() == "" {
+			applog.LogDebugf(s.ctx, "现在游戏id还是为空，判定为设置截图键中")
 			s.monitoredKey.Store(&hk)
 			return
 		}
@@ -1031,7 +1034,7 @@ type DeviceButtonMapping struct {
 // 注意：deviceMappings 已删除，所有按键映射现在由 JSON 配置文件定义
 // 请参考 frontend/src/components/panel/KeyMappingPanel.tsx 中的 button 字段名称
 
-func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType, joy js.Joystick, configJSON string) {
+func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType, joy js.Joystick, configJSON string, stopChan <-chan struct{}) {
 	// 如果配置为空，无法处理事件
 	if configJSON == "" {
 		fmt.Printf("配置为空，无法处理手柄事件\n")
@@ -1094,7 +1097,7 @@ func (s *HotkeyService) handleJoypadEvents(device enums.DeviceType, joy js.Joyst
 		AxisConfigs: axisConfigs,
 	}
 
-	s.handleJoypadEventsWithMapping(device, joy, mapping)
+	s.handleJoypadEventsWithMapping(device, joy, mapping, stopChan)
 }
 
 // handleAxisWithConfig 处理带配置的轴事件
@@ -1162,7 +1165,7 @@ func (s *HotkeyService) handleAxisWithConfig(axisName string, value int, device 
 }
 
 // handleJoypadEventsWithMapping 使用提供的映射处理手柄事件
-func (s *HotkeyService) handleJoypadEventsWithMapping(device enums.DeviceType, joy js.Joystick, mapping DeviceButtonMapping) {
+func (s *HotkeyService) handleJoypadEventsWithMapping(device enums.DeviceType, joy js.Joystick, mapping DeviceButtonMapping, stopChan <-chan struct{}) {
 	// 获取设备的按钮和轴数量
 	buttonCount := joy.ButtonCount()
 	axisCount := joy.AxisCount()
@@ -1174,6 +1177,14 @@ func (s *HotkeyService) handleJoypadEventsWithMapping(device enums.DeviceType, j
 	prevAxis := make([]int, axisCount)
 
 	for {
+		select {
+		case <-stopChan:
+			fmt.Printf("手柄监听已停止\n")
+			return
+		default:
+			// 继续处理事件
+		}
+
 		state, err := joy.Read()
 		if err != nil {
 			fmt.Printf("读取手柄状态失败: %v\n", err)
@@ -1338,8 +1349,12 @@ func (s *HotkeyService) startJoystickListener(devicetype enums.DeviceType) {
 	}
 
 	// 直接启动事件处理循环，不再使用 gobot
+	// 创建新的停止 channel
+	stopChan := make(chan struct{})
+	s.joystickStopChan = stopChan
+
 	go func() {
-		s.handleJoypadEvents(devicetype, selectedJoy, configJSON)
+		s.handleJoypadEvents(devicetype, selectedJoy, configJSON, stopChan)
 		selectedJoy.Close()
 	}()
 }
@@ -1777,16 +1792,17 @@ func (s *HotkeyService) MonitorKeySetting(devicetype enums.DeviceType) (models.H
 		select {
 		case <-tiker.C:
 			key := s.monitoredKey.Load().(*models.Hotkey)
+			applog.LogDebugf(s.ctx, "MonitorKeySetting: %v", key)
 			if key.KeyCode != "" {
-				s.robot.Stop()
+				s.stopJoystickListener()
 				return *key, nil
 			}
 			if s.isMonitoringKeySetting.Load() == false {
-				s.robot.Stop()
+				s.stopJoystickListener()
 				return models.Hotkey{}, nil
 			}
 		case <-s.ctx.Done():
-			s.robot.Stop()
+			s.stopJoystickListener()
 			return models.Hotkey{}, errors.New("key setting monitoring cancelled")
 		}
 
@@ -1796,6 +1812,7 @@ func (s *HotkeyService) MonitorKeySetting(devicetype enums.DeviceType) (models.H
 
 func (s *HotkeyService) CancelMonitorKeySetting() {
 	s.isMonitoringKeySetting.Store(false)
+	s.stopJoystickListener()
 }
 
 func (s *HotkeyService) readyHotkeysForGame(gameId string) {
@@ -1826,6 +1843,9 @@ func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 
 	// 停止触摸按钮
 	s.stopTouchMapping()
+
+	// 停止手柄监听
+	s.stopJoystickListener()
 
 	s.robotMutex6.Lock()
 	defer s.robotMutex6.Unlock()
@@ -1934,6 +1954,29 @@ func (s *HotkeyService) startTouchMapping() {
 // stopTouchMapping 停止触摸按钮窗口
 func (s *HotkeyService) stopTouchMapping() {
 	s.touchMappingService.Stop()
+}
+
+// stopJoystickListener 停止手柄监听
+func (s *HotkeyService) stopJoystickListener() {
+	if s.joystickStopChan == nil {
+		return
+	}
+
+	fmt.Printf("停止手柄监听...\n")
+
+	// 发送停止信号（非阻塞）
+	select {
+	case s.joystickStopChan <- struct{}{}:
+		fmt.Printf("手柄停止信号已发送\n")
+	default:
+		// channel 已经有信号了
+	}
+
+	// 等待一小段时间让 goroutine 退出
+	time.Sleep(100 * time.Millisecond)
+
+	s.joystickStopChan = nil
+	fmt.Printf("手柄监听已停止\n")
 }
 
 // TouchButtonInfo 前端与后端之间传递的触摸按钮信息结构

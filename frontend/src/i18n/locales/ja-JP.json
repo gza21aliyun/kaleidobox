@@ -93,7 +93,8 @@
     "brands": "ブランド",
     "series": "シリーズ",
     "categoryList": "カテゴリ一覧",
-    "favorites": "お気に入り"
+    "favorites": "お気に入り",
+    "monthlyReleases": "月別発売"
   },
   "home": {
     "welcomeBack": "おかえりなさい！",
@@ -1660,6 +1661,20 @@
     },
     "buttons": {
       "confirmAndRestart": "確認してアプリを再起動"
+    }
+  },
+  "monthlyReleases": {
+    "title": "月別発売タイトル",
+    "gamesCount": "本",
+    "year": "年",
+    "month": "月",
+    "prevMonth": "前月",
+    "nextMonth": "翌月",
+    "refresh": "更新",
+    "loading": "データ取得中...",
+    "empty": "この月のゲーム発売情報はありません",
+    "toasts": {
+      "fetchFailed": "月別発売リストの取得に失敗しました"
     }
   }
 }

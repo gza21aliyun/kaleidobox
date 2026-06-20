@@ -28,12 +28,13 @@ import { Route as seriesGamesRoute } from "./routes/series_games";
 import { Route as vmRoute } from "./routes/virtual_machines";
 import { Route as categoryListRoute } from "./routes/category_list";
 import { Route as categoryGamesRoute } from "./routes/category_games";
+import { Route as monthlyReleasesRoute } from "./routes/monthly_releases";
 
 import { useAppStore } from "./store";
 
 const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, favoritesListRoute, 
   favoritesRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute, taskRoute, 
-  brandsRoute, brandGamesRoute, seriesListRoute, seriesGamesRoute, vmRoute, categoryListRoute, categoryGamesRoute]);
+  brandsRoute, brandGamesRoute, seriesListRoute, seriesGamesRoute, vmRoute, categoryListRoute, categoryGamesRoute, monthlyReleasesRoute]);
 
 const router = createRouter({ routeTree });
 

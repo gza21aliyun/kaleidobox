@@ -93,7 +93,8 @@
     "brands": "Brands",
     "series": "Series",
     "categoryList": "Categories",
-    "favorites": "Favorites"
+    "favorites": "Favorites",
+    "monthlyReleases": "Monthly Releases"
   },
   "home": {
     "welcomeBack": "Welcome back!",
@@ -1696,5 +1697,19 @@
     "addToCollection": "Add to collection",
     "searchVideoAndExe": "Search videos and executables",
     "notAddToCollection": "Do not add to collection"
+  },
+  "monthlyReleases": {
+    "title": "Monthly Releases",
+    "gamesCount": "titles",
+    "year": "Year",
+    "month": "Month",
+    "prevMonth": "Previous Month",
+    "nextMonth": "Next Month",
+    "refresh": "Refresh",
+    "loading": "Loading data...",
+    "empty": "No game releases found for this month",
+    "toasts": {
+      "fetchFailed": "Failed to fetch monthly releases"
+    }
   }
 }

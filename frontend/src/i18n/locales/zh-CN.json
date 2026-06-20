@@ -93,7 +93,8 @@
     "brands": "品牌",
     "series": "系列",
     "categoryList": "分类",
-    "favorites": "收藏"
+    "favorites": "收藏",
+    "monthlyReleases": "每月发售"
   },
   "home": {
     "welcomeBack": "欢迎回来!",
@@ -1700,5 +1701,23 @@
     "addToCollection": "添加到收藏",
     "searchVideoAndExe": "搜索视频和EXE",
     "notAddToCollection": "不加入收藏"
+  },
+  "monthlyReleases": {
+    "title": "每月发售",
+    "gamesCount": "款",
+    "year": "年",
+    "month": "月",
+    "prevMonth": "上个月",
+    "nextMonth": "下个月",
+    "refresh": "刷新",
+    "loading": "正在获取数据...",
+    "empty": "该月暂无游戏发售信息",
+    "toasts": {
+      "fetchFailed": "获取每月发售列表失败"
+    },
+    "age": "年龄",
+    "normal": "全年龄",
+    "all": "全部",
+    "adult": "成人"
   }
 }

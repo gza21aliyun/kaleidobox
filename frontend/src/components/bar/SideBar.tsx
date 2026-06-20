@@ -20,6 +20,7 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
     { to: "/tag_list", label: t('nav.tags'), icon: "i-mdi-tag-multiple" },
     { to: "/category_list", label: t('nav.categoryList'), icon: "i-mdi-folder-multiple-outline" },
     { to: "/stats", label: t('nav.stats'), icon: "i-mdi-chart-bar" },
+    { to: "/monthly_releases", label: t("nav.monthlyReleases"), icon: "i-mdi-calendar-month" },
     { to: "/favorites", label: t('nav.favorites'), icon: "i-mdi-format-list-bulleted" },
     { to: "/virtual_machines", label: t('nav.virtualMachines'), icon: "i-mdi-laptop" },
   ];

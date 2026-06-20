@@ -191,7 +191,7 @@ func LoadConfig() (*AppConfig, error) {
 		VmPath:      "",
 		DisplayName: "",
 		// 侧边栏可见项默认包含所有可配置项，表示全部显示
-		SidebarVisibleItems: "task,charactor_list,tag_list,category_list,stats,favorites,virtual_machines,joystick,github",
+		SidebarVisibleItems: "task,charactor_list,tag_list,category_list,stats,favorites,monthly_releases,virtual_machines,joystick,github",
 	}
 
 	// 获取配置文件路径

@@ -11,11 +11,10 @@ interface SideBarProps {
 
 export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
   const { t } = useTranslation();
-  const { isSidebarOpen, toggleSidebar, tasks } = useAppStore();
+  const { isSidebarOpen, toggleSidebar, tasks, config } = useAppStore();
 
-  const navItems = [
-    { to: "/", label: t('nav.home'), icon: "i-mdi-home" },
-    { to: "/library", label: t('nav.library'), icon: "i-mdi-gamepad-variant" },
+  // 可配置显示/隐藏的导航项
+  const configurableNavItems = [
     { to: "/task", label: t('nav.task'), icon: "i-mdi-clipboard-list" },
     { to: "/charactor_list", label: t('nav.charactors'), icon: "i-mdi-account-group" },
     { to: "/tag_list", label: t('nav.tags'), icon: "i-mdi-tag-multiple" },
@@ -24,6 +23,25 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
     { to: "/favorites", label: t('nav.favorites'), icon: "i-mdi-format-list-bulleted" },
     { to: "/virtual_machines", label: t('nav.virtualMachines'), icon: "i-mdi-laptop" },
   ];
+
+  // 固定显示的导航项
+  const fixedNavItems = [
+    { to: "/", label: t('nav.home'), icon: "i-mdi-home" },
+    { to: "/library", label: t('nav.library'), icon: "i-mdi-gamepad-variant" },
+  ];
+
+  // 根据 sidebar_visible_items 配置过滤可配置的导航项
+  const visibleItems = config?.sidebar_visible_items
+    ? config.sidebar_visible_items.split(",").filter(Boolean)
+    : [];
+
+  const filteredConfigurableItems = configurableNavItems.filter(item =>
+    // 如果配置为空字符串，则隐藏所有可配置项；否则只显示配置中的项
+    config?.sidebar_visible_items && visibleItems.includes(item.to.slice(1))
+  );
+
+  // 合并固定项和可配置项
+  const navItems = [...fixedNavItems, ...filteredConfigurableItems];
 
   const getTaskText = () => {
     var c = 0
@@ -93,22 +111,26 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
       </nav>
 
       <div className={`p-4 ${bgEnabled ? "border-white/20 dark:border-white/10" : "border-brand-200 dark:border-brand-700"} flex ${isSidebarOpen ? "flex-row items-center justify-end gap-1" : "flex-col items-center gap-2"}`}>
-        <div
-          onClick={() => BrowserOpenURL("https://github.com/gza21aliyun/kaleidobox")}
-          className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 cursor-pointer select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10"
-          title="GitHub"
-          onDragStart={e => e.preventDefault()}
-        >
-          <div className="i-mdi-github text-xl pointer-events-none" />
-        </div>
-        <Link
-          to="/joystick"
-          className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 no-underline [&.active]:bg-brand-200 [&.active]:text-brand-900 dark:[&.active]:bg-brand-700 dark:[&.active]:text-brand-100 select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10 data-glass:[&.active]:bg-white/20 data-glass:[&.active]:dark:bg:black/20"
-          title="手柄设置"
-          onDragStart={e => e.preventDefault()}
-        >
-          <div className="i-mdi-controller-classic text-xl pointer-events-none" />
-        </Link>
+        {visibleItems.includes("github") && (
+          <div
+            onClick={() => BrowserOpenURL("https://github.com/gza21aliyun/kaleidobox")}
+            className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 cursor-pointer select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10"
+            title="GitHub"
+            onDragStart={e => e.preventDefault()}
+          >
+            <div className="i-mdi-github text-xl pointer-events-none" />
+          </div>
+        )}
+        {visibleItems.includes("joystick") && (
+          <Link
+            to="/joystick"
+            className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 no-underline [&.active]:bg-brand-200 [&.active]:text-brand-900 dark:[&.active]:bg-brand-700 dark:[&.active]:text-brand-100 select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10 data-glass:[&.active]:bg-white/20 data-glass:[&.active]:dark:bg:black/20"
+            title="映射设置"
+            onDragStart={e => e.preventDefault()}
+          >
+            <div className="i-mdi-controller-classic text-xl pointer-events-none" />
+          </Link>
+        )}
         <Link
           to="/settings"
           className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 no-underline [&.active]:bg-brand-200 [&.active]:text-brand-900 dark:[&.active]:bg-brand-700 dark:[&.active]:text-brand-100 select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10 data-glass:[&.active]:bg-white/20 data-glass:[&.active]:dark:bg:black/20"

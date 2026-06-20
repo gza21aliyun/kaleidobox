@@ -731,6 +731,7 @@
     "basicConfig": "基础配置",
     "languageSettings": "语言设置",
     "appearance": "外观设置",
+    "sidebar": "侧边栏设置",
     "gameplay": "游玩配置",
     "cloudBackup": "云备份配置",
     "autoBackup": "自动备份",
@@ -746,6 +747,18 @@
       "buildMode": "构建模式",
       "builtAt": "构建时间"
     }
+  },
+  "sidebar": {
+    "task": "任务",
+    "characters": "角色",
+    "tags": "标签",
+    "categories": "分类",
+    "stats": "统计",
+    "favorites": "收藏",
+    "virtualMachines": "虚拟机",
+    "joystick": "映射设置",
+    "github": "GitHub 链接",
+    "settingsHint": "选择要在侧边栏中显示的导航项。首页、游戏库和设置始终显示。取消所有选择将隐藏这些项。"
   },
   "gameStatus": {
     "not_started": "未开始",

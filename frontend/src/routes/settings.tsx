@@ -11,6 +11,7 @@ import { DBBackupPanel } from "../components/panel/DBBackupPanel";
 import { FullDataBackupPanel } from "../components/panel/FullDataBackupPanel";
 import { GameSettingsPanel } from "../components/panel/GameSettingsPanel";
 import { LanguageSettingsPanel } from "../components/panel/LanguageSettingsPanel";
+import { SidebarSettingsPanel } from "../components/panel/SidebarSettingsPanel";
 import { UpdateSettingsPanel } from "../components/panel/UpdateSettingsPanel";
 import { VMPanel } from "../components/panel/VMPanel";
 import { SettingsSkeleton } from "../components/skeleton/SettingsSkeleton";
@@ -123,6 +124,10 @@ function SettingsPage() {
 
       <CollapsibleSection title={t('settings.appearance')} icon="i-mdi-palette" defaultOpen={false}>
         <BackgroundSettingsPanel formData={formData} onChange={handleFormChange} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title={t('settings.sidebar')} icon="i-mdi-view-list" defaultOpen={false}>
+        <SidebarSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
       <CollapsibleSection title={t('settings.gameplay')} icon="i-mdi-timer-play-outline" defaultOpen={false}>

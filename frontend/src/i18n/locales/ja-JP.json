@@ -731,6 +731,7 @@
     "basicConfig": "基本設定",
     "languageSettings": "言語設定",
     "appearance": "外観設定",
+    "sidebar": "サイドバー設定",
     "gameplay": "プレイ設定",
     "cloudBackup": "クラウドバックアップ設定",
     "autoBackup": "自動バックアップ",
@@ -746,6 +747,18 @@
       "buildMode": "ビルドモード",
       "builtAt": "ビルド時間"
     }
+  },
+  "sidebar": {
+    "task": "タスク",
+    "characters": "キャラクター",
+    "tags": "タグ",
+    "categories": "カテゴリー",
+    "stats": "統計",
+    "favorites": "お気に入り",
+    "virtualMachines": "仮想マシン",
+    "joystick": "マッピング設定",
+    "github": "GitHub リンク",
+    "settingsHint": "サイドバーに表示するナビゲーション項目を選択してください。ホーム、ライブラリ、設定は常に表示されます。すべて選択解除すると、これらの項目が非表示になります。"
   },
   "gameStatus": {
     "not_started": "未開始",

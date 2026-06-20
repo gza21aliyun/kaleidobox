@@ -731,6 +731,7 @@
     "basicConfig": "Basic configuration",
     "languageSettings": "Language settings",
     "appearance": "Appearance settings",
+    "sidebar": "Sidebar settings",
     "gameplay": "Gameplay configuration",
     "cloudBackup": "Cloud backup configuration",
     "autoBackup": "Auto backup",
@@ -746,6 +747,18 @@
       "buildMode": "Build mode",
       "builtAt": "Build time"
     }
+  },
+  "sidebar": {
+    "task": "Tasks",
+    "characters": "Characters",
+    "tags": "Tags",
+    "categories": "Categories",
+    "stats": "Statistics",
+    "favorites": "Favorites",
+    "virtualMachines": "Virtual Machines",
+    "joystick": "Mapping Settings",
+    "github": "GitHub Link",
+    "settingsHint": "Select navigation items to display in the sidebar. Home, Library, and Settings are always visible. Unselecting all will hide these items."
   },
   "gameStatus": {
     "not_started": "Not started",

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,9 +23,6 @@ import (
 
 	// "github.com/go-vgo/robotgo"
 	js "github.com/0xcafed00d/joystick"
-	"gobot.io/x/gobot/v2"
-	"gobot.io/x/gobot/v2/platforms/joystick"
-	"gobot.io/x/gobot/v2/platforms/keyboard"
 )
 
 //go:embed config/*.json
@@ -166,69 +162,13 @@ func ensureConfigFile(filename string) (string, string, error) {
 	return targetPath, string(configContent), nil
 }
 
-// applyCustomConfigToDriver 使用反射将自定义配置应用到 joystick.Driver
-// 这允许我们添加自定义的 axis（如 dpad_x, dpad_y）
-func applyCustomConfigToDriver(stick *joystick.Driver, customConfigJSON string) error {
-	// 解析自定义 JSON
-	var rawConfig map[string]interface{}
-	if err := json.Unmarshal([]byte(customConfigJSON), &rawConfig); err != nil {
-		return fmt.Errorf("解析自定义配置失败: %v", err)
-	}
-
-	// 获取 Driver 的 config 字段（使用反射）
-	driverVal := reflect.ValueOf(stick).Elem()
-	configField := driverVal.FieldByName("config")
-
-	if !configField.IsValid() {
-		return fmt.Errorf("无法找到 config 字段")
-	}
-
-	// 获取 axis 数组并添加 dpad_x 和 dpad_y
-	axisField := configField.FieldByName("Axis")
-	if !axisField.IsValid() || !axisField.CanSet() {
-		return fmt.Errorf("无法访问或修改 Axis 字段")
-	}
-
-	// 创建新的 axis 对
-	// pair 结构: {Name: string, ID: int}
-	pairType := axisField.Type().Elem()
-
-	// dpad_x (ID: 6)
-	dpadXVal := reflect.New(pairType)
-	dpadXVal.Elem().FieldByName("Name").SetString("dpad_x")
-	dpadXVal.Elem().FieldByName("ID").SetInt(6)
-	axisField = reflect.Append(axisField, dpadXVal.Elem())
-
-	// dpad_y (ID: 7)
-	dpadYVal := reflect.New(pairType)
-	dpadYVal.Elem().FieldByName("Name").SetString("dpad_y")
-	dpadYVal.Elem().FieldByName("ID").SetInt(7)
-	axisField = reflect.Append(axisField, dpadYVal.Elem())
-
-	// 设置回 config 字段
-	configField.FieldByName("Axis").Set(axisField)
-
-	// 初始化事件
-	// 重新添加 dpad_x 和 dpad_y 事件
-	stick.AddEvent("dpad_x")
-	stick.AddEvent("dpad_y")
-
-	applog.LogInfof(context.Background(), "成功添加自定义 dpad_x 和 dpad_y 轴到配置")
-
-	return nil
-}
-
 // HotkeyService 重构后的热键服务
 type HotkeyService struct {
 	ctx    context.Context
 	db     *sql.DB
 	config *appconf.AppConfig
 
-	// gobot相关（手柄支持）
-	robot       *gobot.Robot
 	robotMutex6 sync.Mutex
-	keyboard    *keyboard.Driver
-	joysticks   map[string]*joystick.Driver
 	deviceLock  sync.RWMutex
 
 	// robotgo相关（键盘事件监听）
@@ -273,7 +213,6 @@ func (s *HotkeyService) SetServices(imageService *ImageService, startService *St
 
 func NewHotkeyService() *HotkeyService {
 	return &HotkeyService{
-		joysticks:   make(map[string]*joystick.Driver),
 		keyMappings: make(map[string]*models.Hotkey),
 		actionKeys:  make(map[string]*models.Hotkey),
 		keyStates:   make(map[string]bool),
@@ -689,28 +628,6 @@ func (s *HotkeyService) loadConnectedDevicesFromDB() {
 	applog.LogInfof(s.ctx, "Loaded %d connected devices from database", count)
 }
 
-// startKeyboardListener 启动键盘监听
-func (s *HotkeyService) startKeyboardListener() {
-	applog.LogInfof(s.ctx, "Starting keyboard listener...")
-
-	// go s.keyboardEventHandler()
-	applog.LogInfof(s.ctx, "Keyboard listener started")
-
-	s.robotMutex6.Lock()
-	defer s.robotMutex6.Unlock()
-	s.keyboard = keyboard.NewDriver()
-	s.robot = gobot.NewRobot("keyboardbot",
-		[]gobot.Connection{},
-		[]gobot.Device{s.keyboard},
-		s.handleKeboardEvents,
-	)
-	go func() {
-		if err := s.robot.Start(); err != nil {
-			applog.LogErrorf(s.ctx, "Failed to start keyboard robot: %v", err)
-		}
-	}()
-}
-
 func (s *HotkeyService) GetActiveGameID() string {
 	if v := s.activeGameID.Load(); v != nil {
 		return v.(string)
@@ -852,40 +769,6 @@ func (s *HotkeyService) modifierToKey(mod enums.ModifierKey) string {
 	default:
 		return ""
 	}
-}
-
-// work 手柄事件处理
-func (s *HotkeyService) handleKeboardEvents() {
-	// 手柄按钮事件处理
-	s.keyboard.On(keyboard.Key, func(data interface{}) {
-		fmt.Println("handleKeboardEvents 01")
-		if event, ok := data.(keyboard.KeyEvent); ok {
-			// 将手柄按钮转换为标准按键名称进行处理
-
-			// keyCode := s.convertJoystickButton(int(event.Key))
-			// keyCode := fmt.Sprintf("%c", event.Key)
-			keyCode := event.Char
-			applog.LogInfof(s.ctx, "keycode: %s, key:%d\n", keyCode, event.Key)
-			if keyCode != "" {
-				// 简化处理：统一视为按下事件
-				// 在实际应用中可能需要更复杂的逻辑来区分按下和释放
-				s.actionkeyLock3.RLock()
-				hotkey := s.actionKeys[keyCode]
-				s.actionkeyLock3.RUnlock()
-				if hotkey != nil {
-					s.handleActionKey(hotkey)
-				}
-
-				// s.handleKeyPress(keyCode)
-
-				// // 延迟触发释放事件
-				// go func() {
-				// 	time.Sleep(50 * time.Millisecond)
-				// 	s.handleKeyRelease(keyCode)
-				// }()
-			}
-		}
-	})
 }
 
 // convertJoystickButton 手柄按钮转换
@@ -1851,10 +1734,6 @@ func (s *HotkeyService) clearkeysForGame(isEmptyGames bool) {
 	defer s.robotMutex6.Unlock()
 	s.stopKeyboardListener()
 
-	if s.robot != nil {
-		s.robot.Stop()
-		s.robot = nil
-	}
 }
 
 // hotkeyToButtonConfig 将 Hotkey 转换为 ButtonConfig

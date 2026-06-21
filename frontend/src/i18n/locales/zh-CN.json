@@ -737,6 +737,7 @@
     "cloudBackup": "云备份配置",
     "autoBackup": "自动备份",
     "aiConfig": "AI 配置",
+    "btDownload": "BT下载设置",
     "dbBackup": "数据库备份",
     "fullDataBackup": "全量数据备份",
     "appUpdate": "应用更新",
@@ -1718,6 +1719,32 @@
     "age": "年龄",
     "normal": "全年龄",
     "all": "全部",
-    "adult": "成人"
+    "adult": "成人",
+    "browse": "浏览",
+    "searchBT": "搜索BT"
+  },
+  "btDownload": {
+    "rssUrl": "RSS 地址",
+    "rssUrlHint": "RSS 订阅地址，%search_key 将被替换为搜索关键字",
+    "qbittorrentSettings": "qBittorrent 设置",
+    "qbServer": "服务器地址",
+    "qbPort": "端口",
+    "qbUser": "用户名",
+    "qbPassword": "密码",
+    "qbDownloadFolder": "下载目录",
+    "downloadFolderPlaceholder": "/downloads",
+    "downloadFolderHint": "指定下载目录，留空使用 qBittorrent 默认设置",
+    "searchTitle": "搜索BT资源",
+    "searchingFor": "搜索中",
+    "searchPlaceholder": "输入搜索关键字",
+    "searchByTitle": "搜索标题",
+    "searchByFullName": "搜索全名",
+    "search": "搜索",
+    "noResults": "暂无搜索结果",
+    "download": "下载",
+    "searchFailed": "搜索失败",
+    "notConfigured": "请先配置 qBittorrent 设置",
+    "downloadStarted": "下载已开始",
+    "downloadFailed": "下载失败"
   }
 }

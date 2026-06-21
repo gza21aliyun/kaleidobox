@@ -2,11 +2,14 @@ import { createRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
+import { createPortal } from "react-dom";
 import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
 import { FetchMonthlyReleases } from "../../wailsjs/go/service/MonthlyReleaseService";
+import { SearchBT, DownloadToQBittorrent } from "../../wailsjs/go/service/BTDownloadService";
 import { utils } from "../../wailsjs/go/models";
 import { Route as rootRoute } from "./__root";
 import { BetterSelect } from "../components/ui/BetterSelect";
+import { useAppStore } from "../store";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -22,10 +25,20 @@ function MonthlyReleasesPage() {
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);
-  
-  const [age, setAge] = useState<string>("normal");
+
+  const [age, setAge] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<utils.MonthlyReleaseResult | null>(null);
+
+  // 搜索弹窗状态
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [searchGame, setSearchGame] = useState<utils.MonthlyReleaseGame | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const { config } = useAppStore();
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -69,6 +82,102 @@ function MonthlyReleasesPage() {
   };
 
   const totalGames = result?.groups?.reduce((sum, g) => sum + g.games.length, 0) ?? 0;
+
+  // 打开搜索弹窗
+  const openSearchModal = (game: utils.MonthlyReleaseGame) => {
+    setSearchGame(game);
+    setSearchQuery(game.name || "");
+    setSearchResults([]);
+    setSearchModalOpen(true);
+  };
+
+  // 关闭搜索弹窗
+  const closeSearchModal = () => {
+    setSearchModalOpen(false);
+    setSearchGame(null);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
+  // 执行搜索
+  const performSearch = async (searchKey: string) => {
+    if (!searchKey.trim() || !config?.rss_url) {
+      toast.error(t("btDownload.searchFailed") || "Search failed");
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await SearchBT(searchKey, config.rss_url);
+      setSearchResults(results || []);
+      if (!results || results.length === 0) {
+        toast.success(t("btDownload.noResults") || "No results found");
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+      toast.error(t("btDownload.searchFailed") || "Search failed");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 搜索标题（提取主标题）
+  const searchByTitle = () => {
+    if (!searchGame) return;
+    // 使用游戏名的前半部分作为标题
+    const name = searchGame.name || "";
+    const parts = name.split(/[－\-~～　＝ ・！：─―_!「\[\]]/);
+    const title = parts[0]?.trim() || name;
+    setSearchQuery(title);
+    performSearch(title);
+  };
+
+  // 搜索全名
+  const searchByFullName = () => {
+    if (!searchGame) return;
+    const fullName = searchGame.name || "";
+    setSearchQuery(fullName);
+    performSearch(fullName);
+  };
+
+  // 下载选中的资源
+  const downloadSelected = async (result: any) => {
+    if (!config?.qb_server || !config?.qb_user || !config?.qb_password) {
+      toast.error(t("btDownload.notConfigured") || "Please configure qBittorrent settings first");
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      const downloadResult = await DownloadToQBittorrent(
+        config.qb_server,
+        config.qb_user,
+        config.qb_password,
+        config.qb_download_folder || "",
+        result.link,
+        config.qb_port || 8080
+      );
+
+      if (downloadResult.success) {
+        toast.success(t("btDownload.downloadStarted") || "Download started");
+        closeSearchModal();
+      } else {
+        toast.error(downloadResult.message || t("btDownload.downloadFailed") || "Download failed");
+      }
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error(t("btDownload.downloadFailed") || "Download failed");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // 浏览游戏网页
+  const browseGame = (game: utils.MonthlyReleaseGame) => {
+    if (game.detail_url) {
+      BrowserOpenURL(game.detail_url);
+    }
+  };
 
   return (
     <div className={`w-full p-8 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
@@ -183,11 +292,33 @@ function MonthlyReleasesPage() {
           {/* 游戏网格 */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
             {group.games.map((game) => (
-              <GameItem key={game.getchu_id} game={game} />
+              <GameItem
+                key={game.getchu_id}
+                game={game}
+                onBrowse={browseGame}
+                onSearch={openSearchModal}
+              />
             ))}
           </div>
         </div>
       ))}
+
+      {/* 搜索弹窗 */}
+      {searchModalOpen && searchGame && (
+        <BTSearchModal
+          game={searchGame}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          searchResults={searchResults}
+          isSearching={isSearching}
+          isDownloading={isDownloading}
+          onSearchTitle={searchByTitle}
+          onSearchFullName={searchByFullName}
+          onSearch={performSearch}
+          onDownload={downloadSelected}
+          onClose={closeSearchModal}
+        />
+      )}
     </div>
   );
 }
@@ -201,15 +332,16 @@ function getLocalPath(localPath: string): string {
 }
 
 // 单个游戏卡片组件
-function GameItem({ game }: { game: utils.MonthlyReleaseGame }) {
+interface GameItemProps {
+  game: utils.MonthlyReleaseGame;
+  onBrowse: (game: utils.MonthlyReleaseGame) => void;
+  onSearch: (game: utils.MonthlyReleaseGame) => void;
+}
+
+function GameItem({ game, onBrowse, onSearch }: GameItemProps) {
   const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
-
-  const handleClick = () => {
-    if (game.detail_url) {
-      BrowserOpenURL(game.detail_url);
-    }
-  };
+  const [isHovered, setIsHovered] = useState(false);
 
   // 优先用本地路径，失败回退原始 URL
   const getImgSrc = () => {
@@ -225,8 +357,9 @@ function GameItem({ game }: { game: utils.MonthlyReleaseGame }) {
 
   return (
     <div
-      onClick={handleClick}
-      className="group cursor-pointer rounded-lg bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700 overflow-hidden hover:shadow-lg hover:border-primary-400 dark:hover:border-primary-500 transition-all duration-200 hover:-translate-y-0.5"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="group relative cursor-pointer rounded-lg bg-white dark:bg-brand-800 border border-brand-200 dark:border-brand-700 overflow-hidden hover:shadow-lg hover:border-primary-400 dark:hover:border-primary-500 transition-all duration-200 hover:-translate-y-0.5"
     >
       {/* 封面图 */}
       <div className="relative aspect-[3/4] bg-brand-100 dark:bg-brand-700 overflow-hidden">
@@ -243,6 +376,32 @@ function GameItem({ game }: { game: utils.MonthlyReleaseGame }) {
             <div className="i-mdi-image-off text-4xl text-brand-400" />
           </div>
         )}
+
+        {/* 悬停按钮覆盖层 */}
+        {isHovered && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBrowse(game);
+              }}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/90 hover:bg-white text-brand-700 transition-colors"
+              title={t("monthlyReleases.browse")}
+            >
+              <div className="i-mdi-web text-xl" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSearch(game);
+              }}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-primary-500 hover:bg-primary-600 text-white transition-colors"
+              title={t("monthlyReleases.searchBT")}
+            >
+              <div className="i-mdi-magnify text-xl" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 信息区 */}
@@ -257,5 +416,155 @@ function GameItem({ game }: { game: utils.MonthlyReleaseGame }) {
         )}
       </div>
     </div>
+  );
+}
+
+// BT搜索弹窗组件
+interface BTSearchModalProps {
+  game: utils.MonthlyReleaseGame;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  searchResults: any[];
+  isSearching: boolean;
+  isDownloading: boolean;
+  onSearchTitle: () => void;
+  onSearchFullName: () => void;
+  onSearch: (query: string) => void;
+  onDownload: (result: any) => void;
+  onClose: () => void;
+}
+
+function BTSearchModal({
+  game,
+  searchQuery,
+  setSearchQuery,
+  searchResults,
+  isSearching,
+  isDownloading,
+  onSearchTitle,
+  onSearchFullName,
+  onSearch,
+  onDownload,
+  onClose,
+}: BTSearchModalProps) {
+  const { t } = useTranslation();
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-3xl max-h-[80vh] rounded-xl bg-white dark:bg-brand-800 shadow-xl border border-brand-200 dark:border-brand-700 flex flex-col">
+        {/* 标题栏 */}
+        <div className="flex items-center justify-between p-4 border-b border-brand-200 dark:border-brand-700">
+          <h3 className="text-lg font-bold text-brand-900 dark:text-white">
+            {t("btDownload.searchTitle") || "搜索BT资源"}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-500"
+          >
+            <div className="i-mdi-close text-xl" />
+          </button>
+        </div>
+
+        {/* 搜索区域 */}
+        <div className="p-4 border-b border-brand-200 dark:border-brand-700">
+          <p className="text-sm text-brand-600 dark:text-brand-400 mb-2">
+            {t("btDownload.searchingFor") || "搜索中"}: <span className="font-medium text-brand-800 dark:text-brand-200">{game.name}</span>
+          </p>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onSearch(searchQuery);
+                }
+              }}
+              placeholder={t("btDownload.searchPlaceholder") || "输入搜索关键字"}
+              className="flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-lg bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          {/* 搜索按钮组 */}
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={onSearchTitle}
+              disabled={isSearching}
+              className="px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 transition-colors disabled:opacity-50"
+            >
+              {t("btDownload.searchByTitle") || "搜索标题"}
+            </button>
+            <button
+              onClick={onSearchFullName}
+              disabled={isSearching}
+              className="px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 transition-colors disabled:opacity-50"
+            >
+              {t("btDownload.searchByFullName") || "搜索全名"}
+            </button>
+            <button
+              onClick={() => onSearch(searchQuery)}
+              disabled={isSearching}
+              className="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors disabled:opacity-50"
+            >
+              {isSearching ? (
+                <div className="i-mdi-loading animate-spin" />
+              ) : (
+                t("btDownload.search") || "搜索"
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 搜索结果列表 */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {searchResults.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-brand-400">
+              <div className="i-mdi-magnify text-4xl mb-2" />
+              <p>{t("btDownload.noResults") || "暂无搜索结果"}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {searchResults.map((result, index) => (
+                <div
+                  key={index}
+                  className="p-3 rounded-lg border border-brand-200 dark:border-brand-700 hover:border-primary-400 dark:hover:border-primary-500 cursor-pointer transition-colors"
+                  onClick={() => onDownload(result)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-brand-900 dark:text-white line-clamp-2" title={result.title}>
+                        {result.title}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-brand-500 dark:text-brand-400">
+                        {result.size && <span>{result.size}</span>}
+                        {result.seeders > 0 && (
+                          <span className="flex items-center gap-1">
+                            <div className="i-mdi-arrow-up text-green-500" />
+                            {result.seeders}
+                          </span>
+                        )}
+                        {result.date && <span>{result.date}</span>}
+                      </div>
+                    </div>
+                    <button
+                      disabled={isDownloading}
+                      className="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors disabled:opacity-50"
+                    >
+                      {isDownloading ? (
+                        <div className="i-mdi-loading animate-spin" />
+                      ) : (
+                        t("btDownload.download") || "下载"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }

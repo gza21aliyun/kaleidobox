@@ -737,6 +737,7 @@
     "cloudBackup": "Cloud backup configuration",
     "autoBackup": "Auto backup",
     "aiConfig": "AI configuration",
+    "btDownload": "BT Download Settings",
     "dbBackup": "Database backup",
     "fullDataBackup": "Full data backup",
     "appUpdate": "App update",
@@ -1710,6 +1711,36 @@
     "empty": "No game releases found for this month",
     "toasts": {
       "fetchFailed": "Failed to fetch monthly releases"
-    }
+    },
+    "age": "Age",
+    "normal": "All Ages",
+    "all": "All",
+    "adult": "Adult",
+    "browse": "Browse",
+    "searchBT": "Search BT"
+  },
+  "btDownload": {
+    "rssUrl": "RSS URL",
+    "rssUrlHint": "RSS feed URL, %search_key will be replaced with search keyword",
+    "qbittorrentSettings": "qBittorrent Settings",
+    "qbServer": "Server address",
+    "qbPort": "Port",
+    "qbUser": "Username",
+    "qbPassword": "Password",
+    "qbDownloadFolder": "Download folder",
+    "downloadFolderPlaceholder": "/downloads",
+    "downloadFolderHint": "Specify download folder, leave empty for qBittorrent default",
+    "searchTitle": "Search BT",
+    "searchingFor": "Searching for",
+    "searchPlaceholder": "Enter search keyword",
+    "searchByTitle": "Search by Title",
+    "searchByFullName": "Search by Full Name",
+    "search": "Search",
+    "noResults": "No results found",
+    "download": "Download",
+    "searchFailed": "Search failed",
+    "notConfigured": "Please configure qBittorrent settings first",
+    "downloadStarted": "Download started",
+    "downloadFailed": "Download failed"
   }
 }

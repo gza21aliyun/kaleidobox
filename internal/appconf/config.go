@@ -105,6 +105,13 @@ type AppConfig struct {
 	DisplayName string `json:"display_name,omitempty"` //显示器名称
 	// 侧边栏可见项配置
 	SidebarVisibleItems string `json:"sidebar_visible_items,omitempty"` // 可见的侧边栏导航项，逗号分隔，如 "task,charactor_list,tag_list"
+	// BT下载配置
+	RssURL           string `json:"rss_url,omitempty"`            // RSS URL，search_key 代入搜索关键字
+	QBServer         string `json:"qb_server,omitempty"`          // qBittorrent 服务器地址
+	QBPort           int    `json:"qb_port"`                      // qBittorrent 端口
+	QBUser           string `json:"qb_user,omitempty"`            // qBittorrent 用户名
+	QBPassword       string `json:"qb_password,omitempty"`        // qBittorrent 密码
+	QBDownloadFolder string `json:"qb_download_folder,omitempty"` // qBittorrent 下载目录
 }
 
 // getConfigPath 获取配置文件路径
@@ -192,6 +199,13 @@ func LoadConfig() (*AppConfig, error) {
 		DisplayName: "",
 		// 侧边栏可见项默认包含所有可配置项，表示全部显示
 		SidebarVisibleItems: "task,charactor_list,tag_list,category_list,stats,favorites,monthly_releases,virtual_machines,joystick,github",
+		// BT下载配置默认值
+		RssURL:           "https://sukebei.nyaa.si/?page=rss&c=1_3&f=0&q=%search_key",
+		QBServer:         "",
+		QBPort:           8080,
+		QBUser:           "admin",
+		QBPassword:       "",
+		QBDownloadFolder: "",
 	}
 
 	// 获取配置文件路径

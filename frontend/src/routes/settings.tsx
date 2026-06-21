@@ -6,6 +6,7 @@ import { AISettingsPanel } from "../components/panel/AISettingsPanel";
 import { AutoBackupSettingsPanel } from "../components/panel/AutoBackupSettingsPanel";
 import { BackgroundSettingsPanel } from "../components/panel/BackgroundSettingsPanel";
 import { BasicSettingsPanel } from "../components/panel/BasicSettingsPanel";
+import { BTDownloadSettingsPanel } from "../components/panel/BTDownloadSettingsPanel";
 import { CloudBackupSettingsPanel } from "../components/panel/CloudBackupSettingsPanel";
 import { DBBackupPanel } from "../components/panel/DBBackupPanel";
 import { FullDataBackupPanel } from "../components/panel/FullDataBackupPanel";
@@ -144,6 +145,10 @@ function SettingsPage() {
 
       <CollapsibleSection title={t('settings.aiConfig')} icon="i-mdi-robot-happy" defaultOpen={false}>
         <AISettingsPanel formData={formData} onChange={handleFormChange} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title={t('settings.btDownload')} icon="i-mdi-download" defaultOpen={false}>
+        <BTDownloadSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
       <CollapsibleSection title="虚拟机设置" icon="i-mdi-server" defaultOpen={false}>

@@ -737,6 +737,7 @@
     "cloudBackup": "クラウドバックアップ設定",
     "autoBackup": "自動バックアップ",
     "aiConfig": "AI 設定",
+    "btDownload": "BTダウンロード設定",
     "dbBackup": "データベースバックアップ",
     "fullDataBackup": "全データバックアップ",
     "appUpdate": "アプリ更新",
@@ -1675,6 +1676,36 @@
     "empty": "この月のゲーム発売情報はありません",
     "toasts": {
       "fetchFailed": "月別発売リストの取得に失敗しました"
-    }
+    },
+    "age": "年齢",
+    "normal": "全年齢",
+    "all": "全て",
+    "adult": "アダルト",
+    "browse": "閲覧",
+    "searchBT": "BT検索"
+  },
+  "btDownload": {
+    "rssUrl": "RSS URL",
+    "rssUrlHint": "RSSフィードURL、%search_key が検索キーワードに置き換えられます",
+    "qbittorrentSettings": "qBittorrent 設定",
+    "qbServer": "サーバーアドレス",
+    "qbPort": "ポート",
+    "qbUser": "ユーザー名",
+    "qbPassword": "パスワード",
+    "qbDownloadFolder": "ダウンロードフォルダ",
+    "downloadFolderPlaceholder": "/downloads",
+    "downloadFolderHint": "ダウンロードフォルダを指定してください。空の場合はqBittorrentのデフォルト設定を使用します",
+    "searchTitle": "BT検索",
+    "searchingFor": "検索中",
+    "searchPlaceholder": "検索キーワードを入力",
+    "searchByTitle": "タイトルで検索",
+    "searchByFullName": "フルネームで検索",
+    "search": "検索",
+    "noResults": "検索結果がありません",
+    "download": "ダウンロード",
+    "searchFailed": "検索に失敗しました",
+    "notConfigured": "qBittorrentの設定を行ってください",
+    "downloadStarted": "ダウンロード開始",
+    "downloadFailed": "ダウンロードに失敗しました"
   }
 }

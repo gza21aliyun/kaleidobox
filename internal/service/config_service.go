@@ -191,6 +191,13 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.MagpieCroppingRight = newConfig.MagpieCroppingRight
 	s.config.MagpieEnabled = newConfig.MagpieEnabled
 	s.config.SidebarVisibleItems = newConfig.SidebarVisibleItems
+	// BT下载配置
+	s.config.RssURL = newConfig.RssURL
+	s.config.QBServer = newConfig.QBServer
+	s.config.QBPort = newConfig.QBPort
+	s.config.QBUser = newConfig.QBUser
+	s.config.QBPassword = newConfig.QBPassword
+	s.config.QBDownloadFolder = newConfig.QBDownloadFolder
 	applog.SetLogAll(s.config.LogAll)
 	return nil
 }

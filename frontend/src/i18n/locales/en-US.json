@@ -1760,6 +1760,7 @@
     "extract": "Extract",
     "install": "Install",
     "import": "Import",
+    "md5AsFolder": "MD5 as game folder",
     "delete": "Delete",
     "execute": "Execute",
     "refresh": "Refresh",

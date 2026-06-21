@@ -3,6 +3,7 @@ package service
 import (
 	"archive/zip"
 	"context"
+	"crypto/md5"
 	"database/sql"
 	"fmt"
 	"io"
@@ -173,37 +174,78 @@ func (s *DownloadedFilesService) hasExtractedContent(folderPath string) bool {
 }
 
 func (s *DownloadedFilesService) checkIsInstalled(itemPath string) bool {
+	installFolder := s.config.GameInstallFolder
+	if installFolder == "" {
+		return false
+	}
+
+	// 获取原始文件夹名作为游戏名
+	baseName := filepath.Base(itemPath)
+	gameName := s.ExtractGameNameFromDLSite(baseName)
+
+	// 检查以游戏名命名的文件夹
+	gameNamePath := filepath.Join(installFolder, gameName)
+	if _, err := os.Stat(gameNamePath); err == nil {
+		return true
+	}
+
+	// 检查以 md5 命名的文件夹
+	md5Name := s.getGameNameMD5(gameName)
+	md5Path := filepath.Join(installFolder, md5Name)
+	if _, err := os.Stat(md5Path); err == nil {
+		return true
+	}
+
 	return false
+}
+
+// getGameNameMD5 生成游戏名的 md5 哈希
+func (s *DownloadedFilesService) getGameNameMD5(gameName string) string {
+	data := []byte(gameName)
+	hash := md5.Sum(data)
+	return fmt.Sprintf("%x", hash)
 }
 
 func (s *DownloadedFilesService) checkIsImported(name string) bool {
 	return false
 }
 
-// checkIsDownloading 检查是否有未下载完的临时文件（QBittorrent 的 .!qB 文件）
+// checkIsDownloading 检查是否有未下载完的临时文件（QBittorrent 的 .!qB 文件，uTorrent 的 .!ut 文件）
 func (s *DownloadedFilesService) checkIsDownloading(itemPath, name string, isFolder bool) bool {
 	if isFolder {
-		// 对于文件夹，检查是否有对应的 .!qB 文件
+		// 对于文件夹，检查是否有对应的临时文件
+		// .!qB - QBittorrent
 		tempFilePath := filepath.Join(filepath.Dir(itemPath), name+".!qB")
 		if _, err := os.Stat(tempFilePath); err == nil {
 			return true
 		}
-		// 也检查文件夹内部是否有 .!qB 文件
+		// .!ut - uTorrent
+		tempFilePath = filepath.Join(filepath.Dir(itemPath), name+".!ut")
+		if _, err := os.Stat(tempFilePath); err == nil {
+			return true
+		}
+		// 也检查文件夹内部是否有临时文件
 		entries, err := os.ReadDir(itemPath)
 		if err != nil {
 			return false
 		}
 		for _, entry := range entries {
-			if strings.HasSuffix(entry.Name(), ".!qB") {
+			if strings.HasSuffix(entry.Name(), ".!qB") || strings.HasSuffix(entry.Name(), ".!ut") {
 				return true
 			}
 		}
 		return false
 	} else {
-		// 对于压缩包，检查是否有 .!qB 文件
+		// 对于压缩包，检查是否有临时文件
 		baseName := strings.TrimSuffix(name, filepath.Ext(name))
 		ext := filepath.Ext(name)
+		// .!qB - QBittorrent
 		tempFilePath := filepath.Join(filepath.Dir(itemPath), baseName+ext+".!qB")
+		if _, err := os.Stat(tempFilePath); err == nil {
+			return true
+		}
+		// .!ut - uTorrent
+		tempFilePath = filepath.Join(filepath.Dir(itemPath), baseName+ext+".!ut")
 		if _, err := os.Stat(tempFilePath); err == nil {
 			return true
 		}
@@ -411,11 +453,13 @@ func (s *DownloadedFilesService) InstallGame(itemPath, installMethod string) (st
 	var gameName string
 	baseName := filepath.Base(itemPath)
 
-	if installMethod == "uuid" {
-		gameName = uuid.New().String()
+	// 使用 ExtractGameNameFromDLSite 提取游戏名
+	extractedGameName := s.ExtractGameNameFromDLSite(baseName)
+
+	if installMethod == "md5" {
+		gameName = s.getGameNameMD5(extractedGameName)
 	} else {
-		ext := filepath.Ext(baseName)
-		gameName = strings.TrimSuffix(baseName, ext)
+		gameName = extractedGameName
 	}
 
 	targetPath := filepath.Join(installFolder, gameName)
@@ -514,4 +558,23 @@ func copyDirectory(src, dst string) error {
 
 		return os.Chmod(targetPath, info.Mode())
 	})
+}
+
+// ExtractGameNameFromDLSite 从 DLSite 风格的文件名中提取游戏名称
+// 例如: "[260529][1358608][Whirlpool] Relirium -レリリウム- 遗迹と出逢いと冒険と メモリアル特装版 パッケージ版 (mdf+mds)"
+// 返回: "Relirium -レリリウム- 遗迹と出逢いと冒険と メモリアル特装版 パッケージ版"
+func (s *DownloadedFilesService) ExtractGameNameFromDLSite(filename string) string {
+	// DLSite 格式: (类型) [日期][编号][作者] 游戏名 (文件类型)
+	// 或: [日期][编号][作者] 游戏名 (文件类型)
+
+	// 匹配模式: 去除开头的元数据部分，提取游戏名
+	// 元数据格式: (xxx) [日期][编号][作者] 或 [日期][编号][作者]
+	re := regexp.MustCompile(`^(?:\([^)]+\)\s*)?\[[^\]]+\]\[[^\]]+\]\[[^\]]+\]\s*(.+?)(?:\s*\([^\)]+\))?$`)
+
+	matches := re.FindStringSubmatch(filename)
+	if len(matches) < 2 {
+		return filename
+	}
+
+	return strings.TrimSpace(matches[1])
 }

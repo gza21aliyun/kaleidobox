@@ -5,6 +5,7 @@ import { Route as rootRoute } from "./__root";
 import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
+import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
 
 interface DownloadedFile extends service.DownloadedFile {
   selected: boolean;
@@ -18,6 +19,7 @@ export default function DownloadedFiles() {
   const [showExtract, setShowExtract] = useState(true);
   const [showInstall, setShowInstall] = useState(true);
   const [showImport, setShowImport] = useState(true);
+  const [md5AsFolder, setMd5AsFolder] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalType, setConfirmModalType] = useState<string>("");
   const [confirmModalItem, setConfirmModalItem] = useState<DownloadedFile | null>(null);
@@ -78,7 +80,13 @@ export default function DownloadedFiles() {
         await handleExtract(item);
       }
       if (showInstall && !item.is_installed) {
-        await handleInstall(item);
+        // 批量执行时直接使用 md5AsFolder 模式
+        try {
+          await InstallGame(item.path, md5AsFolder ? "md5" : "name");
+        } catch (err) {
+          console.error("Install failed:", err);
+          setErrorMessage(err instanceof Error ? err.message : "安装失败");
+        }
       }
       if (showImport && !item.is_imported) {
         await handleImport(item);
@@ -126,7 +134,7 @@ export default function DownloadedFiles() {
     if (!confirmModalItem) return;
 
     try {
-      await InstallGame(confirmModalItem.path, installMethod);
+      await InstallGame(confirmModalItem.path, md5AsFolder ? "md5" : installMethod);
     } catch (err) {
       console.error("Install failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "安装失败");
@@ -143,7 +151,7 @@ export default function DownloadedFiles() {
 
   const handleOpen = async (item: DownloadedFile) => {
     try {
-      await OpenFolder(item.path);
+      await OpenLocalPath(item.path);
     } catch (err) {
       console.error("Open failed:", err);
     }
@@ -256,6 +264,15 @@ export default function DownloadedFiles() {
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
               {t("downloadedFiles.import")}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={md5AsFolder}
+                onChange={(e) => setMd5AsFolder(e.target.checked)}
+                className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
+              />
+              {t("downloadedFiles.md5AsFolder")}
             </label>
             <button
               onClick={() => {
@@ -410,6 +427,13 @@ export default function DownloadedFiles() {
                           className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
                         >
                           {t("downloadedFiles.imported")}
+                        </button>
+                      ) : !item.is_installed ? (
+                        <button
+                          disabled
+                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        >
+                          {t("downloadedFiles.import")}
                         </button>
                       ) : (
                         <button

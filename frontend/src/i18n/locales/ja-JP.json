@@ -1722,9 +1722,10 @@
   "downloadedFiles": {
     "selectAll": "全て選択",
     "clear": "クリア",
-    "extract": "展開",
+    "extract": "解凍",
     "install": "インストール",
     "import": "インポート",
+    "md5AsFolder": "MD5をゲームフォルダ名に",
     "delete": "削除",
     "execute": "実行",
     "refresh": "リフレッシュ",

@@ -301,40 +301,140 @@ export default function DownloadedFiles() {
                     className="mt-1 rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
                   />
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
                       <div className={`text-lg ${item.is_folder ? "i-mdi-folder" : "i-mdi-archive"}`} />
-                      <span className="font-medium truncate">{getDisplayTitle(item)}</span>
+                      <span className="font-medium truncate" title={getDisplayTitle(item)}>{getDisplayTitle(item)}</span>
                       {item.has_numeric_name && (
                         <span className="text-xs text-brand-500">({item.name})</span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-brand-500 mb-2">
-                      <span>{item.is_folder ? t("downloadedFiles.folder") : t("downloadedFiles.archive")}</span>
-                      <span>{formatSize(item.size)}</span>
+                    {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <div className="flex items-center gap-3 text-xs text-brand-500">
+                        <span>{item.is_folder ? t("downloadedFiles.folder") : t("downloadedFiles.archive")}</span>
+                        <span>{formatSize(item.size)}</span>
+                        {item.is_downloading && (
+                          <span className="text-orange-500 flex items-center gap-1">
+                            <div className="i-mdi-download animate-pulse" />
+                            {t("downloadedFiles.downloading")}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* 按钮栏 */}
+                      <div className="flex gap-1 flex-wrap">
+                      {/* 解压按钮 */}
                       {item.is_downloading ? (
-                        <span className="text-orange-500 flex items-center gap-1">
-                          <div className="i-mdi-download animate-pulse" />
-                          {t("downloadedFiles.downloading")}
-                        </span>
+                        <button
+                          disabled
+                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        >
+                          {t("downloadedFiles.extract")}
+                        </button>
+                      ) : item.is_extracted ? (
+                        <button
+                          disabled
+                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        >
+                          {t("downloadedFiles.extracted")}
+                        </button>
                       ) : (
-                        <>
-                          <span className={item.is_extracted ? "text-green-500" : "text-brand-500"}>
-                            {t("downloadedFiles.extracted")}: {item.is_extracted ? t("common.yes") : t("common.no")}
-                          </span>
-                          <span className={item.is_installed ? "text-green-500" : "text-brand-500"}>
-                            {t("downloadedFiles.installed")}: {item.is_installed ? t("common.yes") : t("common.no")}
-                          </span>
-                          <span className={item.is_imported ? "text-green-500" : "text-brand-500"}>
-                            {t("downloadedFiles.imported")}: {item.is_imported ? t("common.yes") : t("common.no")}
-                          </span>
-                        </>
+                        <button
+                          onClick={() => handleExtract(item)}
+                          className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.extract")}
+                        </button>
                       )}
+
+                      {/* 安装按钮 */}
+                      {item.is_downloading ? (
+                        <button
+                          disabled
+                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        >
+                          {t("downloadedFiles.install")}
+                        </button>
+                      ) : !canInstall(item) ? (
+                        <button
+                          disabled
+                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        >
+                          {t("downloadedFiles.install")}
+                        </button>
+                      ) : item.is_installed ? (
+                        <button
+                          disabled
+                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        >
+                          {t("downloadedFiles.installed")}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleInstall(item)}
+                          className="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.install")}
+                        </button>
+                      )}
+
+                      {/* 导入按钮 */}
+                      {item.is_downloading ? (
+                        <button
+                          disabled
+                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        >
+                          {t("downloadedFiles.import")}
+                        </button>
+                      ) : item.is_imported ? (
+                        <button
+                          disabled
+                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        >
+                          {t("downloadedFiles.imported")}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleImport(item)}
+                          className="px-2 py-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.import")}
+                        </button>
+                      )}
+
+                      {/* 打开按钮 */}
+                      <button
+                        onClick={() => handleOpen(item)}
+                        className="px-2 py-1 text-xs bg-brand-500 hover:bg-brand-600 text-white rounded"
+                      >
+                        {t("downloadedFiles.open")}
+                      </button>
+
+                      {/* 装载按钮 */}
+                      {!item.is_downloading && canMount(item) && (
+                        <button
+                          onClick={() => handleMount(item)}
+                          className="px-2 py-1 text-xs bg-orange-500 hover:bg-orange-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.mount")}
+                        </button>
+                      )}
+
+                      {/* 删除按钮 */}
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded"
+                      >
+                        {t("downloadedFiles.delete")}
+                      </button>
+                    </div>
                     </div>
 
+                    {/* inner_items 在第三行 */}
                     {item.inner_items.length > 0 && (
-                      <div className="flex flex-wrap gap-1 text-xs text-brand-400">
+                      <div className="flex flex-wrap gap-1 text-xs text-brand-400 mt-1">
                         {item.inner_items.map((inner, idx) => (
                           <span key={idx} className="px-1.5 py-0.5 bg-brand-100 dark:bg-brand-700 rounded">
                             {inner}
@@ -345,59 +445,6 @@ export default function DownloadedFiles() {
                         )}
                       </div>
                     )}
-                  </div>
-
-                  <div className="flex gap-1 flex-shrink-0">
-                    {!item.is_downloading && !item.is_extracted && (
-                      <button
-                        onClick={() => handleExtract(item)}
-                        className="p-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded"
-                        title={t("downloadedFiles.extract")}
-                      >
-                        <div className="i-mdi-archive-outline" />
-                      </button>
-                    )}
-                    {!item.is_downloading && canInstall(item) && !item.is_installed && (
-                      <button
-                        onClick={() => handleInstall(item)}
-                        className="p-2 text-sm bg-green-500 hover:bg-green-600 text-white rounded"
-                        title={t("downloadedFiles.install")}
-                      >
-                        <div className="i-mdi-download" />
-                      </button>
-                    )}
-                    {!item.is_downloading && !item.is_imported && (
-                      <button
-                        onClick={() => handleImport(item)}
-                        className="p-2 text-sm bg-purple-500 hover:bg-purple-600 text-white rounded"
-                        title={t("downloadedFiles.import")}
-                      >
-                        <div className="i-mdi-upload" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleOpen(item)}
-                      className="p-2 text-sm bg-brand-500 hover:bg-brand-600 text-white rounded"
-                      title={t("downloadedFiles.open")}
-                    >
-                      <div className="i-mdi-folder-open" />
-                    </button>
-                    {!item.is_downloading && canMount(item) && (
-                      <button
-                        onClick={() => handleMount(item)}
-                        className="p-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded"
-                        title={t("downloadedFiles.mount")}
-                      >
-                        <div className="i-mdi-disc" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(item)}
-                      className="p-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded"
-                      title={t("downloadedFiles.delete")}
-                    >
-                      <div className="i-mdi-trash" />
-                    </button>
                   </div>
                 </div>
               </div>

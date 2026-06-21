@@ -94,7 +94,8 @@
     "series": "シリーズ",
     "categoryList": "カテゴリ一覧",
     "favorites": "お気に入り",
-    "monthlyReleases": "ゲームリソース"
+    "monthlyReleases": "ゲームリソース",
+    "downloadedFiles": "ダウンロード済みファイル"
   },
   "home": {
     "welcomeBack": "おかえりなさい！",
@@ -1708,7 +1709,7 @@
     "downloadStarted": "ダウンロード開始",
     "downloadFailed": "ダウンロードに失敗しました",
     "gameFolders": "ゲームフォルダ設定",
-    "gameDownloadFolder": "ゲームダウンロードフォルダ",
+    "gameDownloadFolder": "ゲームダウンロードフォルダ（上と同じ場合、ドライブ文字をマッピングしてください）",
     "gameDownloadFolderPlaceholder": "ゲームダウンロードフォルダを選択",
     "gameInstallFolder": "ゲームインストールフォルダ",
     "gameInstallFolderPlaceholder": "ゲームインストールフォルダを選択",

@@ -94,7 +94,8 @@
     "series": "系列",
     "categoryList": "分类",
     "favorites": "收藏",
-    "monthlyReleases": "游戏资源"
+    "monthlyReleases": "游戏资源",
+    "downloadedFiles": "已下载文件"
   },
   "home": {
     "welcomeBack": "欢迎回来!",
@@ -1747,7 +1748,7 @@
     "downloadStarted": "下载已开始",
     "downloadFailed": "下载失败",
     "gameFolders": "游戏文件夹配置",
-    "gameDownloadFolder": "游戏下载文件夹",
+    "gameDownloadFolder": "游戏下载文件夹（如跟上方是同一文件夹，需映射盘符再选择）",
     "gameDownloadFolderPlaceholder": "选择游戏下载文件夹",
     "gameInstallFolder": "游戏安装文件夹",
     "gameInstallFolderPlaceholder": "选择游戏安装文件夹",

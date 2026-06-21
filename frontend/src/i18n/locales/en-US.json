@@ -94,7 +94,8 @@
     "series": "Series",
     "categoryList": "Categories",
     "favorites": "Favorites",
-    "monthlyReleases": "Game Resources"
+    "monthlyReleases": "Game Resources",
+    "downloadedFiles": "Downloaded Files"
   },
   "home": {
     "welcomeBack": "Welcome back!",
@@ -1743,7 +1744,7 @@
     "downloadStarted": "Download started",
     "downloadFailed": "Download failed",
     "gameFolders": "Game Folders",
-    "gameDownloadFolder": "Game Download Folder",
+    "gameDownloadFolder": "Game Download Folder (if same as above, map drive letter first)",
     "gameDownloadFolderPlaceholder": "Select game download folder",
     "gameInstallFolder": "Game Install Folder",
     "gameInstallFolderPlaceholder": "Select game install folder",

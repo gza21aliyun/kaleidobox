@@ -54,23 +54,23 @@ type DownloadedFile struct {
 }
 
 var compressedExtensions = map[string]bool{
-	".zip":  true,
-	".rar":  true,
-	".7z":   true,
-	".tar":  true,
-	".gz":   true,
-	".bz2":  true,
-	".xz":   true,
-	".z":    true,
-	".lz":   true,
+	".zip": true,
+	".rar": true,
+	".7z":  true,
+	".tar": true,
+	".gz":  true,
+	".bz2": true,
+	".xz":  true,
+	".z":   true,
+	".lz":  true,
 }
 
 var imageExtensions = map[string]bool{
-	".iso":  true,
-	".mdf":  true,
-	".img":  true,
-	".bin":  true,
-	".cue":  true,
+	".iso": true,
+	".mdf": true,
+	".img": true,
+	".bin": true,
+	".cue": true,
 }
 
 func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error) {
@@ -245,7 +245,7 @@ func (s *DownloadedFilesService) findLongestZipName(folderPath string) string {
 }
 
 func (s *DownloadedFilesService) getInnerItems(folderPath string) []string {
-	var items []string
+	items := []string{}
 	entries, err := os.ReadDir(folderPath)
 	if err != nil {
 		return items
@@ -261,7 +261,7 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) []string {
 }
 
 func (s *DownloadedFilesService) getArchiveInnerItems(archivePath string) []string {
-	var items []string
+	items := []string{}
 	ext := strings.ToLower(filepath.Ext(archivePath))
 
 	if ext == ".zip" {

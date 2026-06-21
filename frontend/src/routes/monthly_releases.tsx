@@ -336,6 +336,7 @@ function MonthlyReleasesPage() {
           onClose={closeSearchModal}
         />
       )}
+      
     </div>
   );
 }

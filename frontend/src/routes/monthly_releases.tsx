@@ -89,6 +89,10 @@ function MonthlyReleasesPage() {
     setSearchQuery(game.name || "");
     setSearchResults([]);
     setSearchModalOpen(true);
+    // 只有当名字不为空时才自动搜索
+    if (game.name && game.name.trim()) {
+      performSearch(game.name);
+    }
   };
 
   // 关闭搜索弹窗
@@ -196,6 +200,14 @@ function MonthlyReleasesPage() {
             </span>
           )}
         </h1>
+        {/* 搜索按钮 */}
+        <button
+          onClick={() => openSearchModal({ name: "" } as utils.MonthlyReleaseGame)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors"
+        >
+          <div className="i-mdi-magnify" />
+          <span>{t("monthlyReleases.searchBT") || "搜索BT"}</span>
+        </button>
       </div>
 
       {/* 年月选择器 */}
@@ -309,7 +321,7 @@ function MonthlyReleasesPage() {
       ))}
 
       {/* 搜索弹窗 */}
-      {searchModalOpen && searchGame && (
+      {searchModalOpen && (
         <BTSearchModal
           game={searchGame}
           searchQuery={searchQuery}
@@ -493,20 +505,24 @@ function BTSearchModal({
 
           {/* 搜索按钮组 */}
           <div className="flex gap-2 mt-3">
-            <button
-              onClick={onSearchTitle}
-              disabled={isSearching}
-              className="px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 transition-colors disabled:opacity-50"
-            >
-              {t("btDownload.searchByTitle") || "搜索标题"}
-            </button>
-            <button
-              onClick={onSearchFullName}
-              disabled={isSearching}
-              className="px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 transition-colors disabled:opacity-50"
-            >
-              {t("btDownload.searchByFullName") || "搜索全名"}
-            </button>
+            {game && game.name && game.name.trim() && (
+              <>
+                <button
+                  onClick={onSearchTitle}
+                  disabled={isSearching}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 transition-colors disabled:opacity-50"
+                >
+                  {t("btDownload.searchByTitle") || "搜索标题"}
+                </button>
+                <button
+                  onClick={onSearchFullName}
+                  disabled={isSearching}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 transition-colors disabled:opacity-50"
+                >
+                  {t("btDownload.searchByFullName") || "搜索全名"}
+                </button>
+              </>
+            )}
             <button
               onClick={() => onSearch(searchQuery)}
               disabled={isSearching}
@@ -542,16 +558,21 @@ function BTSearchModal({
                         <span className={`px-1.5 py-0.5 text-xs rounded ${result.link?.startsWith('magnet:') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'}`}>
                           {result.link?.startsWith('magnet:') ? '磁链' : '种子'}
                         </span>
+                        {result.trusted && (
+                          <span className="px-1.5 py-0.5 text-xs rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300">
+                            受信任
+                          </span>
+                        )}
                         <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                           <div className="i-mdi-arrow-up text-xs" />
                           {result.seeders}
                         </span>
                         <span className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
                           <div className="i-mdi-arrow-down text-xs" />
-                          {result.lechers}
+                          {result.leechers}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-brand-900 dark:text-white line-clamp-2" title={result.title}>
+                      <p className={`text-sm font-medium line-clamp-2 ${result.trusted ? 'text-green-600 dark:text-green-400' : 'text-brand-900 dark:text-white'}`} title={result.title}>
                         {result.title}
                       </p>
                       <p className="text-xs text-brand-500 dark:text-brand-400 truncate mt-1" title={result.link}>

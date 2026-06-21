@@ -29,7 +29,8 @@ type BtSearchResult struct {
 	TorrentURL string `json:"torrent_url"` // torrent文件URL（如果有）
 	Size       string `json:"size"`        // 文件大小
 	Seeders    int    `json:"seeders"`     // 做种数
-	Lechers    int    `json:"lechers"`     // 下载中的用户数
+	Leechers   int    `json:"leechers"`    // 下载中的用户数
+	Trusted    bool   `json:"trusted"`     // 是否受信任
 	Date       string `json:"date"`        // 发布日期
 	PageLink   string `json:"page_link"`   // 详情页面链接
 }
@@ -127,8 +128,8 @@ func parseNyaaRSS(xmlData []byte) []BtSearchResult {
 			}
 		}
 
-		// 如果link不是磁力链接，尝试从infoHash构造
-		if !strings.HasPrefix(result.Link, "magnet:") {
+		// 如果link不是磁力链接且没有torrent URL，尝试从infoHash构造
+		if !strings.HasPrefix(result.Link, "magnet:") && result.TorrentURL == "" {
 			infoHash := extractXMLValue(part, "<nyaa:infoHash>")
 			if infoHash == "" {
 				infoHash = extractXMLValue(part, "infoHash>")
@@ -177,8 +178,15 @@ func parseNyaaRSS(xmlData []byte) []BtSearchResult {
 			leechers = extractXMLValue(part, "<leechers>")
 		}
 		if leechers != "" {
-			fmt.Sscanf(leechers, "%d", &result.Lechers)
+			fmt.Sscanf(leechers, "%d", &result.Leechers)
 		}
+
+		// 提取trusted (nyaa格式)
+		trusted := extractXMLValue(part, "<nyaa:trusted>")
+		if trusted == "" {
+			trusted = extractXMLValue(part, "<trusted>")
+		}
+		result.Trusted = trusted == "Yes"
 
 		// 只有包含磁力链接或torrent URL的结果才添加
 		if result.Title != "" && result.Link != "" && (strings.HasPrefix(result.Link, "magnet:") || result.TorrentURL != "") {

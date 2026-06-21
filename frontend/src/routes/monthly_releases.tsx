@@ -485,9 +485,11 @@ function BTSearchModal({
 
         {/* 搜索区域 */}
         <div className="p-4 border-b border-brand-200 dark:border-brand-700">
-          <p className="text-sm text-brand-600 dark:text-brand-400 mb-2">
-            {t("btDownload.searchingFor") || "搜索中"}: <span className="font-medium text-brand-800 dark:text-brand-200">{game.name}</span>
-          </p>
+          {game && game.name && (
+            <p className="text-sm text-brand-600 dark:text-brand-400 mb-2">
+              {t("btDownload.searchingFor") || "搜索中"}: <span className="font-medium text-brand-800 dark:text-brand-200">{game.name}</span>
+            </p>
+          )}
 
           <div className="flex gap-2">
             <input

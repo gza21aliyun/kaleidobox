@@ -1,24 +1,12 @@
 import type { appconf } from "../../../wailsjs/go/models";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useTranslation } from 'react-i18next';
+import { CONFIGURABLE_ITEMS } from "../bar/sidebarConstants";
 
 interface SidebarSettingsProps {
   formData: appconf.AppConfig;
   onChange: (data: appconf.AppConfig) => void;
 }
-
-// 可配置显示/隐藏的侧边栏导航项
-const CONFIGURABLE_ITEMS = [
-  { key: "task", labelKey: "sidebar.task" },
-  { key: "charactor_list", labelKey: "sidebar.characters" },
-  { key: "tag_list", labelKey: "sidebar.tags" },
-  { key: "category_list", labelKey: "sidebar.categories" },
-  { key: "stats", labelKey: "sidebar.stats" },
-  { key: "favorites", labelKey: "sidebar.favorites" },
-  { key: "virtual_machines", labelKey: "sidebar.virtualMachines" },
-  { key: "joystick", labelKey: "sidebar.joystick" },
-  { key: "github", labelKey: "sidebar.github" },
-];
 
 export function SidebarSettingsPanel({ formData, onChange }: SidebarSettingsProps) {
   const { t } = useTranslation();

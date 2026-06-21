@@ -106,14 +106,17 @@ func parseNyaaRSS(xmlData []byte) []BtSearchResult {
 			result.Title = title
 		}
 
-		// 提取link (可能是磁力链接)
-		if link := extractXMLValue(part, "<link>"); link != "" {
-			result.Link = link
+		// 提取 nyaa:infoHash 并构造磁力链接
+		infoHash := extractXMLValue(part, "<nyaa:infoHash>")
+		if infoHash == "" {
+			// 尝试不带命名空间的格式
+			infoHash = extractXMLValue(part, "infoHash>")
 		}
-
-		// 提取enclosure (磁力链接)
-		if enclosure := extractXMLAttr(part, "enclosure", "url"); enclosure != "" {
-			result.Link = enclosure
+		if infoHash != "" && result.Title != "" {
+			// 构造磁力链接: magnet:?xt=urn:btih:<infohash>&dn=<title>
+			magnetLink := fmt.Sprintf("magnet:?xt=urn:btih:%s&dn=%s", infoHash, url.QueryEscape(result.Title))
+			result.Link = magnetLink
+			applog.InfoLogSaveAppLog("BTDownloadService: constructed magnet link from infoHash=%s", infoHash)
 		}
 
 		// 提取guid作为详情页
@@ -129,21 +132,29 @@ func parseNyaaRSS(xmlData []byte) []BtSearchResult {
 		}
 
 		// 提取size (nyaa格式: size标签)
-		if size := extractXMLValue(part, "<size>"); size != "" {
+		size := extractXMLValue(part, "<nyaa:size>")
+		if size == "" {
+			size = extractXMLValue(part, "<size>")
+		}
+		if size != "" {
 			result.Size = size
 		}
 
 		// 提取seeders (nyaa格式)
-		if seeders := extractXMLValue(part, "<seeders>"); seeders != "" {
+		seeders := extractXMLValue(part, "<nyaa:seeders>")
+		if seeders == "" {
+			seeders = extractXMLValue(part, "<seeders>")
+		}
+		if seeders != "" {
 			fmt.Sscanf(seeders, "%d", &result.Seeders)
 		}
 
-		// 如果有标题和链接，才添加
-		if result.Title != "" && result.Link != "" {
-			// 确保链接是磁力链接
-			if strings.HasPrefix(result.Link, "magnet:") || strings.HasPrefix(result.Link, "http") {
-				results = append(results, result)
-			}
+		// 只有包含磁力链接的结果才添加
+		if result.Title != "" && result.Link != "" && strings.HasPrefix(result.Link, "magnet:") {
+			results = append(results, result)
+			applog.InfoLogSaveAppLog("BTDownloadService: added result - title=%s, magnet=%s", result.Title, result.Link)
+		} else {
+			applog.InfoLogSaveAppLog("BTDownloadService: skipped result - title=%s, link=%s", result.Title, result.Link)
 		}
 	}
 
@@ -203,18 +214,27 @@ func extractXMLAttr(content, tag, attr string) string {
 // downloadFolder: 下载目录（可选）
 // magnetLink: 磁力链接
 func (s *BTDownloadService) DownloadToQBittorrent(server, user, password, downloadFolder, magnetLink string, port int) (BtDownloadResult, error) {
-	if server == "" || user == "" || password == "" || magnetLink == "" {
-		return BtDownloadResult{Success: false, Message: "missing required parameters"}, fmt.Errorf("missing required parameters")
+	applog.InfoLogSaveAppLog("BTDownloadService: DownloadToQBittorrent called - server=%s, port=%d, user=%s, password_len=%d, folder=%s, magnet=%s",
+		server, port, user, len(password), downloadFolder, magnetLink)
+
+	if server == "" || magnetLink == "" {
+		applog.InfoLogSaveAppLog("BTDownloadService: missing required parameters - server or magnetLink is empty")
+		return BtDownloadResult{Success: false, Message: "missing required parameters (server or magnetLink)"}, fmt.Errorf("missing required parameters")
 	}
 
 	// 构建qBittorrent API URL
 	baseURL := fmt.Sprintf("http://%s:%d", server, port)
 	apiURL := baseURL + "/api/v2/auth/login"
+	applog.InfoLogSaveAppLog("BTDownloadService: login URL=%s", apiURL)
 
 	// 登录获取cookie
 	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("POST", apiURL, strings.NewReader(fmt.Sprintf("username=%s&password=%s", url.QueryEscape(user), url.QueryEscape(password))))
+	loginBody := fmt.Sprintf("username=%s&password=%s", url.QueryEscape(user), url.QueryEscape(password))
+	applog.InfoLogSaveAppLog("BTDownloadService: login body=%s", loginBody)
+
+	req, err := http.NewRequest("POST", apiURL, strings.NewReader(loginBody))
 	if err != nil {
+		applog.InfoLogSaveAppLog("BTDownloadService: create login request failed: %v", err)
 		return BtDownloadResult{Success: false, Message: err.Error()}, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -222,17 +242,26 @@ func (s *BTDownloadService) DownloadToQBittorrent(server, user, password, downlo
 
 	resp, err := client.Do(req)
 	if err != nil {
+		applog.InfoLogSaveAppLog("BTDownloadService: login request failed: %v", err)
 		return BtDownloadResult{Success: false, Message: err.Error()}, err
 	}
 	defer resp.Body.Close()
 
+	applog.InfoLogSaveAppLog("BTDownloadService: login response status=%d", resp.StatusCode)
+
 	if resp.StatusCode != http.StatusOK {
-		return BtDownloadResult{Success: false, Message: fmt.Sprintf("HTTP %d", resp.StatusCode)}, fmt.Errorf("login failed")
+		body, _ := io.ReadAll(resp.Body)
+		applog.InfoLogSaveAppLog("BTDownloadService: login failed, response body=%s", string(body))
+		return BtDownloadResult{Success: false, Message: fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body))}, fmt.Errorf("login failed")
 	}
 
 	// 检查是否登录成功（qBittorrent返回"Ok."表示成功）
 	body, _ := io.ReadAll(resp.Body)
-	if string(body) != "Ok." {
+	loginResult := string(body)
+	applog.InfoLogSaveAppLog("BTDownloadService: login result=%s", loginResult)
+
+	if loginResult != "Ok." {
+		applog.InfoLogSaveAppLog("BTDownloadService: login failed, invalid credentials")
 		return BtDownloadResult{Success: false, Message: "login failed, invalid credentials"}, fmt.Errorf("login failed")
 	}
 
@@ -242,44 +271,62 @@ func (s *BTDownloadService) DownloadToQBittorrent(server, user, password, downlo
 	for _, c := range cookies {
 		cookieStr += c.Name + "=" + c.Value + "; "
 	}
+	applog.InfoLogSaveAppLog("BTDownloadService: cookies=%s", cookieStr)
+
 	if cookieStr == "" {
-		return BtDownloadResult{Success: false, Message: "no cookie received"}, fmt.Errorf("no cookie")
+		// qBittorrent 可能不返回 cookie，而是使用 SID
+		applog.InfoLogSaveAppLog("BTDownloadService: no cookie received, trying Referer header approach")
 	}
 
 	// 发送下载任务
 	downloadURL := baseURL + "/api/v2/torrents/add"
+	applog.InfoLogSaveAppLog("BTDownloadService: download URL=%s", downloadURL)
+
+	// 使用 savepath 参数（qBittorrent 正确的参数名）
 	var postBody string
 	if downloadFolder != "" {
-		postBody = fmt.Sprintf("urls=%s&downloadpath=%s", url.QueryEscape(magnetLink), url.QueryEscape(downloadFolder))
+		postBody = fmt.Sprintf("urls=%s&savepath=%s", url.QueryEscape(magnetLink), url.QueryEscape(downloadFolder))
 	} else {
 		postBody = fmt.Sprintf("urls=%s", url.QueryEscape(magnetLink))
 	}
+	applog.InfoLogSaveAppLog("BTDownloadService: download post body=%s", postBody)
 
 	req2, err := http.NewRequest("POST", downloadURL, strings.NewReader(postBody))
 	if err != nil {
+		applog.InfoLogSaveAppLog("BTDownloadService: create download request failed: %v", err)
 		return BtDownloadResult{Success: false, Message: err.Error()}, err
 	}
 	req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req2.Header.Set("Cookie", cookieStr)
 	req2.Header.Set("User-Agent", "Mozilla/5.0")
+	req2.Header.Set("Referer", baseURL)
+	if cookieStr != "" {
+		req2.Header.Set("Cookie", cookieStr)
+	}
 
 	resp2, err := client.Do(req2)
 	if err != nil {
+		applog.InfoLogSaveAppLog("BTDownloadService: download request failed: %v", err)
 		return BtDownloadResult{Success: false, Message: err.Error()}, err
 	}
 	defer resp2.Body.Close()
 
-	if resp2.StatusCode != http.StatusOK {
-		return BtDownloadResult{Success: false, Message: fmt.Sprintf("HTTP %d", resp2.StatusCode)}, fmt.Errorf("add torrent failed")
-	}
+	applog.InfoLogSaveAppLog("BTDownloadService: download response status=%d", resp2.StatusCode)
 
 	body2, _ := io.ReadAll(resp2.Body)
 	resultBody := string(body2)
+	applog.InfoLogSaveAppLog("BTDownloadService: download response body=%s", resultBody)
 
-	if strings.Contains(resultBody, "Ok.") || resultBody == "" {
+	if resp2.StatusCode != http.StatusOK {
+		return BtDownloadResult{Success: false, Message: fmt.Sprintf("HTTP %d: %s", resp2.StatusCode, resultBody)}, fmt.Errorf("add torrent failed")
+	}
+
+	// qBittorrent 成功时返回空响应或 "Ok."
+	if resultBody == "" || resultBody == "Ok." {
+		applog.InfoLogSaveAppLog("BTDownloadService: download task added successfully")
 		return BtDownloadResult{Success: true, Message: "Download task added successfully", TaskID: ""}, nil
 	}
 
+	applog.InfoLogSaveAppLog("BTDownloadService: add torrent failed with response: %s", resultBody)
 	return BtDownloadResult{Success: false, Message: resultBody}, fmt.Errorf("add torrent failed: %s", resultBody)
 }
 

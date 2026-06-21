@@ -142,8 +142,13 @@ function MonthlyReleasesPage() {
 
   // 下载选中的资源
   const downloadSelected = async (result: any) => {
-    if (!config?.qb_server || !config?.qb_user || !config?.qb_password) {
+    if (!config?.qb_server) {
       toast.error(t("btDownload.notConfigured") || "Please configure qBittorrent settings first");
+      return;
+    }
+
+    if (!result.link) {
+      toast.error("No download link available");
       return;
     }
 
@@ -151,8 +156,8 @@ function MonthlyReleasesPage() {
     try {
       const downloadResult = await DownloadToQBittorrent(
         config.qb_server,
-        config.qb_user,
-        config.qb_password,
+        config.qb_user || "",
+        config.qb_password || "",
         config.qb_download_folder || "",
         result.link,
         config.qb_port || 8080

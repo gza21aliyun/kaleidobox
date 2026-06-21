@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
 import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem } from "../../wailsjs/go/service/DownloadedFilesService";
+import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
 
 interface DownloadedFile extends service.DownloadedFile {
@@ -22,6 +23,7 @@ export default function DownloadedFiles() {
   const [confirmModalItem, setConfirmModalItem] = useState<DownloadedFile | null>(null);
   const [installMethod, setInstallMethod] = useState<string>("name");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [searchModalItem, setSearchModalItem] = useState<DownloadedFile | null>(null);
 
   const loadItems = async () => {
     setIsLoading(true);
@@ -147,6 +149,10 @@ export default function DownloadedFiles() {
     }
   };
 
+  const handleOpenSearch = (item: DownloadedFile) => {
+    setSearchModalItem(item);
+  };
+
   const handleDelete = async (item: DownloadedFile) => {
     if (!confirm(t("downloadedFiles.confirmDelete", { name: item.name }))) {
       return;
@@ -197,6 +203,16 @@ export default function DownloadedFiles() {
       )}
 
       <div className="flex flex-col h-full">
+        {/* 页面标题 */}
+        <h1 className="text-2xl font-bold text-brand-900 dark:text-white mb-2">
+          {t("nav.downloadedFiles")}
+        </h1>
+
+        {/* 提示信息 */}
+        <p className="text-sm text-brand-500 dark:text-brand-400 mb-4">
+          {t("downloadedFiles.tempStateHint")}
+        </p>
+
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <button
@@ -301,12 +317,12 @@ export default function DownloadedFiles() {
                     className="mt-1 rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
                   />
 
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`text-lg ${item.is_folder ? "i-mdi-folder" : "i-mdi-archive"}`} />
-                      <span className="font-medium truncate" title={getDisplayTitle(item)}>{getDisplayTitle(item)}</span>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`text-lg ${item.is_folder ? "i-mdi-folder" : "i-mdi-archive"} flex-shrink-0`} />
+                      <span className="font-medium truncate min-w-0" title={getDisplayTitle(item)}>{getDisplayTitle(item)}</span>
                       {item.has_numeric_name && (
-                        <span className="text-xs text-brand-500">({item.name})</span>
+                        <span className="text-xs text-brand-500 flex-shrink-0">({item.name})</span>
                       )}
                     </div>
 
@@ -412,6 +428,14 @@ export default function DownloadedFiles() {
                         {t("downloadedFiles.open")}
                       </button>
 
+                      {/* 搜索按钮 */}
+                      <button
+                        onClick={() => handleOpenSearch(item)}
+                        className="px-2 py-1 text-xs bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 rounded"
+                      >
+                        {t("downloadedFiles.search")}
+                      </button>
+
                       {/* 装载按钮 */}
                       {!item.is_downloading && canMount(item) && (
                         <button
@@ -507,6 +531,14 @@ export default function DownloadedFiles() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 游戏搜索弹窗 */}
+      {searchModalItem && (
+        <GameSearchModal
+          itemName={getDisplayTitle(searchModalItem)}
+          onClose={() => setSearchModalItem(null)}
+        />
       )}
     </div>
   );

@@ -12,7 +12,7 @@ import {
   RemoveGameFromCategory,
   RemoveGamesFromCategory,
 } from "../../wailsjs/go/service/CategoryService";
-import { GetGames, BatchUpdateStatus, DeleteGames } from "../../wailsjs/go/service/GameService";
+import { BatchUpdateStatus, DeleteGames } from "../../wailsjs/go/service/GameService";
 import { ListTags } from "../../wailsjs/go/service/TagService";
 import { FilterBar } from "../components/bar/FilterBar";
 import { GameCard } from "../components/card/GameCard";
@@ -41,13 +41,14 @@ function CategoryDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { categoryId } = Route.useParams();
-  const { gameStats, loadStats } = useAppStore();
+  const { gameStats, loadStats, fetchGames, games: storeGames, gamesLoading } = useAppStore();
   const [category, setCategory] = useState<vo.CategoryVO | null>(null);
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
-  const [allGames, setAllGames] = useState<models.Game[]>([]);
+  const [isLoadingGamesForModal, setIsLoadingGamesForModal] = useState(false);
+  const [dummyState, setDummyState] = useState(0);
   const [sourceFilter, setSourceFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company" | "last_played" | "play_time"> ("created_at");
@@ -95,6 +96,12 @@ function CategoryDetailPage() {
   // 选择模式相关
   const [selectMode, setSelectMode] = useState(false);
   const [returnPath, setReturnPath] = useState("/");
+
+  // 可用于添加的游戏列表（从全局游戏库中排除已在当前分类的游戏）
+  const availableGames = useMemo(() => {
+    const currentGameIds = new Set(games.map(g => g.id));
+    return storeGames.filter(g => !currentGameIds.has(g.id));
+  }, [storeGames, games, gamesLoading]);
 
   // 延迟显示骨架屏
   useEffect(() => {
@@ -205,14 +212,22 @@ function CategoryDetailPage() {
 
   const openAddGameModal = async () => {
     try {
-      const result = await GetGames();
-      const currentGameIds = new Set(games.map(g => g.id));
-      setAllGames(result.filter(g => !currentGameIds.has(g.id)) || []);
       setIsAddGameModalOpen(true);
+      const currentStoreGames = storeGames || [];
+      console.log("openAddGameModal - currentStoreGames.length:", currentStoreGames.length);
+      if (currentStoreGames.length === 0) {
+        setIsLoadingGamesForModal(true);
+        await fetchGames();
+        console.log("openAddGameModal - after fetchGames, storeGames:", useAppStore.getState().games.length);
+        setIsLoadingGamesForModal(false);
+        // Force re-render by toggling a dummy state
+        setDummyState(d => d + 1);
+      }
     }
     catch (error) {
       console.error("Failed to load all games:", error);
       toast.error(t('category.toasts.loadLibraryGamesFailed'));
+      setIsLoadingGamesForModal(false);
     }
   };
 
@@ -221,7 +236,6 @@ function CategoryDetailPage() {
       return;
     try {
       await AddGameToCategory(gameId, category.id);
-      setAllGames(prev => prev.filter(g => g.id !== gameId));
       await loadGames(category.id);
       await loadCategory(category.id);
     }
@@ -806,7 +820,7 @@ function CategoryDetailPage() {
                   description: t('category.descriptions.addGameToCategory'),
                   icon: "i-mdi-gamepad-variant",
                   iconColor: "text-neutral-500",
-                  onClick: () => setIsAddGameModalOpen(true),
+                  onClick: () => openAddGameModal(),
                 },
               ]}
             />
@@ -876,7 +890,8 @@ function CategoryDetailPage() {
 
       <AddGameToCategoryModal
         isOpen={isAddGameModalOpen}
-        allGames={allGames}
+        allGames={availableGames}
+        isLoading={isLoadingGamesForModal}
         onClose={() => setIsAddGameModalOpen(false)}
         onAddGame={handleAddGameToCategory}
       />

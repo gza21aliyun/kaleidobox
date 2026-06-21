@@ -291,6 +291,7 @@
       "removeFromCategory": "コレクションから削除",
       "noGamesFound": "一致するゲームが見つかりません",
       "noGamesInCategory": "このコレクションにはまだゲームがありません",
+      "noGamesToAdd": "追加できるゲームがありません",
       "systemCategoryCannotBatchDelete": "システムコレクションは一括削除できません"
     },
     "labels": {
@@ -302,6 +303,9 @@
     "actions": {
       "editCategory": "コレクションを編集",
       "deleteCategory": "コレクションを削除"
+    },
+    "descriptions": {
+      "addGameToCategory": "ライブラリからこのコレクションに追加するゲームを選択"
     }
   },
   "game": {

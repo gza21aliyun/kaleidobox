@@ -291,6 +291,7 @@
       "removeFromCategory": "Remove from collection",
       "noGamesFound": "No matching games found",
       "noGamesInCategory": "This collection has no games yet",
+      "noGamesToAdd": "No games available to add",
       "systemCategoryCannotBatchDelete": "System collections cannot be batch deleted"
     },
     "labels": {
@@ -302,6 +303,9 @@
     "actions": {
       "editCategory": "Edit collection",
       "deleteCategory": "Delete collection"
+    },
+    "descriptions": {
+      "addGameToCategory": "Select games from the library to add to this collection"
     }
   },
   "game": {

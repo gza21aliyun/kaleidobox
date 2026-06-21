@@ -291,6 +291,7 @@
       "removeFromCategory": "从收藏夹移除",
       "noGamesFound": "未找到匹配的游戏",
       "noGamesInCategory": "这个收藏夹还没有游戏",
+      "noGamesToAdd": "没有可添加的游戏",
       "systemCategoryCannotBatchDelete": "系统收藏夹不能批量删除"
     },
     "labels": {
@@ -302,6 +303,9 @@
     "actions": {
       "editCategory": "编辑收藏夹",
       "deleteCategory": "删除收藏夹"
+    },
+    "descriptions": {
+      "addGameToCategory": "从此游戏库中选择游戏添加到收藏夹"
     }
   },
   "game": {

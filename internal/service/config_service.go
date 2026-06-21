@@ -198,6 +198,9 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.QBUser = newConfig.QBUser
 	s.config.QBPassword = newConfig.QBPassword
 	s.config.QBDownloadFolder = newConfig.QBDownloadFolder
+	// 游戏下载和安装文件夹
+	s.config.GameDownloadFolder = newConfig.GameDownloadFolder
+	s.config.GameInstallFolder = newConfig.GameInstallFolder
 	applog.SetLogAll(s.config.LogAll)
 	return nil
 }

@@ -112,6 +112,9 @@ type AppConfig struct {
 	QBUser           string `json:"qb_user,omitempty"`            // qBittorrent 用户名
 	QBPassword       string `json:"qb_password,omitempty"`        // qBittorrent 密码
 	QBDownloadFolder string `json:"qb_download_folder,omitempty"` // qBittorrent 下载目录
+	// 游戏下载和安装文件夹
+	GameDownloadFolder string `json:"game_download_folder,omitempty"` // 游戏下载文件夹
+	GameInstallFolder  string `json:"game_install_folder,omitempty"`  // 游戏安装文件夹
 }
 
 // getConfigPath 获取配置文件路径
@@ -198,7 +201,7 @@ func LoadConfig() (*AppConfig, error) {
 		VmPath:      "",
 		DisplayName: "",
 		// 侧边栏可见项默认包含所有可配置项，表示全部显示
-		SidebarVisibleItems: "task,charactor_list,tag_list,category_list,stats,favorites,monthly_releases,virtual_machines,joystick,github",
+		SidebarVisibleItems: "task,charactor_list,tag_list,category_list,stats,favorites,monthly_releases,virtual_machines,downloaded_files,joystick,github",
 		// BT下载配置默认值
 		RssURL:           "https://sukebei.nyaa.si/?page=rss&c=1_3&f=0&q=%search_key",
 		QBServer:         "",

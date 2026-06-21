@@ -1,5 +1,6 @@
 import type { appconf } from "../../../wailsjs/go/models";
 import { useTranslation } from "react-i18next";
+import { SelectLibraryDirectory } from "../../../wailsjs/go/service/ImportService";
 
 interface BTDownloadSettingsPanelProps {
   formData: appconf.AppConfig;
@@ -13,6 +14,20 @@ export function BTDownloadSettingsPanel({ formData, onChange }: BTDownloadSettin
     const { name, value, type } = e.target;
     const newValue = type === "number" ? Number(value) : value;
     onChange({ ...formData, [name]: newValue } as appconf.AppConfig);
+  };
+
+  const handleSelectGameDownloadFolder = async () => {
+    const path = await SelectLibraryDirectory(false);
+    if (path) {
+      onChange({ ...formData, game_download_folder: path } as appconf.AppConfig);
+    }
+  };
+
+  const handleSelectGameInstallFolder = async () => {
+    const path = await SelectLibraryDirectory(false);
+    if (path) {
+      onChange({ ...formData, game_install_folder: path } as appconf.AppConfig);
+    }
   };
 
   return (
@@ -118,6 +133,61 @@ export function BTDownloadSettingsPanel({ formData, onChange }: BTDownloadSettin
             <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
               {t("btDownload.downloadFolderHint")}
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 游戏下载和安装文件夹配置 */}
+      <div className="mt-6 border-t border-brand-200 dark:border-brand-700 pt-6">
+        <h3 className="text-sm font-semibold text-brand-900 dark:text-white mb-4">
+          {t("btDownload.gameFolders")}
+        </h3>
+
+        <div className="space-y-4">
+          {/* 游戏下载文件夹 */}
+          <div>
+            <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
+              {t("btDownload.gameDownloadFolder")}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                name="game_download_folder"
+                value={formData.game_download_folder || ""}
+                onChange={handleChange}
+                placeholder={t("btDownload.gameDownloadFolderPlaceholder") || "选择游戏下载文件夹"}
+                className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white"
+              />
+              <button
+                onClick={handleSelectGameDownloadFolder}
+                className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+              >
+                {t("btDownload.select")}
+              </button>
+            </div>
+          </div>
+
+          {/* 游戏安装文件夹 */}
+          <div>
+            <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
+              {t("btDownload.gameInstallFolder")}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                name="game_install_folder"
+                value={formData.game_install_folder || ""}
+                onChange={handleChange}
+                placeholder={t("btDownload.gameInstallFolderPlaceholder") || "选择游戏安装文件夹"}
+                className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white"
+              />
+              <button
+                onClick={handleSelectGameInstallFolder}
+                className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+              >
+                {t("btDownload.select")}
+              </button>
+            </div>
           </div>
         </div>
       </div>

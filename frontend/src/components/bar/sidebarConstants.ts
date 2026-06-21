@@ -11,6 +11,7 @@ export const CONFIGURABLE_NAV_ITEMS = [
   { to: "/monthly_releases", key: "monthly_releases", labelKey: "nav.monthlyReleases", icon: "i-mdi-calendar-month" },
   { to: "/favorites", key: "favorites", labelKey: "nav.favorites", icon: "i-mdi-format-list-bulleted" },
   { to: "/virtual_machines", key: "virtual_machines", labelKey: "nav.virtualMachines", icon: "i-mdi-laptop" },
+  { to: "/downloaded_files", key: "downloaded_files", labelKey: "nav.downloadedFiles", icon: "i-mdi-folder-download" },
 ];
 
 // 底部区域的配置项

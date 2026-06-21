@@ -197,6 +197,7 @@ func main() {
 	vmService := service.NewVMService()
 	monthlyReleaseService := service.NewMonthlyReleaseService()
 	btDownloadService := service.NewBTDownloadService()
+	downloadedFilesService := service.NewDownloadedFilesService()
 
 	// 创建本地文件处理器
 	localFileHandler, err := utils.NewLocalFileHandler()
@@ -494,6 +495,7 @@ func main() {
 			workService.Init(ctx, db, config)
 			monthlyReleaseService.Init(ctx)
 			btDownloadService.Init(ctx)
+			downloadedFilesService.Init(ctx, db, config)
 			workService.SetServices(staffService, charactorService, imageService)
 			gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 			vmService.Init(ctx, db, config)
@@ -614,6 +616,7 @@ func main() {
 			vmService,
 			monthlyReleaseService,
 			btDownloadService,
+			downloadedFilesService,
 		},
 		EnumBind: []interface{}{
 			enums.AllSourceTypes,

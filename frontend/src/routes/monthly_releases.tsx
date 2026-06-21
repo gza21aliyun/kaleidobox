@@ -439,7 +439,7 @@ function GameItem({ game, onBrowse, onSearch }: GameItemProps) {
 
 // BT搜索弹窗组件
 interface BTSearchModalProps {
-  game: utils.MonthlyReleaseGame;
+  game?: utils.MonthlyReleaseGame | null;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   searchResults: any[];

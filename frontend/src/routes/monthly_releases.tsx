@@ -538,17 +538,27 @@ function BTSearchModal({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-1.5 py-0.5 text-xs rounded ${result.link?.startsWith('magnet:') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'}`}>
+                          {result.link?.startsWith('magnet:') ? '磁链' : '种子'}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                          <div className="i-mdi-arrow-up text-xs" />
+                          {result.seeders}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
+                          <div className="i-mdi-arrow-down text-xs" />
+                          {result.lechers}
+                        </span>
+                      </div>
                       <p className="text-sm font-medium text-brand-900 dark:text-white line-clamp-2" title={result.title}>
                         {result.title}
                       </p>
+                      <p className="text-xs text-brand-500 dark:text-brand-400 truncate mt-1" title={result.link}>
+                        {result.link}
+                      </p>
                       <div className="flex items-center gap-3 mt-1 text-xs text-brand-500 dark:text-brand-400">
                         {result.size && <span>{result.size}</span>}
-                        {result.seeders > 0 && (
-                          <span className="flex items-center gap-1">
-                            <div className="i-mdi-arrow-up text-green-500" />
-                            {result.seeders}
-                          </span>
-                        )}
                         {result.date && <span>{result.date}</span>}
                       </div>
                     </div>

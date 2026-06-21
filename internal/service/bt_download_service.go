@@ -1,11 +1,15 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -20,12 +24,14 @@ type BTDownloadService struct {
 
 // BtSearchResult BT搜索结果
 type BtSearchResult struct {
-	Title    string `json:"title"`     // 标题
-	Link     string `json:"link"`      // 磁力链接或详情页
-	Size     string `json:"size"`      // 文件大小
-	Seeders  int    `json:"seeders"`   // 做种数
-	Date     string `json:"date"`      // 发布日期
-	PageLink string `json:"page_link"` // 详情页面链接
+	Title      string `json:"title"`       // 标题
+	Link       string `json:"link"`        // 磁力链接或torrent文件URL
+	TorrentURL string `json:"torrent_url"` // torrent文件URL（如果有）
+	Size       string `json:"size"`        // 文件大小
+	Seeders    int    `json:"seeders"`     // 做种数
+	Lechers    int    `json:"lechers"`     // 下载中的用户数
+	Date       string `json:"date"`        // 发布日期
+	PageLink   string `json:"page_link"`   // 详情页面链接
 }
 
 // BtDownloadResult BT下载结果
@@ -106,17 +112,33 @@ func parseNyaaRSS(xmlData []byte) []BtSearchResult {
 			result.Title = title
 		}
 
-		// 提取 nyaa:infoHash 并构造磁力链接
-		infoHash := extractXMLValue(part, "<nyaa:infoHash>")
-		if infoHash == "" {
-			// 尝试不带命名空间的格式
-			infoHash = extractXMLValue(part, "infoHash>")
+		// 提取link (可能是磁力链接或torrent文件URL)
+		link := extractXMLValue(part, "<link>")
+		if link != "" {
+			if strings.HasPrefix(link, "magnet:") {
+				// 直接是磁力链接
+				result.Link = link
+				applog.InfoLogSaveAppLog("BTDownloadService: found direct magnet link in <link>")
+			} else if strings.HasSuffix(link, ".torrent") {
+				// 是torrent文件URL，需要下载后发送
+				result.Link = link
+				result.TorrentURL = link
+				applog.InfoLogSaveAppLog("BTDownloadService: found torrent URL in <link>: %s", link)
+			}
 		}
-		if infoHash != "" && result.Title != "" {
-			// 构造磁力链接: magnet:?xt=urn:btih:<infohash>&dn=<title>
-			magnetLink := fmt.Sprintf("magnet:?xt=urn:btih:%s&dn=%s", infoHash, url.QueryEscape(result.Title))
-			result.Link = magnetLink
-			applog.InfoLogSaveAppLog("BTDownloadService: constructed magnet link from infoHash=%s", infoHash)
+
+		// 如果link不是磁力链接，尝试从infoHash构造
+		if !strings.HasPrefix(result.Link, "magnet:") {
+			infoHash := extractXMLValue(part, "<nyaa:infoHash>")
+			if infoHash == "" {
+				infoHash = extractXMLValue(part, "infoHash>")
+			}
+			if infoHash != "" && result.Title != "" {
+				// 构造磁力链接: magnet:?xt=urn:btih:<infohash>&dn=<title>
+				magnetLink := fmt.Sprintf("magnet:?xt=urn:btih:%s&dn=%s", infoHash, url.QueryEscape(result.Title))
+				result.Link = magnetLink
+				applog.InfoLogSaveAppLog("BTDownloadService: constructed magnet link from infoHash=%s", infoHash)
+			}
 		}
 
 		// 提取guid作为详情页
@@ -149,10 +171,19 @@ func parseNyaaRSS(xmlData []byte) []BtSearchResult {
 			fmt.Sscanf(seeders, "%d", &result.Seeders)
 		}
 
-		// 只有包含磁力链接的结果才添加
-		if result.Title != "" && result.Link != "" && strings.HasPrefix(result.Link, "magnet:") {
+		// 提取leechers (nyaa格式)
+		leechers := extractXMLValue(part, "<nyaa:leechers>")
+		if leechers == "" {
+			leechers = extractXMLValue(part, "<leechers>")
+		}
+		if leechers != "" {
+			fmt.Sscanf(leechers, "%d", &result.Lechers)
+		}
+
+		// 只有包含磁力链接或torrent URL的结果才添加
+		if result.Title != "" && result.Link != "" && (strings.HasPrefix(result.Link, "magnet:") || result.TorrentURL != "") {
 			results = append(results, result)
-			applog.InfoLogSaveAppLog("BTDownloadService: added result - title=%s, magnet=%s", result.Title, result.Link)
+			applog.InfoLogSaveAppLog("BTDownloadService: added result - title=%s, link=%s, torrent_url=%s", result.Title, result.Link, result.TorrentURL)
 		} else {
 			applog.InfoLogSaveAppLog("BTDownloadService: skipped result - title=%s, link=%s", result.Title, result.Link)
 		}
@@ -282,21 +313,79 @@ func (s *BTDownloadService) DownloadToQBittorrent(server, user, password, downlo
 	downloadURL := baseURL + "/api/v2/torrents/add"
 	applog.InfoLogSaveAppLog("BTDownloadService: download URL=%s", downloadURL)
 
-	// 使用 savepath 参数（qBittorrent 正确的参数名）
+	// qBittorrent 的 urls 参数可以直接接受 magnet 链接
+	// 如果是 .torrent 文件 URL，则需要下载后通过 multipart form 上传
 	var postBody string
-	if downloadFolder != "" {
-		postBody = fmt.Sprintf("urls=%s&savepath=%s", url.QueryEscape(magnetLink), url.QueryEscape(downloadFolder))
-	} else {
-		postBody = fmt.Sprintf("urls=%s", url.QueryEscape(magnetLink))
-	}
-	applog.InfoLogSaveAppLog("BTDownloadService: download post body=%s", postBody)
+	var req2 *http.Request
 
-	req2, err := http.NewRequest("POST", downloadURL, strings.NewReader(postBody))
-	if err != nil {
-		applog.InfoLogSaveAppLog("BTDownloadService: create download request failed: %v", err)
-		return BtDownloadResult{Success: false, Message: err.Error()}, err
+	if strings.HasSuffix(magnetLink, ".torrent") {
+		// 下载 torrent 文件到本地临时目录
+		applog.InfoLogSaveAppLog("BTDownloadService: downloading torrent file from %s", magnetLink)
+
+		// 创建临时文件
+		tempDir := os.TempDir()
+		tempFile, err := os.CreateTemp(tempDir, "lunabox_*.torrent")
+		if err != nil {
+			applog.InfoLogSaveAppLog("BTDownloadService: create temp file failed: %v", err)
+			return BtDownloadResult{Success: false, Message: err.Error()}, err
+		}
+		tempPath := tempFile.Name()
+		defer os.Remove(tempPath) // 确保函数结束时删除临时文件
+
+		// 下载 torrent 文件
+		torrentResp, err := client.Get(magnetLink)
+		if err != nil {
+			applog.InfoLogSaveAppLog("BTDownloadService: download torrent file failed: %v", err)
+			tempFile.Close()
+			return BtDownloadResult{Success: false, Message: err.Error()}, err
+		}
+		defer torrentResp.Body.Close()
+
+		if torrentResp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(torrentResp.Body)
+			applog.InfoLogSaveAppLog("BTDownloadService: download torrent file failed with status %d: %s", torrentResp.StatusCode, string(body))
+			tempFile.Close()
+			return BtDownloadResult{Success: false, Message: fmt.Sprintf("download torrent failed: HTTP %d", torrentResp.StatusCode)}, fmt.Errorf("download torrent failed")
+		}
+
+		// 写入临时文件
+		_, err = io.Copy(tempFile, torrentResp.Body)
+		tempFile.Close()
+		if err != nil {
+			applog.InfoLogSaveAppLog("BTDownloadService: write temp file failed: %v", err)
+			return BtDownloadResult{Success: false, Message: err.Error()}, err
+		}
+		applog.InfoLogSaveAppLog("BTDownloadService: downloaded torrent file to %s, size=%d bytes", tempPath, 0) // 后续获取实际大小
+
+		// 读取文件内容用于日志
+		fileInfo, _ := os.Stat(tempPath)
+		if fileInfo != nil {
+			applog.InfoLogSaveAppLog("BTDownloadService: torrent file size=%d bytes", fileInfo.Size())
+		}
+
+		// 构建 multipart form 请求
+		req2, err = newMultipartRequest(downloadURL, tempPath, downloadFolder)
+		if err != nil {
+			applog.InfoLogSaveAppLog("BTDownloadService: create multipart request failed: %v", err)
+			return BtDownloadResult{Success: false, Message: err.Error()}, err
+		}
+	} else {
+		// 磁力链接直接发送
+		if downloadFolder != "" {
+			postBody = fmt.Sprintf("urls=%s&savepath=%s", url.QueryEscape(magnetLink), url.QueryEscape(downloadFolder))
+		} else {
+			postBody = fmt.Sprintf("urls=%s", url.QueryEscape(magnetLink))
+		}
+		applog.InfoLogSaveAppLog("BTDownloadService: post body=%s", truncateString(postBody, 500))
+
+		req2, err = http.NewRequest("POST", downloadURL, strings.NewReader(postBody))
+		if err != nil {
+			applog.InfoLogSaveAppLog("BTDownloadService: create download request failed: %v", err)
+			return BtDownloadResult{Success: false, Message: err.Error()}, err
+		}
+		req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
-	req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 	req2.Header.Set("User-Agent", "Mozilla/5.0")
 	req2.Header.Set("Referer", baseURL)
 	if cookieStr != "" {
@@ -446,4 +535,55 @@ func extractLastNumberFromString(s string) (string, string) {
 		return rest, numStr
 	}
 	return s, ""
+}
+
+// newMultipartRequest 创建 multipart form 请求用于上传 torrent 文件
+func newMultipartRequest(urlStr, filePath, downloadFolder string) (*http.Request, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// 打开 torrent 文件
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// 添加 torrent 文件
+	part, err := writer.CreateFormFile("torrentFile", filepath.Base(filePath))
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return nil, err
+	}
+
+	// 添加下载目录（如果指定）
+	if downloadFolder != "" {
+		err = writer.WriteField("savepath", downloadFolder)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", urlStr, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req, nil
+}
+
+// truncateString 截断字符串到指定长度
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }

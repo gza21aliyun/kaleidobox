@@ -121,7 +121,7 @@ export default function DownloadedFiles() {
   };
 
   const handleExtract = async (item: DownloadedFile) => {
-    setCurrentExecutingName(item.name);
+    setCurrentExecutingName(getDisplayTitle(item));
     setIsExecuting(true);
     try {
       if (item.is_folder) {

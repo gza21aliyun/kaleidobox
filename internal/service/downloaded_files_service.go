@@ -270,24 +270,40 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, isFold
 		return "", nil
 	}
 
-	var firstPath string
 	for _, entry := range entries {
 		if entry.IsDir() {
 			fullPath := filepath.Join(itemPath, entry.Name())
 			if s.hasExtractedContent(fullPath) {
 				extractedPaths = append(extractedPaths, fullPath)
-				if firstPath == "" {
-					firstPath = fullPath
-				}
 			}
 		}
 	}
 
-	if firstPath == "" {
+	if len(extractedPaths) == 0 {
 		return itemPath, []string{itemPath}
 	}
 
-	return firstPath, extractedPaths
+	if len(extractedPaths) == 1 {
+		return extractedPaths[0], extractedPaths
+	}
+
+	// 多个解压文件夹时，使用 JudgeGameName 判断哪个是真正的游戏文件夹
+	var folderNames []string
+	for _, path := range extractedPaths {
+		folderNames = append(folderNames, filepath.Base(path))
+	}
+
+	gameFolderName := s.JudgeGameName(folderNames)
+	if gameFolderName != "" {
+		for _, path := range extractedPaths {
+			if filepath.Base(path) == gameFolderName {
+				return path, extractedPaths
+			}
+		}
+	}
+
+	// 如果 JudgeGameName 没找到，返回第一个
+	return extractedPaths[0], extractedPaths
 }
 
 func (s *DownloadedFilesService) checkIsInstalled(itemPath string) bool {
@@ -377,8 +393,7 @@ func (s *DownloadedFilesService) isNumericName(name string) bool {
 }
 
 func (s *DownloadedFilesService) findLongestZipName(folderPath string) string {
-	var longestName string
-	maxLen := 0
+	var zipNames []string
 
 	err := filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -388,10 +403,7 @@ func (s *DownloadedFilesService) findLongestZipName(folderPath string) string {
 			ext := strings.ToLower(filepath.Ext(d.Name()))
 			if compressedExtensions[ext] {
 				nameWithoutExt := strings.TrimSuffix(d.Name(), ext)
-				if len(nameWithoutExt) > maxLen {
-					maxLen = len(nameWithoutExt)
-					longestName = nameWithoutExt
-				}
+				zipNames = append(zipNames, nameWithoutExt)
 			}
 		}
 		return nil
@@ -400,7 +412,13 @@ func (s *DownloadedFilesService) findLongestZipName(folderPath string) string {
 	if err != nil {
 		return ""
 	}
-	return longestName
+
+	if len(zipNames) == 0 {
+		return ""
+	}
+
+	// 使用 JudgeGameName 判断哪个是真正的游戏名
+	return s.JudgeGameName(zipNames)
 }
 
 func (s *DownloadedFilesService) getInnerItems(folderPath string) []string {

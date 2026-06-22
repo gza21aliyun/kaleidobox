@@ -6,6 +6,7 @@ import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame,
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
 import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
+import { useAppStore } from "../store";
 
 interface DownloadedFile extends service.DownloadedFile {
   selected: boolean;
@@ -28,6 +29,19 @@ export default function DownloadedFiles() {
   const [searchModalItem, setSearchModalItem] = useState<DownloadedFile | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentExecutingName, setCurrentExecutingName] = useState("");
+  
+  const config = useAppStore(state => state.config);
+  const fetchConfig = useAppStore(state => state.fetchConfig);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
+
+  useEffect(() => {
+    if (config && !config.seven_zip_path) {
+      setErrorMessage(t("downloadedFiles.noSevenZipPath"));
+    }
+  }, [config, t]);
 
   const loadItems = async () => {
     setIsLoading(true);
@@ -199,21 +213,21 @@ export default function DownloadedFiles() {
       const result = await DeleteExtractedFolder(item.path, item.name);
       if (result && result.has_archive && result.archive_item) {
         // 有同名压缩包，更新当前单元的信息（但保持 id 和 selected 状态）
+        const archiveItem = result.archive_item;
         setItems(items.map(i =>
           i.id === item.id
             ? {
                 ...i,
-                name: result.archive_item.name,
-                path: result.archive_item.path,
+                name: archiveItem.name,
+                path: archiveItem.path,
                 is_folder: false,
                 is_extracted: false,
-                size: result.archive_item.size,
-                inner_items: result.archive_item.inner_items,
-                has_numeric_name: result.archive_item.has_numeric_name,
-                contains_iso: result.archive_item.contains_iso,
-                iso_count: result.archive_item.iso_count,
-                iso_file_path: result.archive_item.iso_file_path,
-                // 保持选中状态
+                size: archiveItem.size,
+                inner_items: archiveItem.inner_items,
+                has_numeric_name: archiveItem.has_numeric_name,
+                contains_iso: archiveItem.contains_iso,
+                iso_count: archiveItem.iso_count,
+                iso_file_path: archiveItem.iso_file_path,
               }
             : i
         ));

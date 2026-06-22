@@ -18,7 +18,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/mirbf/unzip"
 )
 
 type DownloadedFilesService struct {
@@ -413,24 +412,22 @@ func (s *DownloadedFilesService) ExtractItem(itemPath string) error {
 }
 
 func (s *DownloadedFilesService) extractArchive(archivePath, targetFolder string) error {
-	// 使用 github.com/mirbf/unzip 库，支持 ZIP、RAR、7Z 等格式
 	applog.LogInfof(s.ctx, "开始解压: %s -> %s", archivePath, targetFolder)
 
-	options := &unzip.ExtractOptions{
-		OutputDir: targetFolder,
-		Overwrite: true,
+	// 优先使用配置的7z路径，否则使用系统默认的7z命令
+	sevenZipPath := s.config.SevenZipPath
+	if sevenZipPath == "" {
+		sevenZipPath = "7z"
 	}
 
-	result, err := unzip.Extract(archivePath, options)
+	cmd := exec.Command(sevenZipPath, "x", archivePath, "-o"+targetFolder, "-y", "-mmt=on")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
+		applog.LogErrorf(s.ctx, "解压失败: %v, 输出: %s", err, string(output))
 		return fmt.Errorf("解压失败: %v", err)
 	}
 
-	if !result.Success {
-		return fmt.Errorf("解压未成功完成")
-	}
-
-	applog.LogInfof(s.ctx, "解压成功: %d 个文件到 %s", result.FilesCount, result.ExtractedTo)
+	applog.LogInfof(s.ctx, "解压成功: %s", targetFolder)
 	return nil
 }
 

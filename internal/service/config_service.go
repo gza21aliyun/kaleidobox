@@ -201,6 +201,7 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	// 游戏下载和安装文件夹
 	s.config.GameDownloadFolder = newConfig.GameDownloadFolder
 	s.config.GameInstallFolder = newConfig.GameInstallFolder
+	s.config.SevenZipPath = newConfig.SevenZipPath // 7-Zip路径
 	applog.SetLogAll(s.config.LogAll)
 	return nil
 }

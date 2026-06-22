@@ -1717,6 +1717,9 @@
     "gameDownloadFolderPlaceholder": "ゲームダウンロードフォルダを選択",
     "gameInstallFolder": "ゲームインストールフォルダ",
     "gameInstallFolderPlaceholder": "ゲームインストールフォルダを選択",
+    "sevenZipPath": "7-Zip パス",
+    "sevenZipPathPlaceholder": "7z.exe パス",
+    "sevenZipPathHint": "アーカイブを展開するための 7z.exe のフルパスを設定",
     "select": "選択"
   },
   "downloadedFiles": {
@@ -1755,6 +1758,7 @@
     "install": "インストール",
     "import": "インポート",
     "md5AsFolder": "MD5をゲームフォルダ名に",
+    "noSevenZipPath": "7-Zip パスが設定されていません。解凍機能を使用するには、設定で 7z.exe のパスを設定してください。",
     "delete": "削除",
     "execute": "実行"
   }

@@ -1752,6 +1752,9 @@
     "gameDownloadFolderPlaceholder": "Select game download folder",
     "gameInstallFolder": "Game Install Folder",
     "gameInstallFolderPlaceholder": "Select game install folder",
+    "sevenZipPath": "7-Zip Path",
+    "sevenZipPathPlaceholder": "7z.exe path",
+    "sevenZipPathHint": "Configure the full path to 7z.exe for extracting archives",
     "select": "Select"
   },
   "downloadedFiles": {
@@ -1791,6 +1794,7 @@
     "install": "Install",
     "import": "Import",
     "md5AsFolder": "MD5 as game folder",
+    "noSevenZipPath": "7-Zip path not configured. Please configure the 7z.exe path in settings to use the extract function.",
     "delete": "Delete"
   }
 }

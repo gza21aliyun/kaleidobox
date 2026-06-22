@@ -1,6 +1,7 @@
 import type { appconf } from "../../../wailsjs/go/models";
 import { useTranslation } from "react-i18next";
 import { SelectLibraryDirectory } from "../../../wailsjs/go/service/ImportService";
+import { SelectFile } from "../../../wailsjs/go/service/GameService";
 
 interface BTDownloadSettingsPanelProps {
   formData: appconf.AppConfig;
@@ -27,6 +28,18 @@ export function BTDownloadSettingsPanel({ formData, onChange }: BTDownloadSettin
     const path = await SelectLibraryDirectory(false);
     if (path) {
       onChange({ ...formData, game_install_folder: path } as appconf.AppConfig);
+    }
+  };
+
+  const handleSelectSevenZipPath = async () => {
+
+    try {
+      const selection = await SelectFile("7z.exe", "*.exe");
+      if (selection) {
+        onChange({ ...formData, seven_zip_path: selection } as appconf.AppConfig);
+      }
+    } catch (error) {
+      console.error(t("gameEdit.selectFileFailed"), error);
     }
   };
 
@@ -188,6 +201,32 @@ export function BTDownloadSettingsPanel({ formData, onChange }: BTDownloadSettin
                 {t("btDownload.select")}
               </button>
             </div>
+          </div>
+
+          {/* 7-Zip 路径 */}
+          <div>
+            <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
+              {t("btDownload.sevenZipPath")}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                name="seven_zip_path"
+                value={formData.seven_zip_path || ""}
+                onChange={handleChange}
+                placeholder={t("btDownload.sevenZipPathPlaceholder") || "7z.exe 路径"}
+                className="glass-input flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white"
+              />
+              <button
+                onClick={handleSelectSevenZipPath}
+                className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+              >
+                {t("btDownload.select")}
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+              {t("btDownload.sevenZipPathHint")}
+            </p>
           </div>
         </div>
       </div>

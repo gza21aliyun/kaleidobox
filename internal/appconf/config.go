@@ -115,6 +115,8 @@ type AppConfig struct {
 	// 游戏下载和安装文件夹
 	GameDownloadFolder string `json:"game_download_folder,omitempty"` // 游戏下载文件夹
 	GameInstallFolder  string `json:"game_install_folder,omitempty"`  // 游戏安装文件夹
+	// 7-Zip 路径
+	SevenZipPath string `json:"seven_zip_path,omitempty"` // 7-Zip 可执行文件路径
 }
 
 // getConfigPath 获取配置文件路径

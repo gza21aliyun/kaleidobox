@@ -210,7 +210,7 @@ export default function DownloadedFiles() {
 
   const handleDeleteExtracted = async (item: DownloadedFile) => {
     try {
-      const result = await DeleteExtractedFolder(item.path, item.name);
+      const result = await DeleteExtractedFolder(item.path, item.name, item.extracted_paths || []);
       if (result && result.has_archive && result.archive_item) {
         // 有同名压缩包，更新当前单元的信息（但保持 id 和 selected 状态）
         const archiveItem = result.archive_item;
@@ -220,6 +220,8 @@ export default function DownloadedFiles() {
                 ...i,
                 name: archiveItem.name,
                 path: archiveItem.path,
+                extracted_game_path: "",
+                extracted_paths: [],
                 is_folder: false,
                 is_extracted: false,
                 size: archiveItem.size,
@@ -234,7 +236,7 @@ export default function DownloadedFiles() {
       } else {
         // 没有同名压缩包，只更新状态
         setItems(items.map(i =>
-          i.id === item.id ? { ...i, is_extracted: false } : i
+          i.id === item.id ? { ...i, is_extracted: false, extracted_game_path: "", extracted_paths: [] } : i
         ));
       }
     } catch (err) {
@@ -259,7 +261,7 @@ export default function DownloadedFiles() {
   };
 
   const canInstall = (item: DownloadedFile) => {
-    return item.is_folder && item.iso_count <= 1;
+    return item.is_folder && item.is_extracted && item.iso_count <= 1;
   };
 
   const canMount = (item: DownloadedFile) => {

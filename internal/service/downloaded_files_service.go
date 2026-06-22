@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
+	"lunabox/internal/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -430,9 +431,20 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) []string {
 
 	for i, entry := range entries {
 		if i >= 5 {
-			break
+			// break
 		}
-		items = append(items, entry.Name())
+		filename := entry.Name()
+		filebase := strings.TrimSuffix(filename, filepath.Ext(filename))
+		// ext := strings.ToLower(filepath.Ext(filename))
+		// if compressedExtensions[ext] {
+		// 	continue
+		// }
+		if utils.Contains(items, func(item string) bool {
+			return item == filebase
+		}) {
+			continue
+		}
+		items = append(items, filebase)
 	}
 	return items
 }
@@ -613,11 +625,14 @@ func (s *DownloadedFilesService) extractArchive(archivePath, targetFolder string
 	return nil
 }
 
-func (s *DownloadedFilesService) ExtractFolder(folderPath string) error {
+func (s *DownloadedFilesService) ExtractFolder(DownloadedFile DownloadedFile) (DownloadedFile, error) {
+	folderPath := DownloadedFile.Path
+
 	files, err := os.ReadDir(folderPath)
 	if err != nil {
-		return err
+		return DownloadedFile, err
 	}
+	extractedPaths := []string{}
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -626,12 +641,28 @@ func (s *DownloadedFilesService) ExtractFolder(folderPath string) error {
 		ext := strings.ToLower(filepath.Ext(file.Name()))
 		if compressedExtensions[ext] {
 			filePath := filepath.Join(folderPath, file.Name())
+			excludedNames := []string{
+				"サウンドトラック", "soundtrack", "mp3", "wav",
+			}
+			shouldExclude := false
+			for _, name := range excludedNames {
+				if strings.Contains(strings.ToLower(file.Name()), name) {
+					shouldExclude = true
+					break
+				}
+			}
+			if shouldExclude {
+				continue
+			}
 			if err := s.ExtractItem(filePath); err != nil {
 				applog.LogErrorf(s.ctx, "Failed to extract %s: %v", filePath, err)
+			} else {
+				extractedPaths = append(extractedPaths, filePath)
 			}
 		}
 	}
-	return nil
+	DownloadedFile.ExtractedPaths = extractedPaths
+	return DownloadedFile, nil
 }
 
 func (s *DownloadedFilesService) MountISO(isoPath string) error {

@@ -125,14 +125,16 @@ export default function DownloadedFiles() {
     setIsExecuting(true);
     try {
       if (item.is_folder) {
-        await ExtractFolder(item.path);
+        const extractedFolder = await ExtractFolder(item);
+        setItems(items.map(i =>
+          i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths } : i
+        ));
       } else {
         await ExtractItem(item.path);
+        setItems(items.map(i =>
+          i.id === item.id ? { ...i, is_extracted: true } : i
+        ));
       }
-      // 解压成功后更新状态
-      setItems(items.map(i =>
-        i.id === item.id ? { ...i, is_extracted: true } : i
-      ));
     } catch (err) {
       console.error("Extract failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "解压失败");
@@ -312,6 +314,15 @@ export default function DownloadedFiles() {
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
+                checked={md5AsFolder}
+                onChange={(e) => setMd5AsFolder(e.target.checked)}
+                className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
+              />
+              {t("downloadedFiles.md5AsFolder")}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
                 checked={showExtract}
                 onChange={(e) => setShowExtract(e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
@@ -336,15 +347,7 @@ export default function DownloadedFiles() {
               />
               {t("downloadedFiles.import")}
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={md5AsFolder}
-                onChange={(e) => setMd5AsFolder(e.target.checked)}
-                className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
-              />
-              {t("downloadedFiles.md5AsFolder")}
-            </label>
+            
             <button
               onClick={() => {
                 selectedItems.forEach(id => {

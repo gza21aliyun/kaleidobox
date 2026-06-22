@@ -20,6 +20,7 @@ require (
 	github.com/hbollon/go-edlib v1.7.0
 	github.com/labstack/gommon v0.4.2
 	github.com/mattn/go-runewidth v0.0.19
+	github.com/mirbf/unzip v1.2.0
 	github.com/spf13/cobra v1.10.2
 	github.com/vmware/govmomi v0.37.0
 	github.com/wailsapp/wails/v2 v2.11.0
@@ -29,6 +30,7 @@ require (
 )
 
 require (
+	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/antchfx/htmlquery v1.3.5 // indirect
 	github.com/antchfx/xmlquery v1.5.0 // indirect
@@ -51,6 +53,9 @@ require (
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/bits-and-blooms/bitset v1.24.4 // indirect
+	github.com/bodgit/plumbing v1.3.0 // indirect
+	github.com/bodgit/sevenzip v1.6.1 // indirect
+	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/chromedp/cdproto v0.0.0-20260321001828-e3e3800016bc // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
@@ -78,6 +83,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/jezek/xgb v1.2.0 // indirect
@@ -93,6 +99,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/nlnwa/whatwg-url v0.6.2 // indirect
+	github.com/nwaples/rardecode/v2 v2.1.1 // indirect
 	github.com/otiai10/gosseract/v2 v2.4.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
@@ -104,6 +111,7 @@ require (
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/samber/lo v1.49.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.10 // indirect
+	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tailscale/win v0.0.0-20250627215312-f4da2b8ee071 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
@@ -111,6 +119,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/tkrajina/go-reflector v0.5.8 // indirect
+	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vcaesar/gops v0.41.0 // indirect
@@ -120,8 +129,10 @@ require (
 	github.com/vcaesar/tt v0.20.1 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
+	github.com/yeka/zip v0.0.0-20231116150916-03d6312748a9 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
+	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39 // indirect
 	golang.org/x/mod v0.32.0 // indirect

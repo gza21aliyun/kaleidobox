@@ -1723,11 +1723,12 @@
     "selectAll": "全て選択",
     "clear": "クリア",
     "extract": "解凍",
-    "install": "インストール",
-    "import": "インポート",
-    "md5AsFolder": "MD5をゲームフォルダ名に",
-    "delete": "削除",
-    "execute": "実行",
+    "extracting": "解凍中",
+    "extracted": "展開済み",
+    "deleteExtracted": "展開を削除",
+    "installed": "インストール済み",
+    "imported": "インポート済み",
+    "executing": "実行中",
     "refresh": "リフレッシュ",
     "empty": "ダウンロードファイルはありません",
     "folder": "フォルダ",
@@ -1750,6 +1751,11 @@
     "installByName": "ゲーム名でインストール",
     "installByUuid": "UUIDでインストール（パスが英語のみのゲーム用）",
     "confirmInstall": "インストールを確認",
-    "confirmDelete": "\"{{name}}\" を削除しますか？"
+    "confirmDelete": "\"{{name}}\" を削除しますか？",
+    "install": "インストール",
+    "import": "インポート",
+    "md5AsFolder": "MD5をゲームフォルダ名に",
+    "delete": "削除",
+    "execute": "実行"
   }
 }

@@ -1758,10 +1758,12 @@
     "selectAll": "Select All",
     "clear": "Clear",
     "extract": "Extract",
-    "install": "Install",
-    "import": "Import",
-    "md5AsFolder": "MD5 as game folder",
-    "delete": "Delete",
+    "extracting": "Extracting",
+    "extracted": "Extracted",
+    "deleteExtracted": "Delete Extract",
+    "installed": "Installed",
+    "imported": "Imported",
+    "executing": "Executing",
     "execute": "Execute",
     "refresh": "Refresh",
     "empty": "No downloaded files",
@@ -1785,6 +1787,10 @@
     "installByName": "Install by Game Name",
     "installByUuid": "Install with UUID (for games with English-only paths)",
     "confirmInstall": "Confirm Install",
-    "confirmDelete": "Are you sure you want to delete \"{{name}}\"?"
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"?",
+    "install": "Install",
+    "import": "Import",
+    "md5AsFolder": "MD5 as game folder",
+    "delete": "Delete"
   }
 }

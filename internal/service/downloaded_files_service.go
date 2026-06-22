@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/mirbf/unzip"
 )
 
 type DownloadedFilesService struct {
@@ -89,6 +90,10 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 	}
 
 	var items []DownloadedFile
+	var folderItems []DownloadedFile
+	var archiveItems []DownloadedFile
+
+	// 第一遍：收集所有条目，分离文件夹和压缩包
 	for _, entry := range entries {
 		itemPath := filepath.Join(downloadFolder, entry.Name())
 		info, err := entry.Info()
@@ -130,11 +135,55 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			if isoCount == 1 {
 				item.ISOFilePath = isoPath
 			}
+			folderItems = append(folderItems, item)
 		} else {
 			item.InnerItems = s.getArchiveInnerItems(itemPath)
+			archiveItems = append(archiveItems, item)
 		}
+	}
 
-		items = append(items, item)
+	// 建立文件夹名称的集合
+	folderNames := make(map[string]bool)
+	for _, folder := range folderItems {
+		folderNames[folder.Name] = true
+	}
+
+	// 建立压缩包的基础名称映射
+	archiveBaseNames := make(map[string]DownloadedFile)
+	for _, archive := range archiveItems {
+		baseName := strings.TrimSuffix(archive.Name, filepath.Ext(archive.Name))
+		archiveBaseNames[baseName] = archive
+	}
+
+	// 记录哪些压缩包已经被显示（因为对应的文件夹有内容）
+	displayedArchives := make(map[string]bool)
+
+	// 合并逻辑：文件夹有内容时显示文件夹，没有内容但有同名压缩包时显示压缩包
+	for _, folder := range folderItems {
+		baseName := strings.TrimSuffix(folder.Name, filepath.Ext(folder.Name))
+
+		// 检查是否有同名压缩包
+		if _, exists := archiveBaseNames[baseName]; exists {
+			// 存在同名压缩包
+			if s.hasExtractedContent(folder.Path) {
+				// 文件夹有内容，显示文件夹，标记为已解压
+				folder.IsExtracted = true
+				items = append(items, folder)
+				displayedArchives[baseName] = true
+			}
+			// 如果文件夹没有内容，不显示文件夹，后续会显示压缩包
+		} else {
+			// 没有同名压缩包，显示文件夹
+			items = append(items, folder)
+		}
+	}
+
+	// 添加没有被显示的压缩包
+	for _, archive := range archiveItems {
+		baseName := strings.TrimSuffix(archive.Name, filepath.Ext(archive.Name))
+		if !displayedArchives[baseName] {
+			items = append(items, archive)
+		}
 	}
 
 	sort.Slice(items, func(i, j int) bool {
@@ -147,19 +196,15 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 func (s *DownloadedFilesService) checkIsExtracted(itemPath, name string, isFolder bool) bool {
 	downloadFolder := s.config.GameDownloadFolder
 	if isFolder {
-		baseName := strings.TrimSuffix(name, filepath.Ext(name))
-		for ext := range compressedExtensions {
-			zipPath := filepath.Join(downloadFolder, baseName+ext)
-			if _, err := os.Stat(zipPath); err == nil {
-				return true
-			}
-		}
+		// 检查文件夹内是否有内容
 		return s.hasExtractedContent(itemPath)
 	} else {
+		// 对于压缩包，检查是否有同名的解压文件夹
 		baseName := strings.TrimSuffix(name, filepath.Ext(name))
 		folderPath := filepath.Join(downloadFolder, baseName)
-		if _, err := os.Stat(folderPath); err == nil {
-			return true
+		// 检查文件夹是否存在且有内容
+		if info, err := os.Stat(folderPath); err == nil && info.IsDir() {
+			return s.hasExtractedContent(folderPath)
 		}
 		return false
 	}
@@ -364,57 +409,29 @@ func (s *DownloadedFilesService) ExtractItem(itemPath string) error {
 		return err
 	}
 
-	if ext == ".zip" {
-		return s.extractZip(itemPath, targetFolder)
-	}
-
-	return s.extractWith7z(itemPath, targetFolder)
+	return s.extractArchive(itemPath, targetFolder)
 }
 
-func (s *DownloadedFilesService) extractZip(zipPath, targetFolder string) error {
-	r, err := zip.OpenReader(zipPath)
+func (s *DownloadedFilesService) extractArchive(archivePath, targetFolder string) error {
+	// 使用 github.com/mirbf/unzip 库，支持 ZIP、RAR、7Z 等格式
+	applog.LogInfof(s.ctx, "开始解压: %s -> %s", archivePath, targetFolder)
+
+	options := &unzip.ExtractOptions{
+		OutputDir: targetFolder,
+		Overwrite: true,
+	}
+
+	result, err := unzip.Extract(archivePath, options)
 	if err != nil {
-		return err
+		return fmt.Errorf("解压失败: %v", err)
 	}
-	defer r.Close()
 
-	for _, f := range r.File {
-		fpath := filepath.Join(targetFolder, f.Name)
-
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(outFile, rc)
-		outFile.Close()
-		rc.Close()
-
-		if err != nil {
-			return err
-		}
+	if !result.Success {
+		return fmt.Errorf("解压未成功完成")
 	}
+
+	applog.LogInfof(s.ctx, "解压成功: %d 个文件到 %s", result.FilesCount, result.ExtractedTo)
 	return nil
-}
-
-func (s *DownloadedFilesService) extractWith7z(archivePath, targetFolder string) error {
-	cmd := exec.Command("7z", "x", archivePath, "-o"+targetFolder, "-y")
-	_, err := cmd.CombinedOutput()
-	return err
 }
 
 func (s *DownloadedFilesService) ExtractFolder(folderPath string) error {
@@ -520,6 +537,75 @@ func (s *DownloadedFilesService) OpenFolder(itemPath string) error {
 
 func (s *DownloadedFilesService) DeleteItem(itemPath string) error {
 	return os.RemoveAll(itemPath)
+}
+
+// DeleteExtractedFolderResult 返回删除解压文件夹的结果
+type DeleteExtractedFolderResult struct {
+	HasArchive  bool            `json:"has_archive"`
+	ArchiveItem *DownloadedFile `json:"archive_item"`
+}
+
+// DeleteExtractedFolder 删除解压后的文件夹（压缩包解压出来的内容）
+func (s *DownloadedFilesService) DeleteExtractedFolder(itemPath, name string) (*DeleteExtractedFolderResult, error) {
+	result := &DeleteExtractedFolderResult{}
+	downloadFolder := s.config.GameDownloadFolder
+	// 压缩包名去掉扩展名就是解压文件夹名
+	baseName := strings.TrimSuffix(name, filepath.Ext(name))
+	extractedFolder := filepath.Join(downloadFolder, baseName)
+
+	// 删除解压文件夹
+	if err := os.RemoveAll(extractedFolder); err != nil {
+		return nil, err
+	}
+
+	// 查找是否有同名压缩包
+	compressedExtensions := map[string]bool{
+		".zip": true, ".rar": true, ".7z": true, ".tar": true,
+		".gz": true, ".bz2": true, ".xz": true, ".z": true, ".lz": true,
+	}
+
+	for ext := range compressedExtensions {
+		archivePath := filepath.Join(downloadFolder, baseName+ext)
+		if _, err := os.Stat(archivePath); err == nil {
+			// 找到同名压缩包
+			item, err := s.getSingleArchiveItem(archivePath)
+			if err != nil {
+				return nil, err
+			}
+			result.HasArchive = true
+			result.ArchiveItem = &item[0]
+			return result, nil
+		}
+	}
+
+	return result, nil
+}
+
+// getSingleArchiveItem 获取单个压缩包的单元信息
+func (s *DownloadedFilesService) getSingleArchiveItem(archivePath string) ([]DownloadedFile, error) {
+	entry, err := os.Stat(archivePath)
+	if err != nil {
+		return nil, err
+	}
+
+	name := filepath.Base(archivePath)
+	// ext := filepath.Ext(name)
+
+	item := DownloadedFile{
+		ID:             uuid.New().String(),
+		Name:           name,
+		Path:           archivePath,
+		IsFolder:       false,
+		Size:           entry.Size(),
+		IsDownloading:  s.checkIsDownloading(archivePath, name, false),
+		IsExtracted:    false, // 刚删除解压文件夹，肯定没解压
+		IsInstalled:    s.checkIsInstalled(archivePath),
+		IsImported:     s.checkIsImported(name),
+		HasNumericName: s.isNumericName(name),
+		InnerItems:     s.getArchiveInnerItems(archivePath),
+	}
+
+	return []DownloadedFile{item}, nil
 }
 
 func copyDirectory(src, dst string) error {

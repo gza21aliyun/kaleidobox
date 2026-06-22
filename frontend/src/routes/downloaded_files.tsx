@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
 import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
@@ -26,6 +26,8 @@ export default function DownloadedFiles() {
   const [installMethod, setInstallMethod] = useState<string>("name");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [searchModalItem, setSearchModalItem] = useState<DownloadedFile | null>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [currentExecutingName, setCurrentExecutingName] = useState("");
 
   const loadItems = async () => {
     setIsLoading(true);
@@ -72,39 +74,57 @@ export default function DownloadedFiles() {
   };
 
   const handleExecute = async () => {
-    for (const itemId of selectedItems) {
-      const item = items.find(i => i.id === itemId);
-      if (!item) continue;
+    setIsExecuting(true);
+    setCurrentExecutingName("");
+    try {
+      for (const itemId of selectedItems) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) continue;
 
-      if (showExtract && !item.is_extracted) {
-        await handleExtract(item);
-      }
-      if (showInstall && !item.is_installed) {
-        // 批量执行时直接使用 md5AsFolder 模式
-        try {
-          await InstallGame(item.path, md5AsFolder ? "md5" : "name");
-        } catch (err) {
-          console.error("Install failed:", err);
-          setErrorMessage(err instanceof Error ? err.message : "安装失败");
+        if (showExtract && !item.is_extracted) {
+          setCurrentExecutingName(item.name);
+          await handleExtract(item);
+        }
+        if (showInstall && !item.is_installed) {
+          setCurrentExecutingName(item.name);
+          try {
+            await InstallGame(item.path, md5AsFolder ? "md5" : "name");
+          } catch (err) {
+            console.error("Install failed:", err);
+            setErrorMessage(err instanceof Error ? err.message : "安装失败");
+          }
+        }
+        if (showImport && !item.is_imported) {
+          setCurrentExecutingName(item.name);
+          await handleImport(item);
         }
       }
-      if (showImport && !item.is_imported) {
-        await handleImport(item);
-      }
+      await loadItems();
+    } finally {
+      setIsExecuting(false);
+      setCurrentExecutingName("");
     }
-    await loadItems();
   };
 
   const handleExtract = async (item: DownloadedFile) => {
+    setCurrentExecutingName(item.name);
+    setIsExecuting(true);
     try {
       if (item.is_folder) {
         await ExtractFolder(item.path);
       } else {
         await ExtractItem(item.path);
       }
+      // 解压成功后更新状态
+      setItems(items.map(i =>
+        i.id === item.id ? { ...i, is_extracted: true } : i
+      ));
     } catch (err) {
       console.error("Extract failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "解压失败");
+    } finally {
+      setIsExecuting(false);
+      setCurrentExecutingName("");
     }
   };
 
@@ -171,6 +191,41 @@ export default function DownloadedFiles() {
     } catch (err) {
       console.error("Delete failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "删除失败");
+    }
+  };
+
+  const handleDeleteExtracted = async (item: DownloadedFile) => {
+    try {
+      const result = await DeleteExtractedFolder(item.path, item.name);
+      if (result && result.has_archive && result.archive_item) {
+        // 有同名压缩包，更新当前单元的信息（但保持 id 和 selected 状态）
+        setItems(items.map(i =>
+          i.id === item.id
+            ? {
+                ...i,
+                name: result.archive_item.name,
+                path: result.archive_item.path,
+                is_folder: false,
+                is_extracted: false,
+                size: result.archive_item.size,
+                inner_items: result.archive_item.inner_items,
+                has_numeric_name: result.archive_item.has_numeric_name,
+                contains_iso: result.archive_item.contains_iso,
+                iso_count: result.archive_item.iso_count,
+                iso_file_path: result.archive_item.iso_file_path,
+                // 保持选中状态
+              }
+            : i
+        ));
+      } else {
+        // 没有同名压缩包，只更新状态
+        setItems(items.map(i =>
+          i.id === item.id ? { ...i, is_extracted: false } : i
+        ));
+      }
+    } catch (err) {
+      console.error("Delete extracted folder failed:", err);
+      setErrorMessage(err instanceof Error ? err.message : "删除解压文件夹失败");
     }
   };
 
@@ -288,7 +343,7 @@ export default function DownloadedFiles() {
             </button>
             <button
               onClick={handleExecute}
-              disabled={selectedItems.length === 0}
+              disabled={selectedItems.length === 0 || isExecuting}
               className="px-3 py-1.5 text-sm bg-brand-600 hover:bg-brand-700 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t("downloadedFiles.execute")}
@@ -307,7 +362,21 @@ export default function DownloadedFiles() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto space-y-2">
+        <div className="flex-1 overflow-auto space-y-2 relative">
+          {isExecuting && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-2 bg-white dark:bg-brand-800 p-4 rounded-lg shadow-lg">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+                <span className="text-sm text-brand-600">{t("downloadedFiles.executing")}</span>
+                {currentExecutingName && (
+                  <span className="text-xs text-brand-500 dark:text-brand-400 max-w-xs truncate" title={currentExecutingName}>
+                    {currentExecutingName}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
@@ -367,16 +436,27 @@ export default function DownloadedFiles() {
                           {t("downloadedFiles.extract")}
                         </button>
                       ) : item.is_extracted ? (
-                        <button
-                          disabled
-                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
-                        >
-                          {t("downloadedFiles.extracted")}
-                        </button>
+                        <>
+                          <button
+                            disabled
+                            className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                          >
+                            {t("downloadedFiles.extracted")}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExtracted(item)}
+                            disabled={isExecuting}
+                            className="px-2 py-1 text-xs bg-red-400 hover:bg-red-500 text-white rounded disabled:opacity-50"
+                            title={t("downloadedFiles.deleteExtracted")}
+                          >
+                            {t("downloadedFiles.deleteExtracted")}
+                          </button>
+                        </>
                       ) : (
                         <button
                           onClick={() => handleExtract(item)}
-                          className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
+                          disabled={isExecuting}
+                          className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded disabled:opacity-50"
                         >
                           {t("downloadedFiles.extract")}
                         </button>

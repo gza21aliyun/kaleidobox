@@ -1762,9 +1762,12 @@
     "selectAll": "全选",
     "clear": "清空",
     "extract": "解压",
-    "install": "安装",
-    "import": "导入",
-    "md5AsFolder": "md5作为游戏文件夹",
+    "extracting": "解压中",
+    "extracted": "已解压",
+    "deleteExtracted": "删除解压",
+    "installed": "已安装",
+    "imported": "已导入",
+    "executing": "执行中",
     "delete": "删除",
     "execute": "执行",
     "refresh": "刷新",
@@ -1789,6 +1792,9 @@
     "installByName": "以游戏名安装",
     "installByUuid": "生成UUID安装，适合路径只能英文的游戏",
     "confirmInstall": "确认安装",
-    "confirmDelete": "确定要删除 \"{{name}}\" 吗？"
+    "confirmDelete": "确定要删除 \"{{name}}\" 吗？",
+    "install": "安装",
+    "import": "导入",
+    "md5AsFolder": "md5作为游戏文件夹"
   }
 }

@@ -380,12 +380,12 @@ export default function DownloadedFiles() {
 
         <div className="flex-1 overflow-auto space-y-2 relative">
           {isExecuting && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-              <div className="flex flex-col items-center gap-2 bg-white dark:bg-brand-800 p-4 rounded-lg shadow-lg">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
-                <span className="text-sm text-brand-600">{t("downloadedFiles.executing")}</span>
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70">
+              <div className="flex flex-col items-center gap-3 px-6 py-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-4 border-white/30 border-t-white"></div>
+                <span className="text-base text-white/90 font-medium">{t("downloadedFiles.executing")}</span>
                 {currentExecutingName && (
-                  <span className="text-xs text-brand-500 dark:text-brand-400 max-w-xs truncate" title={currentExecutingName}>
+                  <span className="text-sm text-white/70 max-w-md text-center break-all" title={currentExecutingName}>
                     {currentExecutingName}
                   </span>
                 )}

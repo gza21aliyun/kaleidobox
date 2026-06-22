@@ -145,9 +145,9 @@ export default function DownloadedFiles() {
   };
 
   const handleMount = async (item: DownloadedFile) => {
-    if (!item.iso_file_path) return;
+    if (item.iso_items.length < 1) return;
     try {
-      await MountISO(item.iso_file_path);
+      await MountISO(item.iso_items[0]);
     } catch (err) {
       console.error("Mount failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "装载失败");
@@ -155,11 +155,11 @@ export default function DownloadedFiles() {
   };
 
   const handleInstall = async (item: DownloadedFile) => {
-    if (item.iso_count === 1) {
+    if (item.iso_items.length === 1) {
       setConfirmModalType("install_iso");
       setConfirmModalItem(item);
       setShowConfirmModal(true);
-    } else if (item.iso_count === 0) {
+    } else if (item.iso_items.length === 0) {
       setConfirmModalType("install");
       setConfirmModalItem(item);
       setShowConfirmModal(true);
@@ -228,10 +228,8 @@ export default function DownloadedFiles() {
                 is_extracted: false,
                 size: archiveItem.size,
                 inner_items: archiveItem.inner_items,
+                iso_items: archiveItem.iso_items,
                 has_numeric_name: archiveItem.has_numeric_name,
-                contains_iso: archiveItem.contains_iso,
-                iso_count: archiveItem.iso_count,
-                iso_file_path: archiveItem.iso_file_path,
               }
             : i
         ));
@@ -263,11 +261,11 @@ export default function DownloadedFiles() {
   };
 
   const canInstall = (item: DownloadedFile) => {
-    return item.is_folder && item.is_extracted && item.iso_count <= 1;
+    return item.is_folder && item.is_extracted && item.iso_items.length <= 1;
   };
 
   const canMount = (item: DownloadedFile) => {
-    return item.is_folder && item.iso_count === 1;
+    return item.is_folder && item.iso_items.length === 1;
   };
 
   const isDownloadingItem = (item: DownloadedFile) => {
@@ -436,6 +434,7 @@ export default function DownloadedFiles() {
                       <div className="flex items-center gap-3 text-xs text-brand-500">
                         <span>{item.is_folder ? t("downloadedFiles.folder") : t("downloadedFiles.archive")}</span>
                         <span>{formatSize(item.size)}</span>
+                        <span>{!item.is_extracted ? "" : "isos:" + item.iso_items.length}</span>
                         {item.is_downloading && (
                           <span className="text-orange-500 flex items-center gap-1">
                             <div className="i-mdi-download animate-pulse" />
@@ -587,9 +586,9 @@ export default function DownloadedFiles() {
                             {inner}
                           </span>
                         ))}
-                        {item.inner_items.length > 5 && (
+                        {/* {item.inner_items.length > 5 && (
                           <span className="px-1.5 py-0.5 text-brand-500">+{item.inner_items.length - 5}</span>
-                        )}
+                        )} */}
                       </div>
                     )}
                   </div>

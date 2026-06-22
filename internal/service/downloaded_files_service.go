@@ -10,7 +10,6 @@ import (
 	"io/fs"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
-	"lunabox/internal/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -49,12 +48,13 @@ type DownloadedFile struct {
 	IsExtracted       bool     `json:"is_extracted"`
 	IsInstalled       bool     `json:"is_installed"`
 	IsImported        bool     `json:"is_imported"`
-	ContainsISO       bool     `json:"contains_iso"`
-	ISOCount          int      `json:"iso_count"`
-	ISOFilePath       string   `json:"iso_file_path,omitempty"`
-	InnerItems        []string `json:"inner_items"`
-	HasNumericName    bool     `json:"has_numeric_name"`
-	LongestZipName    string   `json:"longest_zip_name"`
+	// ContainsISO       bool     `json:"contains_iso"`
+	ISOItems []string `json:"iso_items"`
+	// ISOCount          int      `json:"iso_count"`
+	// ISOFilePath       string   `json:"iso_file_path,omitempty"`
+	InnerItems     []string `json:"inner_items"`
+	HasNumericName bool     `json:"has_numeric_name"`
+	LongestZipName string   `json:"longest_zip_name"`
 }
 
 var compressedExtensions = map[string]bool{
@@ -133,13 +133,16 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 		}
 
 		if isFolder {
-			item.InnerItems = s.getInnerItems(itemPath)
-			isoCount, isoPath := s.countISOFiles(itemPath)
-			item.ISOCount = isoCount
-			item.ContainsISO = isoCount > 0
-			if isoCount == 1 {
-				item.ISOFilePath = isoPath
-			}
+			innerItems, isoItems := s.getInnerItems(itemPath)
+			// isoCount, isoPath, innerItems := s.countISOFiles(itemPath)
+			// isoCount := len(isoItems)
+			item.InnerItems = innerItems
+			item.ISOItems = isoItems
+			// item.ISOCount = isoCount
+			// item.ContainsISO = isoCount > 0
+			// if isoCount == 1 {
+			// 	item.ISOFilePath = isoItems[0]
+			// }
 			folderItems = append(folderItems, item)
 		} else {
 			item.InnerItems = s.getArchiveInnerItems(itemPath)
@@ -422,11 +425,13 @@ func (s *DownloadedFilesService) findLongestZipName(folderPath string) string {
 	return s.JudgeGameName(zipNames)
 }
 
-func (s *DownloadedFilesService) getInnerItems(folderPath string) []string {
+func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []string) {
+	itemsMap := make(map[string]string)
 	items := []string{}
 	entries, err := os.ReadDir(folderPath)
+	isoItems := []string{}
 	if err != nil {
-		return items
+		return items, isoItems
 	}
 
 	for i, entry := range entries {
@@ -435,18 +440,30 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) []string {
 		}
 		filename := entry.Name()
 		filebase := strings.TrimSuffix(filename, filepath.Ext(filename))
-		// ext := strings.ToLower(filepath.Ext(filename))
-		// if compressedExtensions[ext] {
-		// 	continue
-		// }
-		if utils.Contains(items, func(item string) bool {
-			return item == filebase
-		}) {
-			continue
+		itemsMap[filebase] = filename
+		if (strings.Contains(filebase, "iso") || strings.Contains(filebase, "mdf")) && entry.IsDir() {
+			subEntries, err := os.ReadDir(filepath.Join(folderPath, filebase))
+			if err != nil {
+				continue
+			}
+			for _, subEntry := range subEntries {
+				subFilebase := strings.TrimSuffix(subEntry.Name(), filepath.Ext(subEntry.Name()))
+				ext := strings.ToLower(filepath.Ext(subEntry.Name()))
+				if imageExtensions[ext] {
+					itemsMap[subFilebase] = subEntry.Name()
+					fullpath := filepath.Join(folderPath, filebase, subEntry.Name())
+					isoItems = append(isoItems, fullpath)
+				}
+			}
 		}
-		items = append(items, filebase)
 	}
-	return items
+	for _, v := range itemsMap {
+		items = append(items, v)
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return len(items[i]) < len(items[j])
+	})
+	return items, isoItems
 }
 
 func (s *DownloadedFilesService) getArchiveInnerItems(archivePath string) []string {
@@ -471,30 +488,41 @@ func (s *DownloadedFilesService) getArchiveInnerItems(archivePath string) []stri
 	return items
 }
 
-func (s *DownloadedFilesService) countISOFiles(folderPath string) (int, string) {
+func (s *DownloadedFilesService) countISOFiles(folderPath string) (int, string, []string) {
 	count := 0
 	var isoPath string
+	innerItemsMap := make(map[string]string)
 
 	err := filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
+		relativePath, _ := filepath.Rel(folderPath, path)
+		level := strings.Count(relativePath, string(filepath.Separator))
 		if !d.IsDir() {
 			ext := strings.ToLower(filepath.Ext(d.Name()))
 			if imageExtensions[ext] {
 				count++
+				innerItemsMap[d.Name()] = d.Name()
 				if isoPath == "" {
 					isoPath = path
 				}
+			} else if level == 0 {
+				innerItemsMap[d.Name()] = d.Name()
 			}
 		}
 		return nil
 	})
+	innerItems := []string{}
+
+	for k := range innerItemsMap {
+		innerItems = append(innerItems, k)
+	}
 
 	if err != nil {
-		return 0, ""
+		return 0, "", innerItems
 	}
-	return count, isoPath
+	return count, isoPath, innerItems
 }
 
 func (s *DownloadedFilesService) ExtractItem(itemPath string) error {

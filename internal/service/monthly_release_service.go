@@ -61,12 +61,15 @@ func (s *MonthlyReleaseService) prepareTempDir() (string, error) {
 	tempDir := filepath.Join(dataDir, "monthly", "temp")
 
 	// 清除旧文件夹
-	os.RemoveAll(tempDir)
+	// os.RemoveAll(tempDir)
 	// 重新创建
-	err = os.MkdirAll(tempDir, os.ModePerm)
-	if err != nil {
-		return "", err
+	if _, err := os.Stat(tempDir); os.IsNotExist(err) {
+		err = os.MkdirAll(tempDir, os.ModePerm)
+		if err != nil {
+			return "", err
+		}
 	}
+
 	applog.InfoLogSaveAppLog("MonthlyReleaseService: temp dir prepared: %s", tempDir)
 	return tempDir, nil
 }
@@ -138,4 +141,44 @@ func (s *MonthlyReleaseService) downloadCoverImage(imageURL, localPath string) e
 	}
 
 	return nil
+}
+
+// FetchGetchuImages 获取 Getchu 游戏截图并下载到临时文件夹，返回本地路径列表
+func (s *MonthlyReleaseService) FetchGetchuImages(imageUrls []string) ([]string, error) {
+	if len(imageUrls) == 0 {
+		return []string{}, nil
+	}
+
+	// 使用与封面图相同的临时目录
+	tempDir, err := s.prepareTempDir()
+	if err != nil {
+		return []string{}, err
+	}
+
+	// 下载所有截图到临时目录
+	var localPaths []string
+	for i, imageUrl := range imageUrls {
+		if imageUrl == "" {
+			continue
+		}
+		localPath := filepath.Join(tempDir, fmt.Sprintf("gallery_%d.jpg", i))
+		err := s.downloadCoverImage(imageUrl, localPath)
+		if err != nil {
+			applog.InfoLogSaveAppLog("MonthlyReleaseService: failed to download image [%s]: %v", imageUrl, err)
+			continue
+		}
+		applog.InfoLogSaveAppLog("FetchGetchuImages: downloaded [%s] to [%s]", imageUrl, localPath)
+		localPaths = append(localPaths, localPath)
+	}
+
+	return localPaths, nil
+}
+
+// ClearGetchuTempImages 清空 Getchu 截图临时文件夹
+func (s *MonthlyReleaseService) ClearGetchuTempImages() error {
+	tempDir, err := s.prepareTempDir()
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(tempDir)
 }

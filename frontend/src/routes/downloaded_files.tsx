@@ -579,22 +579,23 @@ export default function DownloadedFiles() {
                         </button>
                       )}
 
-                      {/* 打开按钮 */}
-                      {item.is_installed ? (
+                      {/* 打开安装按钮 */}
+                      {item.is_installed && (
                         <button
                           onClick={() => handleOpenInstalled(item)}
                           className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
                         >
                           {t("downloadedFiles.openInstall")}
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => handleOpen(item)}
-                          className="px-2 py-1 text-xs bg-brand-500 hover:bg-brand-600 text-white rounded"
-                        >
-                          {t("downloadedFiles.openDownload")}
-                        </button>
                       )}
+
+                      {/* 打开下载按钮 */}
+                      <button
+                        onClick={() => handleOpen(item)}
+                        className="px-2 py-1 text-xs bg-brand-500 hover:bg-brand-600 text-white rounded"
+                      >
+                        {t("downloadedFiles.openDownload")}
+                      </button>
 
                       {/* 删除安装按钮 */}
                       {item.is_installed && (

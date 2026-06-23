@@ -1,8 +1,8 @@
 import { models, enums } from "../../../wailsjs/go/models";
 import { FetchMetadata } from "../../../wailsjs/go/service/GameService";
-import { useState, useEffect } from "react";
+import { FetchGetchuImages } from "../../../wailsjs/go/service/MonthlyReleaseService";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ImageCard } from "../card/ImageCard";
 import { workMapForEach, charactorsForEach } from "../utils/Utility";
 import toast from "react-hot-toast";
 
@@ -12,6 +12,100 @@ interface GetchuGameInfoPanelProps {
   company: string;
   coverURL: string;
   onClose: () => void;
+}
+
+// 将本地文件路径转换为 /local/ URL 供前端显示
+function getLocalPath(localPath: string): string {
+  if (!localPath) return "";
+  const ar = localPath.split("\\");
+  if (ar.length < 3) return "";
+  return `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`;
+}
+
+// 获取图片源，优先用本地路径
+function getImgSrc(url: string): string {
+  if (!url) return "";
+  if (url.includes("\\") || url.includes("/")) {
+    return getLocalPath(url);
+  }
+  return url;
+}
+
+// 懒加载截图组件
+interface LazyScreenshotProps {
+  imageUrl: string;
+  index: number;
+  alt: string;
+}
+
+function LazyScreenshot({ imageUrl, index, alt }: LazyScreenshotProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [localUrl, setLocalUrl] = useState("");
+  const [isError, setIsError] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isLoaded) {
+          loadImage();
+        }
+      },
+      { threshold: 0.1, rootMargin: "50px" }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, [isLoaded]);
+
+  const loadImage = async () => {
+    try {
+      const localPaths = await FetchGetchuImages([imageUrl]);
+      if (localPaths.length > 0) {
+        setLocalUrl(getLocalPath(localPaths[0]));
+      }
+      setIsLoaded(true);
+    } catch (error) {
+      console.error("Failed to load screenshot:", error);
+      setIsError(true);
+      setIsLoaded(true);
+    }
+  };
+
+  if (isError) {
+    return (
+      <div ref={ref} className="w-full aspect-video bg-brand-100 dark:bg-brand-700 rounded-lg flex items-center justify-center">
+        <div className="i-mdi-image-off text-2xl text-brand-400" />
+      </div>
+    );
+  }
+
+  if (!isLoaded || !localUrl) {
+    return (
+      <div ref={ref} className="w-full aspect-video bg-brand-100 dark:bg-brand-700 rounded-lg flex items-center justify-center">
+        <div className="w-6 h-6 border-3 border-brand-300 border-t-brand-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={localUrl}
+      alt={alt}
+      className="w-full aspect-video object-cover rounded-lg"
+      onError={(e) => {
+        setIsError(true);
+        (e.target as HTMLImageElement).style.display = 'none';
+      }}
+    />
+  );
 }
 
 export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onClose }: GetchuGameInfoPanelProps) {
@@ -43,9 +137,10 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
       const fetchedGame = await FetchMetadata(request as any);
       setGame(fetchedGame);
 
-      if (fetchedGame.images) {
-        setImages(fetchedGame.images.split(",").filter((img: string) => img.trim() !== ""));
-      }
+      // 只保存截图 URL 列表，不立即下载
+      const imageUrls = fetchedGame.images ? fetchedGame.images.split(",").filter((img: string) => img.trim() !== "") : [];
+      console.log("Found", imageUrls.length, "screenshot URLs");
+      setImages(imageUrls);
 
       const workMap = new Map<enums.StaffRole, models.Work[]>();
       setWorksMap(workMap);
@@ -117,10 +212,13 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
                 <div className="flex flex-col xl:flex-row gap-4">
                   {charactor.charactor_image && (
                     <div className="flex-shrink-0 w-32 h-48">
-                      <ImageCard
-                        url={charactor.charactor_image}
-                        alt={charactor.charactor_name}
+                      <img
+                        src={charactor.charactor_image}
+                        alt={charactor.charactor_name || "角色"}
                         className="w-full h-full object-cover rounded-lg"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
                     </div>
                   )}
@@ -154,12 +252,12 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
         <h3 className="text-lg font-semibold text-brand-900 dark:text-white mb-3">{t("gameGallery.gallery") || "截图"}</h3>
         {images.length > 0 ? (
           <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
-            {images.map((img, index) => (
-              <ImageCard
+            {images.map((imgUrl, index) => (
+              <LazyScreenshot
                 key={index}
-                url={img}
+                imageUrl={imgUrl}
+                index={index}
                 alt={`${gameName} ${index + 1}`}
-                className="w-full aspect-video object-cover rounded-lg"
               />
             ))}
           </div>

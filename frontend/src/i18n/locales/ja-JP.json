@@ -1729,6 +1729,7 @@
     "extracting": "解凍中",
     "extracted": "展開済み",
     "deleteExtracted": "展開を削除",
+    "deleteInstalled": "インストールを削除",
     "installed": "インストール済み",
     "imported": "インポート済み",
     "executing": "実行中",

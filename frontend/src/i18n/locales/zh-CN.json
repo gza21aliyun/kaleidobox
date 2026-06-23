@@ -1768,6 +1768,7 @@
     "extracting": "解压中",
     "extracted": "已解压",
     "deleteExtracted": "删除解压",
+    "deleteInstalled": "删除安装",
     "installed": "已安装",
     "imported": "已导入",
     "executing": "执行中",

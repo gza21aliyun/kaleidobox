@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, ExtractGameNameFromDLSite, CreateDownloadedFile, CreateArchieveFile } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, CreateArchieveFile } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
 import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
@@ -273,6 +273,19 @@ export default function DownloadedFiles() {
     } catch (err) {
       console.error("Delete extracted folder failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "删除解压文件夹失败");
+    }
+  };
+
+  const handleDeleteInstalled = async (item: DownloadedFile) => {
+    try {
+      await DeleteInstalledGame(item);
+      // 删除成功后更新单元状态
+      setItems(items.map(i =>
+        i.id === item.id ? { ...i, is_installed: false, installed_path: "" } : i
+      ));
+    } catch (err) {
+      console.error("Delete installed game failed:", err);
+      setErrorMessage(err instanceof Error ? err.message : "删除安装失败");
     }
   };
 
@@ -580,6 +593,18 @@ export default function DownloadedFiles() {
                           className="px-2 py-1 text-xs bg-brand-500 hover:bg-brand-600 text-white rounded"
                         >
                           {t("downloadedFiles.openDownload")}
+                        </button>
+                      )}
+
+                      {/* 删除安装按钮 */}
+                      {item.is_installed && (
+                        <button
+                          onClick={() => handleDeleteInstalled(item)}
+                          disabled={isExecuting}
+                          className="px-2 py-1 text-xs bg-red-400 hover:bg-red-500 text-white rounded disabled:opacity-50"
+                          title={t("downloadedFiles.deleteInstalled")}
+                        >
+                          {t("downloadedFiles.deleteInstalled")}
                         </button>
                       )}
 

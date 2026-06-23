@@ -863,6 +863,47 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 	return targetPath, nil
 }
 
+// DeleteInstalledGame 删除已安装的游戏
+func (s *DownloadedFilesService) DeleteInstalledGame(downloadedFile DownloadedFile) error {
+	installFolder := s.config.GameInstallFolder
+	if installFolder == "" {
+		return fmt.Errorf("游戏安装文件夹未配置")
+	}
+
+	// 直接使用单元的 gameName 字段，而不是重新计算
+	gameName := downloadedFile.GameName
+	if gameName == "" {
+		// 兼容旧数据，作为后备方案
+		baseName := filepath.Base(downloadedFile.Path)
+		gameName = s.ExtractGameNameFromDLSite(baseName)
+	}
+
+	// 检查以游戏名命名的文件夹
+	targetPath := filepath.Join(installFolder, gameName)
+	if _, err := os.Stat(targetPath); err == nil {
+		applog.LogInfof(s.ctx, "删除安装目录: %s", targetPath)
+		if err := os.RemoveAll(targetPath); err != nil {
+			applog.LogErrorf(s.ctx, "删除安装目录失败: %v", err)
+			return err
+		}
+		return nil
+	}
+
+	// 检查以 md5 命名的文件夹
+	md5Name := s.getGameNameMD5(gameName)
+	md5Path := filepath.Join(installFolder, md5Name)
+	if _, err := os.Stat(md5Path); err == nil {
+		applog.LogInfof(s.ctx, "删除安装目录: %s", md5Path)
+		if err := os.RemoveAll(md5Path); err != nil {
+			applog.LogErrorf(s.ctx, "删除安装目录失败: %v", err)
+			return err
+		}
+		return nil
+	}
+
+	return fmt.Errorf("未找到安装目录: %s 或 %s", targetPath, md5Path)
+}
+
 func (s *DownloadedFilesService) ExtractISO(isoPath, targetPath string) error {
 	sevenZipPath := s.config.SevenZipPath
 	if sevenZipPath == "" {

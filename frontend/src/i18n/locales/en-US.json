@@ -1764,6 +1764,7 @@
     "extracting": "Extracting",
     "extracted": "Extracted",
     "deleteExtracted": "Delete Extract",
+    "deleteInstalled": "Delete Install",
     "installed": "Installed",
     "imported": "Imported",
     "executing": "Executing",

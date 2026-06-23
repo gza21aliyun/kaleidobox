@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"lunabox/internal/applog"
+	"lunabox/internal/enums"
+	"lunabox/internal/models"
 	"lunabox/internal/utils"
+	"lunabox/internal/vo"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -179,4 +182,22 @@ func (s *MonthlyReleaseService) ClearGetchuTempImages() error {
 		return err
 	}
 	return os.RemoveAll(tempDir)
+}
+
+// FetchGetchuGameDetail 获取 Getchu 游戏详情（不保存到数据库，只返回数据）
+func (s *MonthlyReleaseService) FetchGetchuGameDetail(getchuId string) (models.GameEntity, error) {
+	applog.InfoLogSaveAppLog("FetchGetchuGameDetail: fetching detail for %s", getchuId)
+
+	// 直接调用 GetchuInfoGetter 获取数据
+	getchuGetter := utils.NewGetchuInfoGetter()
+	req := vo.MetadataRequest{ID: getchuId, Source: enums.Getchu}
+	gameEntity, err := getchuGetter.FetchMetadataById(req)
+	if err != nil {
+		applog.InfoLogSaveAppLog("FetchGetchuGameDetail: failed to fetch %s: %v", getchuId, err)
+		return models.GameEntity{}, err
+	}
+
+	applog.InfoLogSaveAppLog("FetchGetchuGameDetail: found %d works, %d images for %s",
+		len(gameEntity.WorksMap), len(gameEntity.Game.Images), getchuId)
+	return gameEntity, nil
 }

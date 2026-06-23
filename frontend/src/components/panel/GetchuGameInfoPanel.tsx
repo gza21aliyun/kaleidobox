@@ -1,6 +1,5 @@
 import { models, enums } from "../../../wailsjs/go/models";
-import { FetchMetadata } from "../../../wailsjs/go/service/GameService";
-import { FetchGetchuImages } from "../../../wailsjs/go/service/MonthlyReleaseService";
+import { FetchGetchuImages, FetchGetchuGameDetail } from "../../../wailsjs/go/service/MonthlyReleaseService";
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { workMapForEach, charactorsForEach } from "../utils/Utility";
@@ -111,7 +110,7 @@ function LazyScreenshot({ imageUrl, index, alt }: LazyScreenshotProps) {
 export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onClose }: GetchuGameInfoPanelProps) {
   const { t } = useTranslation();
   const [game, setGame] = useState<models.Game | null>(null);
-  const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map());
+  const [worksMap, setWorksMap] = useState<Map<string, models.Work[]>>(new Map());
   const [images, setImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
@@ -125,25 +124,29 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
     
     setIsLoading(true);
     try {
-      const request = {
-        id: getchuId,
-        source: "getchu",
-        should_fetch_charactors: true,
-        should_fetch_staffs: true,
-        should_fetch_images: true,
-        is_overwrite: false,
-      };
+      console.log("Fetching game detail for:", getchuId);
+      const gameEntity = await FetchGetchuGameDetail(getchuId);
+      console.log("FetchGetchuGameDetail result:", gameEntity);
+      
+      setGame(gameEntity.game);
 
-      const fetchedGame = await FetchMetadata(request as any);
-      setGame(fetchedGame);
-
-      // 只保存截图 URL 列表，不立即下载
-      const imageUrls = fetchedGame.images ? fetchedGame.images.split(",").filter((img: string) => img.trim() !== "") : [];
+      // 设置截图 URL 列表（Game.Images 是逗号分隔的字符串）
+      const imagesStr = gameEntity.game.images || "";
+      const imageUrls = imagesStr.split(",").filter((img: string) => img && img.trim() !== "");
       console.log("Found", imageUrls.length, "screenshot URLs");
       setImages(imageUrls);
 
-      const workMap = new Map<enums.StaffRole, models.Work[]>();
-      setWorksMap(workMap);
+      // 设置 WorksMap
+      console.log("WorksMap keys:", gameEntity.worksMap ? Object.keys(gameEntity.worksMap) : "empty");
+      const workMap = new Map<string, models.Work[]>();
+      if (gameEntity.worksMap) {
+        for (const [key, value] of Object.entries(gameEntity.worksMap)) {
+          console.log("Adding works for role:", key, "count:", value?.length);
+          workMap.set(key, value as models.Work[]);
+        }
+      }
+      console.log("Converted workMap size:", workMap.size);
+      setWorksMap(workMap as any);
     } catch (error) {
       console.error("Failed to fetch game info:", error);
       toast.error(t("gameInfo.fetchFailed") || "获取游戏信息失败");
@@ -203,7 +206,7 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
       <div>
         <h3 className="text-lg font-semibold text-brand-900 dark:text-white mb-3">{t("gameIntro.characters") || "角色"}</h3>
         <div className="space-y-4">
-          {worksMap.has(enums.StaffRole.CHARACTOR) || worksMap.has(enums.StaffRole.CV) ? (
+          {worksMap.has("角色") || worksMap.has("声优") ? (
             charactorsForEach(worksMap, (charactor) => (
               <div
                 key={`${charactor.charactor_name}-${charactor.staff_name}`}
@@ -282,7 +285,7 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
                         key={index}
                         className="text-sm text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/50 px-2 py-1 rounded"
                       >
-                        {work.role === enums.StaffRole.CV
+                        {work.role === "声优"
                           ? `${work.staff_name || ''} (${work.charactor_name || t('gameInfo.unknownCharacter') || '未知角色'})`
                           : work.staff_name || t('gameInfo.staff', { index: index + 1 }) || `工作人员 ${index + 1}`
                         }

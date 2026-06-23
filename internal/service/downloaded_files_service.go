@@ -133,7 +133,9 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 		if isFolder {
 			innerItems, isoItems := s.getInnerItems(itemPath)
 			if item.HasNumericName {
-				item.GameName = s.JudgeGameName(innerItems)
+				item.Name = s.JudgeGameName(innerItems)
+				item.GameName = s.ExtractGameNameFromDLSite(item.Name)
+				fmt.Printf("GameName: %s changed from %s\n", item.GameName, name)
 			}
 			// isoCount, isoPath, innerItems := s.countISOFiles(itemPath)
 			// isoCount := len(isoItems)

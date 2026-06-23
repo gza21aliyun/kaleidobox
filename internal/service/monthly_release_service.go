@@ -161,7 +161,8 @@ func (s *MonthlyReleaseService) FetchGetchuImages(imageUrls []string) ([]string,
 		if imageUrl == "" {
 			continue
 		}
-		localPath := filepath.Join(tempDir, fmt.Sprintf("gallery_%d.jpg", i))
+		// 使用时间戳和索引生成唯一文件名，避免多张图片覆盖
+		localPath := filepath.Join(tempDir, fmt.Sprintf("gallery_%d_%d.jpg", time.Now().UnixNano(), i))
 		err := s.downloadCoverImage(imageUrl, localPath)
 		if err != nil {
 			applog.InfoLogSaveAppLog("MonthlyReleaseService: failed to download image [%s]: %v", imageUrl, err)

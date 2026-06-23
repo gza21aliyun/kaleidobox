@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, ExtractGameNameFromDLSite } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
 import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
@@ -124,7 +124,7 @@ export default function DownloadedFiles() {
     setCurrentExecutingName(getDisplayTitle(item));
     setIsExecuting(true);
     try {
-      if (item.is_folder) {
+      if (item.type == 1) {
         const extractedFolder = await ExtractFolder(item);
         setItems(items.map(i =>
           i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths } : i
@@ -193,6 +193,22 @@ export default function DownloadedFiles() {
     }
   };
 
+  const handleOpenInstalled = async (item: DownloadedFile) => {
+    try {
+      const config = useAppStore.getState().config;
+      if (config?.game_install_folder) {
+        const baseName = item.name.replace(/\.[^.]+$/, "");
+        console.log("handleOpenInstalled baseName:", baseName);
+        const extractedGameName = ExtractGameNameFromDLSite(baseName);
+        const installPath = `${config.game_install_folder}/${extractedGameName}`;
+        await OpenLocalPath(installPath);
+      }
+    } catch (err) {
+      console.error("Open installed folder failed:", err);
+    }
+  };
+
+
   const handleOpenSearch = (item: DownloadedFile) => {
     setSearchModalItem(item);
   };
@@ -249,7 +265,7 @@ export default function DownloadedFiles() {
     if (item.has_numeric_name && item.longest_zip_name) {
       return item.longest_zip_name;
     }
-    const ext = item.is_folder ? "" : (item.name.match(/\.[^.]+$/)?.[0] || "");
+    const ext = item.type == 1 ? "" : (item.name.match(/\.[^.]+$/)?.[0] || "");
     return item.name.replace(new RegExp(`${ext}$`), "");
   };
 
@@ -261,11 +277,11 @@ export default function DownloadedFiles() {
   };
 
   const canInstall = (item: DownloadedFile) => {
-    return item.is_folder && item.is_extracted && item.iso_items.length <= 1;
+    return item.is_extracted && item.iso_items.length <= 1;
   };
 
   const canMount = (item: DownloadedFile) => {
-    return item.is_folder && item.iso_items.length === 1;
+    return item.iso_items.length === 1;
   };
 
   const isDownloadingItem = (item: DownloadedFile) => {
@@ -422,7 +438,7 @@ export default function DownloadedFiles() {
 
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className={`text-lg ${item.is_folder ? "i-mdi-folder" : "i-mdi-archive"} flex-shrink-0`} />
+                      <div className={`text-lg ${item.type == 1 ? "i-mdi-folder" : "i-mdi-archive"} flex-shrink-0`} />
                       <span className="font-medium truncate min-w-0" title={getDisplayTitle(item)}>{getDisplayTitle(item)}</span>
                       {item.has_numeric_name && (
                         <span className="text-xs text-brand-500 flex-shrink-0">({item.name})</span>
@@ -432,7 +448,7 @@ export default function DownloadedFiles() {
                     {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <div className="flex items-center gap-3 text-xs text-brand-500">
-                        <span>{item.is_folder ? t("downloadedFiles.folder") : t("downloadedFiles.archive")}</span>
+                        {/* <span>{item.type == 1 ? t("downloadedFiles.folder") : t("downloadedFiles.archive")}</span> */}
                         <span>{formatSize(item.size)}</span>
                         <span>{!item.is_extracted ? "" : "isos:" + item.iso_items.length}</span>
                         {item.is_downloading && (
@@ -543,12 +559,21 @@ export default function DownloadedFiles() {
                       )}
 
                       {/* 打开按钮 */}
-                      <button
-                        onClick={() => handleOpen(item)}
-                        className="px-2 py-1 text-xs bg-brand-500 hover:bg-brand-600 text-white rounded"
-                      >
-                        {t("downloadedFiles.open")}
-                      </button>
+                      {item.is_installed ? (
+                        <button
+                          onClick={() => handleOpenInstalled(item)}
+                          className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.openInstall")}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleOpen(item)}
+                          className="px-2 py-1 text-xs bg-brand-500 hover:bg-brand-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.openDownload")}
+                        </button>
+                      )}
 
                       {/* 搜索按钮 */}
                       <button

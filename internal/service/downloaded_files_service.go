@@ -42,12 +42,13 @@ type DownloadedFile struct {
 	Path              string   `json:"path"`
 	ExtractedGamePath string   `json:"extracted_game_path,omitempty"` // 解压后的游戏文件夹路径（主路径）
 	ExtractedPaths    []string `json:"extracted_paths,omitempty"`     // 所有解压后的文件夹路径
-	IsFolder          bool     `json:"is_folder"`
-	Size              int64    `json:"size"`
-	IsDownloading     bool     `json:"is_downloading"` // 是否有未下载完的临时文件
-	IsExtracted       bool     `json:"is_extracted"`
-	IsInstalled       bool     `json:"is_installed"`
-	IsImported        bool     `json:"is_imported"`
+	// IsFolder          bool     `json:"is_folder"`
+	Type          int   `json:"type"` // 1: 单元文件夹包含一个或多个压缩包; 2: 游戏下载文件夹下单个压缩包或多了同名文件夹（解压后）结构
+	Size          int64 `json:"size"`
+	IsDownloading bool  `json:"is_downloading"` // 是否有未下载完的临时文件
+	IsExtracted   bool  `json:"is_extracted"`
+	IsInstalled   bool  `json:"is_installed"`
+	IsImported    bool  `json:"is_imported"`
 	// ContainsISO       bool     `json:"contains_iso"`
 	ISOItems []string `json:"iso_items"`
 	// ISOCount          int      `json:"iso_count"`
@@ -111,7 +112,6 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 		if !isFolder && !isCompressed {
 			continue
 		}
-
 		extractedGamePath, extractedPaths := s.getExtractedPaths(itemPath, name, isFolder)
 		item := DownloadedFile{
 			ID:                uuid.New().String(),
@@ -119,13 +119,14 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			Path:              itemPath,
 			ExtractedGamePath: extractedGamePath,
 			ExtractedPaths:    extractedPaths,
-			IsFolder:          isFolder,
-			Size:              info.Size(),
-			IsDownloading:     s.checkIsDownloading(itemPath, name, isFolder),
-			IsExtracted:       s.checkIsExtracted(itemPath, name, isFolder),
-			IsInstalled:       s.checkIsInstalled(itemPath),
-			IsImported:        s.checkIsImported(name),
-			HasNumericName:    s.isNumericName(name),
+			// IsFolder:          isFolder,
+			Type: 2,
+			Size: info.Size(),
+			// IsDownloading:     s.checkIsDownloading(itemPath, name, itemType),
+			// IsExtracted:       s.checkIsExtracted(itemPath, name, itemType),
+			IsInstalled:    s.checkIsInstalled(itemPath),
+			IsImported:     s.checkIsImported(name),
+			HasNumericName: s.isNumericName(name),
 		}
 
 		if item.HasNumericName && isFolder {
@@ -143,9 +144,14 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			// if isoCount == 1 {
 			// 	item.ISOFilePath = isoItems[0]
 			// }
+			// type=1: 文件夹包含多个压缩包
+			item.Type = 1
 			folderItems = append(folderItems, item)
 		} else {
 			item.InnerItems = s.getArchiveInnerItems(itemPath)
+			item.ISOItems = []string{}
+			// type=2: 压缩包解压后多了同名文件夹结构
+			item.Type = 2
 			archiveItems = append(archiveItems, item)
 		}
 	}
@@ -176,12 +182,19 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			if s.hasExtractedContent(folder.Path) {
 				// 文件夹有内容，显示文件夹，标记为已解压
 				folder.IsExtracted = true
+				// type=1: 文件夹包含多个压缩包
+				folder.Type = 1
+				folder.IsDownloading = s.checkIsDownloading(folder.Path, folder.Name, 1)
+				folder.IsExtracted = s.checkIsExtracted(folder.Path, folder.Name, 1)
 				items = append(items, folder)
 				displayedArchives[baseName] = true
 			}
 			// 如果文件夹没有内容，不显示文件夹，后续会显示压缩包
 		} else {
-			// 没有同名压缩包，显示文件夹
+			// 没有同名压缩包，type=2: 单个文件夹结构
+			folder.Type = 2
+			folder.IsDownloading = s.checkIsDownloading(folder.Path, folder.Name, 2)
+			folder.IsExtracted = s.checkIsExtracted(folder.Path, folder.Name, 2)
 			items = append(items, folder)
 		}
 	}
@@ -190,6 +203,9 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 	for _, archive := range archiveItems {
 		baseName := strings.TrimSuffix(archive.Name, filepath.Ext(archive.Name))
 		if !displayedArchives[baseName] {
+			archive.Type = 2
+			archive.IsDownloading = s.checkIsDownloading(archive.Path, archive.Name, 2)
+			archive.IsExtracted = s.checkIsExtracted(archive.Path, archive.Name, 2)
 			items = append(items, archive)
 		}
 	}
@@ -201,9 +217,9 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 	return items, nil
 }
 
-func (s *DownloadedFilesService) checkIsExtracted(itemPath, name string, isFolder bool) bool {
+func (s *DownloadedFilesService) checkIsExtracted(itemPath, name string, itemType int) bool {
 	downloadFolder := s.config.GameDownloadFolder
-	if isFolder {
+	if itemType == 1 {
 		// 检查文件夹内是否有真正的解压内容（不是只有压缩包）
 		return s.hasExtractedContent(itemPath)
 	} else {
@@ -348,19 +364,19 @@ func (s *DownloadedFilesService) checkIsImported(name string) bool {
 }
 
 // checkIsDownloading 检查是否有未下载完的临时文件（QBittorrent 的 .!qB 文件，uTorrent 的 .!ut 文件）
-func (s *DownloadedFilesService) checkIsDownloading(itemPath, name string, isFolder bool) bool {
-	if isFolder {
+func (s *DownloadedFilesService) checkIsDownloading(itemPath, name string, itemType int) bool {
+	if itemType == 1 {
 		// 对于文件夹，检查是否有对应的临时文件
 		// .!qB - QBittorrent
-		tempFilePath := filepath.Join(filepath.Dir(itemPath), name+".!qB")
-		if _, err := os.Stat(tempFilePath); err == nil {
-			return true
-		}
-		// .!ut - uTorrent
-		tempFilePath = filepath.Join(filepath.Dir(itemPath), name+".!ut")
-		if _, err := os.Stat(tempFilePath); err == nil {
-			return true
-		}
+		// tempFilePath := filepath.Join(filepath.Dir(itemPath), name+".!qB")
+		// if _, err := os.Stat(tempFilePath); err == nil {
+		// 	return true
+		// }
+		// // .!ut - uTorrent
+		// tempFilePath = filepath.Join(filepath.Dir(itemPath), name+".!ut")
+		// if _, err := os.Stat(tempFilePath); err == nil {
+		// 	return true
+		// }
 		// 也检查文件夹内部是否有临时文件
 		entries, err := os.ReadDir(itemPath)
 		if err != nil {
@@ -705,6 +721,8 @@ func (s *DownloadedFilesService) InstallGame(itemPath, installMethod string) (st
 		return "", fmt.Errorf("游戏安装文件夹未配置")
 	}
 
+	applog.LogInfof(s.ctx, "开始安装: %s", itemPath)
+
 	var gameName string
 	baseName := filepath.Base(itemPath)
 
@@ -725,6 +743,7 @@ func (s *DownloadedFilesService) InstallGame(itemPath, installMethod string) (st
 
 	files, err := os.ReadDir(itemPath)
 	if err != nil {
+		applog.LogErrorf(s.ctx, "读取目录失败: %s, 错误: %v", itemPath, err)
 		return "", err
 	}
 
@@ -748,22 +767,59 @@ func (s *DownloadedFilesService) InstallGame(itemPath, installMethod string) (st
 
 		if len(isoFiles) == 1 {
 			if err := os.MkdirAll(targetPath, 0755); err != nil {
+				applog.LogErrorf(s.ctx, "创建目录失败: %s, 错误: %v", targetPath, err)
 				return "", err
 			}
-			return targetPath, s.ExtractISO(isoFiles[0], targetPath)
+			applog.LogInfof(s.ctx, "开始解压ISO: %s -> %s", isoFiles[0], targetPath)
+			err := s.ExtractISO(isoFiles[0], targetPath)
+			if err != nil {
+				applog.LogErrorf(s.ctx, "解压ISO失败: %v", err)
+				return "", err
+			}
+			applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
+			return targetPath, nil
 		}
+		applog.LogErrorf(s.ctx, "包含多个镜像文件，无法自动安装")
 		return "", fmt.Errorf("包含多个镜像文件，无法自动安装")
 	}
 
+	// 检查文件夹内是否有子文件夹（type=1的情况，解压后的结构）
+	subDirs := []string{}
+	for _, file := range files {
+		if file.IsDir() {
+			subDirs = append(subDirs, file.Name())
+		}
+	}
+
+	// 如果只有一个子文件夹，可能是解压后多了层目录，直接使用子文件夹的内容
+	if len(subDirs) == 1 {
+		innerPath := filepath.Join(itemPath, subDirs[0])
+		applog.LogInfof(s.ctx, "检测到单层子文件夹，使用内部路径安装: %s", innerPath)
+		if err := copyDirectory(innerPath, targetPath); err != nil {
+			applog.LogErrorf(s.ctx, "复制目录失败: %v", err)
+			return "", err
+		}
+		applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
+		return targetPath, nil
+	}
+
+	// 直接复制整个文件夹
+	applog.LogInfof(s.ctx, "复制目录: %s -> %s", itemPath, targetPath)
 	if err := copyDirectory(itemPath, targetPath); err != nil {
+		applog.LogErrorf(s.ctx, "复制目录失败: %v", err)
 		return "", err
 	}
 
+	applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
 	return targetPath, nil
 }
 
 func (s *DownloadedFilesService) ExtractISO(isoPath, targetPath string) error {
-	cmd := exec.Command("7z", "x", isoPath, "-o"+targetPath, "-y")
+	sevenZipPath := s.config.SevenZipPath
+	if sevenZipPath == "" {
+		sevenZipPath = "7z"
+	}
+	cmd := exec.Command(sevenZipPath, "x", isoPath, "-o"+targetPath, "-y")
 	_, err := cmd.CombinedOutput()
 	return err
 }
@@ -844,9 +900,9 @@ func (s *DownloadedFilesService) getSingleArchiveItem(archivePath string) ([]Dow
 		Path:              archivePath,
 		ExtractedGamePath: "",
 		ExtractedPaths:    nil,
-		IsFolder:          false,
+		Type:              2,
 		Size:              entry.Size(),
-		IsDownloading:     s.checkIsDownloading(archivePath, name, false),
+		IsDownloading:     s.checkIsDownloading(archivePath, name, 2),
 		IsExtracted:       false, // 刚删除解压文件夹，肯定没解压
 		IsInstalled:       s.checkIsInstalled(archivePath),
 		IsImported:        s.checkIsImported(name),

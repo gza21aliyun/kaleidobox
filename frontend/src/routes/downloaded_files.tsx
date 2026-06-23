@@ -102,7 +102,7 @@ export default function DownloadedFiles() {
         if (showInstall && !item.is_installed) {
           setCurrentExecutingName(item.name);
           try {
-            await InstallGame(item.path, md5AsFolder ? "md5" : "name");
+            await InstallGame(item, md5AsFolder ? "md5" : "name");
           } catch (err) {
             console.error("Install failed:", err);
             setErrorMessage(err instanceof Error ? err.message : "安装失败");
@@ -121,7 +121,7 @@ export default function DownloadedFiles() {
   };
 
   const handleExtract = async (item: DownloadedFile) => {
-    setCurrentExecutingName(getDisplayTitle(item));
+    setCurrentExecutingName(item.name);
     setIsExecuting(true);
     try {
       if (item.type == 1) {
@@ -169,15 +169,24 @@ export default function DownloadedFiles() {
   const handleConfirmInstall = async () => {
     if (!confirmModalItem) return;
 
+    // 立即显示执行中动画
+    setIsExecuting(true);
+    setCurrentExecutingName(confirmModalItem.name);
+    // 关闭确认弹窗
+    setShowConfirmModal(false);
+    setConfirmModalItem(null);
+
     try {
-      await InstallGame(confirmModalItem.path, md5AsFolder ? "md5" : installMethod);
+      await InstallGame(confirmModalItem, md5AsFolder ? "md5" : installMethod);
     } catch (err) {
       console.error("Install failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "安装失败");
+    } finally {
+      // 隐藏执行中动画
+      setIsExecuting(false);
+      setCurrentExecutingName("");
     }
 
-    setShowConfirmModal(false);
-    setConfirmModalItem(null);
     await loadItems();
   };
 
@@ -199,8 +208,10 @@ export default function DownloadedFiles() {
       if (config?.game_install_folder) {
         const baseName = item.name.replace(/\.[^.]+$/, "");
         console.log("handleOpenInstalled baseName:", baseName);
-        const extractedGameName = ExtractGameNameFromDLSite(baseName);
+        console.log("handleOpenInstalled itemname:", item.name);
+        const extractedGameName = await ExtractGameNameFromDLSite(baseName);
         const installPath = `${config.game_install_folder}/${extractedGameName}`;
+        console.log("handleOpenInstalled installPath:", installPath);
         await OpenLocalPath(installPath);
       }
     } catch (err) {
@@ -261,13 +272,6 @@ export default function DownloadedFiles() {
     }
   };
 
-  const getDisplayTitle = (item: DownloadedFile) => {
-    if (item.has_numeric_name && item.longest_zip_name) {
-      return item.longest_zip_name;
-    }
-    const ext = item.type == 1 ? "" : (item.name.match(/\.[^.]+$/)?.[0] || "");
-    return item.name.replace(new RegExp(`${ext}$`), "");
-  };
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return bytes + " B";
@@ -439,10 +443,7 @@ export default function DownloadedFiles() {
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`text-lg ${item.type == 1 ? "i-mdi-folder" : "i-mdi-archive"} flex-shrink-0`} />
-                      <span className="font-medium truncate min-w-0" title={getDisplayTitle(item)}>{getDisplayTitle(item)}</span>
-                      {item.has_numeric_name && (
-                        <span className="text-xs text-brand-500 flex-shrink-0">({item.name})</span>
-                      )}
+                      <span className="font-medium truncate min-w-0" title={item.name}>{item.name}</span>
                     </div>
 
                     {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
@@ -683,7 +684,7 @@ export default function DownloadedFiles() {
       {/* 游戏搜索弹窗 */}
       {searchModalItem && (
         <GameSearchModal
-          itemName={getDisplayTitle(searchModalItem)}
+          itemName={searchModalItem.game_name}
           onClose={() => setSearchModalItem(null)}
         />
       )}

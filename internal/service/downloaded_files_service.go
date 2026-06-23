@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"io/fs"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
 	"os"
@@ -55,7 +54,7 @@ type DownloadedFile struct {
 	// ISOFilePath       string   `json:"iso_file_path,omitempty"`
 	InnerItems     []string `json:"inner_items"`
 	HasNumericName bool     `json:"has_numeric_name"`
-	LongestZipName string   `json:"longest_zip_name"`
+	GameName       string   `json:"game_name"`
 }
 
 var compressedExtensions = map[string]bool{
@@ -119,6 +118,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			Path:              itemPath,
 			ExtractedGamePath: extractedGamePath,
 			ExtractedPaths:    extractedPaths,
+			ISOItems:          []string{},
 			// IsFolder:          isFolder,
 			Type: 2,
 			Size: info.Size(),
@@ -127,14 +127,14 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			IsInstalled:    s.checkIsInstalled(itemPath),
 			IsImported:     s.checkIsImported(name),
 			HasNumericName: s.isNumericName(name),
-		}
-
-		if item.HasNumericName && isFolder {
-			item.LongestZipName = s.findLongestZipName(itemPath)
+			GameName:       s.ExtractGameNameFromDLSite(name),
 		}
 
 		if isFolder {
 			innerItems, isoItems := s.getInnerItems(itemPath)
+			if item.HasNumericName {
+				item.GameName = s.JudgeGameName(innerItems)
+			}
 			// isoCount, isoPath, innerItems := s.countISOFiles(itemPath)
 			// isoCount := len(isoItems)
 			item.InnerItems = innerItems
@@ -412,35 +412,6 @@ func (s *DownloadedFilesService) isNumericName(name string) bool {
 	return re.MatchString(baseName)
 }
 
-func (s *DownloadedFilesService) findLongestZipName(folderPath string) string {
-	var zipNames []string
-
-	err := filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !d.IsDir() {
-			ext := strings.ToLower(filepath.Ext(d.Name()))
-			if compressedExtensions[ext] {
-				nameWithoutExt := strings.TrimSuffix(d.Name(), ext)
-				zipNames = append(zipNames, nameWithoutExt)
-			}
-		}
-		return nil
-	})
-
-	if err != nil {
-		return ""
-	}
-
-	if len(zipNames) == 0 {
-		return ""
-	}
-
-	// 使用 JudgeGameName 判断哪个是真正的游戏名
-	return s.JudgeGameName(zipNames)
-}
-
 func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []string) {
 	itemsMap := make(map[string]string)
 	items := []string{}
@@ -456,21 +427,34 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 		}
 		filename := entry.Name()
 		filebase := strings.TrimSuffix(filename, filepath.Ext(filename))
-		itemsMap[filebase] = filename
+		// itemsMap[filebase] = filename
 		if (strings.Contains(filebase, "iso") || strings.Contains(filebase, "mdf")) && entry.IsDir() {
 			subEntries, err := os.ReadDir(filepath.Join(folderPath, filebase))
 			if err != nil {
 				continue
 			}
 			for _, subEntry := range subEntries {
-				subFilebase := strings.TrimSuffix(subEntry.Name(), filepath.Ext(subEntry.Name()))
+				// subFilebase := strings.TrimSuffix(subEntry.Name(), filepath.Ext(subEntry.Name()))
 				ext := strings.ToLower(filepath.Ext(subEntry.Name()))
 				if imageExtensions[ext] {
-					itemsMap[subFilebase] = subEntry.Name()
+					// itemsMap[subFilebase] = subEntry.Name()
 					fullpath := filepath.Join(folderPath, filebase, subEntry.Name())
 					isoItems = append(isoItems, fullpath)
 				}
 			}
+		}
+
+		if !entry.IsDir() {
+			ext := strings.ToLower(filepath.Ext(filename))
+			if imageExtensions[ext] {
+				fullpath := filepath.Join(folderPath, filename)
+				isoItems = append(isoItems, fullpath)
+			} else {
+				itemsMap[filebase] = filename
+
+			}
+		} else {
+			itemsMap[filebase] = filename
 		}
 	}
 	for _, v := range itemsMap {
@@ -504,42 +488,42 @@ func (s *DownloadedFilesService) getArchiveInnerItems(archivePath string) []stri
 	return items
 }
 
-func (s *DownloadedFilesService) countISOFiles(folderPath string) (int, string, []string) {
-	count := 0
-	var isoPath string
-	innerItemsMap := make(map[string]string)
+// func (s *DownloadedFilesService) countISOFiles(folderPath string) (int, string, []string) {
+// 	count := 0
+// 	var isoPath string
+// 	innerItemsMap := make(map[string]string)
 
-	err := filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		relativePath, _ := filepath.Rel(folderPath, path)
-		level := strings.Count(relativePath, string(filepath.Separator))
-		if !d.IsDir() {
-			ext := strings.ToLower(filepath.Ext(d.Name()))
-			if imageExtensions[ext] {
-				count++
-				innerItemsMap[d.Name()] = d.Name()
-				if isoPath == "" {
-					isoPath = path
-				}
-			} else if level == 0 {
-				innerItemsMap[d.Name()] = d.Name()
-			}
-		}
-		return nil
-	})
-	innerItems := []string{}
+// 	err := filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
+// 		if err != nil {
+// 			return err
+// 		}
+// 		relativePath, _ := filepath.Rel(folderPath, path)
+// 		level := strings.Count(relativePath, string(filepath.Separator))
+// 		if !d.IsDir() {
+// 			ext := strings.ToLower(filepath.Ext(d.Name()))
+// 			if imageExtensions[ext] {
+// 				count++
+// 				innerItemsMap[d.Name()] = d.Name()
+// 				if isoPath == "" {
+// 					isoPath = path
+// 				}
+// 			} else if level == 0 {
+// 				innerItemsMap[d.Name()] = d.Name()
+// 			}
+// 		}
+// 		return nil
+// 	})
+// 	innerItems := []string{}
 
-	for k := range innerItemsMap {
-		innerItems = append(innerItems, k)
-	}
+// 	for k := range innerItemsMap {
+// 		innerItems = append(innerItems, k)
+// 	}
 
-	if err != nil {
-		return 0, "", innerItems
-	}
-	return count, isoPath, innerItems
-}
+// 	if err != nil {
+// 		return 0, "", innerItems
+// 	}
+// 	return count, isoPath, innerItems
+// }
 
 func (s *DownloadedFilesService) ExtractItem(itemPath string) error {
 	info, err := os.Stat(itemPath)
@@ -715,7 +699,8 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 	return err
 }
 
-func (s *DownloadedFilesService) InstallGame(itemPath, installMethod string) (string, error) {
+func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, installMethod string) (string, error) {
+	itemPath := downloadedFile.Path
 	installFolder := s.config.GameInstallFolder
 	if installFolder == "" {
 		return "", fmt.Errorf("游戏安装文件夹未配置")
@@ -902,6 +887,7 @@ func (s *DownloadedFilesService) getSingleArchiveItem(archivePath string) ([]Dow
 		ExtractedPaths:    nil,
 		Type:              2,
 		Size:              entry.Size(),
+		ISOItems:          []string{},
 		IsDownloading:     s.checkIsDownloading(archivePath, name, 2),
 		IsExtracted:       false, // 刚删除解压文件夹，肯定没解压
 		IsInstalled:       s.checkIsInstalled(archivePath),

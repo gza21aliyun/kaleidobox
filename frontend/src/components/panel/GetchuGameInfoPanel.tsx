@@ -14,15 +14,6 @@ interface GetchuGameInfoPanelProps {
   onClose: () => void;
 }
 
-const getLocalPath = (url: string): string => {
-  if (!url) return "";
-  const ar = url.split("/");
-  if (ar.length >= 3) {
-    return `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`;
-  }
-  return "";
-};
-
 export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onClose }: GetchuGameInfoPanelProps) {
   const { t } = useTranslation();
   const [game, setGame] = useState<models.Game | null>(null);
@@ -30,15 +21,6 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
   const [images, setImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
-
-  const getImgSrc = () => {
-    if (coverURL) {
-      const local = getLocalPath(coverURL);
-      if (local) return local;
-      return coverURL;
-    }
-    return "";
-  };
 
   useEffect(() => {
     fetchGameInfo();
@@ -91,9 +73,9 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
       <div className="flex gap-6">
         {coverURL && (
           <div className="flex-shrink-0 w-48 h-64">
-            {getImgSrc() && !imgError ? (
+            {coverURL && !imgError ? (
               <img
-                src={getImgSrc()}
+                src={coverURL}
                 alt={gameName}
                 className="w-full h-full object-cover rounded-lg shadow-md"
                 onError={() => setImgError(true)}

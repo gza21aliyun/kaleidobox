@@ -453,7 +453,7 @@ export default function DownloadedFiles() {
                     {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <div className="flex items-center gap-3 text-xs text-brand-500">
-                        {/* <span>{item.type == 1 ? t("downloadedFiles.folder") : t("downloadedFiles.archive")}</span> */}
+                        <span>{item.type == 1 ? t("downloadedFiles.folder") : item.type ==0 ? t("downloadedFiles.no_need_extract") : t("downloadedFiles.archive")}</span>
                         <span>{formatSize(item.size)}</span>
                         <span>{!item.is_extracted ? "" : "isos:" + item.iso_items.length}</span>
                         {item.is_downloading && (
@@ -482,14 +482,16 @@ export default function DownloadedFiles() {
                           >
                             {t("downloadedFiles.extracted")}
                           </button>
-                          <button
-                            onClick={() => handleDeleteExtracted(item)}
-                            disabled={isExecuting}
-                            className="px-2 py-1 text-xs bg-red-400 hover:bg-red-500 text-white rounded disabled:opacity-50"
-                            title={t("downloadedFiles.deleteExtracted")}
-                          >
-                            {t("downloadedFiles.deleteExtracted")}
-                          </button>
+                          {item.type != 0 && (
+                            <button
+                              onClick={() => handleDeleteExtracted(item)}
+                              disabled={isExecuting}
+                              className="px-2 py-1 text-xs bg-red-400 hover:bg-red-500 text-white rounded disabled:opacity-50"
+                              title={t("downloadedFiles.deleteExtracted")}
+                            >
+                              {t("downloadedFiles.deleteExtracted")}
+                            </button> )}
+                          
                         </>
                       ) : (
                         <button
@@ -609,11 +611,16 @@ export default function DownloadedFiles() {
                     </div>
 
                     {/* inner_items 在第三行 */}
-                    {item.inner_items.length > 0 && (
+                    {(item.inner_items.length > 0 || item.iso_items.length > 0) && (
                       <div className="flex flex-wrap gap-1 text-xs text-brand-400 mt-1">
                         {item.inner_items.map((inner, idx) => (
                           <span key={idx} className="px-1.5 py-0.5 bg-brand-100 dark:bg-brand-700 rounded">
                             {inner}
+                          </span>
+                        ))}
+                        {item.iso_items.map((iso_path, idx) => (
+                          <span key={idx} className="px-1.5 py-0.5 bg-brand-100 dark:bg-brand-700 rounded">
+                            {iso_path}
                           </span>
                         ))}
                         {/* {item.inner_items.length > 5 && (

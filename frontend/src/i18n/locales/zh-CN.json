@@ -1778,9 +1778,6 @@
     "folder": "文件夹",
     "archive": "压缩包",
     "downloading": "下载中",
-    "extracted": "已解压",
-    "installed": "已安装",
-    "imported": "已导入",
     "openDownload": "打开下载",
     "openInstall": "打开安装",
     "mount": "装载",
@@ -1800,6 +1797,7 @@
     "install": "安装",
     "import": "导入",
     "md5AsFolder": "md5作为游戏文件夹",
-    "noSevenZipPath": "未配置7-Zip路径，请在设置中配置7z.exe路径以使用解压功能"
+    "noSevenZipPath": "未配置7-Zip路径，请在设置中配置7z.exe路径以使用解压功能",
+    "no_need_extract": "不需解压"
   }
 }

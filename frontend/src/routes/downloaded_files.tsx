@@ -127,7 +127,8 @@ export default function DownloadedFiles() {
       if (item.type == 1) {
         const extractedFolder = await ExtractFolder(item);
         setItems(items.map(i =>
-          i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths } : i
+          i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths, 
+            iso_items: extractedFolder.iso_items } : i
         ));
       } else {
         await ExtractItem(item.path);

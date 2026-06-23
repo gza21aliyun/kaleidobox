@@ -297,7 +297,22 @@ export default function DownloadedFiles() {
   };
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="p-6 h-full overflow-auto relative">
+      {/* 执行中动画 - 覆盖整个页面内容 */}
+      {isExecuting && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70">
+          <div className="flex flex-col items-center gap-3 px-6 py-4">
+            <div className="animate-spin rounded-full h-10 w-10 border-4 border-white/30 border-t-white"></div>
+            <span className="text-base text-white/90 font-medium">{t("downloadedFiles.executing")}</span>
+            {currentExecutingName && (
+              <span className="text-sm text-white/70 max-w-md text-center break-all" title={currentExecutingName}>
+                {currentExecutingName}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {errorMessage && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
           {errorMessage}
@@ -403,21 +418,7 @@ export default function DownloadedFiles() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto space-y-2 relative">
-          {isExecuting && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70">
-              <div className="flex flex-col items-center gap-3 px-6 py-4">
-                <div className="animate-spin rounded-full h-10 w-10 border-4 border-white/30 border-t-white"></div>
-                <span className="text-base text-white/90 font-medium">{t("downloadedFiles.executing")}</span>
-                {currentExecutingName && (
-                  <span className="text-sm text-white/70 max-w-md text-center break-all" title={currentExecutingName}>
-                    {currentExecutingName}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
+        <div className="flex-1 overflow-auto space-y-2">
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
@@ -633,7 +634,7 @@ export default function DownloadedFiles() {
               </div>
             ))
           )}
-        </div>
+          </div>
       </div>
 
       {showConfirmModal && confirmModalItem && (

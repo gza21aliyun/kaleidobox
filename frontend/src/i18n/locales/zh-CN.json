@@ -1043,11 +1043,14 @@
     "selectCover": "选择封面图"
   },
   "gameInfo": {
-    "staffInfo": "工作人员信息",
-    "noStaffInfo": "暂无工作人员信息",
+    "staffInfo": "制作人员",
+    "noStaffInfo": "暂无制作人员信息",
     "noData": "暂无数据",
     "unknownCharacter": "未知角色",
     "staff": "工作人员 {{index}}",
+    "fetchFailed": "获取游戏信息失败",
+    "loading": "加载中...",
+    "releaseDate": "发售日期",
     "categoryTags": "分类标签",
     "noCategoryTags": "暂无分类标签",
     "tagInfo": "标签信息",
@@ -1726,7 +1729,9 @@
     "all": "全部",
     "adult": "成人",
     "browse": "浏览",
-    "searchBT": "搜索BT"
+    "searchBT": "搜索BT",
+    "viewDetail": "查看详情",
+    "gameDetail": "游戏详情"
   },
   "btDownload": {
     "rssUrl": "RSS 地址",

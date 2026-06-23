@@ -10,6 +10,7 @@ import { utils } from "../../wailsjs/go/models";
 import { Route as rootRoute } from "./__root";
 import { BetterSelect } from "../components/ui/BetterSelect";
 import { useAppStore } from "../store";
+import { GetchuGameInfoPanel } from "../components/panel/GetchuGameInfoPanel";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -37,6 +38,10 @@ function MonthlyReleasesPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // 详情弹窗状态
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailGame, setDetailGame] = useState<utils.MonthlyReleaseGame | null>(null);
 
   const { config } = useAppStore();
 
@@ -188,6 +193,18 @@ function MonthlyReleasesPage() {
     }
   };
 
+  // 打开详情弹窗
+  const openDetailModal = (game: utils.MonthlyReleaseGame) => {
+    setDetailGame(game);
+    setDetailModalOpen(true);
+  };
+
+  // 关闭详情弹窗
+  const closeDetailModal = () => {
+    setDetailModalOpen(false);
+    setDetailGame(null);
+  };
+
   return (
     <div className={`w-full p-8 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       {/* 标题栏 */}
@@ -314,6 +331,7 @@ function MonthlyReleasesPage() {
                 game={game}
                 onBrowse={browseGame}
                 onSearch={openSearchModal}
+                onViewDetail={openDetailModal}
               />
             ))}
           </div>
@@ -336,6 +354,14 @@ function MonthlyReleasesPage() {
           onClose={closeSearchModal}
         />
       )}
+
+      {/* 详情弹窗 */}
+      {detailModalOpen && detailGame && (
+        <DetailModal
+          game={detailGame}
+          onClose={closeDetailModal}
+        />
+      )}
       
     </div>
   );
@@ -354,9 +380,10 @@ interface GameItemProps {
   game: utils.MonthlyReleaseGame;
   onBrowse: (game: utils.MonthlyReleaseGame) => void;
   onSearch: (game: utils.MonthlyReleaseGame) => void;
+  onViewDetail: (game: utils.MonthlyReleaseGame) => void;
 }
 
-function GameItem({ game, onBrowse, onSearch }: GameItemProps) {
+function GameItem({ game, onBrowse, onSearch, onViewDetail }: GameItemProps) {
   const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -397,7 +424,7 @@ function GameItem({ game, onBrowse, onSearch }: GameItemProps) {
 
         {/* 悬停按钮覆盖层 */}
         {isHovered && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2">
+          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -418,6 +445,16 @@ function GameItem({ game, onBrowse, onSearch }: GameItemProps) {
             >
               <div className="i-mdi-magnify text-xl" />
             </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetail(game);
+              }}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+              title={t("monthlyReleases.viewDetail") || "查看详情"}
+            >
+              <div className="i-mdi-info text-xl" />
+            </button>
           </div>
         )}
       </div>
@@ -434,6 +471,47 @@ function GameItem({ game, onBrowse, onSearch }: GameItemProps) {
         )}
       </div>
     </div>
+  );
+}
+
+// 详情弹窗组件
+interface DetailModalProps {
+  game: utils.MonthlyReleaseGame;
+  onClose: () => void;
+}
+
+function DetailModal({ game, onClose }: DetailModalProps) {
+  const { t } = useTranslation();
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-4xl max-h-[80vh] rounded-xl bg-white dark:bg-brand-800 shadow-xl border border-brand-200 dark:border-brand-700 flex flex-col overflow-hidden">
+        {/* 标题栏 */}
+        <div className="flex items-center justify-between p-4 border-b border-brand-200 dark:border-brand-700">
+          <h3 className="text-lg font-bold text-brand-900 dark:text-white">
+            {t("monthlyReleases.gameDetail") || "游戏详情"}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-500"
+          >
+            <div className="i-mdi-close text-xl" />
+          </button>
+        </div>
+
+        {/* 内容区 */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <GetchuGameInfoPanel
+            getchuId={game.getchu_id || ""}
+            gameName={game.name || ""}
+            company={game.company || ""}
+            coverURL={game.cover_url || ""}
+            onClose={onClose}
+          />
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 

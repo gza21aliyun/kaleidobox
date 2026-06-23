@@ -1040,11 +1040,14 @@
     "selectCover": "Select cover image"
   },
   "gameInfo": {
-    "staffInfo": "Staff information",
+    "staffInfo": "Staff",
     "noStaffInfo": "No staff information",
     "noData": "No data",
     "unknownCharacter": "Unknown character",
     "staff": "Staff {{index}}",
+    "fetchFailed": "Failed to fetch game information",
+    "loading": "Loading...",
+    "releaseDate": "Release Date",
     "categoryTags": "Category tags",
     "noCategoryTags": "No category tags",
     "tagInfo": "Tag information",
@@ -1722,7 +1725,9 @@
     "all": "All",
     "adult": "Adult",
     "browse": "Browse",
-    "searchBT": "Search BT"
+    "searchBT": "Search BT",
+    "viewDetail": "View Detail",
+    "gameDetail": "Game Detail"
   },
   "btDownload": {
     "rssUrl": "RSS URL",

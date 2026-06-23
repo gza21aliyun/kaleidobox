@@ -1040,11 +1040,14 @@
     "selectCover": "表紙画像を選択"
   },
   "gameInfo": {
-    "staffInfo": "スタッフ情報",
+    "staffInfo": "スタッフ",
     "noStaffInfo": "スタッフ情報がありません",
     "noData": "データがありません",
     "unknownCharacter": "未知のキャラクター",
     "staff": "スタッフ {{index}}",
+    "fetchFailed": "ゲーム情報の取得に失敗しました",
+    "loading": "読み込み中...",
+    "releaseDate": "発売日",
     "categoryTags": "カテゴリタグ",
     "noCategoryTags": "カテゴリタグがありません",
     "tagInfo": "タグ情報",
@@ -1687,7 +1690,9 @@
     "all": "全て",
     "adult": "アダルト",
     "browse": "閲覧",
-    "searchBT": "BT検索"
+    "searchBT": "BT検索",
+    "viewDetail": "詳細を表示",
+    "gameDetail": "ゲーム詳細"
   },
   "btDownload": {
     "rssUrl": "RSS URL",

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, ExtractGameNameFromDLSite } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, ExtractGameNameFromDLSite, CreateDownloadedFile, CreateArchieveFile } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
 import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
@@ -128,12 +128,15 @@ export default function DownloadedFiles() {
         const extractedFolder = await ExtractFolder(item);
         setItems(items.map(i =>
           i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths, 
-            iso_items: extractedFolder.iso_items } : i
+            iso_items: extractedFolder.iso_items, extracted_game_path: extractedFolder.extracted_game_path, inner_items: extractedFolder.inner_items } : i
         ));
       } else {
         await ExtractItem(item.path);
+        const arc = await CreateArchieveFile(item.path);
+        console.log("file extracted", arc);
         setItems(items.map(i =>
-          i.id === item.id ? { ...i, is_extracted: true } : i
+          i.id === item.id ? { ...i, is_extracted: true, inner_items: arc.inner_items, iso_items: arc.iso_items, 
+            extracted_game_path: arc.extracted_game_path, extracted_paths: arc.extracted_paths } : i
         ));
       }
     } catch (err) {

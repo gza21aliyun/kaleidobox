@@ -37,8 +37,8 @@ func (s *DownloadedFilesService) Init(ctx context.Context, db *sql.DB, config *a
 
 type DownloadedFile struct {
 	ID                string   `json:"id"`
-	Name              string   `json:"name"`
-	Path              string   `json:"path"`
+	Name              string   `json:"name"`                          //单元标题，不能数字，不包含文件后缀
+	Path              string   `json:"path"`                          //全路径，文件的话包含后缀
 	ExtractedGamePath string   `json:"extracted_game_path,omitempty"` // 解压后的游戏文件夹路径（主路径）
 	ExtractedPaths    []string `json:"extracted_paths,omitempty"`     // 所有解压后的文件夹路径
 	// IsFolder          bool     `json:"is_folder"`
@@ -54,7 +54,7 @@ type DownloadedFile struct {
 	// ISOFilePath       string   `json:"iso_file_path,omitempty"`
 	InnerItems     []string `json:"inner_items"`
 	HasNumericName bool     `json:"has_numeric_name"`
-	GameName       string   `json:"game_name"`
+	GameName       string   `json:"game_name"` //从单元标题再继续去除描述性前缀和后缀
 }
 
 var compressedExtensions = map[string]bool{
@@ -180,15 +180,27 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 	return items, nil
 }
 
+func (s *DownloadedFilesService) CreateArchieveFile(itemPath string) (DownloadedFile, error) {
+	// info, err := os.Stat(itemPath)
+	// if err != nil {
+	// 	return DownloadedFile{}, err
+	// }
+	ext := filepath.Ext(itemPath)
+	path := strings.TrimSuffix(itemPath, ext)
+	archive := s.CreateDownloadedFile(path, filepath.Base(path), true, 0)
+	return archive, nil
+}
+
 /**
  * itemPath 全路径
  * name 包括后缀的文件名或文件夹名
  */
 func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isFolder bool, size int64) DownloadedFile {
 	extractedGamePath, extractedPaths := s.getExtractedPaths(itemPath, name, isFolder)
+	fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
 	item := DownloadedFile{
 		ID:                uuid.New().String(),
-		Name:              name,
+		Name:              fileNameWithoutExt,
 		Path:              itemPath,
 		ExtractedGamePath: extractedGamePath,
 		ExtractedPaths:    extractedPaths,

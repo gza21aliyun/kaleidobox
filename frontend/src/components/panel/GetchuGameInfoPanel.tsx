@@ -1,8 +1,9 @@
 import { models, enums } from "../../../wailsjs/go/models";
-import { FetchGetchuImages, FetchGetchuGameDetail } from "../../../wailsjs/go/service/MonthlyReleaseService";
-import { useState, useEffect, useRef } from "react";
+import { FetchGetchuGameDetail } from "../../../wailsjs/go/service/MonthlyReleaseService";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { workMapForEach, charactorsForEach } from "../utils/Utility";
+import { ImageCard } from "../card/ImageCard";
 import toast from "react-hot-toast";
 
 interface GetchuGameInfoPanelProps {
@@ -11,100 +12,6 @@ interface GetchuGameInfoPanelProps {
   company: string;
   coverURL: string;
   onClose: () => void;
-}
-
-// 将本地文件路径转换为 /local/ URL 供前端显示
-function getLocalPath(localPath: string): string {
-  if (!localPath) return "";
-  const ar = localPath.split("\\");
-  if (ar.length < 3) return "";
-  return `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`;
-}
-
-// 获取图片源，优先用本地路径
-function getImgSrc(url: string): string {
-  if (!url) return "";
-  if (url.includes("\\") || url.includes("/")) {
-    return getLocalPath(url);
-  }
-  return url;
-}
-
-// 懒加载截图组件
-interface LazyScreenshotProps {
-  imageUrl: string;
-  index: number;
-  alt: string;
-}
-
-function LazyScreenshot({ imageUrl, index, alt }: LazyScreenshotProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [localUrl, setLocalUrl] = useState("");
-  const [isError, setIsError] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isLoaded) {
-          loadImage();
-        }
-      },
-      { threshold: 0.1, rootMargin: "50px" }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, [isLoaded]);
-
-  const loadImage = async () => {
-    try {
-      const localPaths = await FetchGetchuImages([imageUrl]);
-      if (localPaths.length > 0) {
-        setLocalUrl(getLocalPath(localPaths[0]));
-      }
-      setIsLoaded(true);
-    } catch (error) {
-      console.error("Failed to load screenshot:", error);
-      setIsError(true);
-      setIsLoaded(true);
-    }
-  };
-
-  if (isError) {
-    return (
-      <div ref={ref} className="w-full aspect-video bg-brand-100 dark:bg-brand-700 rounded-lg flex items-center justify-center">
-        <div className="i-mdi-image-off text-2xl text-brand-400" />
-      </div>
-    );
-  }
-
-  if (!isLoaded || !localUrl) {
-    return (
-      <div ref={ref} className="w-full aspect-video bg-brand-100 dark:bg-brand-700 rounded-lg flex items-center justify-center">
-        <div className="w-6 h-6 border-3 border-brand-300 border-t-brand-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={localUrl}
-      alt={alt}
-      className="w-full aspect-video object-cover rounded-lg"
-      onError={(e) => {
-        setIsError(true);
-        (e.target as HTMLImageElement).style.display = 'none';
-      }}
-    />
-  );
 }
 
 export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onClose }: GetchuGameInfoPanelProps) {
@@ -170,13 +77,13 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
     <div className="space-y-6">
       <div className="flex gap-6">
         {coverURL && (
-          <div className="flex-shrink-0 w-48 h-64">
+          <div className="relative w-60 flex-shrink-0 rounded-lg overflow-hidden shadow-lg bg-brand-200 dark:bg-brand-800">
             {coverURL && !imgError ? (
-              <img
-                src={coverURL}
+              <ImageCard
+                url={coverURL}
                 alt={gameName}
-                className="w-full h-full object-cover rounded-lg shadow-md"
-                onError={() => setImgError(true)}
+                className="w-full h-auto block"
+                tempDownload={true}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-brand-100 dark:bg-brand-700 rounded-lg">
@@ -206,8 +113,8 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
       <div>
         <h3 className="text-lg font-semibold text-brand-900 dark:text-white mb-3">{t("gameIntro.characters") || "角色"}</h3>
         <div className="space-y-4">
-          {worksMap.has("角色") || worksMap.has("声优") ? (
-            charactorsForEach(worksMap, (charactor) => (
+          {worksMap.has(enums.StaffRole.CHARACTOR) || worksMap.has(enums.StaffRole.CV) ? (
+            charactorsForEach(worksMap as Map<enums.StaffRole, models.Work[]>, (charactor) => (
               <div
                 key={`${charactor.charactor_name}-${charactor.staff_name}`}
                 className="bg-white dark:bg-brand-800/30 rounded-lg p-4 border border-brand-200 dark:border-brand-700"
@@ -215,10 +122,11 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
                 <div className="flex flex-col xl:flex-row gap-4">
                   {charactor.charactor_image && (
                     <div className="flex-shrink-0 w-32 h-48">
-                      <img
-                        src={charactor.charactor_image}
+                      <ImageCard
+                        url={charactor.charactor_image}
                         alt={charactor.charactor_name || "角色"}
                         className="w-full h-full object-cover rounded-lg"
+                        tempDownload={true}
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
@@ -256,11 +164,11 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
         {images.length > 0 ? (
           <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
             {images.map((imgUrl, index) => (
-              <LazyScreenshot
+              <ImageCard
                 key={index}
-                imageUrl={imgUrl}
-                index={index}
-                alt={`${gameName} ${index + 1}`}
+                url={imgUrl}
+                tempDownload={true}
+                style={{ width: '100%', aspectRatio: '16/9' }}
               />
             ))}
           </div>
@@ -273,7 +181,7 @@ export function GetchuGameInfoPanel({ getchuId, gameName, company, coverURL, onC
         <h3 className="text-lg font-semibold mb-3 text-brand-900 dark:text-white">{t("gameInfo.staffInfo") || "制作人员"}</h3>
         {worksMap.size > 0 ? (
           <div className="space-y-4">
-            {workMapForEach(worksMap, t, (role, works) => (
+            {workMapForEach(worksMap as Map<enums.StaffRole, models.Work[]>, t, (role, works) => (
               <div key={role} className="border-l-4 border-brand-500 pl-4">
                 <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
                   {role}

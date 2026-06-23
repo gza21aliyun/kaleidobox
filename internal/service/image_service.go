@@ -332,6 +332,89 @@ func (s *ImageService) FetchImage(id string, subjectType int, imageType int) (mo
 	return list[0], nil
 }
 
+// FetchGetchuImages 下载 Getchu 图片到临时文件夹，返回本地路径列表
+func (s *ImageService) FetchGetchuImages(imageUrls []string) ([]string, error) {
+	if len(imageUrls) == 0 {
+		return []string{}, nil
+	}
+
+	// 准备临时目录
+	dataDir, err := utils.GetDataDir()
+	if err != nil {
+		applog.InfoLogSaveAppLog("FetchGetchuImages: failed to get data dir: %v", err)
+		return []string{}, err
+	}
+	tempDir := filepath.Join(dataDir, "monthly", "temp")
+	if err := os.MkdirAll(tempDir, os.ModePerm); err != nil {
+		applog.InfoLogSaveAppLog("FetchGetchuImages: failed to create temp dir: %v", err)
+		return []string{}, err
+	}
+
+	// 下载所有图片
+	var localPaths []string
+	for _, imageUrl := range imageUrls {
+		if imageUrl == "" {
+			continue
+		}
+		localPath := filepath.Join(tempDir, fmt.Sprintf("%s.jpg", uuid.New().String()))
+		if err := s.downloadImageWithReferer(imageUrl, localPath); err != nil {
+			applog.InfoLogSaveAppLog("FetchGetchuImages: failed to download [%s]: %v", imageUrl, err)
+			continue
+		}
+		applog.InfoLogSaveAppLog("FetchGetchuImages: downloaded [%s] to [%s]", imageUrl, localPath)
+		localPaths = append(localPaths, localPath)
+	}
+
+	return localPaths, nil
+}
+
+// downloadImageWithReferer 下载图片，带 Referer 绕过防盗链
+func (s *ImageService) downloadImageWithReferer(imageUrl, localPath string) error {
+	client := &http.Client{Timeout: 15 * time.Second}
+
+	req, err := http.NewRequest("GET", imageUrl, nil)
+	if err != nil {
+		return fmt.Errorf("create request failed: %w", err)
+	}
+
+	// 设置请求头
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", "image/webp,image/apng,image/*,*/*;q=0.8")
+
+	// 设置 Referer
+	referer := "https://www.getchu.com/"
+	if strings.HasPrefix(imageUrl, "https://www.getchu.com/") {
+		referer = "https://www.getchu.com/"
+	} else if strings.HasPrefix(imageUrl, "https://evalidate.getchu.com/") {
+		referer = "https://www.getchu.com/"
+	}
+	req.Header.Set("Referer", referer)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	file, err := os.Create(localPath)
+	if err != nil {
+		return fmt.Errorf("create file failed: %w", err)
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		os.Remove(localPath)
+		return fmt.Errorf("write file failed: %w", err)
+	}
+
+	return nil
+}
+
 // ListImageBackups 查询所有 ImageBackup 记录
 func (s *ImageService) ListImageBackups() ([]models.ImageBackup, error) {
 	query := `

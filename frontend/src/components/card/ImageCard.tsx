@@ -1,5 +1,5 @@
 import { models } from "../../../wailsjs/go/models";
-import { GetImageBackupByUrl } from "../../../wailsjs/go/service/ImageService";
+import { GetImageBackupByUrl, FetchGetchuImages } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -183,6 +183,7 @@ interface ImageCardProps {
   lazyLoad?: boolean;
   selectMode?: boolean;
   onSelect?: (selected: models.ImageBackup) => void;
+  tempDownload?: boolean; // 为true时下载到临时文件夹，不保存到数据库
 }
 export function ImageCard({
     url,
@@ -195,7 +196,8 @@ export function ImageCard({
     onError,
     lazyLoad = true,
     selectMode = false,
-    onSelect
+    onSelect,
+    tempDownload = false
 }: ImageCardProps) {
     const [imageBackup, setImageBackup] = useState<models.ImageBackup | null>(null);
     const [loading, setLoading] = useState(false);
@@ -275,11 +277,32 @@ export function ImageCard({
         setLoading(true);
         
         const fetchImage = async () => {
-            
             try {
-                const res = await GetImageBackupByUrl(url, true);
+                if (tempDownload) {
+                    // 下载到临时文件夹，不保存到数据库
+                    const localPaths = await FetchGetchuImages([url]);
+                    if (mounted && localPaths.length > 0) {
+                        const ar = localPaths[0].split("\\");
+                        if (ar.length >= 3) {
+                            const localUrl = `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`;
+                            setImageBackup({
+                                url: url,
+                                local_path: localPaths[0],
+                                subject_id: "",
+                                subject_type: 0,
+                                image_type: 0,
+                                game_id: "",
+                                created_at: new Date()
+                            } as unknown as models.ImageBackup);
+                        }
+                    }
+                } else {
+                    const res = await GetImageBackupByUrl(url, true);
+                    if (mounted) {
+                        setImageBackup(res);
+                    }
+                }
                 if (mounted) {
-                    setImageBackup(res);
                     setLoading(false);
                 }
             } catch (error) {

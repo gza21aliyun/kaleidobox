@@ -4,13 +4,14 @@ import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
 import { createPortal } from "react-dom";
 import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
-import { FetchMonthlyReleases, ClearGetchuTempImages, FetchGetchuImages } from "../../wailsjs/go/service/MonthlyReleaseService";
+import { FetchMonthlyReleases, ClearGetchuTempImages } from "../../wailsjs/go/service/MonthlyReleaseService";
 import { SearchBT, DownloadToQBittorrent } from "../../wailsjs/go/service/BTDownloadService";
 import { utils } from "../../wailsjs/go/models";
 import { Route as rootRoute } from "./__root";
 import { BetterSelect } from "../components/ui/BetterSelect";
 import { useAppStore } from "../store";
 import { GetchuGameInfoPanel } from "../components/panel/GetchuGameInfoPanel";
+import { ImageCard } from "../components/card/ImageCard";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -65,7 +66,7 @@ function MonthlyReleasesPage() {
   }, [year, month, age]);
 
   // 生成可选年份列表 (当前年-3 到 当前年+2)
-  const yearOptions = Array.from({ length: 16 }, (_, i) => ({ value: (now.getFullYear() - 15 + i).toString(), label: (now.getFullYear() - 15 + i).toString() }));
+  const yearOptions = Array.from({ length: 23 }, (_, i) => ({ value: (now.getFullYear() - 22 + i).toString(), label: (now.getFullYear() - 22 + i).toString() }));
   const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
   // 上一个月
@@ -369,106 +370,6 @@ function MonthlyReleasesPage() {
   );
 }
 
-// 将本地文件路径转换为 /local/ URL 供前端显示
-function getLocalPath(localPath: string): string {
-  if (!localPath) return "";
-  const ar = localPath.split("\\");
-  if (ar.length < 3) return "";
-  return `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`;
-}
-
-// 懒加载封面图组件
-interface LazyCoverProps {
-  game: utils.MonthlyReleaseGame;
-}
-
-function LazyCover({ game }: LazyCoverProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [localUrl, setLocalUrl] = useState("");
-  const [isError, setIsError] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (isLoaded) return;
-    
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isLoaded) {
-          loadImage();
-        }
-      },
-      { threshold: 0.01 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, [isLoaded]);
-
-  const loadImage = async () => {
-    if (isLoaded) return; // 防止重复加载
-    
-    try {
-      const coverUrl = game.cover_url || "";
-      console.log("LazyCover: loading", coverUrl);
-      
-      if (coverUrl) {
-        // 如果 cover_url 是本地路径（Windows路径包含:\），直接转换使用
-        if (coverUrl.includes(":\\")) {
-          console.log("LazyCover: using local path");
-          setLocalUrl(getLocalPath(coverUrl));
-        } else {
-          // 否则下载图片
-          console.log("LazyCover: downloading from", coverUrl);
-          const localPaths = await FetchGetchuImages([coverUrl]);
-          console.log("LazyCover: result", localPaths);
-          if (localPaths.length > 0) {
-            console.log("LazyCover: downloaded to", localPaths[0]);
-            setLocalUrl(getLocalPath(localPaths[0]));
-          } else {
-            console.log("LazyCover: download failed, using original url");
-            setLocalUrl(coverUrl);
-          }
-        }
-      } else {
-        console.log("LazyCover: no cover url");
-      }
-      setIsLoaded(true);
-    } catch (error) {
-      console.error("Failed to load cover:", error);
-      setIsError(true);
-      setIsLoaded(true);
-    }
-  };
-
-  if (isError) {
-    return (
-      <div ref={ref} className="absolute inset-0 w-full h-full flex items-center justify-center">
-        <div className="i-mdi-image-off text-4xl text-brand-400" />
-      </div>
-    );
-  }
-
-  if (!isLoaded || !localUrl) {
-    return (
-      <div ref={ref} className="absolute inset-0 w-full h-full flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-brand-300 border-t-brand-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={localUrl}
-      alt={game.name}
-      className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-      onError={() => setIsError(true)}
-    />
-  );
-}
-
 // 单个游戏卡片组件
 interface GameItemProps {
   game: utils.MonthlyReleaseGame;
@@ -489,7 +390,11 @@ function GameItem({ game, onBrowse, onSearch, onViewDetail }: GameItemProps) {
     >
       {/* 封面图 - 懒加载 */}
       <div className="relative aspect-[3/4] bg-brand-100 dark:bg-brand-700 overflow-hidden">
-        <LazyCover game={game} />
+        <ImageCard 
+          url={game.cover_url || ""} 
+          tempDownload={true}
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
 
         {/* 悬停按钮覆盖层 */}
         {isHovered && (
@@ -574,7 +479,7 @@ function DetailModal({ game, onClose }: DetailModalProps) {
             getchuId={game.getchu_id || ""}
             gameName={game.name || ""}
             company={game.company || ""}
-            coverURL={getLocalPath(game.cover_url) || ""}
+            coverURL={game.cover_url || ""}
             onClose={onClose}
           />
         </div>

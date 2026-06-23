@@ -14,8 +14,6 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // MonthlyReleaseService 每月游戏发售列表服务
@@ -136,43 +134,6 @@ func (s *MonthlyReleaseService) downloadCoverImage(imageURL, localPath string) e
 	}
 
 	return nil
-}
-
-// FetchGetchuImages 获取 Getchu 游戏截图并下载到临时文件夹，返回本地路径列表
-func (s *MonthlyReleaseService) FetchGetchuImages(imageUrls []string) ([]string, error) {
-	if len(imageUrls) == 0 {
-		applog.InfoLogSaveAppLog("FetchGetchuImages: empty imageUrls")
-		return []string{}, nil
-	}
-
-	// 使用与封面图相同的临时目录
-	tempDir, err := s.prepareTempDir()
-	if err != nil {
-		applog.InfoLogSaveAppLog("FetchGetchuImages: prepareTempDir failed: %v", err)
-		return []string{}, err
-	}
-	applog.InfoLogSaveAppLog("FetchGetchuImages: tempDir=%s", tempDir)
-
-	// 下载所有截图到临时目录
-	var localPaths []string
-	for _, imageUrl := range imageUrls {
-		if imageUrl == "" {
-			continue
-		}
-		applog.InfoLogSaveAppLog("FetchGetchuImages: downloading %s", imageUrl)
-		// 使用时间戳和索引生成唯一文件名，避免多张图片覆盖
-		localPath := filepath.Join(tempDir, fmt.Sprintf("%s.jpg", uuid.New().String()))
-		err := s.downloadCoverImage(imageUrl, localPath)
-		if err != nil {
-			applog.InfoLogSaveAppLog("FetchGetchuImages: failed to download image [%s]: %v", imageUrl, err)
-			continue
-		}
-		applog.InfoLogSaveAppLog("FetchGetchuImages: downloaded [%s] to [%s]", imageUrl, localPath)
-		localPaths = append(localPaths, localPath)
-	}
-	applog.InfoLogSaveAppLog("FetchGetchuImages: returning %d paths", len(localPaths))
-
-	return localPaths, nil
 }
 
 // ClearGetchuTempImages 清空 Getchu 截图临时文件夹

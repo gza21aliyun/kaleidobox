@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // MonthlyReleaseService 每月游戏发售列表服务
@@ -157,12 +159,12 @@ func (s *MonthlyReleaseService) FetchGetchuImages(imageUrls []string) ([]string,
 
 	// 下载所有截图到临时目录
 	var localPaths []string
-	for i, imageUrl := range imageUrls {
+	for _, imageUrl := range imageUrls {
 		if imageUrl == "" {
 			continue
 		}
 		// 使用时间戳和索引生成唯一文件名，避免多张图片覆盖
-		localPath := filepath.Join(tempDir, fmt.Sprintf("gallery_%d_%d.jpg", time.Now().UnixNano(), i))
+		localPath := filepath.Join(tempDir, fmt.Sprintf("%s.jpg", uuid.New().String()))
 		err := s.downloadCoverImage(imageUrl, localPath)
 		if err != nil {
 			applog.InfoLogSaveAppLog("MonthlyReleaseService: failed to download image [%s]: %v", imageUrl, err)

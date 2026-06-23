@@ -389,43 +389,51 @@ function LazyCover({ game }: LazyCoverProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (isLoaded) return;
+    
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !isLoaded && !localUrl) {
+        if (entry.isIntersecting && !isLoaded) {
           loadImage();
         }
       },
-      { threshold: 0.1, rootMargin: "50px" }
+      { threshold: 0.01 }
     );
 
     if (ref.current) {
       observer.observe(ref.current);
     }
 
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, [isLoaded, localUrl]);
+    return () => observer.disconnect();
+  }, [isLoaded]);
 
   const loadImage = async () => {
+    if (isLoaded) return; // 防止重复加载
+    
     try {
       const coverUrl = game.cover_url || "";
+      console.log("LazyCover: loading", coverUrl);
       
       if (coverUrl) {
-        // 如果 cover_url 是本地路径，直接转换使用
-        if (coverUrl.includes("\\") || coverUrl.includes("/")) {
+        // 如果 cover_url 是本地路径（Windows路径包含:\），直接转换使用
+        if (coverUrl.includes(":\\")) {
+          console.log("LazyCover: using local path");
           setLocalUrl(getLocalPath(coverUrl));
         } else {
           // 否则下载图片
+          console.log("LazyCover: downloading from", coverUrl);
           const localPaths = await FetchGetchuImages([coverUrl]);
+          console.log("LazyCover: result", localPaths);
           if (localPaths.length > 0) {
+            console.log("LazyCover: downloaded to", localPaths[0]);
             setLocalUrl(getLocalPath(localPaths[0]));
           } else {
+            console.log("LazyCover: download failed, using original url");
             setLocalUrl(coverUrl);
           }
         }
+      } else {
+        console.log("LazyCover: no cover url");
       }
       setIsLoaded(true);
     } catch (error) {
@@ -435,17 +443,17 @@ function LazyCover({ game }: LazyCoverProps) {
     }
   };
 
-  if (isError || (!localUrl && isLoaded)) {
+  if (isError) {
     return (
-      <div ref={ref} className="w-full h-full flex items-center justify-center">
+      <div ref={ref} className="absolute inset-0 w-full h-full flex items-center justify-center">
         <div className="i-mdi-image-off text-4xl text-brand-400" />
       </div>
     );
   }
 
-  if (!localUrl) {
+  if (!isLoaded || !localUrl) {
     return (
-      <div ref={ref} className="w-full h-full flex items-center justify-center">
+      <div ref={ref} className="absolute inset-0 w-full h-full flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-brand-300 border-t-brand-500 rounded-full animate-spin" />
       </div>
     );
@@ -453,10 +461,9 @@ function LazyCover({ game }: LazyCoverProps) {
 
   return (
     <img
-      ref={ref as any}
       src={localUrl}
       alt={game.name}
-      className="absolute inset-0 w-full h-full object-cover object-center"
+      className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
       onError={() => setIsError(true)}
     />
   );

@@ -206,6 +206,18 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
 	ext := filepath.Ext(itemPath)
 	path := strings.TrimSuffix(itemPath, ext)
 	archive := s.CreateDownloadedFile(path, filepath.Base(path), true, 0)
+	if file.Type == 2 {
+		if archive.InnerItems != nil && len(archive.InnerItems) > 0 {
+			archive.ExtractedGamePath = path
+			archive.ExtractedPaths = []string{path}
+			return archive, nil
+		}
+	} else if file.Type == 1 {
+		extractedGamePath, extractedPaths := s.getExtractedPaths(path, filepath.Base(path), 1)
+		archive.ExtractedGamePath = extractedGamePath
+		archive.ExtractedPaths = extractedPaths
+	}
+
 	return archive, nil
 }
 
@@ -368,8 +380,12 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 		baseName := filepath.Base(path)
 		ext := filepath.Ext(baseName)
 		folderPath := strings.TrimSuffix(filepath.Join(itemPath, baseName), ext)
+		ext2 := filepath.Ext(folderPath)
+		folderPath2 := strings.TrimSuffix(folderPath, ext2)
 		if folders[folderPath] {
 			extractedPaths = append(extractedPaths, folderPath)
+		} else if ext2 != "" && folders[folderPath2] {
+			extractedPaths = append(extractedPaths, folderPath2)
 		}
 
 	}
@@ -615,7 +631,7 @@ func (s *DownloadedFilesService) ExtractItem(itemPath string) error {
 
 	if info.IsDir() {
 		// 如果是文件夹，解压其中的所有压缩包
-		return s.extractArchivesInFolder(itemPath)
+		return s.ExtractArchivesInFolder(itemPath)
 	}
 	fmt.Println("Extracting2:", itemPath)
 
@@ -638,7 +654,7 @@ func (s *DownloadedFilesService) ExtractItem(itemPath string) error {
 }
 
 // extractArchivesInFolder 解压文件夹内的所有压缩包，处理分段压缩
-func (s *DownloadedFilesService) extractArchivesInFolder(folderPath string) error {
+func (s *DownloadedFilesService) ExtractArchivesInFolder(folderPath string) error {
 	files, err := os.ReadDir(folderPath)
 	if err != nil {
 		return err
@@ -651,6 +667,20 @@ func (s *DownloadedFilesService) extractArchivesInFolder(folderPath string) erro
 		}
 		ext := strings.ToLower(filepath.Ext(file.Name()))
 		if compressedExtensions[ext] {
+
+			excludedNames := []string{
+				"サウンドトラック", "soundtrack", "mp3", "wav", "flac", "cue",
+			}
+			shouldExclude := false
+			for _, name := range excludedNames {
+				if strings.Contains(strings.ToLower(file.Name()), name) {
+					shouldExclude = true
+					break
+				}
+			}
+			if shouldExclude {
+				continue
+			}
 			archives = append(archives, filepath.Join(folderPath, file.Name()))
 		}
 	}
@@ -681,6 +711,10 @@ func (s *DownloadedFilesService) extractArchivesInFolder(folderPath string) erro
 				partBase = strings.TrimSuffix(baseWithoutExt, ".1")
 				isPartArchive = true
 			}
+		}
+
+		if isPartArchive {
+			fmt.Printf("ExtractArchivesInFolder partBase: %s, processedBases: %v\n", partBase, processedBases)
 		}
 
 		if isPartArchive {
@@ -792,22 +826,41 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 		}
 	}
 
-	// 挂载ISO
-	cmd := exec.Command("powershell", "-Command", fmt.Sprintf(`Mount-DiskImage -ImagePath "%s"`, isoPath))
-	mountOutput, mountErr := cmd.CombinedOutput()
-	if mountErr != nil {
-		return fmt.Errorf("挂载ISO失败: %v, 输出: %s", mountErr, string(mountOutput))
-	}
+	// 根据文件扩展名选择挂载方式
+	ext := strings.ToLower(filepath.Ext(isoPath))
 
-	// 短暂等待盘符就绪
-	time.Sleep(1 * time.Second)
+	var newMountedDrive string
+
+	if ext == ".mdf" {
+		// 检查是否存在对应的 .mds 文件
+		mdsPath := strings.TrimSuffix(isoPath, filepath.Ext(isoPath)) + ".mds"
+		if _, err := os.Stat(mdsPath); os.IsNotExist(err) {
+			return fmt.Errorf("未找到对应的.mds文件: %s", mdsPath)
+		}
+		// 使用系统默认方式打开 .mds 文件（假设系统已安装虚拟光驱软件）
+		cmd := exec.Command("cmd", "/c", "start", "", mdsPath)
+		err := cmd.Start()
+		if err != nil {
+			return fmt.Errorf("打开MDF文件失败: %v", err)
+		}
+
+	} else {
+		// 挂载ISO
+		cmd := exec.Command("powershell", "-Command", fmt.Sprintf(`Mount-DiskImage -ImagePath "%s"`, isoPath))
+		mountOutput, mountErr := cmd.CombinedOutput()
+		if mountErr != nil {
+			return fmt.Errorf("挂载ISO失败: %v, 输出: %s", mountErr, string(mountOutput))
+		}
+
+	}
+	// 等待虚拟光驱加载盘符
+	time.Sleep(2 * time.Second)
 
 	// 获取挂载后的盘符列表，找出新增盘符
 	output, err = exec.Command("wmic", "logicaldisk", "get", "deviceid").CombinedOutput()
 	if err != nil {
 		return err
 	}
-	newMountedDrive := ""
 	for _, line := range strings.Split(string(output), "\n") {
 		drive := strings.TrimSpace(line)
 		if drive != "" && drive != "DeviceID" && !currentDrivesMap[drive] {
@@ -1145,7 +1198,7 @@ func (s *DownloadedFilesService) JudgeGameName(filenames []string) string {
 	}
 	gameNameScores := []GameNameScore{}
 	plusWords := []string{"パッケージ版", "mdf", "mds", "iso"}
-	minusWords := []string{"サウンドトラック", "wav", "mp3", "ボイス", "ドラマ", "アップデート", "update", "特典", "Drama", "CD"}
+	minusWords := []string{"サウンドトラック", "wav", "mp3", "flac", "cue", "ボイス", "ドラマ", "アップデート", "update", "特典", "Drama", "CD", "part", "00"}
 	for _, filename := range filenames {
 		score := 1.0
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, RefreshDownloadedFile } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, RefreshDownloadedFile, ExtractArchivesInFolder } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
 import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
@@ -125,7 +125,8 @@ export default function DownloadedFiles() {
     setIsExecuting(true);
     try {
       if (item.type == 1) {
-        const extractedFolder = await ExtractFolder(item);
+        await ExtractArchivesInFolder(item.path);
+        const extractedFolder = await RefreshDownloadedFile(item);
         setItems(items.map(i =>
           i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths, 
             iso_items: extractedFolder.iso_items, extracted_game_path: extractedFolder.extracted_game_path, inner_items: extractedFolder.inner_items } : i

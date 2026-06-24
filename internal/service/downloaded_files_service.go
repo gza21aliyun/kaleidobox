@@ -817,10 +817,9 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 	}
 
 	if newMountedDrive != "" {
-		// 打开装载ISO文件的盘符
-		// explorer.exe 即使成功打开也可能返回非零退出码，因此忽略其错误
-		// deviceid 已包含冒号(如 "D:")，直接拼接 "\\" 即可
-		exec.Command("explorer.exe", newMountedDrive+"\\").Start()
+		// 模拟双击盘符，触发AutoRun
+		drivePath := newMountedDrive + string(filepath.Separator)
+		exec.Command("cmd", "/c", "start", "", drivePath).Start()
 		return nil
 	}
 

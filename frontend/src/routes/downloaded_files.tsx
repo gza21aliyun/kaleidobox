@@ -467,6 +467,16 @@ export default function DownloadedFiles() {
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-sm truncate min-w-0" title={item.game_name}>{item.game_name}</span>
                     </div>
+                    {item.extracted_game_path && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-sm truncate min-w-0" title={item.extracted_game_path}>iso: {item.extracted_game_path}</span>
+                      </div>
+                    )}
+                    {item.iso_items.length > 0 && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-sm truncate min-w-0" title={item.iso_items[0]}>{item.iso_items[0]}</span>
+                      </div>
+                    )}
 
                     {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
                     <div className="flex items-center justify-between gap-2 mt-1">

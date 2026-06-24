@@ -73,9 +73,9 @@ var compressedExtensions = map[string]bool{
 var imageExtensions = map[string]bool{
 	".iso": true,
 	".mdf": true,
-	".img": true,
-	".bin": true,
-	".cue": true,
+	// ".img": true,
+	// ".bin": true,
+	// ".cue": true,
 }
 
 func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error) {
@@ -1052,10 +1052,12 @@ func copyDirectory(src, dst string) error {
 func (s *DownloadedFilesService) ExtractGameNameFromDLSite(filename string) string {
 	// DLSite 格式: (类型) [日期][编号][作者] 游戏名 (文件类型)
 	// 或: [日期][编号][作者] 游戏名 (文件类型)
+	// 或: [日期][编号][作者] 游戏名 + 附加内容
 
 	// 匹配模式: 去除开头的元数据部分，提取游戏名
-	// 元数据格式: (xxx) [日期][编号][作者] 或 [日期][编号][作者]
-	re := regexp.MustCompile(`^(?:\([^)]+\)\s*)?\[[^\]]+\]\[[^\]]+\]\[[^\]]+\]\s*(.+?)(?:\s*\([^\)]+\))?$`)
+	// 元数据格式: (xxx) [内容][内容][内容]... 任意数量的[内容]
+	// 游戏名后面可能跟着: 1) 没有后缀 2) (文件类型) 3) + 附加内容
+	re := regexp.MustCompile(`^(?:\([^)]+\)\s*)?(?:\[[^\]]+\]\s*)*(.+?)(?:\s*[\(+].*)?$`)
 
 	matches := re.FindStringSubmatch(filename)
 	if len(matches) < 2 {

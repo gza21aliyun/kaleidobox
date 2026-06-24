@@ -98,7 +98,9 @@ func (s *HomeService) GetHomePageData() (vo.HomePageData, error) {
 		return data, err
 	}
 	js, err := json.MarshalIndent(data, "", "  ")
-	fmt.Printf("GetHomePageData:%s\n", js)
+	if false {
+		fmt.Printf("GetHomePageData:%s\n", js)
+	}
 
 	return data, nil
 }

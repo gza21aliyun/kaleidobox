@@ -26,6 +26,7 @@ export default defineConfig({
     "i-mdi-home",
     "i-mdi-menu",
     "i-mdi-cog",
+    "i-mdi-folder-download",
   ],
 
   rules: [

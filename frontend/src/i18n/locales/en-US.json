@@ -1795,7 +1795,7 @@
     "installTitle": "Install Game",
     "installIsoMessage": "ISO files are better installed via mounting. Are you sure you want to extract the ISO to the game installation folder?",
     "installByName": "Install by Game Name",
-    "installByUuid": "Install with UUID (for games with English-only paths)",
+    "installByUuid": "Install with MD5 (for games with English-only paths)",
     "confirmInstall": "Confirm Install",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"?",
     "install": "Install",

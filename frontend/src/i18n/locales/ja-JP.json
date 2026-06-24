@@ -1759,7 +1759,7 @@
     "installTitle": "ゲームをインストール",
     "installIsoMessage": "ISOファイルはマウントしてインストールする方が良いです。ISOをゲームインストールフォルダに展開しますか？",
     "installByName": "ゲーム名でインストール",
-    "installByUuid": "UUIDでインストール（パスが英語のみのゲーム用）",
+    "installByUuid": "MD5 でインストール（パスが英語のみのゲーム用）",
     "confirmInstall": "インストールを確認",
     "confirmDelete": "\"{{name}}\" を削除しますか？",
     "install": "インストール",

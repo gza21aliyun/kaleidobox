@@ -150,7 +150,8 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			// 如果文件夹没有内容，不显示文件夹，后续会显示压缩包
 		} else {
 			// 没有同名压缩包，: 单个文件夹结构
-			_, hasArchieve, _ := s.hasExtractedContent(folder.Path)
+			judge, hasArchieve, hasInnerFolder := s.hasExtractedContent(folder.Path)
+			fmt.Printf("hasExtractedContent,name: %s, judge: %v, hasArchieve: %v, hasInnerFolder: %v\n", folder.Name, judge, hasArchieve, hasInnerFolder)
 			if hasArchieve {
 				// 文件夹有内容，显示文件夹，标记为已解压
 				// type=1: 文件夹包含多个压缩包
@@ -289,7 +290,7 @@ func (s *DownloadedFilesService) hasExtractedContent(folderPath string) (bool, b
 	for _, entry := range entries {
 		if entry.IsDir() {
 			hasSubFolder = true
-			break
+			// break
 		}
 		ext := strings.ToLower(filepath.Ext(entry.Name()))
 		if compressedExtensions[ext] {
@@ -1075,8 +1076,8 @@ func (s *DownloadedFilesService) JudgeGameName(filenames []string) string {
 		Score float64
 	}
 	gameNameScores := []GameNameScore{}
-	plusWords := []string{"パッケージ版", "mdf", "mds"}
-	minusWords := []string{"サウンドトラック", "wav", "mp3", "ボイス", "ドラマ", "アップデート", "update", "特典"}
+	plusWords := []string{"パッケージ版", "mdf", "mds", "iso"}
+	minusWords := []string{"サウンドトラック", "wav", "mp3", "ボイス", "ドラマ", "アップデート", "update", "特典", "Drama", "CD"}
 	for _, filename := range filenames {
 		score := 1.0
 

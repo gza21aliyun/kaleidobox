@@ -1797,7 +1797,7 @@
     "installTitle": "安装游戏",
     "installIsoMessage": "镜像文件以装载方式安装更好，确认要解压ISO到游戏安装文件夹吗？",
     "installByName": "以游戏名安装",
-    "installByUuid": "生成UUID安装，适合路径只能英文的游戏",
+    "installByUuid": "生成MD5安装，适合路径只能英文的游戏",
     "confirmInstall": "确认安装",
     "confirmDelete": "确定要删除 \"{{name}}\" 吗？",
     "install": "安装",

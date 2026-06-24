@@ -464,6 +464,10 @@ export default function DownloadedFiles() {
                       <span className="font-medium truncate min-w-0" title={item.name}>{item.name}</span>
                     </div>
 
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-sm truncate min-w-0" title={item.game_name}>{item.game_name}</span>
+                    </div>
+
                     {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <div className="flex items-center gap-3 text-xs text-brand-500">
@@ -691,8 +695,8 @@ export default function DownloadedFiles() {
                 <input
                   type="radio"
                   name="installMethod"
-                  value="uuid"
-                  checked={installMethod === "uuid"}
+                  value="md5"
+                  checked={installMethod === "md5"}
                   onChange={(e) => setInstallMethod(e.target.value)}
                 />
                 {t("downloadedFiles.installByUuid")}

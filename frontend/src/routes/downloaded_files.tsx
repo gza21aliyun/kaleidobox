@@ -686,13 +686,14 @@ export default function DownloadedFiles() {
                           </span>
                         ))}
                         {item.iso_items.map((iso_path, idx) => (
-                          <span 
+                          <button 
                             key={idx} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-700 rounded"
                             title={`装载${iso_path.split("\\").pop()}`}
                             onClick={() => handleDirectMount(iso_path)}
+                            disabled={item.is_installed}
                           >
                             {iso_path.split("\\").pop()}
-                          </span>
+                          </button>
                         ))}
                         {/* {item.inner_items.length > 5 && (
                           <span className="px-1.5 py-0.5 text-brand-500">+{item.inner_items.length - 5}</span>

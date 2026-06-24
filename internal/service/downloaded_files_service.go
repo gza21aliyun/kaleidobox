@@ -151,7 +151,9 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 		} else {
 			// 没有同名压缩包，: 单个文件夹结构
 			judge, hasArchieve, hasInnerFolder := s.hasExtractedContent(folder.Path)
-			fmt.Printf("hasExtractedContent,name: %s, judge: %v, hasArchieve: %v, hasInnerFolder: %v\n", folder.Name, judge, hasArchieve, hasInnerFolder)
+			if false {
+				fmt.Printf("hasExtractedContent,name: %s, judge: %v, hasArchieve: %v, hasInnerFolder: %v\n", folder.Name, judge, hasArchieve, hasInnerFolder)
+			}
 			if hasArchieve {
 				// 文件夹有内容，显示文件夹，标记为已解压
 				// type=1: 文件夹包含多个压缩包
@@ -165,9 +167,12 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			}
 
 		}
-		extractedGamePath, extractedPaths := s.getExtractedPaths(folder.Path, folder.BaseName, folder.Type)
-		folder.ExtractedGamePath = extractedGamePath
-		folder.ExtractedPaths = extractedPaths
+		if folder.IsExtracted {
+			extractedGamePath, extractedPaths := s.getExtractedPaths(folder.Path, folder.BaseName, folder.Type)
+			fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
+			folder.ExtractedGamePath = extractedGamePath
+			folder.ExtractedPaths = extractedPaths
+		}
 
 		items = append(items, folder)
 		displayedArchives[baseName] = true
@@ -191,11 +196,12 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 	return items, nil
 }
 
-func (s *DownloadedFilesService) CreateArchieveFile(itemPath string) (DownloadedFile, error) {
+func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (DownloadedFile, error) {
 	// info, err := os.Stat(itemPath)
 	// if err != nil {
 	// 	return DownloadedFile{}, err
 	// }
+	itemPath := file.Path
 	ext := filepath.Ext(itemPath)
 	path := strings.TrimSuffix(itemPath, ext)
 	archive := s.CreateDownloadedFile(path, filepath.Base(path), true, 0)
@@ -323,7 +329,14 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 		return "", nil
 	}
 	if fileType == 0 {
-		return "", nil
+		entries, err := os.ReadDir(itemPath)
+		if err != nil {
+			return itemPath, nil
+		}
+		if len(entries) == 1 && entries[0].IsDir() {
+			return filepath.Join(itemPath, entries[0].Name()), nil
+		}
+		return itemPath, nil
 	}
 
 	// 对于文件夹，检查里面是否有解压后的子目录
@@ -351,7 +364,8 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 
 	for path, _ := range files {
 		baseName := filepath.Base(path)
-		folderPath := filepath.Join(itemPath, baseName)
+		ext := filepath.Ext(baseName)
+		folderPath := strings.TrimSuffix(filepath.Join(itemPath, baseName), ext)
 		if folders[folderPath] {
 			extractedPaths = append(extractedPaths, folderPath)
 		}
@@ -359,7 +373,7 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 	}
 
 	if len(extractedPaths) == 0 {
-		return itemPath, []string{}
+		return "", []string{}
 	}
 
 	if len(extractedPaths) == 1 {
@@ -376,6 +390,10 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 	if gameFolderName != "" {
 		for _, path := range extractedPaths {
 			if filepath.Base(path) == gameFolderName {
+				entries, err := os.ReadDir(path)
+				if err == nil && len(entries) == 1 && entries[0].IsDir() {
+					return filepath.Join(path, entries[0].Name()), extractedPaths
+				}
 				return path, extractedPaths
 			}
 		}
@@ -834,28 +852,32 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 	}
 
 	// 检查文件夹内是否有子文件夹（type=1的情况，解压后的结构）
-	subDirs := []string{}
-	for _, file := range files {
-		if file.IsDir() {
-			subDirs = append(subDirs, file.Name())
-		}
-	}
+	// subDirs := []string{}
+	// for _, file := range files {
+	// 	if file.IsDir() {
+	// 		subDirs = append(subDirs, file.Name())
+	// 	}
+	// }
 
 	// 如果只有一个子文件夹，可能是解压后多了层目录，直接使用子文件夹的内容
-	if len(subDirs) == 1 {
-		innerPath := filepath.Join(itemPath, subDirs[0])
-		applog.LogInfof(s.ctx, "检测到单层子文件夹，使用内部路径安装: %s", innerPath)
-		if err := copyDirectory(innerPath, targetPath); err != nil {
-			applog.LogErrorf(s.ctx, "复制目录失败: %v", err)
-			return "", err
-		}
-		applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
-		return targetPath, nil
+	// if len(subDirs) == 1 {
+	// 	innerPath := filepath.Join(itemPath, subDirs[0])
+	// 	applog.LogInfof(s.ctx, "检测到单层子文件夹，使用内部路径安装: %s", innerPath)
+	// 	if err := copyDirectory(innerPath, targetPath); err != nil {
+	// 		applog.LogErrorf(s.ctx, "复制目录失败: %v", err)
+	// 		return "", err
+	// 	}
+	// 	applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
+	// 	return targetPath, nil
+	// }
+	sourcePath := itemPath
+	if downloadedFile.ExtractedGamePath != "" {
+		sourcePath = downloadedFile.ExtractedGamePath
 	}
 
 	// 直接复制整个文件夹
-	applog.LogInfof(s.ctx, "复制目录: %s -> %s", itemPath, targetPath)
-	if err := copyDirectory(itemPath, targetPath); err != nil {
+	applog.LogInfof(s.ctx, "复制目录: %s -> %s", sourcePath, targetPath)
+	if err := copyDirectory(sourcePath, targetPath); err != nil {
 		applog.LogErrorf(s.ctx, "复制目录失败: %v", err)
 		return "", err
 	}

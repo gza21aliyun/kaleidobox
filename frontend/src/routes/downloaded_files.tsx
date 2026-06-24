@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, CreateArchieveFile } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, RefreshDownloadedFile } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import type { service } from "../../wailsjs/go/models";
 import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
@@ -132,7 +132,7 @@ export default function DownloadedFiles() {
         ));
       } else {
         await ExtractItem(item.path);
-        const arc = await CreateArchieveFile(item.path);
+        const arc = await RefreshDownloadedFile(item);
         console.log("file extracted", arc);
         setItems(items.map(i =>
           i.id === item.id ? { ...i, is_extracted: true, inner_items: arc.inner_items, iso_items: arc.iso_items, 
@@ -190,8 +190,15 @@ export default function DownloadedFiles() {
       setIsExecuting(false);
       setCurrentExecutingName("");
     }
+    const file = await RefreshDownloadedFile(confirmModalItem);
+    console.log("file installed", file);
 
-    await loadItems();
+    setItems(items.map(i =>
+      i.id === confirmModalItem.id ? { ...i, is_installed: true, extracted_game_path: file.extracted_game_path, extracted_paths: file.extracted_paths } : i
+    ));
+
+
+    // await loadItems();
   };
 
   const handleImport = async (item: DownloadedFile) => {
@@ -232,6 +239,8 @@ export default function DownloadedFiles() {
     if (!confirm(t("downloadedFiles.confirmDelete", { name: item.name }))) {
       return;
     }
+    setIsExecuting(true);
+    setCurrentExecutingName(item.name);
     try {
       await DeleteItem(item.path);
       await loadItems();
@@ -239,9 +248,12 @@ export default function DownloadedFiles() {
       console.error("Delete failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "删除失败");
     }
+    setIsExecuting(false);
   };
 
   const handleDeleteExtracted = async (item: DownloadedFile) => {
+    setIsExecuting(true);
+    setCurrentExecutingName(item.name);
     try {
       const result = await DeleteExtractedFolder(item.path, item.name, item.extracted_paths || []);
       if (result && result.has_archive && result.archive_item) {
@@ -274,9 +286,12 @@ export default function DownloadedFiles() {
       console.error("Delete extracted folder failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "删除解压文件夹失败");
     }
+    setIsExecuting(false);
   };
 
   const handleDeleteInstalled = async (item: DownloadedFile) => {
+    setIsExecuting(true);
+    setCurrentExecutingName(item.name);
     try {
       await DeleteInstalledGame(item);
       // 删除成功后更新单元状态
@@ -287,6 +302,7 @@ export default function DownloadedFiles() {
       console.error("Delete installed game failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "删除安装失败");
     }
+    setIsExecuting(false);
   };
 
 
@@ -465,16 +481,16 @@ export default function DownloadedFiles() {
                     </div>
 
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-sm truncate min-w-0" title={item.game_name}>{item.game_name}</span>
+                      <span className="text-xs truncate min-w-0" title={item.game_name}>游戏名： {item.game_name}</span>
                     </div>
                     {item.extracted_game_path && (
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-sm truncate min-w-0" title={item.extracted_game_path}>iso: {item.extracted_game_path}</span>
+                        <span className="text-xs truncate min-w-0" title={item.extracted_game_path}>游戏解压目录： {item.extracted_game_path}</span>
                       </div>
                     )}
                     {item.iso_items.length > 0 && (
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-sm truncate min-w-0" title={item.iso_items[0]}>{item.iso_items[0]}</span>
+                        <span className="text-xs truncate min-w-0" title={item.iso_items[0]}>Iso： {item.iso_items[0]}</span>
                       </div>
                     )}
 

@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -169,7 +170,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 		}
 		if folder.IsExtracted {
 			extractedGamePath, extractedPaths := s.getExtractedPaths(folder.Path, folder.BaseName, folder.Type)
-			fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
+			// fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
 			folder.ExtractedGamePath = extractedGamePath
 			folder.ExtractedPaths = extractedPaths
 		}
@@ -233,6 +234,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 
 	if isFolder {
 		innerItems, isoItems := s.getInnerItems(itemPath)
+		fmt.Printf("InnerItems,name: %s, path:%s, count:%v\n", item.Name, item.Path, innerItems)
 		if item.HasNumericName {
 			item.Name = s.JudgeGameName(innerItems)
 			item.GameName = s.ExtractGameNameFromDLSite(item.Name)
@@ -777,9 +779,52 @@ func (s *DownloadedFilesService) ExtractFolder(DownloadedFile DownloadedFile) (D
 }
 
 func (s *DownloadedFilesService) MountISO(isoPath string) error {
+	// 获取挂载前的盘符列表
+	output, err := exec.Command("wmic", "logicaldisk", "get", "deviceid").CombinedOutput()
+	if err != nil {
+		return err
+	}
+	currentDrivesMap := make(map[string]bool)
+	for _, line := range strings.Split(string(output), "\n") {
+		drive := strings.TrimSpace(line)
+		if drive != "" && drive != "DeviceID" {
+			currentDrivesMap[drive] = true
+		}
+	}
+
+	// 挂载ISO
 	cmd := exec.Command("powershell", "-Command", fmt.Sprintf(`Mount-DiskImage -ImagePath "%s"`, isoPath))
-	_, err := cmd.CombinedOutput()
-	return err
+	mountOutput, mountErr := cmd.CombinedOutput()
+	if mountErr != nil {
+		return fmt.Errorf("挂载ISO失败: %v, 输出: %s", mountErr, string(mountOutput))
+	}
+
+	// 短暂等待盘符就绪
+	time.Sleep(1 * time.Second)
+
+	// 获取挂载后的盘符列表，找出新增盘符
+	output, err = exec.Command("wmic", "logicaldisk", "get", "deviceid").CombinedOutput()
+	if err != nil {
+		return err
+	}
+	newMountedDrive := ""
+	for _, line := range strings.Split(string(output), "\n") {
+		drive := strings.TrimSpace(line)
+		if drive != "" && drive != "DeviceID" && !currentDrivesMap[drive] {
+			newMountedDrive = drive
+			break
+		}
+	}
+
+	if newMountedDrive != "" {
+		// 打开装载ISO文件的盘符
+		// explorer.exe 即使成功打开也可能返回非零退出码，因此忽略其错误
+		// deviceid 已包含冒号(如 "D:")，直接拼接 "\\" 即可
+		exec.Command("explorer.exe", newMountedDrive+"\\").Start()
+		return nil
+	}
+
+	return fmt.Errorf("未检测到新挂载的盘符")
 }
 
 func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, installMethod string) (string, error) {

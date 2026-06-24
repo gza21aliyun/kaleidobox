@@ -158,6 +158,15 @@ export default function DownloadedFiles() {
     }
   };
 
+  const handleDirectMount = async (iso_path: string) => {
+    try {
+      await MountISO(iso_path);
+    } catch (err) {
+      console.error("Mount failed:", err);
+      setErrorMessage(err instanceof Error ? err.message : "装载失败：" + err);
+    }
+  };
+
   const handleInstall = async (item: DownloadedFile) => {
     if (item.iso_items.length === 1) {
       setConfirmModalType("install_iso");
@@ -488,11 +497,11 @@ export default function DownloadedFiles() {
                         <span className="text-xs truncate min-w-0" title={item.extracted_game_path}>游戏解压目录： {item.extracted_game_path}</span>
                       </div>
                     )}
-                    {item.iso_items.length > 0 && (
+                    {/* {item.iso_items.length > 0 && (
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-xs truncate min-w-0" title={item.iso_items[0]}>Iso： {item.iso_items[0]}</span>
                       </div>
-                    )}
+                    )} */}
 
                     {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
                     <div className="flex items-center justify-between gap-2 mt-1">
@@ -526,7 +535,7 @@ export default function DownloadedFiles() {
                           >
                             {t("downloadedFiles.extracted")}
                           </button>
-                          {item.type != 0 && (
+                          {item.type != 0 && !item.is_installed && (
                             <button
                               onClick={() => handleDeleteExtracted(item)}
                               disabled={isExecuting}
@@ -676,8 +685,11 @@ export default function DownloadedFiles() {
                           </span>
                         ))}
                         {item.iso_items.map((iso_path, idx) => (
-                          <span key={idx} className="px-1.5 py-0.5 bg-brand-100 dark:bg-brand-700 rounded">
-                            {iso_path}
+                          <span 
+                            key={idx} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-700 rounded"
+                            onClick={() => handleDirectMount(iso_path)}
+                          >
+                            {iso_path.split("\\").pop()}
                           </span>
                         ))}
                         {/* {item.inner_items.length > 5 && (

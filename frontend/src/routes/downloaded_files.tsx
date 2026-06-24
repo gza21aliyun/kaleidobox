@@ -328,7 +328,7 @@ export default function DownloadedFiles() {
   };
 
   const canMount = (item: DownloadedFile) => {
-    return item.iso_items.length === 1;
+    return item.iso_items.length === 1 && !item.is_installed;
   };
 
   const isDownloadingItem = (item: DownloadedFile) => {
@@ -688,6 +688,7 @@ export default function DownloadedFiles() {
                         {item.iso_items.map((iso_path, idx) => (
                           <span 
                             key={idx} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-700 rounded"
+                            title={`装载${iso_path.split("\\").pop()}`}
                             onClick={() => handleDirectMount(iso_path)}
                           >
                             {iso_path.split("\\").pop()}

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -698,36 +699,46 @@ func (s *DownloadedFilesService) ExtractArchivesInFolder(folderPath string) erro
 		baseWithoutExt := strings.TrimSuffix(baseName, ext)
 		isPartArchive := false
 		partBase := baseWithoutExt
+		partNumber := 0
 
-		if strings.HasSuffix(baseWithoutExt, ".part1") {
-			partBase = strings.TrimSuffix(baseWithoutExt, ".part1")
+		// 使用正则表达式匹配分段压缩包
+		// 匹配 .part1, .part2, .part3 等格式
+		if match := regexp.MustCompile(`^(.+)\.part(\d+)$`).FindStringSubmatch(baseWithoutExt); match != nil {
+			partBase = match[1]
+			partNumber, _ = strconv.Atoi(match[2])
 			isPartArchive = true
-		} else if strings.HasSuffix(baseWithoutExt, ".001") {
-			partBase = strings.TrimSuffix(baseWithoutExt, ".001")
+		} else if match := regexp.MustCompile(`^(.+)\.(\d{3})$`).FindStringSubmatch(baseWithoutExt); match != nil {
+			// 匹配 .001, .002, .003 等格式
+			partBase = match[1]
+			partNumber, _ = strconv.Atoi(match[2])
 			isPartArchive = true
-		} else if strings.HasSuffix(baseWithoutExt, ".1") && len(baseWithoutExt) > 1 {
-			prevChar := baseWithoutExt[len(baseWithoutExt)-2]
-			if prevChar == '.' {
-				partBase = strings.TrimSuffix(baseWithoutExt, ".1")
+		} else if match := regexp.MustCompile(`^(.+)\.(\d+)$`).FindStringSubmatch(baseWithoutExt); match != nil {
+			// 匹配 .1, .2, .3 等格式（如 .rar.1, .zip.2）
+			// 确保不是纯数字文件名
+			if len(match[1]) > 0 {
+				partBase = match[1]
+				partNumber, _ = strconv.Atoi(match[2])
 				isPartArchive = true
 			}
 		}
 
 		if isPartArchive {
-			fmt.Printf("ExtractArchivesInFolder partBase: %s, processedBases: %v\n", partBase, processedBases)
+			fmt.Printf("ExtractArchivesInFolder partBase: %s, partNumber: %d, processedBases: %v\n", partBase, partNumber, processedBases)
 		}
 
 		if isPartArchive {
-			if strings.HasSuffix(baseWithoutExt, ".part1") ||
-				strings.HasSuffix(baseWithoutExt, ".001") ||
-				strings.HasSuffix(baseWithoutExt, ".1") {
-				if processedBases[partBase] {
-					continue
-				}
-				processedBases[partBase] = true
-			} else {
+			// 只处理第一段（.part1, .001, .1）
+			isFirstPart := partNumber == 1
+
+			if !isFirstPart {
+				// 不是第一段，跳过
 				continue
 			}
+
+			if processedBases[partBase] {
+				continue
+			}
+			processedBases[partBase] = true
 		} else {
 			if processedBases[baseWithoutExt] {
 				continue

@@ -45,12 +45,13 @@ type DownloadedFile struct {
 	ExtractedGamePath string   `json:"extracted_game_path,omitempty"` // 解压后的游戏文件夹路径（主路径）
 	ExtractedPaths    []string `json:"extracted_paths,omitempty"`     // 所有解压后的文件夹路径
 	// IsFolder          bool     `json:"is_folder"`
-	Type          int   `json:"type"` // 0:是文件夹没任何压缩包不需解压; 1: 单元文件夹里包含一个或多个压缩包; 2: 游戏下载文件夹下单个压缩包或多了同名文件夹（解压后）结构;
-	Size          int64 `json:"size"`
-	IsDownloading bool  `json:"is_downloading"` // 是否有未下载完的临时文件
-	IsExtracted   bool  `json:"is_extracted"`
-	IsInstalled   bool  `json:"is_installed"`
-	IsImported    bool  `json:"is_imported"`
+	Type          int    `json:"type"` // 0:是文件夹没任何压缩包不需解压; 1: 单元文件夹里包含一个或多个压缩包; 2: 游戏下载文件夹下单个压缩包或多了同名文件夹（解压后）结构;
+	Size          int64  `json:"size"`
+	IsDownloading bool   `json:"is_downloading"` // 是否有未下载完的临时文件
+	IsExtracted   bool   `json:"is_extracted"`
+	IsInstalled   bool   `json:"is_installed"`
+	IsImported    bool   `json:"is_imported"`
+	ImportedId    string `json:"imported_id,omitempty"`
 	// ContainsISO       bool     `json:"contains_iso"`
 	ISOItems []string `json:"iso_items"`
 	// ISOCount          int      `json:"iso_count"`
@@ -228,6 +229,10 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
  */
 func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isFolder bool, size int64) DownloadedFile {
 	fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
+
+	// 检测已导入的ID
+	importedID := s.checkImportedID(itemPath, isFolder)
+
 	item := DownloadedFile{
 		ID:       uuid.New().String(),
 		Name:     fileNameWithoutExt,
@@ -240,7 +245,8 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		// IsDownloading:     s.checkIsDownloading(itemPath, name, itemType),
 		// IsExtracted:       s.checkIsExtracted(itemPath, name, itemType),
 		IsInstalled:    s.checkIsInstalled(itemPath),
-		IsImported:     s.checkIsImported(name),
+		IsImported:     importedID != "",
+		ImportedId:     importedID,
 		HasNumericName: s.isNumericName(name),
 		GameName:       s.ExtractGameNameFromDLSite(fileNameWithoutExt),
 	}
@@ -457,6 +463,37 @@ func (s *DownloadedFilesService) getGameNameMD5(gameName string) string {
 
 func (s *DownloadedFilesService) checkIsImported(name string) bool {
 	return false
+}
+
+// checkImportedID 检查是否有已导入的ID文件（id-*.kld）
+func (s *DownloadedFilesService) checkImportedID(itemPath string, isFolder bool) string {
+	if !isFolder {
+		// 对于压缩包，检查同名的解压文件夹
+		baseName := filepath.Base(itemPath)
+		ext := filepath.Ext(baseName)
+		folderPath := strings.TrimSuffix(itemPath, ext)
+		itemPath = folderPath
+	}
+
+	// 读取目录查找 id-*.kld 文件
+	entries, err := os.ReadDir(itemPath)
+	if err != nil {
+		return ""
+	}
+
+	// 匹配 id-*.kld 文件
+	re := regexp.MustCompile(`^id-(.+)\.kld$`)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		match := re.FindStringSubmatch(entry.Name())
+		if match != nil {
+			return match[1]
+		}
+	}
+
+	return ""
 }
 
 // checkIsDownloading 检查是否有未下载完的临时文件（QBittorrent 的 .!qB 文件，uTorrent 的 .!ut 文件）
@@ -1137,6 +1174,23 @@ func (s *DownloadedFilesService) DeleteExtractedFolder(itemPath, name string, ex
 
 // 	return []DownloadedFile{item}, nil
 // }
+
+// SaveImportedID 保存导入的ID到文件
+func (s *DownloadedFilesService) SaveImportedID(itemPath, importedID string) error {
+	// 对于压缩包，使用同名的解压文件夹路径
+	baseName := filepath.Base(itemPath)
+	ext := filepath.Ext(baseName)
+	if ext != "" {
+		// 是压缩包，查找同名文件夹
+		folderPath := strings.TrimSuffix(itemPath, ext)
+		if info, err := os.Stat(folderPath); err == nil && info.IsDir() {
+			itemPath = folderPath
+		}
+	}
+
+	idFilePath := filepath.Join(itemPath, "id-"+importedID+".kld")
+	return os.WriteFile(idFilePath, []byte(importedID), 0644)
+}
 
 func copyDirectory(src, dst string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {

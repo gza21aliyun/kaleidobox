@@ -24,6 +24,8 @@ interface BatchImportModalProps {
   onClose: () => void;
   onImportComplete: () => void;
   onOpenUpdate: (candidates: models.Game[]) => void;
+  preloadedCandidates?: vo.BatchImportCandidate[];
+  preloadedStep?: Step;
 }
 
 type Step = "select" | "scan" | "preview" | "match" | "importing" | "result";
@@ -42,11 +44,11 @@ interface LocalCandidate {
   allMatches?: vo.GameMetadataFromWebVO[];
 }
 
-export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpdate }: BatchImportModalProps) {
+export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpdate, preloadedCandidates, preloadedStep }: BatchImportModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [step, setStep] = useState<Step>("select");
+  const [step, setStep] = useState<Step>(preloadedStep || "select");
   const [libraryPath, setLibraryPath] = useState("");
   const [candidates, setCandidates] = useState<LocalCandidate[]>([]);
   const [importResult, setImportResult] = useState<service.ImportResult | null>(null);
@@ -55,6 +57,28 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
   const [selectedCategoryVo, setSelectedCategoryVo] = useState<vo.CategoryVO | null>(null);
   const [isSearchFolder, setIsSearchFolder] = useState(false);
   const { config, triggerCategoriesRefresh } = useAppStore();
+
+  // 处理预加载数据
+  useEffect(() => {
+    if (preloadedCandidates && preloadedCandidates.length > 0) {
+      const localCandidates: LocalCandidate[] = preloadedCandidates.map(c => ({
+        folderPath: c.folder_path,
+        folderName: c.folder_name,
+        executables: c.executables || [],
+        selectedExe: c.selected_exe || "",
+        searchName: c.search_name,
+        isSelected: c.is_selected,
+        arguments: c.arguments || "",
+        matchedGame: c.matched_game || null,
+        matchSource: c.match_source || null,
+        matchStatus: (c.match_status || "pending") as "pending" | "matched" | "not_found" | "error" | "manual",
+      }));
+      setCandidates(localCandidates);
+      if (preloadedStep === "preview") {
+        setStep("preview");
+      }
+    }
+  }, [preloadedCandidates, preloadedStep]);
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);

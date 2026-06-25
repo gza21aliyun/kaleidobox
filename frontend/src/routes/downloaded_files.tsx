@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, RefreshDownloadedFile, ExtractArchivesInFolder } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
-import type { service } from "../../wailsjs/go/models";
+import { BatchImportModal } from "../components/modal/BatchImportModal";
+import type { service, models } from "../../wailsjs/go/models";
 import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
 import { useAppStore } from "../store";
+import { vo } from "../../wailsjs/go/models";
 
 interface DownloadedFile extends service.DownloadedFile {
   selected: boolean;
@@ -21,6 +23,7 @@ export default function DownloadedFiles() {
   const [showInstall, setShowInstall] = useState(true);
   const [showImport, setShowImport] = useState(true);
   const [md5AsFolder, setMd5AsFolder] = useState(false);
+  const [directIsoInstall, setDirectIsoInstall] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalType, setConfirmModalType] = useState<string>("");
   const [confirmModalItem, setConfirmModalItem] = useState<DownloadedFile | null>(null);
@@ -29,6 +32,8 @@ export default function DownloadedFiles() {
   const [searchModalItem, setSearchModalItem] = useState<DownloadedFile | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentExecutingName, setCurrentExecutingName] = useState("");
+  const [batchImportModalItem, setBatchImportModalItem] = useState<DownloadedFile | null>(null);
+  const [batchImportCandidates, setBatchImportCandidates] = useState<vo.BatchImportCandidate[]>([]);
   
   const config = useAppStore(state => state.config);
   const fetchConfig = useAppStore(state => state.fetchConfig);
@@ -95,11 +100,17 @@ export default function DownloadedFiles() {
         const item = items.find(i => i.id === itemId);
         if (!item) continue;
 
+        // 解压步骤
         if (showExtract && !item.is_extracted) {
           setCurrentExecutingName(item.name);
           await handleExtract(item);
         }
-        if (showInstall && !item.is_installed) {
+        
+        // 安装步骤：需要已解压，且如果镜像文件直接安装开关关闭，则有iso的单元不执行安装
+        const hasIso = item.iso_items && item.iso_items.length > 0;
+        const shouldInstall = showInstall && !item.is_installed && (directIsoInstall || !hasIso);
+        
+        if (shouldInstall) {
           setCurrentExecutingName(item.name);
           try {
             await InstallGame(item, md5AsFolder ? "md5" : "name");
@@ -108,7 +119,11 @@ export default function DownloadedFiles() {
             setErrorMessage(err instanceof Error ? err.message : "安装失败");
           }
         }
-        if (showImport && !item.is_imported) {
+        
+        // 导入步骤：需要已安装，且如果镜像文件直接安装开关关闭，则有iso的单元不执行导入
+        const shouldImport = showImport && !item.is_imported && item.is_installed && (directIsoInstall || !hasIso);
+        
+        if (shouldImport) {
           setCurrentExecutingName(item.name);
           await handleImport(item);
         }
@@ -213,6 +228,59 @@ export default function DownloadedFiles() {
 
   const handleImport = async (item: DownloadedFile) => {
     console.log("Import:", item.name);
+    
+    // 准备导入数据
+    const config = useAppStore.getState().config;
+    const installFolder = config?.game_install_folder;
+    
+    if (!installFolder) {
+      setErrorMessage("游戏安装文件夹未配置");
+      return;
+    }
+    
+    // 构建导入候选数据
+    const extractedGamePath = item.extracted_game_path || item.path;
+    const folderName = item.name;
+    
+    // 创建 BatchImportCandidate
+    const candidate = new vo.BatchImportCandidate({
+      folder_path: extractedGamePath,
+      folder_name: folderName,
+      search_name: item.game_name || folderName,
+      is_selected: true,
+      match_status: "pending",
+    });
+    
+    setBatchImportCandidates([candidate]);
+    setBatchImportModalItem(item);
+  };
+  
+  const handleBatchImportComplete = async (importedId?: string) => {
+    if (batchImportModalItem && importedId) {
+      // 保存导入ID到文件
+      try {
+        await SaveImportedID(batchImportModalItem.path, importedId);
+      } catch (err) {
+        console.error("保存导入ID失败:", err);
+      }
+      
+      // 更新单元状态
+      setItems(items.map(i => 
+        i.id === batchImportModalItem.id 
+          ? { ...i, is_imported: true, imported_id: importedId as any } 
+          : i
+      ));
+    }
+    setBatchImportModalItem(null);
+    setBatchImportCandidates([]);
+  };
+  
+  const handleOpenGame = (item: DownloadedFile) => {
+    // 跳转到游戏详情页
+    const importedId = (item as any).imported_id;
+    if (importedId) {
+      window.location.hash = `/game/${importedId}`;
+    }
   };
 
   const handleOpen = async (item: DownloadedFile) => {
@@ -423,6 +491,15 @@ export default function DownloadedFiles() {
               />
               {t("downloadedFiles.import")}
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={directIsoInstall}
+                onChange={(e) => setDirectIsoInstall(e.target.checked)}
+                className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
+              />
+              {t("downloadedFiles.directIsoInstall")}
+            </label>
             
             <button
               onClick={() => {
@@ -619,6 +696,16 @@ export default function DownloadedFiles() {
                         </button>
                       )}
 
+                      {/* 打开游戏按钮 - 只有导入后显示 */}
+                      {item.is_imported && (item as any).imported_id && (
+                        <button
+                          onClick={() => handleOpenGame(item)}
+                          className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.openGame")}
+                        </button>
+                      )}
+
                       {/* 打开安装按钮 */}
                       {item.is_installed && (
                         <button
@@ -769,6 +856,29 @@ export default function DownloadedFiles() {
         <GameSearchModal
           itemName={searchModalItem.game_name}
           onClose={() => setSearchModalItem(null)}
+        />
+      )}
+
+      {/* 批量导入弹窗 */}
+      {batchImportModalItem && (
+        <BatchImportModal
+          isOpen={true}
+          onClose={() => {
+            setBatchImportModalItem(null);
+            setBatchImportCandidates([]);
+          }}
+          onImportComplete={() => {
+            // 导入完成后刷新
+            loadItems();
+          }}
+          onOpenUpdate={(games) => {
+            if (games && games.length > 0) {
+              const importedId = games[0].id;
+              handleBatchImportComplete(importedId);
+            }
+          }}
+          preloadedCandidates={batchImportCandidates}
+          preloadedStep="preview"
         />
       )}
     </div>

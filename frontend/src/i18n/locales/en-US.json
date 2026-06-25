@@ -1802,6 +1802,8 @@
     "install": "Install",
     "import": "Import",
     "md5AsFolder": "MD5 as game folder",
+    "directIsoInstall": "Direct ISO install",
+    "openGame": "Open game",
     "noSevenZipPath": "7-Zip path not configured. Please configure the 7z.exe path in settings to use the extract function.",
     "delete": "Delete"
   }

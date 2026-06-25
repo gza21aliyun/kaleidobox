@@ -8,6 +8,7 @@ import { FetchMonthlyReleases, ClearGetchuTempImages } from "../../wailsjs/go/se
 import { SearchBT, DownloadToQBittorrent } from "../../wailsjs/go/service/BTDownloadService";
 import { utils } from "../../wailsjs/go/models";
 import { Route as rootRoute } from "./__root";
+import { useNavigate } from "@tanstack/react-router";
 import { BetterSelect } from "../components/ui/BetterSelect";
 import { useAppStore } from "../store";
 import { GetchuGameInfoPanel } from "../components/panel/GetchuGameInfoPanel";
@@ -381,6 +382,18 @@ interface GameItemProps {
 function GameItem({ game, onBrowse, onSearch, onViewDetail }: GameItemProps) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
+  const { games, fetchGames } = useAppStore();
+
+  useEffect(() => {
+    if (games.length == 0) {
+      fetchGames();
+    }
+  }, [])
+
+  // 检查游戏是否已导入（通过 getchu_id 匹配）
+  const importedGame = game.getchu_id ? games.find(g => g.getchu_id === game.getchu_id) : null;
+  const isImported = !!importedGame;
 
   return (
     <div
@@ -395,6 +408,13 @@ function GameItem({ game, onBrowse, onSearch, onViewDetail }: GameItemProps) {
           tempDownload={true}
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
+
+        {/* 已导入标识 */}
+        {isImported && (
+          <div className="absolute bottom-2 right-2 flex items-center justify-center w-13 h-13 rounded-full bg-green-500 text-white shadow-lg" title="已导入">
+            <div className="i-mdi-check text-3xl" />
+          </div>
+        )}
 
         {/* 悬停按钮覆盖层 */}
         {isHovered && (
@@ -425,11 +445,23 @@ function GameItem({ game, onBrowse, onSearch, onViewDetail }: GameItemProps) {
                   e.stopPropagation();
                   onViewDetail(game);
                 }}
-                className="col-span-2 flex items-center justify-center w-full aspect-square rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors mx-auto max-w-[60px]"
+                className={`col-span-${!isImported ? 2 : 1} flex items-center justify-center w-full aspect-square rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors mx-auto max-w-[60px]`}
                 title={t("monthlyReleases.viewDetail") || "查看详情"}
               >
                 <div className="i-mdi-info text-xl" />
               </button>
+              {isImported && importedGame && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ to: "/game/$gameId", params: { gameId: importedGame.id } });
+                  }}
+                  className="col-span-1 flex items-center justify-center w-full aspect-square rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors mx-auto max-w-[60px]"
+                  title={t("monthlyReleases.goToGame") || "跳转到游戏"}
+                >
+                  <div className="i-mdi-gamepad-variant text-xl" />
+                </button>
+              )}
             </div>
           </div>
         )}

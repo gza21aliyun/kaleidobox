@@ -1806,6 +1806,8 @@
     "md5AsFolder": "md5作为游戏文件夹",
     "directIsoInstall": "镜像文件直接安装",
     "openGame": "打开游戏",
+    "runGame": "运行游戏",
+    "selectExecutable": "选择要运行的可执行文件",
     "noSevenZipPath": "未配置7-Zip路径，请在设置中配置7z.exe路径以使用解压功能",
     "no_need_extract": "不需解压"
   }

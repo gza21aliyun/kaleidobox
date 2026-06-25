@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, ExtractFolder, MountISO, InstallGame, OpenFolder, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, ExtractGameNameFromDLSite, CreateDownloadedFile, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, GetGameNameMD5 } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
 import type { service, models } from "../../wailsjs/go/models";
@@ -34,6 +34,8 @@ export default function DownloadedFiles() {
   const [currentExecutingName, setCurrentExecutingName] = useState("");
   const [batchImportModalItem, setBatchImportModalItem] = useState<DownloadedFile | null>(null);
   const [batchImportCandidates, setBatchImportCandidates] = useState<vo.BatchImportCandidate[]>([]);
+  const [runGameModalItem, setRunGameModalItem] = useState<DownloadedFile | null>(null);
+  const [runGameExecutables, setRunGameExecutables] = useState<string[]>([]);
   
   const config = useAppStore(state => state.config);
   const fetchConfig = useAppStore(state => state.fetchConfig);
@@ -206,7 +208,13 @@ export default function DownloadedFiles() {
     setConfirmModalItem(null);
 
     try {
-      await InstallGame(confirmModalItem, md5AsFolder ? "md5" : installMethod);
+      const installedPath = await InstallGame(confirmModalItem, md5AsFolder ? "md5" : installMethod);
+      // 更新单元状态，包含安装路径
+      setItems(items.map(i =>
+        i.id === confirmModalItem.id 
+          ? { ...i, is_installed: true, installed_path: installedPath } 
+          : i
+      ));
     } catch (err) {
       console.error("Install failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "安装失败");
@@ -215,12 +223,6 @@ export default function DownloadedFiles() {
       setIsExecuting(false);
       setCurrentExecutingName("");
     }
-    const file = await RefreshDownloadedFile(confirmModalItem);
-    console.log("file installed", file);
-
-    setItems(items.map(i =>
-      i.id === confirmModalItem.id ? { ...i, is_installed: true, extracted_game_path: file.extracted_game_path, extracted_paths: file.extracted_paths } : i
-    ));
 
 
     // await loadItems();
@@ -238,15 +240,57 @@ export default function DownloadedFiles() {
       return;
     }
     
-    // 构建导入候选数据
-    const extractedGamePath = item.extracted_game_path || item.path;
-    const folderName = item.name;
+    // 游戏名
+    const gameName = item.game_name || item.name;
+    
+    // 尝试两种安装路径：游戏名 或 游戏名MD5
+    const pathByName = `${installFolder}/${gameName}`;
+    const md5Name = await GetGameNameMD5(gameName);
+    const pathByMD5 = `${installFolder}/${md5Name}`;
+    
+    // 扫描安装文件夹下的游戏目录查找可执行文件
+    let executables: string[] = [];
+    let selectedExe = "";
+    let installedGamePath = "";
+    
+    // 先尝试游戏名路径
+    try {
+      const result = await ScanFolderForExecutables(pathByName) as [string[], string];
+      if (result && result[0] && result[0].length > 0) {
+        executables = result[0] || [];
+        selectedExe = result[1] || "";
+        installedGamePath = pathByName;
+      }
+    } catch (err) {
+      console.error("扫描游戏名路径失败:", err);
+    }
+    
+    // 如果没找到，尝试MD5路径
+    if (executables.length === 0) {
+      try {
+        const result = await ScanFolderForExecutables(pathByMD5) as [string[], string];
+        if (result && result[0] && result[0].length > 0) {
+          executables = result[0] || [];
+          selectedExe = result[1] || "";
+          installedGamePath = pathByMD5;
+        }
+      } catch (err) {
+        console.error("扫描MD5路径失败:", err);
+      }
+    }
+    
+    // 如果都没找到，使用游戏名路径（让用户手动选择）
+    if (installedGamePath === "") {
+      installedGamePath = pathByName;
+    }
     
     // 创建 BatchImportCandidate
     const candidate = new vo.BatchImportCandidate({
-      folder_path: extractedGamePath,
-      folder_name: folderName,
-      search_name: item.game_name || folderName,
+      folder_path: installedGamePath,
+      folder_name: gameName,
+      executables: executables,
+      selected_exe: selectedExe,
+      search_name: gameName,
       is_selected: true,
       match_status: "pending",
     });
@@ -281,6 +325,95 @@ export default function DownloadedFiles() {
     if (importedId) {
       window.location.hash = `/game/${importedId}`;
     }
+  };
+  
+  const handleRunGame = async (item: DownloadedFile) => {
+    const config = useAppStore.getState().config;
+    const installFolder = config?.game_install_folder;
+    
+    if (!installFolder) {
+      setErrorMessage("游戏安装文件夹未配置");
+      return;
+    }
+    
+    const gameName = item.game_name || item.name;
+    
+    // 尝试两种安装路径
+    const pathByName = `${installFolder}/${gameName}`;
+    const md5Name = await GetGameNameMD5(gameName);
+    const pathByMD5 = `${installFolder}/${md5Name}`;
+    
+    // 扫描查找可执行文件
+    let executables: string[] = [];
+    let foundPath = "";
+    
+    try {
+      const result = await ScanFolderForExecutables(pathByName) as [string[], string];
+      if (result && result[0] && result[0].length > 0) {
+        executables = result[0];
+        foundPath = pathByName;
+      }
+    } catch (err) {}
+    
+    if (executables.length === 0) {
+      try {
+        const result = await ScanFolderForExecutables(pathByMD5) as [string[], string];
+        if (result && result[0] && result[0].length > 0) {
+          executables = result[0];
+          foundPath = pathByMD5;
+        }
+      } catch (err) {}
+    }
+    
+    if (executables.length === 0) {
+      setErrorMessage("未找到可执行文件");
+      return;
+    }
+    
+    // 如果只有一个exe，直接运行
+    if (executables.length === 1) {
+      try {
+        await OpenLocalPath(`${foundPath}/${executables[0]}`);
+      } catch (err) {
+        console.error("运行游戏失败:", err);
+        setErrorMessage("运行游戏失败");
+      }
+      return;
+    }
+    
+    // 多个exe，弹窗让用户选择
+    setRunGameExecutables(executables);
+    setRunGameModalItem(item);
+  };
+  
+  const handleSelectExecutable = async (exeName: string) => {
+    if (!runGameModalItem) return;
+    
+    const config = useAppStore.getState().config;
+    const installFolder = config?.game_install_folder;
+    const gameName = runGameModalItem.game_name || runGameModalItem.name;
+    
+    const pathByName = `${installFolder}/${gameName}`;
+    const md5Name = await GetGameNameMD5(gameName);
+    const pathByMD5 = `${installFolder}/${md5Name}`;
+    
+    // 检查哪个路径存在
+    let foundPath = pathByName;
+    try {
+      await ScanFolderForExecutables(pathByName);
+    } catch {
+      foundPath = pathByMD5;
+    }
+    
+    try {
+      await OpenLocalPath(`${foundPath}/${exeName}`);
+    } catch (err) {
+      console.error("运行游戏失败:", err);
+      setErrorMessage("运行游戏失败");
+    }
+    
+    setRunGameModalItem(null);
+    setRunGameExecutables([]);
   };
 
   const handleOpen = async (item: DownloadedFile) => {
@@ -575,6 +708,11 @@ export default function DownloadedFiles() {
                         <span className="text-xs truncate min-w-0" title={item.extracted_game_path}>游戏解压目录： {item.extracted_game_path}</span>
                       </div>
                     )}
+                    {item.installed_path && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs truncate min-w-0" title={item.installed_path}>游戏安装目录： {(item as any).installed_path}</span>
+                      </div>
+                    )}
                     {/* {item.iso_items.length > 0 && (
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-xs truncate min-w-0" title={item.iso_items[0]}>Iso： {item.iso_items[0]}</span>
@@ -713,6 +851,16 @@ export default function DownloadedFiles() {
                           className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
                         >
                           {t("downloadedFiles.openInstall")}
+                        </button>
+                      )}
+
+                      {/* 运行游戏按钮 */}
+                      {item.is_installed && (
+                        <button
+                          onClick={() => handleRunGame(item)}
+                          className="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.runGame")}
                         </button>
                       )}
 
@@ -880,6 +1028,39 @@ export default function DownloadedFiles() {
           preloadedCandidates={batchImportCandidates}
           preloadedStep="preview"
         />
+      )}
+
+      {/* 运行游戏选择弹窗 */}
+      {runGameModalItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-brand-800 rounded-lg p-6 w-96">
+            <h3 className="text-lg font-semibold mb-4">
+              {t("downloadedFiles.selectExecutable")}
+            </h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {runGameExecutables.map((exe, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSelectExecutable(exe)}
+                  className="w-full px-4 py-2 text-left bg-brand-100 dark:bg-brand-700 hover:bg-brand-200 dark:hover:bg-brand-600 rounded"
+                >
+                  {exe}
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => {
+                  setRunGameModalItem(null);
+                  setRunGameExecutables([]);
+                }}
+                className="px-4 py-2 bg-brand-200 dark:bg-brand-700 rounded hover:bg-brand-300 dark:hover:bg-brand-600"
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

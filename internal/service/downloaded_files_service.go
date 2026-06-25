@@ -9,6 +9,7 @@ import (
 	"io"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
+	"lunabox/internal/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -52,6 +53,7 @@ type DownloadedFile struct {
 	IsInstalled   bool   `json:"is_installed"`
 	IsImported    bool   `json:"is_imported"`
 	ImportedId    string `json:"imported_id,omitempty"`
+	InstalledPath string `json:"installed_path,omitempty"`
 	// ContainsISO       bool     `json:"contains_iso"`
 	ISOItems []string `json:"iso_items"`
 	// ISOCount          int      `json:"iso_count"`
@@ -247,6 +249,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		IsInstalled:    s.checkIsInstalled(itemPath),
 		IsImported:     importedID != "",
 		ImportedId:     importedID,
+		InstalledPath:  s.checkAndGetInstalledPath(itemPath),
 		HasNumericName: s.isNumericName(name),
 		GameName:       s.ExtractGameNameFromDLSite(fileNameWithoutExt),
 	}
@@ -429,9 +432,15 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 }
 
 func (s *DownloadedFilesService) checkIsInstalled(itemPath string) bool {
+	installedPath := s.checkAndGetInstalledPath(itemPath)
+	return installedPath != ""
+}
+
+// checkAndGetInstalledPath 检查是否已安装并返回安装路径
+func (s *DownloadedFilesService) checkAndGetInstalledPath(itemPath string) string {
 	installFolder := s.config.GameInstallFolder
 	if installFolder == "" {
-		return false
+		return ""
 	}
 
 	// 获取原始文件夹名作为游戏名
@@ -441,17 +450,17 @@ func (s *DownloadedFilesService) checkIsInstalled(itemPath string) bool {
 	// 检查以游戏名命名的文件夹
 	gameNamePath := filepath.Join(installFolder, gameName)
 	if _, err := os.Stat(gameNamePath); err == nil {
-		return true
+		return gameNamePath
 	}
 
 	// 检查以 md5 命名的文件夹
 	md5Name := s.getGameNameMD5(gameName)
 	md5Path := filepath.Join(installFolder, md5Name)
 	if _, err := os.Stat(md5Path); err == nil {
-		return true
+		return md5Path
 	}
 
-	return false
+	return ""
 }
 
 // getGameNameMD5 生成游戏名的 md5 哈希
@@ -459,6 +468,11 @@ func (s *DownloadedFilesService) getGameNameMD5(gameName string) string {
 	data := []byte(gameName)
 	hash := md5.Sum(data)
 	return fmt.Sprintf("%x", hash)
+}
+
+// GetGameNameMD5 公开的游戏名转MD5函数
+func (s *DownloadedFilesService) GetGameNameMD5(gameName string) string {
+	return s.getGameNameMD5(gameName)
 }
 
 func (s *DownloadedFilesService) checkIsImported(name string) bool {
@@ -1190,6 +1204,28 @@ func (s *DownloadedFilesService) SaveImportedID(itemPath, importedID string) err
 
 	idFilePath := filepath.Join(itemPath, "id-"+importedID+".kld")
 	return os.WriteFile(idFilePath, []byte(importedID), 0644)
+}
+
+// ScanFolderForExecutables 扫描文件夹查找可执行文件
+func (s *DownloadedFilesService) ScanFolderForExecutables(folderPath string) ([]string, string, error) {
+	// 排除关键词
+	excludeKeywords := []string{
+		"unins", "uninstall", "setup", "installer", "config", "tool", "utility",
+		"redist", "vcredist", "directx", "dotnet", "crash", "report",
+	}
+
+	// 查找可执行文件
+	executables := utils.FindExecutables(folderPath, excludeKeywords)
+
+	if len(executables) == 0 {
+		return nil, "", nil
+	}
+
+	// 选择最佳可执行文件
+	folderName := filepath.Base(folderPath)
+	selectedExe := utils.SelectBestExecutable(executables, folderName)
+
+	return executables, selectedExe, nil
 }
 
 func copyDirectory(src, dst string) error {

@@ -1768,7 +1768,9 @@
     "md5AsFolder": "MD5をゲームフォルダ名に",
     "directIsoInstall": "ISO 直接インストール",
     "openGame": "ゲームを開く",
-    "noSevenZipPath": "7-Zip パスが設定されていません。解凍機能を使用するには、設定で 7z.exe のパスを設定してください。",
+    "runGame": "ゲームを実行",
+    "selectExecutable": "実行ファイルを選択",
+    "noSevenZipPath": "7-Zip パスが設定されていません。解压機能を使用するには、設定で 7z.exe のパスを設定してください。",
     "delete": "削除",
     "execute": "実行"
   }

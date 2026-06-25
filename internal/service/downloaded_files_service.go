@@ -1207,25 +1207,28 @@ func (s *DownloadedFilesService) SaveImportedID(itemPath, importedID string) err
 }
 
 // ScanFolderForExecutables 扫描文件夹查找可执行文件
-func (s *DownloadedFilesService) ScanFolderForExecutables(folderPath string) ([]string, string, error) {
-	// 排除关键词
-	excludeKeywords := []string{
-		"unins", "uninstall", "setup", "installer", "config", "tool", "utility",
-		"redist", "vcredist", "directx", "dotnet", "crash", "report",
-	}
+func (s *DownloadedFilesService) ScanFolderForExecutables(folderPath string) ([]string, error) {
 
 	// 查找可执行文件
-	executables := utils.FindExecutables(folderPath, excludeKeywords)
+	executables := utils.FindExecutables(folderPath, utils.ExcludeExeKeywords)
+	fmt.Printf("ScanFolderForExecutables found executables: %v\n", executables)
 
 	if len(executables) == 0 {
-		return nil, "", nil
+		return nil, nil
 	}
 
 	// 选择最佳可执行文件
-	folderName := filepath.Base(folderPath)
-	selectedExe := utils.SelectBestExecutable(executables, folderName)
+	// folderName := filepath.Base(folderPath)
+	// selectedExe := utils.SelectBestExecutable(executables, folderName)
 
-	return executables, selectedExe, nil
+	// fmt.Printf("ScanFolderForExecutables2 found executables: %v, selectedExe:%s\n", executables, selectedExe)
+
+	return executables, nil
+}
+
+func (s *DownloadedFilesService) StartGameTemp(path string) error {
+	var cmd *exec.Cmd = exec.Command(path)
+	return cmd.Start()
 }
 
 func copyDirectory(src, dst string) error {

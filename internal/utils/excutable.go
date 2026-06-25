@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -10,6 +11,7 @@ import (
 // FindExecutables 在指定目录下查找可执行文件
 // 注意：不包含 .lnk 快捷方式，因为无法直接启动
 func FindExecutables(folderPath string, excludeKeywords []string) []string {
+	fmt.Printf("FindExecutables folderPath: %s\n", folderPath)
 	var executables []string
 
 	// 仅扫描一级目录

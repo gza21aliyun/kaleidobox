@@ -1063,16 +1063,7 @@ func SearchVideoExePath(game *models.Game) error {
 	// 获取游戏可执行文件所在的目录
 	folderPath := filepath.Dir(game.Path)
 	exts := []string{".mp4", ".avi", ".mpg", ".wmv"}
-	excludeExeKeywords := []string{
-		"courier_i", "courier", "acmp", "curl", "unitycrashhandler64", "krkr", "krkrconf", "krkrfont", "krkrlt", "krkrrel", "krkrsign", "krkrtpc", "tcwfcomp",
-		"settings", "setting", "python", "protect", "instx86", "instx64", "installer", "install", "inst", "config2", "autorun", "supporttools", "filechecker",
-		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst", "bhvc",
-		"vcredist_x86", "vcredist_x64", "vc_redist.x86", "updchk", "upgrade", "uninstx86", "uninstx64", "uninstcl", "uninstaller",
-		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール", "システム詳細設定", "エンジン設定",
-		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet", "_uninst", "セーブデータ場所設定ツール", "システム設定",
-		"redistributable", "installer", "launcher_helper", "crashreporter", "ファイル破損チェック", "セーブデータフォルダを開く",
-		"updater", "uninstall", "删除", "卸载", "syscfg", "ihs", "configure", "セーブファイル設定", "セーブデータフォルダ・開く",
-	}
+
 	var videoFiles []string
 	var exeFiles []string
 	var foundOPVideo string
@@ -1106,7 +1097,7 @@ func SearchVideoExePath(game *models.Game) error {
 				filePrefix := strings.ReplaceAll(fileName, filepath.Ext(path), "")
 				lowPrefix := strings.ToLower(filePrefix)
 				applog.InfoLogSaveAppLog("checking exe %s\n", oFileName)
-				if !utils.ArrayContains(excludeExeKeywords, filePrefix) && !strings.Contains(lowPrefix, "setup") {
+				if !utils.ArrayContains(utils.ExcludeExeKeywords, filePrefix) && !strings.Contains(lowPrefix, "setup") {
 					exeFiles = append(exeFiles, oFileName)
 					applog.InfoLogSaveAppLog("exe found %s\n", oFileName)
 				}
@@ -1179,12 +1170,6 @@ func (s *ImportService) ProcessDroppedPaths(paths []string) ([]vo.BatchImportCan
 	var candidates []vo.BatchImportCandidate
 
 	// 需要排除的可执行文件关键词
-	excludeKeywords := []string{
-		"unins", "setup", "config", "patch", "update", "crashpad",
-		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet",
-		"redistributable", "installer", "launcher_helper", "crashreporter",
-		"updater", "uninstall", "删除", "卸载",
-	}
 
 	// 最大递归深度设为 3 层（拖拽场景通常不会太深）
 	const maxDepth = 3
@@ -1199,7 +1184,7 @@ func (s *ImportService) ProcessDroppedPaths(paths []string) ([]vo.BatchImportCan
 
 		if info.IsDir() {
 			// 处理文件夹：使用递归扫描查找所有包含可执行文件的子目录
-			err := s.scanDirectoryRecursive(path, path, 0, maxDepth, excludeKeywords, candidatesMap)
+			err := s.scanDirectoryRecursive(path, path, 0, maxDepth, utils.ExcludeExeKeywords, candidatesMap)
 			if err != nil {
 				applog.LogWarningf(s.ctx, "ProcessDroppedPaths: failed to scan directory %s: %v", path, err)
 				continue
@@ -1221,7 +1206,7 @@ func (s *ImportService) ProcessDroppedPaths(paths []string) ([]vo.BatchImportCan
 			excluded := false
 			fileName := filepath.Base(path)
 			lowerFileName := strings.ToLower(fileName)
-			for _, keyword := range excludeKeywords {
+			for _, keyword := range utils.ExcludeExeKeywords {
 				if strings.Contains(lowerFileName, keyword) {
 					excluded = true
 					break

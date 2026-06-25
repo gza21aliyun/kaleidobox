@@ -398,37 +398,39 @@ function GameItem({ game, onBrowse, onSearch, onViewDetail }: GameItemProps) {
 
         {/* 悬停按钮覆盖层 */}
         {isHovered && (
-          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onBrowse(game);
-              }}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/90 hover:bg-white text-brand-700 transition-colors"
-              title={t("monthlyReleases.browse")}
-            >
-              <div className="i-mdi-web text-xl" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onSearch(game);
-              }}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-primary-500 hover:bg-primary-600 text-white transition-colors"
-              title={t("monthlyReleases.searchBT")}
-            >
-              <div className="i-mdi-magnify text-xl" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewDetail(game);
-              }}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-              title={t("monthlyReleases.viewDetail") || "查看详情"}
-            >
-              <div className="i-mdi-info text-xl" />
-            </button>
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-3">
+            <div className="grid grid-cols-2 gap-2 w-full max-w-[120px]">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBrowse(game);
+                }}
+                className="flex items-center justify-center w-full aspect-square rounded-full bg-white/90 hover:bg-white text-brand-700 transition-colors"
+                title={t("monthlyReleases.browse")}
+              >
+                <div className="i-mdi-web text-xl" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSearch(game);
+                }}
+                className="flex items-center justify-center w-full aspect-square rounded-full bg-primary-500 hover:bg-primary-600 text-white transition-colors"
+                title={t("monthlyReleases.searchBT")}
+              >
+                <div className="i-mdi-magnify text-xl" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewDetail(game);
+                }}
+                className="col-span-2 flex items-center justify-center w-full aspect-square rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors mx-auto max-w-[60px]"
+                title={t("monthlyReleases.viewDetail") || "查看详情"}
+              >
+                <div className="i-mdi-info text-xl" />
+              </button>
+            </div>
           </div>
         )}
       </div>

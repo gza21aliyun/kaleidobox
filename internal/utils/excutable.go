@@ -10,7 +10,7 @@ import (
 
 // FindExecutables 在指定目录下查找可执行文件
 // 注意：不包含 .lnk 快捷方式，因为无法直接启动
-func FindExecutables(folderPath string, excludeKeywords []string) []string {
+func FindExecutables(folderPath string, excludeKeywords []string, level int) []string {
 	fmt.Printf("FindExecutables folderPath: %s\n", folderPath)
 	var executables []string
 
@@ -22,6 +22,33 @@ func FindExecutables(folderPath string, excludeKeywords []string) []string {
 
 	for _, entry := range entries {
 		if entry.IsDir() {
+			if level > 1 {
+				subEntries, err := os.ReadDir(filepath.Join(folderPath, entry.Name()))
+				if err != nil {
+					continue
+				}
+				for _, subEntry := range subEntries {
+					if subEntry.IsDir() {
+						continue
+					}
+					subName := subEntry.Name()
+					subLowerName := strings.ToLower(subName)
+					if !strings.HasSuffix(subLowerName, ".exe") {
+						continue
+					}
+					excluded := false
+					for _, keyword := range excludeKeywords {
+						if strings.Contains(subLowerName, keyword) {
+							excluded = true
+							break
+						}
+					}
+
+					if !excluded {
+						executables = append(executables, filepath.Join(folderPath, entry.Name(), subName))
+					}
+				}
+			}
 			continue
 		}
 

@@ -294,7 +294,7 @@ export default function DownloadedFiles() {
   
   const handleOpenGame = (item: DownloadedFile) => {
     // 跳转到游戏详情页
-    const importedId = (item as any).imported_id;
+    const importedId = item.imported_id;
     if (importedId) {
       window.location.hash = `/game/${importedId}`;
     }
@@ -315,7 +315,7 @@ export default function DownloadedFiles() {
     
     try {
       const result = await ScanFolderForExecutables(item.installed_path);
-      toast.success(`找到可执行文件：${result.join(", ")}`);
+      // toast.success(`找到可执行文件：${result.join(", ")}`);
       if (result && result.length > 0) {
         executables = result;
         foundPath = item.installed_path;
@@ -654,7 +654,7 @@ export default function DownloadedFiles() {
                     )}
                     {item.installed_path && (
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs truncate min-w-0" title={item.installed_path}>游戏安装目录： {(item as any).installed_path}</span>
+                        <span className="text-xs truncate min-w-0" title={item.installed_path}>游戏安装目录： {item.installed_path}</span>
                       </div>
                     )}
                     {/* {item.iso_items.length > 0 && (
@@ -779,7 +779,7 @@ export default function DownloadedFiles() {
                       )}
 
                       {/* 打开游戏按钮 - 只有导入后显示 */}
-                      {item.is_imported && (item as any).imported_id && (
+                      {item.is_imported && item.imported_id && (
                         <button
                           onClick={() => handleOpenGame(item)}
                           className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"

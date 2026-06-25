@@ -1210,7 +1210,7 @@ func (s *DownloadedFilesService) SaveImportedID(itemPath, importedID string) err
 func (s *DownloadedFilesService) ScanFolderForExecutables(folderPath string) ([]string, error) {
 
 	// 查找可执行文件
-	executables := utils.FindExecutables(folderPath, utils.ExcludeExeKeywords)
+	executables := utils.FindExecutables(folderPath, utils.ExcludeExeKeywords, 2)
 	fmt.Printf("ScanFolderForExecutables found executables: %v\n", executables)
 
 	if len(executables) == 0 {

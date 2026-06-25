@@ -767,7 +767,7 @@ func (s *ImportService) scanDirectoryRecursive(
 	}
 
 	// 扫描当前目录下的可执行文件
-	executables := utils.FindExecutables(currentPath, excludeKeywords)
+	executables := utils.FindExecutables(currentPath, excludeKeywords, 1)
 
 	// 如果当前目录包含可执行文件，将其作为候选游戏
 	if len(executables) > 0 {

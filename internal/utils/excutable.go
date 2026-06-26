@@ -21,39 +21,18 @@ func FindExecutables(folderPath string, excludeKeywords []string, level int) []s
 	}
 
 	for _, entry := range entries {
+		name := entry.Name()
+		lowerName := strings.ToLower(name)
 		if entry.IsDir() {
-			if level > 1 {
-				subEntries, err := os.ReadDir(filepath.Join(folderPath, entry.Name()))
-				if err != nil {
-					continue
-				}
-				for _, subEntry := range subEntries {
-					if subEntry.IsDir() {
-						continue
-					}
-					subName := subEntry.Name()
-					subLowerName := strings.ToLower(subName)
-					if !strings.HasSuffix(subLowerName, ".exe") {
-						continue
-					}
-					excluded := false
-					for _, keyword := range excludeKeywords {
-						if strings.Contains(subLowerName, keyword) {
-							excluded = true
-							break
-						}
-					}
-
-					if !excluded {
-						executables = append(executables, filepath.Join(folderPath, entry.Name(), subName))
-					}
-				}
+			if lowerName == "setupdata" {
+				subExes := FindExecutables(filepath.Join(folderPath, name), excludeKeywords, level)
+				executables = append(executables, subExes...)
+			} else if level > 1 {
+				subExes := FindExecutables(filepath.Join(folderPath, name), excludeKeywords, level-1)
+				executables = append(executables, subExes...)
 			}
 			continue
 		}
-
-		name := entry.Name()
-		lowerName := strings.ToLower(name)
 
 		// 检查是否是可执行文件（不包含 .lnk 快捷方式）
 		if !strings.HasSuffix(lowerName, ".exe") &&

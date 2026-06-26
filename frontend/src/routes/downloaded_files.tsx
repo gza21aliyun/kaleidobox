@@ -373,6 +373,12 @@ export default function DownloadedFiles() {
     }
   };
 
+  const handleGameNameChange = (item: DownloadedFile, newName: string) => {
+    setItems(items.map(i =>
+      i.id === item.id ? { ...i, game_name: newName } : i
+    ));
+  };
+
   const handleOpenInstalled = async (item: DownloadedFile) => {
     try {
       if (item.installed_path) {
@@ -645,7 +651,13 @@ export default function DownloadedFiles() {
                     </div>
 
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs truncate min-w-0" title={item.game_name}>游戏名： {item.game_name}</span>
+                      <span className="text-xs">游戏名：</span>
+                      <input
+                        type="text"
+                        value={item.game_name || ""}
+                        onChange={(e) => handleGameNameChange(item, e.target.value)}
+                        className="flex-1 text-xs px-1 py-0.5 border border-brand-300 dark:border-brand-600 rounded bg-transparent dark:bg-brand-700 min-w-0"
+                      />
                     </div>
                     {item.extracted_game_path && (
                       <div className="flex items-center gap-2 min-w-0">
@@ -653,9 +665,12 @@ export default function DownloadedFiles() {
                       </div>
                     )}
                     {item.installed_path && (
-                      <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        onClick={() => handleOpenInstalled(item)}
+                        className="flex items-center gap-2 min-w-0 hover:text-brand-500 text-left"
+                      >
                         <span className="text-xs truncate min-w-0" title={item.installed_path}>游戏安装目录： {item.installed_path}</span>
-                      </div>
+                      </button>
                     )}
                     {/* {item.iso_items.length > 0 && (
                       <div className="flex items-center gap-2 min-w-0">
@@ -785,16 +800,6 @@ export default function DownloadedFiles() {
                           className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
                         >
                           {t("downloadedFiles.openGame")}
-                        </button>
-                      )}
-
-                      {/* 打开安装按钮 */}
-                      {item.is_installed && (
-                        <button
-                          onClick={() => handleOpenInstalled(item)}
-                          className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
-                        >
-                          {t("downloadedFiles.openInstall")}
                         </button>
                       )}
 

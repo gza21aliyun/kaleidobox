@@ -139,20 +139,6 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("basic.theme")}</label>
-        <BetterSelect
-          name="theme"
-          value={formData.theme}
-          onChange={value => onChange({ ...formData, theme: value } as appconf.AppConfig)}
-          options={[
-            { value: "light", label: t("basic.light") },
-            { value: "dark", label: t("basic.dark") },
-            { value: "system", label: t("basic.followSystem") },
-          ]}
-        />
-      </div>
-
-      <div className="space-y-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("common.language")}</label>
         <BetterSelect
           name="language"

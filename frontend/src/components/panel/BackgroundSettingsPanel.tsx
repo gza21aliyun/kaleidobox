@@ -6,6 +6,7 @@ import { detectImageBrightness } from "../../utils/detectImageBrightness";
 import { ImageCropperModal } from "../modal/ImageCropperModal";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import i18next from "../../i18n/i18n";
+import { BetterSelect } from "../ui/BetterSelect";
 const t = i18next.t;
 
 interface BackgroundSettingsProps {
@@ -107,8 +108,25 @@ export function BackgroundSettingsPanel({ formData, onChange }: BackgroundSettin
         />
       )}
 
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("basic.theme")}</label>
+        <BetterSelect
+          name="theme"
+          value={formData.theme}
+          onChange={value => onChange({ ...formData, theme: value } as appconf.AppConfig)}
+          options={[
+            { value: "light", label: t("basic.light") },
+            { value: "dark", label: t("basic.dark") },
+            { value: "system", label: t("basic.followSystem") },
+          ]}
+        />
+      </div>
+
       {/* 启用开关 */}
       <div className="flex items-center justify-between p-2">
+        
+        
+        
         <div>
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
             {t("background.enableCustomBackground")}

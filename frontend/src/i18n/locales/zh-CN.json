@@ -742,7 +742,7 @@
     "cloudBackup": "云备份配置",
     "autoBackup": "自动备份",
     "aiConfig": "AI 配置",
-    "btDownload": "BT下载设置",
+    "btDownload": "下载设置",
     "dbBackup": "数据库备份",
     "fullDataBackup": "全量数据备份",
     "appUpdate": "应用更新",

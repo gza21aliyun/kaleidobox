@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/md5"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"lunabox/internal/appconf"
@@ -232,8 +233,26 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
 func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isFolder bool, size int64) DownloadedFile {
 	fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
 
-	// 检测已导入的ID
-	importedID := s.checkImportedID(itemPath, isFolder)
+	// 读取 download.klb 获取保存的信息
+	savedInfo := s.LoadDownloadInfo(itemPath)
+
+	// 检测已导入的ID（优先从保存的信息读取）
+	importedID := ""
+	if savedInfo != nil && savedInfo.ImportedId != "" {
+		importedID = savedInfo.ImportedId
+	}
+	if s.checkImportedID(importedID) {
+		importedID = ""
+		savedInfo.ImportedId = ""
+		savedInfo.IsImported = false
+		s.SaveDownloadInfo(itemPath, *savedInfo)
+	}
+
+	// 使用保存的游戏名（如果有）
+	gameName := s.ExtractGameNameFromDLSite(fileNameWithoutExt)
+	if savedInfo != nil && savedInfo.GameName != "" {
+		gameName = savedInfo.GameName
+	}
 
 	item := DownloadedFile{
 		ID:       uuid.New().String(),
@@ -251,7 +270,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		ImportedId:     importedID,
 		InstalledPath:  s.checkAndGetInstalledPath(itemPath),
 		HasNumericName: s.isNumericName(name),
-		GameName:       s.ExtractGameNameFromDLSite(fileNameWithoutExt),
+		GameName:       gameName,
 	}
 
 	if isFolder {
@@ -436,8 +455,42 @@ func (s *DownloadedFilesService) checkIsInstalled(itemPath string) bool {
 	return installedPath != ""
 }
 
+const downloadInfoFileName = "download.klb"
+
+// SaveDownloadInfo 保存下载单元信息到 download.klb 文件
+func (s *DownloadedFilesService) SaveDownloadInfo(itemPath string, info DownloadedFile) error {
+	klbPath := filepath.Join(itemPath, downloadInfoFileName)
+	data, err := json.Marshal(info)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(klbPath, data, 0644)
+}
+
+// LoadDownloadInfo 从 download.klb 文件加载下载单元信息
+func (s *DownloadedFilesService) LoadDownloadInfo(itemPath string) *DownloadedFile {
+	klbPath := filepath.Join(itemPath, downloadInfoFileName)
+	data, err := os.ReadFile(klbPath)
+	if err != nil {
+		return nil
+	}
+	var info DownloadedFile
+	if err := json.Unmarshal(data, &info); err != nil {
+		return nil
+	}
+	return &info
+}
+
 // checkAndGetInstalledPath 检查是否已安装并返回安装路径
 func (s *DownloadedFilesService) checkAndGetInstalledPath(itemPath string) string {
+	// 优先从 download.klb 读取安装路径
+	info := s.LoadDownloadInfo(itemPath)
+	if info != nil && info.InstalledPath != "" {
+		if _, err := os.Stat(info.InstalledPath); err == nil {
+			return info.InstalledPath
+		}
+	}
+
 	installFolder := s.config.GameInstallFolder
 	if installFolder == "" {
 		return ""
@@ -479,35 +532,10 @@ func (s *DownloadedFilesService) checkIsImported(name string) bool {
 	return false
 }
 
-// checkImportedID 检查是否有已导入的ID文件（id-*.kld）
-func (s *DownloadedFilesService) checkImportedID(itemPath string, isFolder bool) string {
-	if !isFolder {
-		// 对于压缩包，检查同名的解压文件夹
-		baseName := filepath.Base(itemPath)
-		ext := filepath.Ext(baseName)
-		folderPath := strings.TrimSuffix(itemPath, ext)
-		itemPath = folderPath
-	}
+// checkImportedID 检查是否有已导入的ID文件
+func (s *DownloadedFilesService) checkImportedID(importedId string) bool {
 
-	// 读取目录查找 id-*.kld 文件
-	entries, err := os.ReadDir(itemPath)
-	if err != nil {
-		return ""
-	}
-
-	// 匹配 id-*.kld 文件
-	re := regexp.MustCompile(`^id-(.+)\.kld$`)
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		match := re.FindStringSubmatch(entry.Name())
-		if match != nil {
-			return match[1]
-		}
-	}
-
-	return ""
+	return false
 }
 
 // checkIsDownloading 检查是否有未下载完的临时文件（QBittorrent 的 .!qB 文件，uTorrent 的 .!ut 文件）
@@ -1003,6 +1031,8 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 				applog.LogErrorf(s.ctx, "解压ISO失败: %v", err)
 				return "", err
 			}
+			// 保存安装信息到 download.klb
+			s.saveInstallInfo(downloadedFile.Path, targetPath)
 			applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
 			return targetPath, nil
 		}
@@ -1041,8 +1071,33 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 		return "", err
 	}
 
+	// 保存安装信息到 download.klb
+	s.saveInstallInfo(downloadedFile.Path, targetPath)
+
 	applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
 	return targetPath, nil
+}
+
+// saveInstallInfo 保存安装信息到 download.klb
+func (s *DownloadedFilesService) saveInstallInfo(itemPath, installedPath string) {
+	// 读取现有信息
+	info := s.LoadDownloadInfo(itemPath)
+	if info == nil {
+		info = &DownloadedFile{}
+	}
+	info.InstalledPath = installedPath
+	info.IsInstalled = true
+	s.SaveDownloadInfo(itemPath, *info)
+}
+
+// UpdateGameName 更新游戏名并保存到 download.klb
+func (s *DownloadedFilesService) UpdateGameName(itemPath, gameName string) error {
+	info := s.LoadDownloadInfo(itemPath)
+	if info == nil {
+		info = &DownloadedFile{}
+	}
+	info.GameName = gameName
+	return s.SaveDownloadInfo(itemPath, *info)
 }
 
 // DeleteInstalledGame 删除已安装的游戏
@@ -1202,8 +1257,14 @@ func (s *DownloadedFilesService) SaveImportedID(itemPath, importedID string) err
 		}
 	}
 
-	idFilePath := filepath.Join(itemPath, "id-"+importedID+".kld")
-	return os.WriteFile(idFilePath, []byte(importedID), 0644)
+	// 保存到 download.klb
+	info := s.LoadDownloadInfo(itemPath)
+	if info == nil {
+		info = &DownloadedFile{}
+	}
+	info.ImportedId = importedID
+	info.IsImported = true
+	return s.SaveDownloadInfo(itemPath, *info)
 }
 
 // ScanFolderForExecutables 扫描文件夹查找可执行文件

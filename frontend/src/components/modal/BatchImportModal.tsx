@@ -22,8 +22,7 @@ import { BetterSwitch } from "../ui/BetterSwitch";
 interface BatchImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImportComplete: () => void;
-  onOpenUpdate: (candidates: models.Game[]) => void;
+  onImportComplete: (candidates: models.Game[], isOpenUpdate: boolean) => void;
   preloadedCandidates?: vo.BatchImportCandidate[];
   preloadedStep?: Step;
 }
@@ -44,7 +43,7 @@ interface LocalCandidate {
   allMatches?: vo.GameMetadataFromWebVO[];
 }
 
-export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpdate, preloadedCandidates, preloadedStep }: BatchImportModalProps) {
+export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedCandidates, preloadedStep }: BatchImportModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -183,7 +182,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
         BatchImportGamesSearch(importCandidates, isSearchFolder).then((res) => {          
           resetAndClose()
           console.log("res:", res)
-          onOpenUpdate(res.games) 
+          onImportComplete(res.games, true)
           if (res.games && res.games.length > 0 && selectedCategoryVo?.id) {
             AddGamesToCategories(res.games.map(g => g.id), [selectedCategoryVo.id])
               .then(() => {
@@ -334,7 +333,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, onOpenUpda
 
       if (result.success > 0) {
         toast.success(`成功导入 ${result.success} 个游戏`);
-        onImportComplete();
+        onImportComplete(result.games, false);
         triggerCategoriesRefresh();
       }
     }

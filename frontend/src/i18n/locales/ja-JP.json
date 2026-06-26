@@ -742,7 +742,7 @@
     "cloudBackup": "クラウドバックアップ設定",
     "autoBackup": "自動バックアップ",
     "aiConfig": "AI 設定",
-    "btDownload": "BTダウンロード設定",
+    "btDownload": "ダウンロード設定",
     "dbBackup": "データベースバックアップ",
     "fullDataBackup": "全データバックアップ",
     "appUpdate": "アプリ更新",

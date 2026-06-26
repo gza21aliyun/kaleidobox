@@ -241,7 +241,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 	if savedInfo != nil && savedInfo.ImportedId != "" {
 		importedID = savedInfo.ImportedId
 	}
-	if s.checkImportedID(importedID) {
+	if s.checkImportedIDInDB(importedID) {
 		importedID = ""
 		savedInfo.ImportedId = ""
 		savedInfo.IsImported = false
@@ -532,10 +532,18 @@ func (s *DownloadedFilesService) checkIsImported(name string) bool {
 	return false
 }
 
-// checkImportedID 检查是否有已导入的ID文件
-func (s *DownloadedFilesService) checkImportedID(importedId string) bool {
-
-	return false
+// checkImportedIDInDB 检查数据库中是否存在该导入ID的游戏
+func (s *DownloadedFilesService) checkImportedIDInDB(importedId string) bool {
+	if importedId == "" {
+		return false
+	}
+	var exists bool
+	err := s.db.QueryRowContext(s.ctx, "SELECT EXISTS(SELECT 1 FROM games WHERE id = ?)", importedId).Scan(&exists)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "检查导入ID失败: %v", err)
+		return false
+	}
+	return exists
 }
 
 // checkIsDownloading 检查是否有未下载完的临时文件（QBittorrent 的 .!qB 文件，uTorrent 的 .!ut 文件）

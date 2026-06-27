@@ -238,20 +238,44 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 
 	// 检测已导入的ID（优先从保存的信息读取）
 	importedID := ""
+	isChanged := false
 	if savedInfo != nil && savedInfo.ImportedId != "" {
-		importedID = savedInfo.ImportedId
-	}
-	if s.checkImportedIDInDB(importedID) {
-		importedID = ""
-		savedInfo.ImportedId = ""
-		savedInfo.IsImported = false
-		s.SaveDownloadInfo(itemPath, *savedInfo)
+		// 检查导入ID是否在数据库中真的存在
+		if !s.checkImportedIDInDB(savedInfo.ImportedId) && isFolder {
+			// 数据库中不存在，清空保存的导入信息
+			savedInfo.ImportedId = ""
+			savedInfo.IsImported = false
+			isChanged = true
+		} else {
+			importedID = savedInfo.ImportedId
+		}
 	}
 
 	// 使用保存的游戏名（如果有）
 	gameName := s.ExtractGameNameFromDLSite(fileNameWithoutExt)
 	if savedInfo != nil && savedInfo.GameName != "" {
 		gameName = savedInfo.GameName
+	}
+
+	// 检查安装路径是否准确
+	installedPath := ""
+	if savedInfo != nil && savedInfo.InstalledPath != "" {
+		// 检查保存的安装路径是否真的存在
+		if _, err := os.Stat(savedInfo.InstalledPath); err == nil {
+			installedPath = savedInfo.InstalledPath
+		} else {
+			// 路径不存在，使用原来的逻辑重新获取
+			installedPath = s.checkAndGetInstalledPath(itemPath)
+			// 更新保存的安装路径
+			savedInfo.InstalledPath = installedPath
+			savedInfo.IsInstalled = installedPath != ""
+			isChanged = true
+		}
+	} else {
+		installedPath = s.checkAndGetInstalledPath(itemPath)
+	}
+	if isChanged && isFolder {
+		s.SaveDownloadInfo(itemPath, *savedInfo)
 	}
 
 	item := DownloadedFile{
@@ -265,10 +289,10 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		Size: size,
 		// IsDownloading:     s.checkIsDownloading(itemPath, name, itemType),
 		// IsExtracted:       s.checkIsExtracted(itemPath, name, itemType),
-		IsInstalled:    s.checkIsInstalled(itemPath),
+		IsInstalled:    installedPath != "",
 		IsImported:     importedID != "",
 		ImportedId:     importedID,
-		InstalledPath:  s.checkAndGetInstalledPath(itemPath),
+		InstalledPath:  installedPath,
 		HasNumericName: s.isNumericName(name),
 		GameName:       gameName,
 	}
@@ -1165,7 +1189,29 @@ func (s *DownloadedFilesService) OpenFolder(itemPath string) error {
 }
 
 func (s *DownloadedFilesService) DeleteItem(itemPath string) error {
-	return os.RemoveAll(itemPath)
+	err := os.RemoveAll(itemPath)
+	upperPath := filepath.Dir(itemPath)
+	baseName := filepath.Base(itemPath)
+	entries, err := os.ReadDir(upperPath)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		} else {
+			ext := filepath.Ext(entry.Name())
+			entryNameWithoutExt := strings.TrimSuffix(entry.Name(), ext)
+			if entryNameWithoutExt == baseName {
+				// 删除与文件夹名同名的压缩包
+				archivePath := filepath.Join(upperPath, entry.Name())
+				if err := os.RemoveAll(archivePath); err != nil {
+					applog.LogErrorf(s.ctx, "Failed to remove archive %s: %v", archivePath, err)
+				}
+			}
+		}
+	}
+	return err
 }
 
 // DeleteExtractedFolderResult 返回删除解压文件夹的结果

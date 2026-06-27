@@ -10,6 +10,7 @@ import (
 	"io"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
+	"lunabox/internal/models"
 	"lunabox/internal/utils"
 	"os"
 	"os/exec"
@@ -324,6 +325,14 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 
 	}
 	return item
+}
+
+func (s *DownloadedFilesService) DownloadSaves(games []models.Game, isOverride bool) error {
+	if len(games) == 0 {
+		return nil
+	}
+	getter := utils.NewSaveInfoGetter()
+	return getter.DownloadSavesForGames(games, isOverride)
 }
 
 /**

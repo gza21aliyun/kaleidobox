@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
 import type { service, models } from "../../wailsjs/go/models";
@@ -11,6 +11,7 @@ import { useAppStore } from "../store";
 import { vo } from "../../wailsjs/go/models";
 import toast from "react-hot-toast";
 import { useNavigate } from "@tanstack/react-router";
+import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 
 interface DownloadedFile extends service.DownloadedFile {
   selected: boolean;
@@ -24,6 +25,8 @@ export default function DownloadedFiles() {
   const [showExtract, setShowExtract] = useState(true);
   const [showInstall, setShowInstall] = useState(true);
   const [showImport, setShowImport] = useState(true);
+  const [showDownloadSave, setShowDownloadSave] = useState(false);
+  const [showOverrideSave, setShowOverrideSave] = useState(false);
   const [md5AsFolder, setMd5AsFolder] = useState(false);
   const [directIsoInstall, setDirectIsoInstall] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -38,11 +41,14 @@ export default function DownloadedFiles() {
   const [batchImportCandidates, setBatchImportCandidates] = useState<vo.BatchImportCandidate[]>([]);
   const [runGameModalItem, setRunGameModalItem] = useState<DownloadedFile | null>(null);
   const [runGameExecutables, setRunGameExecutables] = useState<string[]>([]);
+  const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
+  const [importedGames, setImportedGames] = useState<models.Game[]>([]);
 
   const navigate = useNavigate();
   
   const config = useAppStore(state => state.config);
   const fetchConfig = useAppStore(state => state.fetchConfig);
+  const fetchGames = useAppStore(state => state.fetchGames);
 
   useEffect(() => {
     fetchConfig();
@@ -297,8 +303,14 @@ export default function DownloadedFiles() {
             ? { ...i, imported_id: game.id, is_imported: true } 
             : i
         ));
+        
       }
     }
+    if (showDownloadSave) {
+      await DownloadSaves(games, showOverrideSave);
+    }
+    await fetchGames();
+    
     setBatchImportModalItems([]);
     setBatchImportCandidates([]);
   };
@@ -498,9 +510,6 @@ export default function DownloadedFiles() {
     return item.iso_items.length === 1 && !item.is_installed;
   };
 
-  const isDownloadingItem = (item: DownloadedFile) => {
-    return item.is_downloading;
-  };
 
   return (
     <div className="p-6 h-full overflow-auto relative">
@@ -555,25 +564,29 @@ export default function DownloadedFiles() {
 
           <div className="flex items-center gap-3">
             
-            <label className="flex items-center gap-2 text-sm">
+            
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm" title="如果已解压下载文件夹里有且只有一个镜像，会直接解压到安装目录。如不打开且文件夹里有镜像，将不执行安装。">
               <input
                 type="checkbox"
                 checked={directIsoInstall}
                 onChange={(e) => setDirectIsoInstall(e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
-              {t("downloadedFiles.directIsoInstall")}
+              安装镜像
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm" title="以游戏名生成MD5，安装时会以此命名游戏安装文件夹名，用于只允许英数字路径名的游戏，选否时将使用游戏名。">
               <input
                 type="checkbox"
                 checked={md5AsFolder}
                 onChange={(e) => setMd5AsFolder(e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
-              {t("downloadedFiles.md5AsFolder")}
+              MD5做文件夹名
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm" title="解压压缩包到同路径的同名文件夹">
               <input
                 type="checkbox"
                 checked={showExtract}
@@ -582,7 +595,7 @@ export default function DownloadedFiles() {
               />
               {t("downloadedFiles.extract")}
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm" title="将游戏解压目录复制到设置好的游戏安装文件夹下">
               <input
                 type="checkbox"
                 checked={showInstall}
@@ -591,7 +604,9 @@ export default function DownloadedFiles() {
               />
               {t("downloadedFiles.install")}
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm"
+              title="批量导入游戏选中并执行后，将在完成前一步后为选中的已安装游戏准备好数据打开批量导入弹窗直接跳到选择导入阶段"
+            >
               <input
                 type="checkbox"
                 checked={showImport}
@@ -600,7 +615,42 @@ export default function DownloadedFiles() {
               />
               {t("downloadedFiles.import")}
             </label>
+
+            <label className="flex items-center gap-2 text-sm"
+              title="开启后将在导入后自动下载游戏存档到游戏执行文件的同一目录下"
+            >
+              <input
+                type="checkbox"
+                checked={showDownloadSave}
+                onChange={(e) => setShowDownloadSave(e.target.checked)}
+                className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
+              />
+              下载存档
+            </label>
+
+            <label className="flex items-center gap-2 text-sm"
+              title="在下载存档后会搜索游戏存放存档位置解压存档覆盖到该位置，但很多游戏在运行游戏前并没生成存档文件夹"
+            >
+              <input
+                type="checkbox"
+                checked={showOverrideSave}
+                onChange={(e) => setShowOverrideSave(e.target.checked)}
+                className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
+              />
+              覆盖存档
+            </label>
+
             
+            
+            
+            <button
+              onClick={handleExecute}
+              disabled={selectedItems.length === 0 || isExecuting}
+              className="px-3 py-1.5 text-sm bg-brand-600 hover:bg-brand-700 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t("downloadedFiles.execute")}
+            </button>
+
             <button
               onClick={() => {
                 selectedItems.forEach(id => {
@@ -613,16 +663,9 @@ export default function DownloadedFiles() {
             >
               {t("downloadedFiles.delete")}
             </button>
-            <button
-              onClick={handleExecute}
-              disabled={selectedItems.length === 0 || isExecuting}
-              className="px-3 py-1.5 text-sm bg-brand-600 hover:bg-brand-700 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {t("downloadedFiles.execute")}
-            </button>
-          </div>
 
-          <div className="flex items-center gap-2">
+
+
             <button
               onClick={loadItems}
               disabled={isLoading}
@@ -987,13 +1030,25 @@ export default function DownloadedFiles() {
             loadItems();
             if (games && games.length > 0) {
               handleBatchImportComplete(games);
+              setImportedGames(importedGames)
+              setIsBatchUpdateOpen(true);
             }
+
 
           }}
           preloadedCandidates={batchImportCandidates}
           preloadedStep="preview"
         />
       )}
+
+      <BatchUpdateModal
+              isOpen={isBatchUpdateOpen}
+              onClose={() => setIsBatchUpdateOpen(false)}
+              onUpdateComplete={() => {
+                setImportedGames([])
+              }}
+              games={importedGames}
+            />
 
       {/* 运行游戏选择弹窗 */}
       {runGameModalItem && (

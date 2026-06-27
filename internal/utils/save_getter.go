@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"lunabox/internal/applog"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
@@ -130,7 +129,8 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 	}
 	gameName := ""
 	gameLink := ""
-	firstName := strings.Split(name, " ")[0]
+	mainTitle, _, _ := getTitles(name)
+	firstName := mainTitle
 
 	// 处理搜索结果页面中的游戏条目
 	c.OnHTML("div > table > tbody > tr > th table tbody tr", func(e *colly.HTMLElement) {
@@ -141,11 +141,6 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 		}
 
 		link := e.ChildAttr("a", "href")
-		// th := e.ChildText("th")
-		// // log.Print("OnHTML 网页列表 ：", e.Text)
-		// if th != "" {
-		// 	fmt.Println("th:", th)
-		// }
 
 		if link == "" || title == "" || strings.Contains(link, "#") || !strings.Contains(link, "save/") {
 			return
@@ -167,19 +162,16 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 
 	// 在访问完搜索页面后进行过滤和处理
 	c.OnScraped(func(r *colly.Response) {
-		for _, gameFound := range potentialGames {
-			// 应用过滤条件
-			if gameFound.Link == "" || !strings.Contains(gameFound.Title, name) {
-				continue
-			}
+
+		gameFound, s := searchNameByRegexSimilarity(potentialGames, name, false, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
+			Title string
+			Link  string
+		}) string {
+			return t1.Title
+		})
+		if gameFound != nil && s > 0.7 {
 			gameName = gameFound.Title
 			gameLink = gameFound.Link
-			return
-		}
-
-		if len(potentialGames) > 0 {
-			gameName = potentialGames[0].Title
-			gameLink = potentialGames[0].Link
 		}
 	})
 
@@ -202,6 +194,115 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 	}
 
 	return gameLink, err
+}
+
+func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bool) error {
+	names := []string{}
+	for _, game := range games {
+		names = append(names, game.SearchName)
+	}
+	savesMap, err := b.FetchSeiyaSaveUrlMap(names)
+	if err != nil {
+		return err
+	}
+	for _, game := range games {
+		saveLink, ok := savesMap[game.SearchName]
+		if !ok {
+			continue
+		}
+		fileName, err := ExtractFilename(saveLink)
+		if err != nil {
+			continue
+		}
+		saveTargetPath := filepath.Join(filepath.Dir(game.Path), fileName)
+		err = downloadFile(saveLink, saveTargetPath)
+		if err != nil || !isOverride {
+			continue
+		}
+		target := game.SavePath
+		if target == "" {
+			newGame, err := SearchSave(game)
+			if err != nil {
+				target = newGame.SavePath
+				if target == "" {
+					continue
+				}
+			}
+			continue
+		}
+		extractedDir := filepath.Join(os.TempDir()+"extracted", game.ID)
+		err = extractZip(saveTargetPath, extractedDir)
+		CopyDir(extractedDir, target)
+	}
+	return nil
+}
+
+func (b SaveInfoGetter) FetchSeiyaSaveUrlMap(names []string) (map[string]string, error) {
+	var url string = "https://seiya-saiga.com/save.html"
+	c := CreateCollector("*seiya-saiga.com")
+
+	var potentialGames []struct {
+		Title string
+		Link  string
+	}
+	results := make(map[string]string)
+
+	// 处理搜索结果页面中的游戏条目
+	c.OnHTML("div > table > tbody > tr > th table tbody tr", func(e *colly.HTMLElement) {
+		titles := e.ChildTexts("td b")
+		title := ""
+		if len(titles) > 0 {
+			title, _ = shiftJISToUTF8(titles[0])
+		}
+
+		link := e.ChildAttr("a", "href")
+
+		if link == "" || title == "" || strings.Contains(link, "#") || !strings.Contains(link, "save/") {
+			return
+		}
+
+		fmt.Println("title:", title)
+
+		potentialGames = append(potentialGames, struct {
+			Title string
+			Link  string
+		}{
+			Title: title,
+			Link:  e.Request.AbsoluteURL(link),
+		})
+	})
+
+	// 在访问完搜索页面后进行过滤和处理
+	c.OnScraped(func(r *colly.Response) {
+		for _, name := range names {
+			gameFound, s := searchNameByRegexSimilarity(potentialGames, name, false, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
+				Title string
+				Link  string
+			}) string {
+				return t1.Title
+			})
+			if gameFound != nil && s > 0.7 {
+				results[name] = gameFound.Link
+			}
+		}
+
+	})
+
+	// 错误处理
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Printf("Request error: %s with error: %s\n", r.Request.URL, err)
+	})
+
+	// 访问构建的 URL
+	err := c.Visit(url)
+	if err != nil {
+		return results, fmt.Errorf("找不到游戏存档,err:%v", results, err)
+	}
+
+	// 等待收集完成
+	c.Wait()
+
+	return results, err
 }
 
 func (b SaveInfoGetter) FetchSeiyaGuide(name string, fetchType int) (models.GuideContent, error) {
@@ -233,20 +334,10 @@ func (b SaveInfoGetter) FetchSeiyaGuide(name string, fetchType int) (models.Guid
 		}
 
 		link := "https://seiya-saiga.com/game/" + e.ChildAttr("a", "href")
-		// th := e.ChildText("th")
-		// // log.Print("OnHTML 网页列表 ：", e.Text)
-		// if th != "" {
-		// 	fmt.Println("th:", th)
-		// }
 
 		if link == "" || title == "" || strings.Contains(link, "#") || !strings.Contains(link, "game/") {
 			return
 		}
-
-		// if !strings.Contains(title, firstName) {
-		// 	return
-		// }
-		// fmt.Println("title:", title)
 
 		potentialGames = append(potentialGames, struct {
 			Title string
@@ -409,7 +500,7 @@ func shiftJISToUTF8(shiftJISData string) (string, error) {
 
 	// 转换编码
 	reader := transform.NewReader(strings.NewReader(shiftJISData), decoder)
-	utf8Data, err := ioutil.ReadAll(reader)
+	utf8Data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
@@ -423,7 +514,7 @@ func eucToUTF8(shiftJISData string) (string, error) {
 
 	// 转换编码
 	reader := transform.NewReader(strings.NewReader(shiftJISData), decoder)
-	utf8Data, err := ioutil.ReadAll(reader)
+	utf8Data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
@@ -565,7 +656,7 @@ func copyFile(srcPath, dstPath string) error {
 	// 检查文件扩展名是否为 .txt
 	if filepath.Ext(srcPath) == ".txt" {
 		// 读取源文件内容
-		data, err := ioutil.ReadAll(srcFile)
+		data, err := io.ReadAll(srcFile)
 		if err != nil {
 			return fmt.Errorf("读取源文件失败: %v", err)
 		}

@@ -695,43 +695,6 @@ func (s *DownloadedFilesService) getArchiveInnerItems(archivePath string) []stri
 	return items
 }
 
-// func (s *DownloadedFilesService) countISOFiles(folderPath string) (int, string, []string) {
-// 	count := 0
-// 	var isoPath string
-// 	innerItemsMap := make(map[string]string)
-
-// 	err := filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
-// 		if err != nil {
-// 			return err
-// 		}
-// 		relativePath, _ := filepath.Rel(folderPath, path)
-// 		level := strings.Count(relativePath, string(filepath.Separator))
-// 		if !d.IsDir() {
-// 			ext := strings.ToLower(filepath.Ext(d.Name()))
-// 			if imageExtensions[ext] {
-// 				count++
-// 				innerItemsMap[d.Name()] = d.Name()
-// 				if isoPath == "" {
-// 					isoPath = path
-// 				}
-// 			} else if level == 0 {
-// 				innerItemsMap[d.Name()] = d.Name()
-// 			}
-// 		}
-// 		return nil
-// 	})
-// 	innerItems := []string{}
-
-// 	for k := range innerItemsMap {
-// 		innerItems = append(innerItems, k)
-// 	}
-
-// 	if err != nil {
-// 		return 0, "", innerItems
-// 	}
-// 	return count, isoPath, innerItems
-// }
-
 func (s *DownloadedFilesService) ExtractItem(itemPath string) error {
 	info, err := os.Stat(itemPath)
 	fmt.Println("Extracting0:", itemPath)
@@ -1072,25 +1035,6 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 		return "", fmt.Errorf("包含多个镜像文件，无法自动安装")
 	}
 
-	// 检查文件夹内是否有子文件夹（type=1的情况，解压后的结构）
-	// subDirs := []string{}
-	// for _, file := range files {
-	// 	if file.IsDir() {
-	// 		subDirs = append(subDirs, file.Name())
-	// 	}
-	// }
-
-	// 如果只有一个子文件夹，可能是解压后多了层目录，直接使用子文件夹的内容
-	// if len(subDirs) == 1 {
-	// 	innerPath := filepath.Join(itemPath, subDirs[0])
-	// 	applog.LogInfof(s.ctx, "检测到单层子文件夹，使用内部路径安装: %s", innerPath)
-	// 	if err := copyDirectory(innerPath, targetPath); err != nil {
-	// 		applog.LogErrorf(s.ctx, "复制目录失败: %v", err)
-	// 		return "", err
-	// 	}
-	// 	applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
-	// 	return targetPath, nil
-	// }
 	sourcePath := itemPath
 	if downloadedFile.ExtractedGamePath != "" {
 		sourcePath = downloadedFile.ExtractedGamePath
@@ -1267,36 +1211,6 @@ func (s *DownloadedFilesService) DeleteExtractedFolder(itemPath, name string, ex
 
 	return result, nil
 }
-
-// getSingleArchiveItem 获取单个压缩包的单元信息
-// func (s *DownloadedFilesService) getSingleArchiveItem(archivePath string) ([]DownloadedFile, error) {
-// 	entry, err := os.Stat(archivePath)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	name := filepath.Base(archivePath)
-// 	// ext := filepath.Ext(name)
-
-// 	item := DownloadedFile{
-// 		ID:                uuid.New().String(),
-// 		Name:              name,
-// 		Path:              archivePath,
-// 		ExtractedGamePath: "",
-// 		ExtractedPaths:    nil,
-// 		Type:              2,
-// 		Size:              entry.Size(),
-// 		ISOItems:          []string{},
-// 		IsDownloading:     s.checkIsDownloading(archivePath, 2),
-// 		IsExtracted:       false, // 刚删除解压文件夹，肯定没解压
-// 		IsInstalled:       s.checkIsInstalled(archivePath),
-// 		IsImported:        s.checkIsImported(name),
-// 		HasNumericName:    s.isNumericName(name),
-// 		InnerItems:        s.getArchiveInnerItems(archivePath),
-// 	}
-
-// 	return []DownloadedFile{item}, nil
-// }
 
 // SaveImportedID 保存导入的ID到文件
 func (s *DownloadedFilesService) SaveImportedID(itemPath, importedID string) error {

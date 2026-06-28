@@ -48,7 +48,8 @@ type DownloadedFile struct {
 	ExtractedGamePath string   `json:"extracted_game_path,omitempty"` // 解压后的游戏文件夹路径（主路径）
 	ExtractedPaths    []string `json:"extracted_paths,omitempty"`     // 所有解压后的文件夹路径
 	// IsFolder          bool     `json:"is_folder"`
-	Type          int    `json:"type"` // 0:是文件夹没任何压缩包不需解压; 1: 单元文件夹里包含一个或多个压缩包; 2: 游戏下载文件夹下单个压缩包或多了同名文件夹（解压后）结构;
+	Type int `json:"type"` // 0:是文件夹没任何压缩包不需解压; 1: 单元文件夹里包含一个或多个压缩包;
+	// 2: 游戏下载文件夹下单个压缩包或多了同名文件夹（解压后）结构; 3：单独安装文件夹内的游戏文件夹，下载文件夹里没关联上也非已导入
 	Size          int64  `json:"size"`
 	IsDownloading bool   `json:"is_downloading"` // 是否有未下载完的临时文件
 	IsExtracted   bool   `json:"is_extracted"`
@@ -176,7 +177,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 		}
 		if folder.IsExtracted {
 			extractedGamePath, extractedPaths := s.getExtractedPaths(folder.Path, folder.BaseName, folder.Type)
-			// fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
+			fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
 			folder.ExtractedGamePath = extractedGamePath
 			folder.ExtractedPaths = extractedPaths
 		}
@@ -193,6 +194,33 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 			archive.IsDownloading = s.checkIsDownloading(archive.Path, 2)
 			archive.IsExtracted = s.checkIsExtracted(archive.Path, archive.BaseName, 2)
 			items = append(items, archive)
+		}
+	}
+
+	//查找安装文件夹看看有没type3的文件夹
+	if s.config.GameInstallFolder != "" {
+		fmt.Printf("ListDown0")
+		installedEntries, err := os.ReadDir(s.config.GameInstallFolder)
+		if err == nil {
+			for _, entry := range installedEntries {
+				itemPath := filepath.Join(s.config.GameInstallFolder, entry.Name())
+				isInDownloadFolder := utils.Contains(items, func(d DownloadedFile) bool {
+					return d.InstalledPath == itemPath
+				})
+				fmt.Printf("ListDown1 itemPath: %s, isInDownloadFolder: %v\n", itemPath, isInDownloadFolder)
+				if isInDownloadFolder {
+					continue
+				}
+				if !s.checkPathImported(itemPath) {
+					base := filepath.Base(itemPath)
+					item := s.CreateDownloadedFile(itemPath, base, true, 0)
+					item.Type = 3
+					item.IsExtracted = true
+					item.IsInstalled = true
+					item.InstalledPath = itemPath
+					items = append(items, item)
+				}
+			}
 		}
 	}
 
@@ -300,7 +328,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 
 	if isFolder {
 		innerItems, isoItems := s.getInnerItems(itemPath)
-		fmt.Printf("InnerItems,name: %s, path:%s, count:%v\n", item.Name, item.Path, innerItems)
+		// fmt.Printf("InnerItems,name: %s, path:%s, count:%v\n", item.Name, item.Path, innerItems)
 		if item.HasNumericName {
 			item.Name = s.JudgeGameName(innerItems)
 			item.GameName = s.ExtractGameNameFromDLSite(item.Name)
@@ -572,6 +600,20 @@ func (s *DownloadedFilesService) checkImportedIDInDB(importedId string) bool {
 	}
 	var exists bool
 	err := s.db.QueryRowContext(s.ctx, "SELECT EXISTS(SELECT 1 FROM games WHERE id = ?)", importedId).Scan(&exists)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "检查导入ID失败: %v", err)
+		return false
+	}
+	return exists
+}
+
+// checkPathImported 检查路径是否已导入
+func (s *DownloadedFilesService) checkPathImported(path string) bool {
+	if path == "" {
+		return false
+	}
+	var exists bool
+	err := s.db.QueryRowContext(s.ctx, "SELECT EXISTS(SELECT 1 FROM games WHERE contains(path, ?))", path).Scan(&exists)
 	if err != nil {
 		applog.LogErrorf(s.ctx, "检查导入ID失败: %v", err)
 		return false

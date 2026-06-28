@@ -6,12 +6,13 @@ import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame,
 import { GameSearchModal } from "../components/modal/GameSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
 import type { service, models } from "../../wailsjs/go/models";
-import { OpenLocalPath } from "../../wailsjs/go/service/GameService";
+import { OpenLocalPath, DeleteGame, GetGamesByIdsStr } from "../../wailsjs/go/service/GameService";
 import { useAppStore } from "../store";
 import { vo } from "../../wailsjs/go/models";
 import toast from "react-hot-toast";
 import { useNavigate } from "@tanstack/react-router";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
+import { ConfirmModal } from "../components/modal/ConfirmModal";
 
 interface DownloadedFile extends service.DownloadedFile {
   selected: boolean;
@@ -43,6 +44,7 @@ export default function DownloadedFiles() {
   const [runGameExecutables, setRunGameExecutables] = useState<string[]>([]);
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [importedGames, setImportedGames] = useState<models.Game[]>([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const navigate = useNavigate();
   
@@ -109,6 +111,7 @@ export default function DownloadedFiles() {
     setCurrentExecutingName("");
     try {
       const itemsToImport: DownloadedFile[] = []
+      const itemsImported: DownloadedFile[] = []
       for (const itemId of selectedItems) {
         const item = items.find(i => i.id === itemId);
         if (!item) continue;
@@ -126,7 +129,9 @@ export default function DownloadedFiles() {
         if (shouldInstall) {
           setCurrentExecutingName(item.name);
           try {
-            await InstallGame(item, md5AsFolder ? "md5" : "name");
+            const installed_path = await InstallGame(item, md5AsFolder ? "md5" : "name");
+            item.installed_path = installed_path;
+            item.is_installed = true;
           } catch (err) {
             console.error("Install failed:", err);
             setErrorMessage(err instanceof Error ? err.message : "安装失败");
@@ -138,11 +143,18 @@ export default function DownloadedFiles() {
         if (shouldImport) {
           itemsToImport.push(item);
         }
+        if (item.is_imported && item.imported_id) {
+          itemsImported.push(item);
+        }
         
         
       }
       if (showImport && itemsToImport.length > 0) {
         await handleImport(itemsToImport);
+      }
+      if (showDownloadSave && itemsImported.length > 0) {
+        const games = await GetGamesByIdsStr(itemsImported.map(item => item.imported_id!).join(","));
+        await DownloadSaves(games, showOverrideSave);
       }
       await loadItems();
     } finally {
@@ -162,14 +174,26 @@ export default function DownloadedFiles() {
           i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths, 
             iso_items: extractedFolder.iso_items, extracted_game_path: extractedFolder.extracted_game_path, inner_items: extractedFolder.inner_items } : i
         ));
+        item.is_extracted = true;
+        item.extracted_paths = extractedFolder.extracted_paths;
+        item.extracted_game_path = extractedFolder.extracted_game_path;
+        item.inner_items = extractedFolder.inner_items;
+        item.iso_items = extractedFolder.iso_items;
       } else {
         await ExtractItem(item.path);
         const arc = await RefreshDownloadedFile(item);
         console.log("file extracted", arc);
         setItems(items.map(i =>
-          i.id === item.id ? { ...i, is_extracted: true, inner_items: arc.inner_items, iso_items: arc.iso_items, 
+          i.id === item.id ? { ...i, is_extracted: true, inner_items: arc.inner_items, iso_items: arc.iso_items, path: arc.path,
             extracted_game_path: arc.extracted_game_path, extracted_paths: arc.extracted_paths } : i
         ));
+        item.path = arc.path;
+        item.is_extracted = true;
+        item.inner_items = arc.inner_items;
+        item.iso_items = arc.iso_items;
+        item.extracted_game_path = arc.extracted_game_path;
+        item.extracted_paths = arc.extracted_paths;
+        
       }
     } catch (err) {
       console.error("Extract failed:", err);
@@ -184,6 +208,7 @@ export default function DownloadedFiles() {
     if (item.iso_items.length < 1) return;
     try {
       await MountISO(item.iso_items[0]);
+      toast.success("已装载" + item.iso_items[0]);
     } catch (err) {
       console.error("Mount failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "装载失败");
@@ -229,9 +254,11 @@ export default function DownloadedFiles() {
           ? { ...i, is_installed: true, installed_path: installedPath } 
           : i
       ));
+      confirmModalItem.installed_path = installedPath;
+      confirmModalItem.is_installed = true;
     } catch (err) {
       console.error("Install failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : "安装失败");
+      setErrorMessage(err instanceof Error ? err.message : `安装失败${err}`);
     } finally {
       // 隐藏执行中动画
       setIsExecuting(false);
@@ -310,6 +337,7 @@ export default function DownloadedFiles() {
       await DownloadSaves(games, showOverrideSave);
     }
     await fetchGames();
+    await loadItems();
     
     setBatchImportModalItems([]);
     setBatchImportCandidates([]);
@@ -444,7 +472,7 @@ export default function DownloadedFiles() {
     setIsExecuting(true);
     setCurrentExecutingName(item.name);
     try {
-      const result = await DeleteExtractedFolder(item.path, item.name, item.extracted_paths || []);
+      const result = await DeleteExtractedFolder(item.path, item.base_name || '', item.extracted_paths || []);
       if (result && result.has_archive && result.archive_item) {
         // 有同名压缩包，更新当前单元的信息（但保持 id 和 selected 状态）
         const archiveItem = result.archive_item;
@@ -462,6 +490,7 @@ export default function DownloadedFiles() {
                 inner_items: archiveItem.inner_items,
                 iso_items: archiveItem.iso_items,
                 has_numeric_name: archiveItem.has_numeric_name,
+                game_name: archiveItem.game_name,
               }
             : i
         ));
@@ -473,7 +502,7 @@ export default function DownloadedFiles() {
       }
     } catch (err) {
       console.error("Delete extracted folder failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : "删除解压文件夹失败");
+      setErrorMessage(err instanceof Error ? err.message : `删除解压文件夹失败:${err}`);
     }
     setIsExecuting(false);
   };
@@ -494,6 +523,34 @@ export default function DownloadedFiles() {
     setIsExecuting(false);
   };
 
+
+  // const confirmDeleteGame = async () => {
+  //     if (!confirmModalItem)
+  //       return;
+  //     try {
+  //       await DeleteGame(confirmModalItem.imported_id || '');
+  //       toast.success(t('common.deleteSuccess'));
+  //       fetchGames();
+  //       setConfirmModalItem(null);
+  //     }
+  //     catch (error) {
+  //       console.error("Failed to delete game:", error);
+  //       toast.error(t('common.deleteFailed'));
+  //     }
+  //   };
+
+  const handleDeleteImported = async (item: DownloadedFile) => {
+    if (!confirm(`确定要删除“${item.game_name}”的导入吗？`)) {
+      return;
+    }
+    // setConfirmModalItem(item)
+    try {
+      await DeleteGame(item.imported_id || '');
+      await loadItems();
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  }
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return bytes + " B";
@@ -543,7 +600,11 @@ export default function DownloadedFiles() {
 
         {/* 提示信息 */}
         <p className="text-sm text-brand-500 dark:text-brand-400 mb-4">
-          {t("downloadedFiles.tempStateHint")}
+          本页面目的是快速批量处理已下载的游戏。<br/>
+          根据下载游戏数据摆放方式主要分为文件夹不需解压、文件夹含压缩包、单独压缩包。<br/>
+          第四类型为安装文件夹，只在安装文件夹找到，下载文件夹没关联上，通常是直接装载镜像用官方安装程序安装的时候出现，下载文件夹和安装文件夹会作为两条独立记录出现。这时候直接导入安装文件夹后删除下载文件夹即可。<br/>
+          下载存档时会下载klb_savedata_xxx的文件到游戏安装目录。删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
+          这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。
         </p>
 
         <div className="flex items-center justify-between mb-4">
@@ -584,7 +645,7 @@ export default function DownloadedFiles() {
                 onChange={(e) => setMd5AsFolder(e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
-              MD5做文件夹名
+              MD5文件夹名
             </label>
             <label className="flex items-center gap-2 text-sm" title="解压压缩包到同路径的同名文件夹">
               <input
@@ -742,9 +803,9 @@ export default function DownloadedFiles() {
                     {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <div className="flex items-center gap-3 text-xs text-brand-500">
-                        <span>{item.type == 1 ? t("downloadedFiles.folder") : item.type ==0 ? t("downloadedFiles.no_need_extract") : t("downloadedFiles.archive")}</span>
-                        <span>{formatSize(item.size)}</span>
-                        <span>{!item.is_extracted ? "" : "isos:" + item.iso_items.length}</span>
+                        <span>类型：{item.type == 1 ? '文件夹含压缩包' : item.type ==0 ? '文件夹无需解压' : item.type == 3 ? '安装文件夹' : '单独压缩包'}</span>
+                        <span>{item.size == 0 ? '' : formatSize(item.size)}</span>
+                        <span>{!item.is_extracted ? "" : "镜像数目:" + item.iso_items.length}</span>
                         {item.is_downloading && (
                           <span className="text-orange-500 flex items-center gap-1">
                             <div className="i-mdi-download animate-pulse" />
@@ -875,15 +936,18 @@ export default function DownloadedFiles() {
                       )}
 
                       {/* 打开下载按钮 */}
-                      <button
-                        onClick={() => handleOpen(item)}
-                        className="px-2 py-1 text-xs bg-brand-500 hover:bg-brand-600 text-white rounded"
-                      >
-                        {t("downloadedFiles.openDownload")}
-                      </button>
+                      {item.type != 3 && (
+                        <button
+                          onClick={() => handleOpen(item)}
+                          className="px-2 py-1 text-xs bg-brand-500 hover:bg-brand-600 text-white rounded"
+                        >
+                          {t("downloadedFiles.openDownload")}
+                        </button>
+                      )}
+                      
 
                       {/* 删除安装按钮 */}
-                      {item.is_installed && (
+                      {item.is_installed && (item.type != 3 && !item.is_imported) && (
                         <button
                           onClick={() => handleDeleteInstalled(item)}
                           disabled={isExecuting}
@@ -891,6 +955,17 @@ export default function DownloadedFiles() {
                           title={t("downloadedFiles.deleteInstalled")}
                         >
                           {t("downloadedFiles.deleteInstalled")}
+                        </button>
+                      )}
+
+                      {item.is_imported && item.imported_id && (
+                        <button
+                          onClick={() => handleDeleteImported(item)}
+                          disabled={isExecuting}
+                          className="px-2 py-1 text-xs bg-red-400 hover:bg-red-500 text-white rounded disabled:opacity-50"
+                          title="删除导入"
+                        >
+                          删除导入
                         </button>
                       )}
 
@@ -1040,6 +1115,16 @@ export default function DownloadedFiles() {
           preloadedStep="preview"
         />
       )}
+
+      {/* <ConfirmModal
+              isOpen={isDeleteModalOpen}
+              title={t('common.deleteGame')}
+              message={t('game.modals.deleteMessage', { name: confirmModalItem?.game_name })}
+              confirmText={t('common.confirmDelete')}
+              type="danger"
+              onClose={() => setIsDeleteModalOpen(false)}
+              onConfirm={confirmDeleteGame}
+            /> */}
 
       <BatchUpdateModal
               isOpen={isBatchUpdateOpen}

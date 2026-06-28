@@ -58,6 +58,7 @@ func ExtractFilename(rawURL string) (string, error) {
 	if filename == "" {
 		filename = path.Base(parsedURL.Path)
 	}
+	filename = "klb_savedata_" + filename
 
 	return filename, nil
 }

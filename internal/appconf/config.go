@@ -116,7 +116,8 @@ type AppConfig struct {
 	GameDownloadFolder string `json:"game_download_folder,omitempty"` // 游戏下载文件夹
 	GameInstallFolder  string `json:"game_install_folder,omitempty"`  // 游戏安装文件夹
 	// 7-Zip 路径
-	SevenZipPath string `json:"seven_zip_path,omitempty"` // 7-Zip 可执行文件路径
+	SevenZipPath        string `json:"seven_zip_path,omitempty"` // 7-Zip 可执行文件路径
+	HideOldMatchingBtns bool   `json:"hide_old_matching_btns"`
 }
 
 // getConfigPath 获取配置文件路径
@@ -205,12 +206,13 @@ func LoadConfig() (*AppConfig, error) {
 		// 侧边栏可见项默认包含所有可配置项，表示全部显示
 		SidebarVisibleItems: "task,charactor_list,tag_list,category_list,stats,favorites,monthly_releases,virtual_machines,downloaded_files,joystick,github",
 		// BT下载配置默认值
-		RssURL:           "https://sukebei.nyaa.si/?page=rss&c=1_3&f=0&q=%search_key",
-		QBServer:         "",
-		QBPort:           8080,
-		QBUser:           "admin",
-		QBPassword:       "",
-		QBDownloadFolder: "",
+		RssURL:              "https://sukebei.nyaa.si/?page=rss&c=1_3&f=0&q=%search_key",
+		QBServer:            "",
+		QBPort:              8080,
+		QBUser:              "admin",
+		QBPassword:          "",
+		QBDownloadFolder:    "",
+		HideOldMatchingBtns: true,
 	}
 
 	// 获取配置文件路径

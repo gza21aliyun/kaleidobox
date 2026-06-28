@@ -221,13 +221,16 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
               >
                 {t('game.modals.addGame.manualAdd')}
               </button>
-              <button
-                onClick={handleSearchByName}
-                disabled={!executablePath || !gameName || isLoading}
-                className="rounded-lg bg-neutral-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
-              >
-                {isLoading ? t('game.modals.addGame.searching') : t('game.modals.addGame.searchMetadata')}
-              </button>
+              {(config?.hide_old_matching_btns == false) && (
+                <button
+                  onClick={handleSearchByName}
+                  disabled={!executablePath || !gameName || isLoading}
+                  className="rounded-lg bg-neutral-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
+                >
+                  {isLoading ? t('game.modals.addGame.searching') : t('game.modals.addGame.searchMetadata')}
+                </button>
+              )}
+              
             </div>
           </div>
         )}

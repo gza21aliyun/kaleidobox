@@ -8,6 +8,7 @@ import { OpenFolder } from "../../../wailsjs/go/service/BackupService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { getFolderPath } from "../utils/Utility";
+import { useAppStore } from "../../store";
 import { BatchUpdateModal } from "../../components/modal/BatchUpdateModal";
 import { GetAllVMs, OpenGamePathInsideVm } from "../../../wailsjs/go/service/VMService";
 import { v } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
@@ -36,6 +37,7 @@ export function GameEditPanel({
   onLoadGame,
 }: GameEditFormProps) {
   const { t } = useTranslation();
+  const { config } = useAppStore();
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [vms, setVms] = useState<models.Vms[]>([]);
 
@@ -322,7 +324,7 @@ export function GameEditPanel({
 
         <div className="flex justify-between pt-4">
           <div className="flex gap-4 justify-end w-full">
-            {onUpdateFromRemote && (
+            {onUpdateFromRemote && (config?.hide_old_matching_btns === false) && (
               <BetterButton
                 variant="primary"
                 onClick={onUpdateFromRemote}

@@ -750,7 +750,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
                   ← {t('batchImport.reselect')}
                 </button>
                 <div className="flex gap-3">
-                  {pendingCount > 0 && (
+                  {pendingCount > 0 && !(config?.hide_old_matching_btns ?? true) && (
                     <button
                       onClick={handleStartMatch}
                       className="rounded-lg px-5 py-2.5 text-sm font-medium text-white bg-neutral-600 hover:bg-neutral-700"

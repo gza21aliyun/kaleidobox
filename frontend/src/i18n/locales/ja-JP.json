@@ -1691,6 +1691,7 @@
     "adult": "アダルト",
     "browse": "閲覧",
     "searchBT": "BT検索",
+    "searchLocal": "インポートを検索",
     "viewDetail": "詳細を表示",
     "goToGame": "ゲームへ移動",
     "gameDetail": "ゲーム詳細"
@@ -1753,7 +1754,10 @@
     "search": "検索",
     "searchGame": "ゲーム検索",
     "searchTitle": "インポート済みゲームを検索",
+    "searchingFor": "検索中",
     "searchPlaceholder": "ゲーム名を入力して検索",
+    "searchByTitle": "タイトルで検索",
+    "searchByFullName": "フルネームで検索",
     "noSearchResults": "一致するゲームが見つかりません",
     "tempStateHint": "インストール済みとインポート済みのステータスは一度きりで、データベースとは連携していません。検索してインポート済みか確認してください。",
     "installIsoTitle": "ISOゲームをインストール",

@@ -13,6 +13,7 @@ import { BetterSelect } from "../components/ui/BetterSelect";
 import { useAppStore } from "../store";
 import { GetchuGameInfoPanel } from "../components/panel/GetchuGameInfoPanel";
 import { ImageCard } from "../components/card/ImageCard";
+import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -40,6 +41,10 @@ function MonthlyReleasesPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // 本地搜索弹窗状态
+  const [localSearchModalOpen, setLocalSearchModalOpen] = useState(false);
+  const [localSearchGame, setLocalSearchGame] = useState<utils.MonthlyReleaseGame | null>(null);
 
   // 详情弹窗状态
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -102,6 +107,18 @@ function MonthlyReleasesPage() {
     if (game.name && game.name.trim()) {
       performSearch(game.name);
     }
+  };
+
+  // 打开本地搜索弹窗
+  const openLocalSearchModal = (game: utils.MonthlyReleaseGame) => {
+    setLocalSearchGame(game);
+    setLocalSearchModalOpen(true);
+  };
+
+  // 关闭本地搜索弹窗
+  const closeLocalSearchModal = () => {
+    setLocalSearchModalOpen(false);
+    setLocalSearchGame(null);
   };
 
   // 关闭搜索弹窗
@@ -335,6 +352,7 @@ function MonthlyReleasesPage() {
                 game={game}
                 onBrowse={browseGame}
                 onSearch={openSearchModal}
+                onSearchLocal={openLocalSearchModal}
                 onViewDetail={openDetailModal}
               />
             ))}
@@ -359,6 +377,14 @@ function MonthlyReleasesPage() {
         />
       )}
 
+      {/* 本地搜索弹窗 */}
+      {localSearchModalOpen && localSearchGame && (
+        <LocalSearchModal
+          itemName={localSearchGame.name || ""}
+          onClose={closeLocalSearchModal}
+        />
+      )}
+
       {/* 详情弹窗 */}
       {detailModalOpen && detailGame && (
         <DetailModal
@@ -376,10 +402,11 @@ interface GameItemProps {
   game: utils.MonthlyReleaseGame;
   onBrowse: (game: utils.MonthlyReleaseGame) => void;
   onSearch: (game: utils.MonthlyReleaseGame) => void;
+  onSearchLocal: (game: utils.MonthlyReleaseGame) => void;
   onViewDetail: (game: utils.MonthlyReleaseGame) => void;
 }
 
-function GameItem({ game, onBrowse, onSearch, onViewDetail }: GameItemProps) {
+function GameItem({ game, onBrowse, onSearch, onSearchLocal, onViewDetail }: GameItemProps) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
@@ -439,6 +466,16 @@ function GameItem({ game, onBrowse, onSearch, onViewDetail }: GameItemProps) {
                 title={t("monthlyReleases.searchBT")}
               >
                 <div className="i-mdi-magnify text-xl" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSearchLocal(game);
+                }}
+                className="flex items-center justify-center w-full aspect-square rounded-full bg-purple-500 hover:bg-purple-600 text-white transition-colors"
+                title={t("monthlyReleases.searchLocal") || "搜索本地导入"}
+              >
+                <div className="i-mdi-folder-search text-xl" />
               </button>
               <button
                 onClick={(e) => {

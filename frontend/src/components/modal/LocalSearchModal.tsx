@@ -3,13 +3,16 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "../../store";
 import { GameCard } from "../card/GameCard";
+import { GetTitlesNum } from "../../../wailsjs/go/service/DownloadedFilesService";
+import { models } from "../../../wailsjs/go/models";
+import toast from "react-hot-toast";
 
-interface GameSearchModalProps {
+interface LocalSearchModalProps {
   itemName: string;
   onClose: () => void;
 }
 
-export function GameSearchModal({ itemName, onClose }: GameSearchModalProps) {
+export function LocalSearchModal({ itemName, onClose }: LocalSearchModalProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(itemName);
   const { games, fetchGames, gamesLoading } = useAppStore();
@@ -28,7 +31,7 @@ export function GameSearchModal({ itemName, onClose }: GameSearchModalProps) {
   }, [gamesLoading, games]);
 
   useEffect(() => {
-    if (searchQuery.trim()) {
+    if (searchQuery?.trim()) {
       searchGames(searchQuery);
     } else {
       setFilteredGames(games);
@@ -36,16 +39,16 @@ export function GameSearchModal({ itemName, onClose }: GameSearchModalProps) {
   }, [searchQuery, games]);
 
   const searchGames = (query: string) => {
-    if (!query.trim()) {
+    if (!query?.trim()) {
       setFilteredGames(games);
       return;
     }
 
     // 前端过滤游戏
-    const results = games.filter((game: any) => {
-      const name = game.name?.toLowerCase() || "";
-      const searchName = game.search_name?.toLowerCase() || "";
-      const lowerQuery = query.toLowerCase();
+    const results = games.filter((game: models.Game) => {
+      const name = game?.name?.toLowerCase() || "";
+      const searchName = game?.search_name?.toLowerCase() || "";
+      const lowerQuery = query?.toLowerCase() || "";
       return name.includes(lowerQuery) || searchName.includes(lowerQuery);
     });
     setFilteredGames(results);
@@ -55,10 +58,26 @@ export function GameSearchModal({ itemName, onClose }: GameSearchModalProps) {
     searchGames(searchQuery);
   };
 
+  const handleSearchTitle = async () => {
+    // 使用后端方法提取标题（主标题）
+    const mainTitle = await GetTitlesNum(itemName || "");
+    // toast.success("title:" + mainTitle)
+    // 先清空再设置，确保触发更新
+    // setSearchQuery("");
+    setTimeout(() => setSearchQuery(mainTitle), 0);
+  };
+
+  const handleSearchFullName = () => {
+    // 提取游戏名（去掉括号内容）
+    const fullName = itemName || "";
+    // setSearchQuery("");
+    setTimeout(() => setSearchQuery(fullName), 0);
+  };
+
   const getSimilarityScore = (game: any, query: string): number => {
-    const lowerQuery = query.toLowerCase();
-    const lowerName = game.name?.toLowerCase() || "";
-    const lowerSearchName = game.search_name?.toLowerCase() || "";
+    const lowerQuery = query?.toLowerCase() || '';
+    const lowerName = game?.name?.toLowerCase() || "";
+    const lowerSearchName = game?.search_name?.toLowerCase() || "";
 
     if (lowerName === lowerQuery) return 100;
     if (lowerName.startsWith(lowerQuery)) return 90;
@@ -89,6 +108,12 @@ export function GameSearchModal({ itemName, onClose }: GameSearchModalProps) {
 
         {/* 搜索区域 */}
         <div className="p-4 border-b border-brand-200 dark:border-brand-700">
+          {itemName && (
+            <p className="text-sm text-brand-600 dark:text-brand-400 mb-2">
+              {t("downloadedFiles.searchingFor")}: <span className="font-medium text-brand-800 dark:text-brand-200">{itemName}</span>
+            </p>
+          )}
+
           <div className="flex gap-2">
             <input
               type="text"
@@ -102,12 +127,38 @@ export function GameSearchModal({ itemName, onClose }: GameSearchModalProps) {
               placeholder={t("downloadedFiles.searchPlaceholder")}
               className="flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-lg bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
+          </div>
+
+          {/* 搜索按钮组 */}
+          <div className="flex gap-2 mt-3">
+            {itemName && itemName?.trim() && (
+              <>
+                <button
+                  onClick={handleSearchTitle}
+                  disabled={gamesLoading}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 transition-colors disabled:opacity-50"
+                >
+                  {t("downloadedFiles.searchByTitle") || "搜索标题"}
+                </button>
+                <button
+                  onClick={handleSearchFullName}
+                  disabled={gamesLoading}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 transition-colors disabled:opacity-50"
+                >
+                  {t("downloadedFiles.searchByFullName") || "搜索全名"}
+                </button>
+              </>
+            )}
             <button
               onClick={handleSearch}
               disabled={gamesLoading}
-              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg disabled:opacity-50"
+              className="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors disabled:opacity-50"
             >
-              {t("downloadedFiles.search")}
+              {gamesLoading ? (
+                <div className="i-mdi-loading animate-spin" />
+              ) : (
+                t("downloadedFiles.search") || "搜索"
+              )}
             </button>
           </div>
         </div>

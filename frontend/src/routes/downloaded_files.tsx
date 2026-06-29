@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
 import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves } from "../../wailsjs/go/service/DownloadedFilesService";
-import { GameSearchModal } from "../components/modal/GameSearchModal";
+import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
 import type { service, models } from "../../wailsjs/go/models";
 import { OpenLocalPath, DeleteGame, GetGamesByIdsStr } from "../../wailsjs/go/service/GameService";
@@ -1086,7 +1086,7 @@ export default function DownloadedFiles() {
 
       {/* 游戏搜索弹窗 */}
       {searchModalItem && (
-        <GameSearchModal
+        <LocalSearchModal
           itemName={searchModalItem.game_name}
           onClose={() => setSearchModalItem(null)}
         />

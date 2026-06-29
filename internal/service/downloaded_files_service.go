@@ -1370,6 +1370,12 @@ func (s *DownloadedFilesService) ExtractGameNameFromDLSite(filename string) stri
 	return strings.TrimSpace(matches[1])
 }
 
+// GetTitlesNum 公开的获取标题和数字的函数
+func (s *DownloadedFilesService) GetTitlesNum(searchName string) string {
+	mainT, _, _ := utils.GetTitles(searchName)
+	return mainT
+}
+
 // JudgeGameName 用于判断文件名是否为游戏名
 func (s *DownloadedFilesService) JudgeGameName(filenames []string) string {
 	gameName := ""

@@ -1726,6 +1726,7 @@
     "adult": "Adult",
     "browse": "Browse",
     "searchBT": "Search BT",
+    "searchLocal": "Search Local Import",
     "viewDetail": "View Detail",
     "goToGame": "Go to Game",
     "gameDetail": "Game Detail"
@@ -1789,7 +1790,10 @@
     "search": "Search",
     "searchGame": "Search Game",
     "searchTitle": "Search Imported Games",
+    "searchingFor": "Searching for",
     "searchPlaceholder": "Enter game name to search",
+    "searchByTitle": "Search Title",
+    "searchByFullName": "Search Full Name",
     "noSearchResults": "No matching games found",
     "tempStateHint": "Installed and Imported status are one-time only and not linked to the database. Use search to check if already imported.",
     "installIsoTitle": "Install ISO Game",

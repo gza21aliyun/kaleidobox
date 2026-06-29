@@ -253,6 +253,11 @@ func getTitles(searchName string) (mainT string, subT string, number string) {
 
 }
 
+func GetTitles(searchName string) (mainT string, subT string, number string) {
+	return getTitlesNum(searchName, false)
+
+}
+
 func getTitlesNum(searchName string, onlyNum bool) (mainT string, subT string, number string) {
 	// 检查是否包含有效的分隔符（除了纯空格）
 	// num := -1

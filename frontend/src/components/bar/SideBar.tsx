@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
 import { useAppStore } from "../../store";
 import { enums } from "../../../wailsjs/go/models";
+import { CONFIGURABLE_NAV_ITEMS, CONFIGURABLE_BOTTOM_ITEMS } from "./sidebarConstants";
 
 interface SideBarProps {
   bgEnabled?: boolean;
@@ -11,19 +12,30 @@ interface SideBarProps {
 
 export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
   const { t } = useTranslation();
-  const { isSidebarOpen, toggleSidebar, tasks } = useAppStore();
+  const { isSidebarOpen, toggleSidebar, tasks, config } = useAppStore();
 
-  const navItems = [
+  // 固定显示的导航项
+  const fixedNavItems = [
     { to: "/", label: t('nav.home'), icon: "i-mdi-home" },
     { to: "/library", label: t('nav.library'), icon: "i-mdi-gamepad-variant" },
-    { to: "/task", label: t('nav.task'), icon: "i-mdi-clipboard-list" },
-    { to: "/charactor_list", label: t('nav.charactors'), icon: "i-mdi-account-group" },
-    { to: "/tag_list", label: t('nav.tags'), icon: "i-mdi-tag-multiple" },
-    { to: "/category_list", label: t('nav.categoryList'), icon: "i-mdi-folder-multiple-outline" },
-    { to: "/stats", label: t('nav.stats'), icon: "i-mdi-chart-bar" },
-    { to: "/favorites", label: t('nav.favorites'), icon: "i-mdi-format-list-bulleted" },
-    { to: "/virtual_machines", label: t('nav.virtualMachines'), icon: "i-mdi-laptop" },
   ];
+
+  // 根据 sidebar_visible_items 配置过滤可配置的导航项
+  const visibleItems = config?.sidebar_visible_items
+    ? config.sidebar_visible_items.split(",").filter(Boolean)
+    : [];
+
+  // 映射可配置项并过滤
+  const filteredConfigurableItems = CONFIGURABLE_NAV_ITEMS
+    .filter(item => config?.sidebar_visible_items && visibleItems.includes(item.key))
+    .map(item => ({
+      to: item.to,
+      label: t(item.labelKey),
+      icon: item.icon,
+    }));
+
+  // 合并固定项和可配置项
+  const navItems = [...fixedNavItems, ...filteredConfigurableItems];
 
   const getTaskText = () => {
     var c = 0
@@ -93,22 +105,35 @@ export function SideBar({ bgEnabled = false, bgOpacity = 0.85 }: SideBarProps) {
       </nav>
 
       <div className={`p-4 ${bgEnabled ? "border-white/20 dark:border-white/10" : "border-brand-200 dark:border-brand-700"} flex ${isSidebarOpen ? "flex-row items-center justify-end gap-1" : "flex-col items-center gap-2"}`}>
-        <div
-          onClick={() => BrowserOpenURL("https://github.com/gza21aliyun/kaleidobox")}
-          className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 cursor-pointer select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10"
-          title="GitHub"
-          onDragStart={e => e.preventDefault()}
-        >
-          <div className="i-mdi-github text-xl pointer-events-none" />
-        </div>
-        <Link
-          to="/joystick"
-          className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 no-underline [&.active]:bg-brand-200 [&.active]:text-brand-900 dark:[&.active]:bg-brand-700 dark:[&.active]:text-brand-100 select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10 data-glass:[&.active]:bg-white/20 data-glass:[&.active]:dark:bg:black/20"
-          title="手柄设置"
-          onDragStart={e => e.preventDefault()}
-        >
-          <div className="i-mdi-controller-classic text-xl pointer-events-none" />
-        </Link>
+        {CONFIGURABLE_BOTTOM_ITEMS.filter(item => visibleItems.includes(item.key)).map(item => {
+          if (item.url) {
+            return (
+              <div
+                key={item.key}
+                onClick={() => BrowserOpenURL(item.url!)}
+                className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 cursor-pointer select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10"
+                title={t(item.labelKey)}
+                onDragStart={e => e.preventDefault()}
+              >
+                <div className={`${item.icon} text-xl pointer-events-none`} />
+              </div>
+            );
+          }
+          if (item.to) {
+            return (
+              <Link
+                key={item.key}
+                to={item.to!}
+                className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 no-underline [&.active]:bg-brand-200 [&.active]:text-brand-900 dark:[&.active]:bg-brand-700 dark:[&.active]:text-brand-100 select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10 data-glass:[&.active]:bg-white/20 data-glass:[&.active]:dark:bg:black/20"
+                title={t(item.labelKey)}
+                onDragStart={e => e.preventDefault()}
+              >
+                <div className={`${item.icon} text-xl pointer-events-none`} />
+              </Link>
+            );
+          }
+          return null;
+        })}
         <Link
           to="/settings"
           className="flex items-center p-2 rounded hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-700 dark:text-brand-300 no-underline [&.active]:bg-brand-200 [&.active]:text-brand-900 dark:[&.active]:bg-brand-700 dark:[&.active]:text-brand-100 select-none data-glass:hover:bg-white/10 data-glass:hover:dark:bg:black/10 data-glass:[&.active]:bg-white/20 data-glass:[&.active]:dark:bg:black/20"

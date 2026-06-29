@@ -158,6 +158,8 @@ func (s *lifecycleState) WaitForTrayExit(timeout time.Duration) bool {
 }
 
 func main() {
+	os.Setenv("NODE_ENV", "production")
+
 	logDir, _ := utils.GetSubDir("logs")
 	logFilePath := filepath.Join(logDir, "app.log")
 	appLogger := logger.NewFileLogger(logFilePath)
@@ -193,6 +195,9 @@ func main() {
 	touchMappingService := service.NewTouchMappingService()
 	i18nService := service.NewI18nService()
 	vmService := service.NewVMService()
+	monthlyReleaseService := service.NewMonthlyReleaseService()
+	btDownloadService := service.NewBTDownloadService()
+	downloadedFilesService := service.NewDownloadedFilesService()
 
 	// 创建本地文件处理器
 	localFileHandler, err := utils.NewLocalFileHandler()
@@ -488,6 +493,9 @@ func main() {
 			touchMappingService.Init(ctx, db, config)
 			i18nService.Init(ctx)
 			workService.Init(ctx, db, config)
+			monthlyReleaseService.Init(ctx)
+			btDownloadService.Init(ctx)
+			downloadedFilesService.Init(ctx, db, config)
 			workService.SetServices(staffService, charactorService, imageService)
 			gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 			vmService.Init(ctx, db, config)
@@ -606,6 +614,9 @@ func main() {
 			i18nService,
 			workService,
 			vmService,
+			monthlyReleaseService,
+			btDownloadService,
+			downloadedFilesService,
 		},
 		EnumBind: []interface{}{
 			enums.AllSourceTypes,

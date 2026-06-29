@@ -23,7 +23,6 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/vmware/govmomi v0.37.0
 	github.com/wailsapp/wails/v2 v2.11.0
-	gobot.io/x/gobot/v2 v2.6.0
 	golang.org/x/image v0.35.0
 	golang.org/x/sys v0.42.0
 	golang.org/x/text v0.34.0
@@ -75,13 +74,10 @@ require (
 	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/godbus/dbus/v5 v5.2.0 // indirect
-	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/jezek/xgb v1.2.0 // indirect

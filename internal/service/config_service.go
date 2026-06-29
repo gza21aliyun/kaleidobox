@@ -190,7 +190,21 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.MagpieCroppingLeft = newConfig.MagpieCroppingLeft
 	s.config.MagpieCroppingRight = newConfig.MagpieCroppingRight
 	s.config.MagpieEnabled = newConfig.MagpieEnabled
+	s.config.SidebarVisibleItems = newConfig.SidebarVisibleItems
+	// BT下载配置
+	s.config.RssURL = newConfig.RssURL
+	s.config.QBServer = newConfig.QBServer
+	s.config.QBPort = newConfig.QBPort
+	s.config.QBUser = newConfig.QBUser
+	s.config.QBPassword = newConfig.QBPassword
+	s.config.QBDownloadFolder = newConfig.QBDownloadFolder
+	// 游戏下载和安装文件夹
+	s.config.GameDownloadFolder = newConfig.GameDownloadFolder
+	s.config.GameInstallFolder = newConfig.GameInstallFolder
+	s.config.SevenZipPath = newConfig.SevenZipPath // 7-Zip路径
+	s.config.HideOldMatchingBtns = newConfig.HideOldMatchingBtns
 	applog.SetLogAll(s.config.LogAll)
+
 	return nil
 }
 

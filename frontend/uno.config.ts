@@ -8,6 +8,27 @@ export default defineConfig({
     presetIcons(),
   ],
 
+  // Safelist: 确保侧边栏动态图标类名被正确生成
+  safelist: [
+    // 主导航图标
+    "i-mdi-clipboard-list",
+    "i-mdi-gamepad-variant",
+    "i-mdi-tag-multiple",
+    "i-mdi-folder-multiple-outline",
+    "i-mdi-chart-bar",
+    "i-mdi-calendar-month",
+    "i-mdi-format-list-bulleted",
+    "i-mdi-laptop",
+    // 底部区域图标
+    "i-mdi-github",
+    "i-mdi-controller-classic",
+    // 固定显示图标
+    "i-mdi-home",
+    "i-mdi-menu",
+    "i-mdi-cog",
+    "i-mdi-folder-download",
+  ],
+
   rules: [
     ["scrollbar-hide", {
       "scrollbar-width": "none",

@@ -137,20 +137,17 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
         />
       </div>
 
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("basic.theme")}</label>
-        <BetterSelect
-          name="theme"
-          value={formData.theme}
-          onChange={value => onChange({ ...formData, theme: value } as appconf.AppConfig)}
-          options={[
-            { value: "light", label: t("basic.light") },
-            { value: "dark", label: t("basic.dark") },
-            { value: "system", label: t("basic.followSystem") },
-          ]}
+      <div className="flex items-center justify-between p-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+          隐藏旧版匹配按钮
+        </label>
+        <BetterSwitch
+          id="hide_old_matching_btns"
+          checked={formData.hide_old_matching_btns || false}
+          onCheckedChange={checked => onChange({ ...formData, hide_old_matching_btns: checked } as appconf.AppConfig)}
         />
       </div>
+
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("common.language")}</label>

@@ -77,14 +77,14 @@ type AppConfig struct {
 	MagpiePath         string `json:"magpie_path,omitempty"`          // Magpie 可执行文件路径
 	MagpieHotkey       string `json:"magpie_hotkey,omitempty"`        // Magpie 缩放快捷键，格式如: "Win+Shift+A"
 	MagpieConfigPath   string `json:"magpie_config_path,omitempty"`   // Magpie 配置文件路径（用于虚拟机裁剪设置）
-	MagpieEnabled      bool   `json:"magpie_enabled"`                // 全局启用 Magpie（开启后所有游戏都使用 Magpie）
+	MagpieEnabled      bool   `json:"magpie_enabled"`                 // 全局启用 Magpie（开启后所有游戏都使用 Magpie）
 	// Magpie 裁剪设置（仅虚拟机启动时使用）
-	MagpieCroppingEnabled bool    `json:"magpie_cropping_enabled"`      // 是否启用裁剪
-	MagpieCroppingLeft   int `json:"magpie_cropping_left"`        // 左边裁剪像素
-	MagpieCroppingTop    int `json:"magpie_cropping_top"`         // 顶部裁剪像素
-	MagpieCroppingRight  int `json:"magpie_cropping_right"`       // 右边裁剪像素
-	MagpieCroppingBottom int `json:"magpie_cropping_bottom"`      // 底部裁剪像素
-	FfmpegPath          string `json:"ffmpeg_path,omitempty"`          // FFmpeg 可执行文件路径
+	MagpieCroppingEnabled bool   `json:"magpie_cropping_enabled"` // 是否启用裁剪
+	MagpieCroppingLeft    int    `json:"magpie_cropping_left"`    // 左边裁剪像素
+	MagpieCroppingTop     int    `json:"magpie_cropping_top"`     // 顶部裁剪像素
+	MagpieCroppingRight   int    `json:"magpie_cropping_right"`   // 右边裁剪像素
+	MagpieCroppingBottom  int    `json:"magpie_cropping_bottom"`  // 底部裁剪像素
+	FfmpegPath            string `json:"ffmpeg_path,omitempty"`   // FFmpeg 可执行文件路径
 	// 进程检测配置
 	AutoDetectGameProcess bool `json:"auto_detect_game_process"` // 是否启用自动游戏进程检测（分阶段检测策略）
 	DetectTime            int  `json:"detect_time"`              // 进程检测时间,启动器不一定是自动型的，还有手动型的，用于提示用户快点按进游戏
@@ -103,6 +103,21 @@ type AppConfig struct {
 	VmPass      string `json:"vm_pass,omitempty"`      // 虚拟机密码
 	VmPath      string `json:"vm_path,omitempty"`      // 虚拟机配置文件路径
 	DisplayName string `json:"display_name,omitempty"` //显示器名称
+	// 侧边栏可见项配置
+	SidebarVisibleItems string `json:"sidebar_visible_items,omitempty"` // 可见的侧边栏导航项，逗号分隔，如 "task,charactor_list,tag_list"
+	// BT下载配置
+	RssURL           string `json:"rss_url,omitempty"`            // RSS URL，search_key 代入搜索关键字
+	QBServer         string `json:"qb_server,omitempty"`          // qBittorrent 服务器地址
+	QBPort           int    `json:"qb_port"`                      // qBittorrent 端口
+	QBUser           string `json:"qb_user,omitempty"`            // qBittorrent 用户名
+	QBPassword       string `json:"qb_password,omitempty"`        // qBittorrent 密码
+	QBDownloadFolder string `json:"qb_download_folder,omitempty"` // qBittorrent 下载目录
+	// 游戏下载和安装文件夹
+	GameDownloadFolder string `json:"game_download_folder,omitempty"` // 游戏下载文件夹
+	GameInstallFolder  string `json:"game_install_folder,omitempty"`  // 游戏安装文件夹
+	// 7-Zip 路径
+	SevenZipPath        string `json:"seven_zip_path,omitempty"` // 7-Zip 可执行文件路径
+	HideOldMatchingBtns bool   `json:"hide_old_matching_btns"`
 }
 
 // getConfigPath 获取配置文件路径
@@ -188,6 +203,16 @@ func LoadConfig() (*AppConfig, error) {
 		VmPass:      "",
 		VmPath:      "",
 		DisplayName: "",
+		// 侧边栏可见项默认包含所有可配置项，表示全部显示
+		SidebarVisibleItems: "task,charactor_list,tag_list,category_list,stats,favorites,monthly_releases,virtual_machines,downloaded_files,joystick,github",
+		// BT下载配置默认值
+		RssURL:              "https://sukebei.nyaa.si/?page=rss&c=1_3&f=0&q=%search_key",
+		QBServer:            "",
+		QBPort:              8080,
+		QBUser:              "admin",
+		QBPassword:          "",
+		QBDownloadFolder:    "",
+		HideOldMatchingBtns: true,
 	}
 
 	// 获取配置文件路径

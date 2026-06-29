@@ -93,7 +93,9 @@
     "brands": "ブランド",
     "series": "シリーズ",
     "categoryList": "カテゴリ一覧",
-    "favorites": "お気に入り"
+    "favorites": "お気に入り",
+    "monthlyReleases": "ゲームリソース",
+    "downloadedFiles": "ダウンロード済みファイル"
   },
   "home": {
     "welcomeBack": "おかえりなさい！",
@@ -289,6 +291,7 @@
       "removeFromCategory": "コレクションから削除",
       "noGamesFound": "一致するゲームが見つかりません",
       "noGamesInCategory": "このコレクションにはまだゲームがありません",
+      "noGamesToAdd": "追加できるゲームがありません",
       "systemCategoryCannotBatchDelete": "システムコレクションは一括削除できません"
     },
     "labels": {
@@ -300,6 +303,9 @@
     "actions": {
       "editCategory": "コレクションを編集",
       "deleteCategory": "コレクションを削除"
+    },
+    "descriptions": {
+      "addGameToCategory": "ライブラリからこのコレクションに追加するゲームを選択"
     }
   },
   "game": {
@@ -731,10 +737,12 @@
     "basicConfig": "基本設定",
     "languageSettings": "言語設定",
     "appearance": "外観設定",
+    "sidebar": "サイドバー設定",
     "gameplay": "プレイ設定",
     "cloudBackup": "クラウドバックアップ設定",
     "autoBackup": "自動バックアップ",
     "aiConfig": "AI 設定",
+    "btDownload": "ダウンロード設定",
     "dbBackup": "データベースバックアップ",
     "fullDataBackup": "全データバックアップ",
     "appUpdate": "アプリ更新",
@@ -746,6 +754,18 @@
       "buildMode": "ビルドモード",
       "builtAt": "ビルド時間"
     }
+  },
+  "sidebar": {
+    "task": "タスク",
+    "characters": "キャラクター",
+    "tags": "タグ",
+    "categories": "カテゴリー",
+    "stats": "統計",
+    "favorites": "お気に入り",
+    "virtualMachines": "仮想マシン",
+    "joystick": "マッピング設定",
+    "github": "GitHub リンク",
+    "settingsHint": "サイドバーに表示するナビゲーション項目を選択してください。ホーム、ライブラリ、設定は常に表示されます。すべて選択解除すると、これらの項目が非表示になります。"
   },
   "gameStatus": {
     "not_started": "未開始",
@@ -1020,11 +1040,14 @@
     "selectCover": "表紙画像を選択"
   },
   "gameInfo": {
-    "staffInfo": "スタッフ情報",
+    "staffInfo": "スタッフ",
     "noStaffInfo": "スタッフ情報がありません",
     "noData": "データがありません",
     "unknownCharacter": "未知のキャラクター",
     "staff": "スタッフ {{index}}",
+    "fetchFailed": "ゲーム情報の取得に失敗しました",
+    "loading": "読み込み中...",
+    "releaseDate": "発売日",
     "categoryTags": "カテゴリタグ",
     "noCategoryTags": "カテゴリタグがありません",
     "tagInfo": "タグ情報",
@@ -1648,5 +1671,111 @@
     "buttons": {
       "confirmAndRestart": "確認してアプリを再起動"
     }
+  },
+  "monthlyReleases": {
+    "title": "月別発売タイトル",
+    "gamesCount": "本",
+    "year": "年",
+    "month": "月",
+    "prevMonth": "前月",
+    "nextMonth": "翌月",
+    "refresh": "更新",
+    "loading": "データ取得中...",
+    "empty": "この月のゲーム発売情報はありません",
+    "toasts": {
+      "fetchFailed": "月別発売リストの取得に失敗しました"
+    },
+    "age": "年齢",
+    "normal": "全年齢",
+    "all": "全て",
+    "adult": "アダルト",
+    "browse": "閲覧",
+    "searchBT": "BT検索",
+    "searchLocal": "インポートを検索",
+    "viewDetail": "詳細を表示",
+    "goToGame": "ゲームへ移動",
+    "gameDetail": "ゲーム詳細"
+  },
+  "btDownload": {
+    "rssUrl": "RSS URL",
+    "rssUrlHint": "RSSフィードURL、%search_key が検索キーワードに置き換えられます",
+    "qbittorrentSettings": "qBittorrent 設定",
+    "qbServer": "サーバーアドレス",
+    "qbPort": "ポート",
+    "qbUser": "ユーザー名",
+    "qbPassword": "パスワード",
+    "qbDownloadFolder": "ダウンロードフォルダ",
+    "downloadFolderPlaceholder": "/downloads",
+    "downloadFolderHint": "ダウンロードフォルダを指定してください。空の場合はqBittorrentのデフォルト設定を使用します",
+    "searchTitle": "BT検索",
+    "searchingFor": "検索中",
+    "searchPlaceholder": "検索キーワードを入力",
+    "searchByTitle": "タイトルで検索",
+    "searchByFullName": "フルネームで検索",
+    "search": "検索",
+    "noResults": "検索結果がありません",
+    "download": "ダウンロード",
+    "searchFailed": "検索に失敗しました",
+    "notConfigured": "qBittorrentの設定を行ってください",
+    "downloadStarted": "ダウンロード開始",
+    "downloadFailed": "ダウンロードに失敗しました",
+    "gameFolders": "ゲームフォルダ設定",
+    "gameDownloadFolder": "ゲームダウンロードフォルダ（上と同じ場合、ドライブ文字をマッピングしてください）",
+    "gameDownloadFolderPlaceholder": "ゲームダウンロードフォルダを選択",
+    "gameInstallFolder": "ゲームインストールフォルダ",
+    "gameInstallFolderPlaceholder": "ゲームインストールフォルダを選択",
+    "sevenZipPath": "7-Zip パス",
+    "sevenZipPathPlaceholder": "7z.exe パス",
+    "sevenZipPathHint": "アーカイブを展開するための 7z.exe のフルパスを設定",
+    "select": "選択"
+  },
+  "downloadedFiles": {
+    "selectAll": "全て選択",
+    "clear": "クリア",
+    "extract": "解凍",
+    "extracting": "解凍中",
+    "extracted": "展開済み",
+    "deleteExtracted": "展開を削除",
+    "deleteInstalled": "インストールを削除",
+    "installed": "インストール済み",
+    "imported": "インポート済み",
+    "executing": "実行中",
+    "refresh": "リフレッシュ",
+    "empty": "ダウンロードファイルはありません",
+    "folder": "フォルダ",
+    "archive": "アーカイブ",
+    "downloading": "ダウンロード中",
+    "extracted": "展開済み",
+    "installed": "インストール済み",
+    "imported": "インポート済み",
+    "openDownload": "ダウンロードを開く",
+    "openInstall": "インストールを開く",
+    "mount": "マウント",
+    "search": "検索",
+    "searchGame": "ゲーム検索",
+    "searchTitle": "インポート済みゲームを検索",
+    "searchingFor": "検索中",
+    "searchPlaceholder": "ゲーム名を入力して検索",
+    "searchByTitle": "タイトルで検索",
+    "searchByFullName": "フルネームで検索",
+    "noSearchResults": "一致するゲームが見つかりません",
+    "tempStateHint": "インストール済みとインポート済みのステータスは一度きりで、データベースとは連携していません。検索してインポート済みか確認してください。",
+    "installIsoTitle": "ISOゲームをインストール",
+    "installTitle": "ゲームをインストール",
+    "installIsoMessage": "ISOファイルはマウントしてインストールする方が良いです。ISOをゲームインストールフォルダに展開しますか？",
+    "installByName": "ゲーム名でインストール",
+    "installByUuid": "MD5 でインストール（パスが英語のみのゲーム用）",
+    "confirmInstall": "インストールを確認",
+    "confirmDelete": "\"{{name}}\" を削除しますか？",
+    "install": "インストール",
+    "import": "インポート",
+    "md5AsFolder": "MD5をゲームフォルダ名に",
+    "directIsoInstall": "ISO 直接インストール",
+    "openGame": "ゲームを開く",
+    "runGame": "ゲームを実行",
+    "selectExecutable": "実行ファイルを選択",
+    "noSevenZipPath": "7-Zip パスが設定されていません。解压機能を使用するには、設定で 7z.exe のパスを設定してください。",
+    "delete": "削除",
+    "execute": "実行"
   }
 }

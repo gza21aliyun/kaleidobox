@@ -793,7 +793,7 @@ func combineCharacters(gameEntity models.GameEntity) models.GameEntity {
 	worksMap[enums.CV] = append(newCvs, remainCvs...)
 	gameEntity.WorksMap = worksMap
 
-	fmt.Printf("角色人数02：%d, data: %v\n", len(newCharactors), worksMap[enums.CV])
+	// fmt.Printf("角色人数02：%d, data: %v\n", len(newCharactors), worksMap[enums.CV])
 	return gameEntity
 
 }

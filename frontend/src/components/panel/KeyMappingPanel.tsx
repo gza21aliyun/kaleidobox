@@ -124,10 +124,10 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     { button: 'r3-up', buttonLabel: 'RS Up', mappingLabel: 'I', mappingKey: '', position: { x: 45, y: 43 } },
     { button: 'r3-right', buttonLabel: 'RS Right', mappingLabel: 'L', mappingKey: '', position: { x: 53, y: 53 } },
     { button: 'r3-down', buttonLabel: 'RS Down', mappingLabel: 'K', mappingKey: '', position: { x: 45, y: 63 } },
-    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'T', mappingKey: 'Up', position: { x: 26, y: 53 } },
-    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'G', mappingKey: 'Down', position: { x: 26, y: 68 } },
-    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'F', mappingKey: 'Left', position: { x: 21, y: 60 } },
-    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'H', mappingKey: 'Right', position: { x: 31, y: 60 } }
+    { button: 'dpad_up', buttonLabel: 'D-Pad Up', mappingLabel: 'Up', mappingKey: 'Up', position: { x: 26, y: 53 } },
+    { button: 'dpad_down', buttonLabel: 'D-Pad Down', mappingLabel: 'Down', mappingKey: 'Down', position: { x: 26, y: 68 } },
+    { button: 'dpad_left', buttonLabel: 'D-Pad Left', mappingLabel: 'Left', mappingKey: 'Left', position: { x: 21, y: 60 } },
+    { button: 'dpad_right', buttonLabel: 'D-Pad Right', mappingLabel: 'Right', mappingKey: 'Right', position: { x: 31, y: 60 } }
   ];
 
   // 设备类型选项（过滤掉键盘）

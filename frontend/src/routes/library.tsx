@@ -956,15 +956,14 @@ function LibraryPage() {
       <BatchImportModal
         isOpen={isBatchImportOpen}
         onClose={() => setIsBatchImportOpen(false)}
-        onImportComplete={loadGames}
-        onOpenUpdate={(res) => {
-          console.log("onOpenUpdate res:", res)
-          // gamesForUpdate.current = res;
+        onImportComplete={(importedGames, isOpenUpdate) => {           
           loadGames().then(() => { 
-            setSelectedGameIds(res.map((g) => g.id))
-            setIsBatchUpdateOpen(true);
+            if (isOpenUpdate) {
+              setSelectedGameIds(importedGames.map((g) => g.id))
+              setIsBatchUpdateOpen(true);
+            }
+            
           })
-          
         }}
       />
 

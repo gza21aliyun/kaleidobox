@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 interface AddGameToCategoryModalProps {
   isOpen: boolean;
   allGames: models.Game[];
+  isLoading?: boolean;
   onClose: () => void;
   onAddGame: (gameId: string) => void;
 }
@@ -11,6 +12,7 @@ interface AddGameToCategoryModalProps {
 export function AddGameToCategoryModal({
   isOpen,
   allGames,
+  isLoading = false,
   onClose,
   onAddGame,
 }: AddGameToCategoryModalProps) {
@@ -32,8 +34,12 @@ export function AddGameToCategoryModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {allGames.length > 0
-            ? (
+          {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-full text-brand-500">
+                  <div className="i-mdi-loading.animate-spin text-4xl mb-2" />
+                  <p>{t('common.loading')}</p>
+                </div>
+              ) : allGames.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {allGames.map(game => (
                     <button

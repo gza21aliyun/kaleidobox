@@ -1837,6 +1837,7 @@
       "name": "标题名",
       "game_name": "游戏名",
       "time": "时间"
-    }
+    },
+    "forceComplete": "强制完成下载"
   }
 }

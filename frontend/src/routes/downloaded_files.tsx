@@ -563,6 +563,18 @@ export default function DownloadedFiles() {
     }
   }
 
+  
+  const handleForceCompleteDownload = async (item: DownloadedFile) => {
+    const updatedItem = { ...item, is_downloading: false };
+    setItems(prevItems => prevItems.map(i =>
+      i.id === item.id ? updatedItem : i
+    ));
+    SaveDownloadedFileInfo(item.path, updatedItem as unknown as service.DownloadedFile).catch(err => {
+      console.error("Failed to save downloaded file info:", err);
+    });
+    toast.success(t('downloadedFiles.forceComplete') || '已强制完成下载');
+  }
+
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
@@ -946,12 +958,22 @@ export default function DownloadedFiles() {
                       <div className="flex gap-1 flex-wrap">
                       {/* 解压按钮 */}
                       {item.is_downloading ? (
-                        <button
-                          disabled
-                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
-                        >
-                          {t("downloadedFiles.extract")}
-                        </button>
+                        <>
+                          <button
+                            disabled
+                            className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                          >
+                            {t("downloadedFiles.extract")}
+                          </button>
+                          {item.type != 2 && (
+                            <button
+                              onClick={() => handleForceCompleteDownload(item)}
+                              className="px-2 py-1 text-xs bg-yellow-500 hover:bg-yellow-600 text-white rounded"
+                            >
+                              {t("downloadedFiles.forceComplete")}
+                            </button>
+                          )}
+                        </>
                       ) : item.is_extracted ? (
                         <>
                           <button

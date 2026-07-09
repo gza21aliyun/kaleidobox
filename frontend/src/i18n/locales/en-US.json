@@ -1835,6 +1835,7 @@
       "name": "Name",
       "game_name": "Game Name",
       "time": "Time"
-    }
+    },
+    "forceComplete": "Force Complete Download"
   }
 }

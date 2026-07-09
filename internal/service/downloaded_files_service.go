@@ -659,6 +659,11 @@ func (s *DownloadedFilesService) checkPathImported(path string) bool {
 
 // checkIsDownloading 检查是否有未下载完的临时文件（QBittorrent 的 .!qB 文件，uTorrent 的 .!ut 文件）
 func (s *DownloadedFilesService) checkIsDownloading(itemPath string, itemType int) bool {
+	savedInfo := s.LoadDownloadInfo(itemPath)
+	if savedInfo != nil && !savedInfo.IsDownloading {
+		return false
+	}
+
 	if itemType == 1 || itemType == 0 {
 		// 对于文件夹，检查是否有对应的临时文件
 		// .!qB - QBittorrent

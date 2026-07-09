@@ -217,8 +217,8 @@ func migration142(tx *sql.Tx) error {
 	return nil
 }
 
-// migration143 将 hotkeys 表的 modifiers 列改为 NOT NULL，默认值为空字符串
-// 解决 sql: Scan error on column index 5, name "modifiers": converting NULL to string is unsupported
+// migration143 将 hotkeys 表中 NULL 的 modifiers 更新为空字符串
+// 为后续设置 NOT NULL 约束做准备
 func migration143(tx *sql.Tx) error {
 	_, err := tx.Exec(`
 		UPDATE hotkeys SET modifiers = '' WHERE modifiers IS NULL
@@ -227,7 +227,13 @@ func migration143(tx *sql.Tx) error {
 		return fmt.Errorf("failed to update NULL modifiers: %w", err)
 	}
 
-	_, err = tx.Exec(`
+	return nil
+}
+
+// migration144 将 hotkeys 表的 modifiers 列改为 NOT NULL 并设置默认值为空字符串
+// 需要在 migration143 之后执行，因为 CockroachDB 不允许在同一事务中既有 UPDATE 又有 NOT NULL 约束变更
+func migration144(tx *sql.Tx) error {
+	_, err := tx.Exec(`
 		ALTER TABLE hotkeys ALTER COLUMN modifiers SET NOT NULL
 	`)
 	if err != nil {
@@ -273,8 +279,13 @@ var migrations = []Migration{
 	},
 	{
 		Version:     143,
-		Description: "Set modifiers column in hotkeys table to NOT NULL with default empty string",
+		Description: "Update NULL modifiers in hotkeys table to empty string",
 		Up:          migration143,
+	},
+	{
+		Version:     144,
+		Description: "Set modifiers column in hotkeys table to NOT NULL with default empty string",
+		Up:          migration144,
 	},
 
 	// {

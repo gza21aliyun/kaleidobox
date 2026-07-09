@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "@tanstack/react-router";
 import { useAppStore } from "../../store";
 import { GameCard } from "../card/GameCard";
 import { GetTitlesNum } from "../../../wailsjs/go/service/DownloadedFilesService";
+import { GetGameEntityByID } from "../../../wailsjs/go/service/GameService";
 import { models } from "../../../wailsjs/go/models";
 import toast from "react-hot-toast";
+import { CustomizedGameCard } from "../card/CustomizedGameCard";
 
 interface LocalSearchModalProps {
   itemName: string;
@@ -17,6 +20,7 @@ export function LocalSearchModal({ itemName, onClose }: LocalSearchModalProps) {
   const [searchQuery, setSearchQuery] = useState(itemName);
   const { games, fetchGames, gamesLoading } = useAppStore();
   const [filteredGames, setFilteredGames] = useState<any[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (games.length === 0) {
@@ -89,6 +93,13 @@ export function LocalSearchModal({ itemName, onClose }: LocalSearchModalProps) {
   const sortedGames = [...filteredGames].sort((a, b) => {
     return getSimilarityScore(b, searchQuery) - getSimilarityScore(a, searchQuery);
   });
+
+  const handleViewDetails = async (game: models.Game) => {
+    const gameEntity = await GetGameEntityByID(game.id);
+    navigate({ 
+      to: `/game/${game.id}`,
+     });
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -177,11 +188,20 @@ export function LocalSearchModal({ itemName, onClose }: LocalSearchModalProps) {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {sortedGames.map((game) => (
-                <GameCard
+                <CustomizedGameCard
                   key={game.id}
                   game={game}
                   viewMode="small"
                   searchQuery={searchQuery}
+                  buttons={<>
+                    <button
+                      onClick={()=>handleViewDetails(game)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
+                      title={t('common.viewDetails')}
+                    >
+                      <div className="i-mdi-information-variant text-lg" />
+                    </button>
+                  </>}
                 />
               ))}
             </div>

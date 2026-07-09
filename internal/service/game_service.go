@@ -791,6 +791,18 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 	return games, nil
 }
 
+func (s *GameService) GetGameEntityByID(id string) (models.GameEntity, error) {
+	gameEntity := models.GameEntity{}
+	game, err := s.GetGameByID(id)
+	if err != nil {
+		return gameEntity, err
+	}
+	gameEntity.Game = game
+	// gameEntity.Tags, err := s.tagService.GetTagListByString(id)
+	gameEntity.WorksMap, err = s.workService.GetWorksMapByGameId(id)
+	return gameEntity, nil
+}
+
 func (s *GameService) GetGameByID(id string) (models.Game, error) {
 	query := `SELECT 
 		id, name, 

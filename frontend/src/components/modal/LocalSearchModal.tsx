@@ -9,13 +9,16 @@ import { GetGameEntityByID } from "../../../wailsjs/go/service/GameService";
 import { models } from "../../../wailsjs/go/models";
 import toast from "react-hot-toast";
 import { CustomizedGameCard } from "../card/CustomizedGameCard";
+import { GameInfoModal } from "./GameInfoModal";
 
 interface LocalSearchModalProps {
   itemName: string;
+  onOpenInfo: (game: models.GameEntity) => void;
+  onChoose?: (game: models.Game) => void;
   onClose: () => void;
 }
 
-export function LocalSearchModal({ itemName, onClose }: LocalSearchModalProps) {
+export function LocalSearchModal({ itemName, onOpenInfo, onClose }: LocalSearchModalProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(itemName);
   const { games, fetchGames, gamesLoading } = useAppStore();
@@ -95,10 +98,11 @@ export function LocalSearchModal({ itemName, onClose }: LocalSearchModalProps) {
   });
 
   const handleViewDetails = async (game: models.Game) => {
-    const gameEntity = await GetGameEntityByID(game.id);
-    navigate({ 
-      to: `/game/${game.id}`,
-     });
+    const ge = await GetGameEntityByID(game.id);
+    onOpenInfo(ge);
+    // navigate({ 
+    //   to: `/game/${game.id}`,
+    //  });
   };
 
   return createPortal(
@@ -207,6 +211,8 @@ export function LocalSearchModal({ itemName, onClose }: LocalSearchModalProps) {
             </div>
           )}
         </div>
+        
+        
       </div>
     </div>,
     document.body

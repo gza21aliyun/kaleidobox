@@ -15,6 +15,7 @@ import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 import { ConfirmModal } from "../components/modal/ConfirmModal";
 import { BetterSelect } from "../components/ui/BetterSelect";
 import { parseTime } from "../utils/time";
+import { GameInfoModal } from "../components/modal/GameInfoModal";
 
 type DownloadedFile = Omit<service.DownloadedFile, "convertValues"> & {
   selected: boolean;
@@ -47,6 +48,7 @@ export default function DownloadedFiles() {
   const [runGameExecutables, setRunGameExecutables] = useState<string[]>([]);
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [importedGames, setImportedGames] = useState<models.Game[]>([]);
+  const [gameEntity, setGameEntity] = useState<models.GameEntity | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -1214,7 +1216,15 @@ export default function DownloadedFiles() {
       {searchModalItem && (
         <LocalSearchModal
           itemName={searchModalItem.game_name}
+          onOpenInfo={(ge)=> {setGameEntity(ge)}}
           onClose={() => setSearchModalItem(null)}
+        />
+      )}
+
+      {gameEntity && (
+        <GameInfoModal
+          gameEntity={gameEntity}
+          onClose={() => {setGameEntity(null)}}
         />
       )}
 
@@ -1241,6 +1251,8 @@ export default function DownloadedFiles() {
           preloadedStep="preview"
         />
       )}
+
+
 
       {/* <ConfirmModal
               isOpen={isDeleteModalOpen}

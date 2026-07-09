@@ -4,14 +4,14 @@ import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
 import { createPortal } from "react-dom";
 import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
-import { FetchMonthlyReleases, ClearGetchuTempImages } from "../../wailsjs/go/service/MonthlyReleaseService";
+import { FetchMonthlyReleases, ClearGetchuTempImages, FetchGetchuGameDetail } from "../../wailsjs/go/service/MonthlyReleaseService";
 import { SearchBT, DownloadToQBittorrent } from "../../wailsjs/go/service/BTDownloadService";
-import { utils } from "../../wailsjs/go/models";
+import { utils, models } from "../../wailsjs/go/models";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
 import { BetterSelect } from "../components/ui/BetterSelect";
 import { useAppStore } from "../store";
-import { GetchuGameInfoPanel } from "../components/panel/GetchuGameInfoPanel";
+import { GameInfoModal } from "../components/modal/GameInfoModal";
 import { ImageCard } from "../components/card/ImageCard";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 
@@ -64,6 +64,7 @@ function MonthlyReleasesPage() {
   // 本地搜索弹窗状态
   const [localSearchModalOpen, setLocalSearchModalOpen] = useState(false);
   const [localSearchGame, setLocalSearchGame] = useState<utils.MonthlyReleaseGame | null>(null);
+  const [gameEntity, setGameEntity] = useState<models.GameEntity | null>(null);
 
   // 详情弹窗状态
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -400,7 +401,15 @@ function MonthlyReleasesPage() {
       {localSearchModalOpen && localSearchGame && (
         <LocalSearchModal
           itemName={localSearchGame.name || ""}
+          onOpenInfo={(ge) => {setGameEntity(ge)}}
           onClose={closeLocalSearchModal}
+        />
+      )}
+
+      {gameEntity && (
+        <GameInfoModal
+          gameEntity={gameEntity}
+          onClose={() => {setGameEntity(null)}}
         />
       )}
 
@@ -540,43 +549,65 @@ function GameItem({ game, onBrowse, onSearch, onSearchLocal, onViewDetail }: Gam
 
 // 详情弹窗组件
 interface DetailModalProps {
-  game: utils.MonthlyReleaseGame;
+  game: utils.MonthlyReleaseGame;  
   onClose: () => void;
 }
 
 function DetailModal({ game, onClose }: DetailModalProps) {
   const { t } = useTranslation();
+  const [gameEntity, setGameEntity] = useState<models.GameEntity | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-4xl max-h-[80vh] rounded-xl bg-white dark:bg-brand-800 shadow-xl border border-brand-200 dark:border-brand-700 flex flex-col overflow-hidden">
-        {/* 标题栏 */}
-        <div className="flex items-center justify-between p-4 border-b border-brand-200 dark:border-brand-700">
-          <h3 className="text-lg font-bold text-brand-900 dark:text-white">
-            {t("monthlyReleases.gameDetail") || "游戏详情"}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-500"
-          >
-            <div className="i-mdi-close text-xl" />
-          </button>
-        </div>
+  useEffect(() => {
+    const fetchGameInfo = async () => {
+      if (!game.getchu_id) return;
+      
+      setIsLoading(true);
+      try {
+        console.log("Fetching game detail for:", game.getchu_id);
+        const result = await FetchGetchuGameDetail(game.getchu_id);
+        console.log("FetchGetchuGameDetail result:", result);
+        
+        setGameEntity(result);
+      } catch (error) {
+        console.error("Failed to fetch game info:", error);
+        toast.error(t("gameInfo.fetchFailed") || "获取游戏信息失败");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-        {/* 内容区 */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <GetchuGameInfoPanel
-            getchuId={game.getchu_id || ""}
-            gameName={game.name || ""}
-            company={game.company || ""}
-            coverURL={game.cover_url || ""}
-            onClose={onClose}
-          />
+    fetchGameInfo();
+  }, [game.getchu_id]);
+
+  if (isLoading) {
+    return createPortal(
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="w-full max-w-4xl max-h-[80vh] rounded-xl bg-white dark:bg-brand-800 shadow-xl border border-brand-200 dark:border-brand-700 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-brand-200 dark:border-brand-700">
+            <h3 className="text-lg font-bold text-brand-900 dark:text-white">
+              {t("monthlyReleases.gameDetail") || "游戏详情"}
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-700 text-brand-500"
+            >
+              <div className="i-mdi-close text-xl" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="i-mdi-loading text-5xl text-primary-500 animate-spin" />
+              <p className="text-brand-500 dark:text-brand-400">{t("gameInfo.loading") || "加载中"}</p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>,
-    document.body
-  );
+      </div>,
+      document.body
+    );
+  }
+
+  return <GameInfoModal gameEntity={gameEntity} onClose={onClose} />;
 }
 
 // BT搜索弹窗组件

@@ -217,6 +217,33 @@ func migration142(tx *sql.Tx) error {
 	return nil
 }
 
+// migration143 将 hotkeys 表的 modifiers 列改为 NOT NULL，默认值为空字符串
+// 解决 sql: Scan error on column index 5, name "modifiers": converting NULL to string is unsupported
+func migration143(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+		UPDATE hotkeys SET modifiers = '' WHERE modifiers IS NULL
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to update NULL modifiers: %w", err)
+	}
+
+	_, err = tx.Exec(`
+		ALTER TABLE hotkeys ALTER COLUMN modifiers SET NOT NULL
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to set modifiers NOT NULL: %w", err)
+	}
+
+	_, err = tx.Exec(`
+		ALTER TABLE hotkeys ALTER COLUMN modifiers SET DEFAULT ''
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to set modifiers default: %w", err)
+	}
+
+	return nil
+}
+
 // 所有迁移按版本号顺序排列
 var migrations = []Migration{
 	{
@@ -243,6 +270,11 @@ var migrations = []Migration{
 		Version:     142,
 		Description: "Add vm_id column to games table, drop inside_vm column, and create vms table",
 		Up:          migration142,
+	},
+	{
+		Version:     143,
+		Description: "Set modifiers column in hotkeys table to NOT NULL with default empty string",
+		Up:          migration143,
 	},
 
 	// {

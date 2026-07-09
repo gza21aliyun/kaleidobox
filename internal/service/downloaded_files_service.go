@@ -1159,6 +1159,95 @@ func (s *DownloadedFilesService) saveInstallInfo(itemPath, installedPath string)
 	s.SaveDownloadInfo(itemPath, *info)
 }
 
+func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile, exePath string, layers int) error {
+	applog.LogInfof(s.ctx, "开始覆盖安装: %s, exePath: %s, layers: %d", downloadedFile.Path, exePath, layers)
+
+	exeFileName := filepath.Base(exePath)
+	targetBasePath := filepath.Dir(exePath)
+
+	var sourcePath string
+	var extractedExePath string
+
+	if len(downloadedFile.ISOItems) == 0 {
+		if downloadedFile.ExtractedGamePath == "" {
+			return fmt.Errorf("未找到解压路径")
+		}
+
+		var foundExePaths []string
+		err := filepath.Walk(downloadedFile.ExtractedGamePath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && filepath.Base(path) == exeFileName {
+				foundExePaths = append(foundExePaths, path)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("搜索文件失败: %v", err)
+		}
+
+		if len(foundExePaths) != 1 {
+			return fmt.Errorf("找到 %d 个匹配的执行文件，需要找到恰好1个", len(foundExePaths))
+		}
+
+		extractedExePath = foundExePaths[0]
+		sourcePath = filepath.Dir(extractedExePath)
+
+		for i := 0; i < layers; i++ {
+			sourcePath = filepath.Dir(sourcePath)
+			targetBasePath = filepath.Dir(targetBasePath)
+		}
+
+		applog.LogInfof(s.ctx, "覆盖目录: %s -> %s", sourcePath, targetBasePath)
+		return copyDirectory(sourcePath, targetBasePath)
+	} else if len(downloadedFile.ISOItems) == 1 {
+		isoPath := downloadedFile.ISOItems[0]
+
+		tmpDir, err := os.MkdirTemp("", "lunabox-overwrite-*")
+		if err != nil {
+			return fmt.Errorf("创建临时目录失败: %v", err)
+		}
+		defer os.RemoveAll(tmpDir)
+
+		applog.LogInfof(s.ctx, "解压ISO到临时目录: %s -> %s", isoPath, tmpDir)
+		if err := s.ExtractISO(isoPath, tmpDir); err != nil {
+			return fmt.Errorf("解压ISO失败: %v", err)
+		}
+
+		var foundExePaths []string
+		err = filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && filepath.Base(path) == exeFileName {
+				foundExePaths = append(foundExePaths, path)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("搜索文件失败: %v", err)
+		}
+
+		if len(foundExePaths) != 1 {
+			return fmt.Errorf("在镜像中找到 %d 个匹配的执行文件，需要找到恰好1个", len(foundExePaths))
+		}
+
+		extractedExePath = foundExePaths[0]
+		sourcePath = filepath.Dir(extractedExePath)
+
+		for i := 0; i < layers; i++ {
+			sourcePath = filepath.Dir(sourcePath)
+			targetBasePath = filepath.Dir(targetBasePath)
+		}
+
+		applog.LogInfof(s.ctx, "从临时目录覆盖: %s -> %s", sourcePath, targetBasePath)
+		return copyDirectory(sourcePath, targetBasePath)
+	} else {
+		return fmt.Errorf("包含多个镜像文件，无法自动覆盖安装")
+	}
+}
+
 // UpdateGameName 更新游戏名并保存到 download.klb
 func (s *DownloadedFilesService) UpdateGameName(itemPath, gameName string) error {
 	info := s.LoadDownloadInfo(itemPath)

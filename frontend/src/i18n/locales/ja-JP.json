@@ -1799,6 +1799,12 @@
       "game_name": "ゲーム名",
       "time": "時間"
     },
-    "forceComplete": "ダウンロード完了を強制"
+    "forceComplete": "ダウンロード完了を強制",
+    "overwrite": "上書きインストール",
+    "overwriteTitle": "上書きインストール",
+    "overwriteIsoMessage": "この項目にはISOファイルが含まれています。ISOが正しくマウントされていることを確認してください",
+    "overwriteLayers": "上書きフォルダ階層",
+    "confirmOverwrite": "上書きを確認",
+    "overwriteSuccess": "上書きインストール成功"
   }
 }

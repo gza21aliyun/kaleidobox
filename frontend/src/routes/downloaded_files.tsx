@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall } from "../../wailsjs/go/service/DownloadedFilesService";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
 import type { service, models } from "../../wailsjs/go/models";
@@ -47,6 +47,7 @@ export default function DownloadedFiles() {
   const [runGameModalItem, setRunGameModalItem] = useState<DownloadedFile | null>(null);
   const [runGameExecutables, setRunGameExecutables] = useState<string[]>([]);
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
+  const [overwriteLayers, setOverwriteLayers] = useState(1);
   const [importedGames, setImportedGames] = useState<models.Game[]>([]);
   const [gameEntity, setGameEntity] = useState<models.GameEntity | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -278,6 +279,43 @@ export default function DownloadedFiles() {
 
 
     // await loadItems();
+  };
+
+  const handleOverwrite = async (item: DownloadedFile) => {
+    setConfirmModalType("overwrite");
+    setConfirmModalItem(item);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmOverwrite = async () => {
+    if (!confirmModalItem) return;
+
+    setIsExecuting(true);
+    setCurrentExecutingName(confirmModalItem.name);
+    setShowConfirmModal(false);
+    setConfirmModalItem(null);
+
+    try {
+      if (!confirmModalItem.imported_id) {
+        throw new Error("未找到导入ID");
+      }
+      const games = await GetGamesByIdsStr(confirmModalItem.imported_id);
+      if (games.length === 0) {
+        throw new Error("未找到关联的游戏");
+      }
+      const exePath = games[0].path;
+      if (!exePath) {
+        throw new Error("游戏执行路径为空");
+      }
+      await OverwriteInstall(confirmModalItem as unknown as service.DownloadedFile, exePath, overwriteLayers);
+      toast.success(t('downloadedFiles.overwriteSuccess') || '覆盖安装成功');
+    } catch (err) {
+      console.error("Overwrite failed:", err);
+      setErrorMessage(err instanceof Error ? err.message : `覆盖安装失败${err}`);
+    } finally {
+      setIsExecuting(false);
+      setCurrentExecutingName("");
+    }
   };
 
   const handleImport = async (items: DownloadedFile[]) => {
@@ -1109,23 +1147,35 @@ export default function DownloadedFiles() {
                       )}
 
                       {item.is_imported && item.imported_id && (
-                        <button
-                          onClick={() => handleDeleteImported(item)}
-                          disabled={isExecuting}
-                          className="px-2 py-1 text-xs bg-red-400 hover:bg-red-500 text-white rounded disabled:opacity-50"
-                          title="删除导入"
-                        >
-                          删除导入
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleDeleteImported(item)}
+                            disabled={isExecuting}
+                            className="px-2 py-1 text-xs bg-red-400 hover:bg-red-500 text-white rounded disabled:opacity-50"
+                            title="删除导入"
+                          >
+                            删除导入
+                          </button>
+                          <button
+                            onClick={() => handleOverwrite(item)}
+                            disabled={isExecuting}
+                            className="px-2 py-1 text-xs bg-orange-500 hover:bg-orange-600 text-white rounded disabled:opacity-50"
+                            title={t("downloadedFiles.overwrite")}
+                          >
+                            {t("downloadedFiles.overwrite")}
+                          </button>
+                        </>
                       )}
 
-                      {/* 搜索按钮 */}
-                      <button
-                        onClick={() => handleOpenSearch(item)}
-                        className="px-2 py-1 text-xs bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 rounded"
-                      >
-                        {t("downloadedFiles.search")}
-                      </button>
+                      {/* 搜索按钮 - 已导入的单元隐藏 */}
+                      {!item.is_imported && (
+                        <button
+                          onClick={() => handleOpenSearch(item)}
+                          className="px-2 py-1 text-xs bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 rounded"
+                        >
+                          {t("downloadedFiles.search")}
+                        </button>
+                      )}
 
                       {/* 装载按钮 */}
                       {!item.is_downloading && canMount(item) && (
@@ -1184,6 +1234,8 @@ export default function DownloadedFiles() {
             <h3 className="text-lg font-semibold mb-4">
               {confirmModalType === "install_iso"
                 ? t("downloadedFiles.installIsoTitle")
+                : confirmModalType === "overwrite"
+                ? t("downloadedFiles.overwriteTitle")
                 : t("downloadedFiles.installTitle")}
             </h3>
             {confirmModalType === "install_iso" && (
@@ -1191,28 +1243,52 @@ export default function DownloadedFiles() {
                 {t("downloadedFiles.installIsoMessage")}
               </p>
             )}
-            <div className="space-y-3 mb-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="installMethod"
-                  value="name"
-                  checked={installMethod === "name"}
-                  onChange={(e) => setInstallMethod(e.target.value)}
-                />
-                {t("downloadedFiles.installByName")}
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="installMethod"
-                  value="md5"
-                  checked={installMethod === "md5"}
-                  onChange={(e) => setInstallMethod(e.target.value)}
-                />
-                {t("downloadedFiles.installByUuid")}
-              </label>
-            </div>
+            {confirmModalType === "overwrite" && (
+              <>
+                {confirmModalItem.iso_items && confirmModalItem.iso_items.length > 0 && (
+                  <p className="mb-4 text-orange-500">
+                    {t("downloadedFiles.overwriteIsoMessage")}
+                  </p>
+                )}
+                <div className="mb-4">
+                  <label className="block mb-2">
+                    {t("downloadedFiles.overwriteLayers")}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={overwriteLayers}
+                    onChange={(e) => setOverwriteLayers(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full px-3 py-2 border rounded"
+                  />
+                </div>
+              </>
+            )}
+            {confirmModalType !== "overwrite" && (
+              <div className="space-y-3 mb-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="installMethod"
+                    value="name"
+                    checked={installMethod === "name"}
+                    onChange={(e) => setInstallMethod(e.target.value)}
+                  />
+                  {t("downloadedFiles.installByName")}
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="installMethod"
+                    value="md5"
+                    checked={installMethod === "md5"}
+                    onChange={(e) => setInstallMethod(e.target.value)}
+                  />
+                  {t("downloadedFiles.installByUuid")}
+                </label>
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => {
@@ -1224,10 +1300,12 @@ export default function DownloadedFiles() {
                 {t("common.cancel")}
               </button>
               <button
-                onClick={handleConfirmInstall}
+                onClick={confirmModalType === "overwrite" ? handleConfirmOverwrite : handleConfirmInstall}
                 className="px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700"
               >
-                {t("downloadedFiles.confirmInstall")}
+                {confirmModalType === "overwrite"
+                  ? t("downloadedFiles.confirmOverwrite")
+                  : t("downloadedFiles.confirmInstall")}
               </button>
             </div>
           </div>

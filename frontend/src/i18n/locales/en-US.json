@@ -1836,6 +1836,12 @@
       "game_name": "Game Name",
       "time": "Time"
     },
-    "forceComplete": "Force Complete Download"
+    "forceComplete": "Force Complete Download",
+    "overwrite": "Overwrite Install",
+    "overwriteTitle": "Overwrite Install",
+    "overwriteIsoMessage": "This item contains ISO files, please ensure the ISO is properly mounted",
+    "overwriteLayers": "Overwrite Folder Layers",
+    "confirmOverwrite": "Confirm Overwrite",
+    "overwriteSuccess": "Overwrite Install Successful"
   }
 }

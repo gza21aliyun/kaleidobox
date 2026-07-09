@@ -179,10 +179,9 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
         console.log("importCandidates:", importCandidates)
 
         // var rs = await BatchImportGames(importCandidates)
-        BatchImportGamesSearch(importCandidates, isSearchFolder).then((res) => {          
-          resetAndClose()
-          console.log("res:", res)
-          onImportComplete(res.games, true)
+        BatchImportGamesSearch(importCandidates, isSearchFolder).then((res) => {    
+          console.log("res:", res);
+          onImportComplete(res.games, true);      
           if (res.games && res.games.length > 0 && selectedCategoryVo?.id) {
             AddGamesToCategories(res.games.map(g => g.id), [selectedCategoryVo.id])
               .then(() => {
@@ -195,6 +194,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
                 triggerCategoriesRefresh();
               })
           }
+          resetAndClose();
         
         })
       

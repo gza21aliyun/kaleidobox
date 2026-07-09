@@ -371,6 +371,7 @@ export default function DownloadedFiles() {
     for (const game of games) {
       const found = batchImportModalItems.find(i => game.path.includes(i.installed_path!))
       if (found) {
+        // toast.success('找到导入');
         found.imported_id = game.id;
         found.is_imported = true;
         await SaveImportedID(found.path, game.id);
@@ -380,6 +381,8 @@ export default function DownloadedFiles() {
             : i
         ));
         
+      } else {
+        toast.error('未找到导入' + game.path);
       }
     }
     if (showDownloadSave) {
@@ -1012,7 +1015,7 @@ export default function DownloadedFiles() {
                             </button>
                           )}
                         </>
-                      ) : item.is_extracted ? (
+                      ) : item.is_extracted && !item.is_installed ? (
                         <>
                           <button
                             disabled
@@ -1031,7 +1034,7 @@ export default function DownloadedFiles() {
                             </button> )}
                           
                         </>
-                      ) : (
+                      ) : !item.is_extracted ? (
                         <button
                           onClick={() => handleExtract(item)}
                           disabled={isExecuting}
@@ -1039,7 +1042,7 @@ export default function DownloadedFiles() {
                         >
                           {t("downloadedFiles.extract")}
                         </button>
-                      )}
+                      ) : (<></>)}
 
                       {/* 安装按钮 */}
                       {item.is_downloading ? (
@@ -1056,21 +1059,21 @@ export default function DownloadedFiles() {
                         >
                           {t("downloadedFiles.install")}
                         </button>
-                      ) : item.is_installed ? (
+                      ) : item.is_installed && !item.is_imported ? (
                         <button
                           disabled
                           className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
                         >
                           {t("downloadedFiles.installed")}
                         </button>
-                      ) : (
+                      ) : !item.is_installed ? (
                         <button
                           onClick={() => handleInstall(item)}
                           className="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded"
                         >
                           {t("downloadedFiles.install")}
                         </button>
-                      )}
+                      ) : (<></>)}
 
                       {/* 导入按钮 */}
                       {item.is_downloading ? (
@@ -1353,8 +1356,11 @@ export default function DownloadedFiles() {
             loadItems();
             if (games && games.length > 0) {
               handleBatchImportComplete(games);
-              setImportedGames(importedGames)
-              setIsBatchUpdateOpen(true);
+              if (isOpenUpdate) {
+                setImportedGames(importedGames)
+                setIsBatchUpdateOpen(true);
+              }
+              
             }
 
 

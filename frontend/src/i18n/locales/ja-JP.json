@@ -1776,6 +1776,28 @@
     "selectExecutable": "実行ファイルを選択",
     "noSevenZipPath": "7-Zip パスが設定されていません。解压機能を使用するには、設定で 7z.exe のパスを設定してください。",
     "delete": "削除",
-    "execute": "実行"
+    "execute": "実行",
+    "statusLabel": "ステータス：",
+    "typeLabel": "タイプ：",
+    "sortLabel": "並び替え：",
+    "status": {
+      "all": "すべて",
+      "downloaded": "ダウンロード済み",
+      "extracted": "展開済み",
+      "installed": "インストール済み",
+      "imported": "インポート済み"
+    },
+    "type": {
+      "all": "すべて",
+      "folder": "解凍不要",
+      "archive_folder": "アーカイブ含む",
+      "archive": "アーカイブ",
+      "installed_folder": "インストールフォルダ"
+    },
+    "sort": {
+      "name": "タイトル名",
+      "game_name": "ゲーム名",
+      "time": "時間"
+    }
   }
 }

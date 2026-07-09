@@ -1813,6 +1813,28 @@
     "runGame": "运行游戏",
     "selectExecutable": "选择要运行的可执行文件",
     "noSevenZipPath": "未配置7-Zip路径，请在设置中配置7z.exe路径以使用解压功能",
-    "no_need_extract": "不需解压"
+    "no_need_extract": "不需解压",
+    "statusLabel": "状态：",
+    "typeLabel": "类型：",
+    "sortLabel": "排序：",
+    "status": {
+      "all": "全部",
+      "downloaded": "已下载",
+      "extracted": "已解压",
+      "installed": "已安装",
+      "imported": "已导入"
+    },
+    "type": {
+      "all": "全部",
+      "folder": "不需解压",
+      "archive_folder": "含压缩包",
+      "archive": "压缩包",
+      "installed_folder": "安装文件夹"
+    },
+    "sort": {
+      "name": "标题名",
+      "game_name": "游戏名",
+      "time": "时间"
+    }
   }
 }

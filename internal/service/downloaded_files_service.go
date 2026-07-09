@@ -50,13 +50,14 @@ type DownloadedFile struct {
 	// IsFolder          bool     `json:"is_folder"`
 	Type int `json:"type"` // 0:是文件夹没任何压缩包不需解压; 1: 单元文件夹里包含一个或多个压缩包;
 	// 2: 游戏下载文件夹下单个压缩包或多了同名文件夹（解压后）结构; 3：单独安装文件夹内的游戏文件夹，下载文件夹里没关联上也非已导入
-	Size          int64  `json:"size"`
-	IsDownloading bool   `json:"is_downloading"` // 是否有未下载完的临时文件
-	IsExtracted   bool   `json:"is_extracted"`
-	IsInstalled   bool   `json:"is_installed"`
-	IsImported    bool   `json:"is_imported"`
-	ImportedId    string `json:"imported_id,omitempty"`
-	InstalledPath string `json:"installed_path,omitempty"`
+	Size          int64     `json:"size"`
+	IsDownloading bool      `json:"is_downloading"` // 是否有未下载完的临时文件
+	IsExtracted   bool      `json:"is_extracted"`
+	IsInstalled   bool      `json:"is_installed"`
+	IsImported    bool      `json:"is_imported"`
+	ImportedId    string    `json:"imported_id,omitempty"`
+	InstalledPath string    `json:"installed_path,omitempty"`
+	Time          time.Time `json:"time"`
 	// ContainsISO       bool     `json:"contains_iso"`
 	ISOItems []string `json:"iso_items"`
 	// ISOCount          int      `json:"iso_count"`
@@ -84,6 +85,24 @@ var imageExtensions = map[string]bool{
 	// ".img": true,
 	// ".bin": true,
 	// ".cue": true,
+}
+
+func (s *DownloadedFilesService) extractTimeFromName(name string, defaultTime time.Time) time.Time {
+	re := regexp.MustCompile(`\[(\d{6})\]`)
+
+	matches := re.FindStringSubmatch(name)
+	if len(matches) > 1 {
+		dateStr := matches[1]
+		if len(dateStr) == 6 {
+			year, err1 := strconv.Atoi("20" + dateStr[:2])
+			month, err2 := strconv.Atoi(dateStr[2:4])
+			day, err3 := strconv.Atoi(dateStr[4:6])
+			if err1 == nil && err2 == nil && err3 == nil {
+				return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.Local)
+			}
+		}
+	}
+	return defaultTime
 }
 
 func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error) {
@@ -120,7 +139,9 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 		if !isFolder && !isCompressed {
 			continue
 		}
-		item := s.CreateDownloadedFile(itemPath, name, isFolder, info.Size())
+		fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
+		fileTime := s.extractTimeFromName(fileNameWithoutExt, info.ModTime())
+		item := s.CreateDownloadedFile(itemPath, name, isFolder, info.Size(), fileTime)
 		if isFolder {
 			folderItems = append(folderItems, item)
 		} else {
@@ -213,7 +234,14 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 				}
 				if !s.checkPathImported(itemPath) {
 					base := filepath.Base(itemPath)
-					item := s.CreateDownloadedFile(itemPath, base, true, 0)
+					fileNameWithoutExt := strings.TrimSuffix(base, filepath.Ext(base))
+					info, _ := os.Stat(itemPath)
+					defaultTime := time.Time{}
+					if info != nil {
+						defaultTime = info.ModTime()
+					}
+					fileTime := s.extractTimeFromName(fileNameWithoutExt, defaultTime)
+					item := s.CreateDownloadedFile(itemPath, base, true, 0, fileTime)
 					item.Type = 3
 					item.IsExtracted = true
 					item.IsInstalled = true
@@ -239,7 +267,14 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
 	itemPath := file.Path
 	ext := filepath.Ext(itemPath)
 	path := strings.TrimSuffix(itemPath, ext)
-	archive := s.CreateDownloadedFile(path, filepath.Base(path), true, 0)
+	fileNameWithoutExt := strings.TrimSuffix(filepath.Base(path), filepath.Ext(filepath.Base(path)))
+	info, _ := os.Stat(path)
+	defaultTime := time.Time{}
+	if info != nil {
+		defaultTime = info.ModTime()
+	}
+	fileTime := s.extractTimeFromName(fileNameWithoutExt, defaultTime)
+	archive := s.CreateDownloadedFile(path, filepath.Base(path), true, 0, fileTime)
 	if file.Type == 2 {
 		if archive.InnerItems != nil && len(archive.InnerItems) > 0 {
 			archive.ExtractedGamePath = path
@@ -259,7 +294,7 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
  * itemPath 全路径
  * name 包括后缀的文件名或文件夹名
  */
-func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isFolder bool, size int64) DownloadedFile {
+func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isFolder bool, size int64, fileTime time.Time) DownloadedFile {
 	fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
 
 	// 读取 download.klb 获取保存的信息
@@ -316,6 +351,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		// IsFolder:          isFolder,
 		Type: 2,
 		Size: size,
+		Time: fileTime,
 		// IsDownloading:     s.checkIsDownloading(itemPath, name, itemType),
 		// IsExtracted:       s.checkIsExtracted(itemPath, name, itemType),
 		IsInstalled:    installedPath != "",
@@ -1254,8 +1290,9 @@ func (s *DownloadedFilesService) DeleteExtractedFolder(itemPath, name string, ex
 			}
 			result.HasArchive = true
 			info, _ := os.Stat(archivePath)
+			fileTime := s.extractTimeFromName(baseName, info.ModTime())
 			// 传入完整的压缩包文件名（带扩展名）
-			ai := s.CreateDownloadedFile(archivePath, baseName+ext, false, info.Size())
+			ai := s.CreateDownloadedFile(archivePath, baseName+ext, false, info.Size(), fileTime)
 			result.ArchiveItem = &ai
 			return result, nil
 		}

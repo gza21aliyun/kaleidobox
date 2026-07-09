@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
@@ -13,8 +13,10 @@ import toast from "react-hot-toast";
 import { useNavigate } from "@tanstack/react-router";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 import { ConfirmModal } from "../components/modal/ConfirmModal";
+import { BetterSelect } from "../components/ui/BetterSelect";
+import { parseTime } from "../utils/time";
 
-interface DownloadedFile extends service.DownloadedFile {
+type DownloadedFile = Omit<service.DownloadedFile, "convertValues"> & {
   selected: boolean;
 }
 
@@ -46,6 +48,12 @@ export default function DownloadedFiles() {
   const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
   const [importedGames, setImportedGames] = useState<models.Game[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortOrder, setSortOrder] = useState<string>("asc");
 
   const navigate = useNavigate();
   
@@ -130,7 +138,7 @@ export default function DownloadedFiles() {
         if (shouldInstall) {
           setCurrentExecutingName(item.name);
           try {
-            const installed_path = await InstallGame(item, md5AsFolder ? "md5" : "name");
+            const installed_path = await InstallGame(item as unknown as service.DownloadedFile, md5AsFolder ? "md5" : "name");
             item.installed_path = installed_path;
             item.is_installed = true;
           } catch (err) {
@@ -170,7 +178,7 @@ export default function DownloadedFiles() {
     try {
       if (item.type == 1) {
         await ExtractArchivesInFolder(item.path);
-        const extractedFolder = await RefreshDownloadedFile(item);
+        const extractedFolder = await RefreshDownloadedFile(item as unknown as service.DownloadedFile);
         setItems(items.map(i =>
           i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths, 
             iso_items: extractedFolder.iso_items, extracted_game_path: extractedFolder.extracted_game_path, inner_items: extractedFolder.inner_items } : i
@@ -182,7 +190,7 @@ export default function DownloadedFiles() {
         item.iso_items = extractedFolder.iso_items;
       } else {
         await ExtractItem(item.path);
-        const arc = await RefreshDownloadedFile(item);
+        const arc = await RefreshDownloadedFile(item as unknown as service.DownloadedFile);
         console.log("file extracted", arc);
         setItems(items.map(i =>
           i.id === item.id ? { ...i, is_extracted: true, inner_items: arc.inner_items, iso_items: arc.iso_items, path: arc.path,
@@ -248,7 +256,7 @@ export default function DownloadedFiles() {
     setConfirmModalItem(null);
 
     try {
-      const installedPath = await InstallGame(confirmModalItem, md5AsFolder ? "md5" : installMethod);
+      const installedPath = await InstallGame(confirmModalItem as unknown as service.DownloadedFile, md5AsFolder ? "md5" : installMethod);
       // 更新单元状态，包含安装路径
       setItems(items.map(i =>
         i.id === confirmModalItem.id 
@@ -512,7 +520,7 @@ export default function DownloadedFiles() {
     setIsExecuting(true);
     setCurrentExecutingName(item.name);
     try {
-      await DeleteInstalledGame(item);
+      await DeleteInstalledGame(item as unknown as service.DownloadedFile);
       // 删除成功后更新单元状态
       setItems(items.map(i =>
         i.id === item.id ? { ...i, is_installed: false, installed_path: "" } : i
@@ -568,6 +576,30 @@ export default function DownloadedFiles() {
     return item.iso_items.length === 1 && !item.is_installed;
   };
 
+  const filterItems = useMemo(() => { 
+    return items.filter(item => {
+                if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+                  return false;
+                }
+                if (statusFilter === "downloaded") {
+                  return !item.is_extracted && !item.is_installed && !item.is_imported;
+                }
+                if (statusFilter === "extracted") {
+                  return item.is_extracted && !item.is_installed && !item.is_imported;
+                }
+                if (statusFilter === "installed") {
+                  return item.is_installed && !item.is_imported;
+                }
+                if (statusFilter === "imported") {
+                  return item.is_imported;
+                }
+                if (typeFilter !== "all" && String(item.type) !== typeFilter) {
+                  return false;
+                }
+                return true;
+              })
+  }, [items, searchQuery, statusFilter, typeFilter]);
+
 
   return (
     <div className="p-6 h-full overflow-auto relative">
@@ -597,7 +629,7 @@ export default function DownloadedFiles() {
         {/* 页面标题 */}
         <div className="flex items-center mb-2">
           <h1 className="text-2xl font-bold text-brand-900 dark:text-white mr-2">
-            {t("nav.downloadedFiles")}
+            {t("nav.downloadedFiles")}({filterItems.length})
           </h1>
           <div className="flex items-center gap-1">
             <button
@@ -628,9 +660,65 @@ export default function DownloadedFiles() {
             根据下载游戏数据摆放方式主要分为文件夹不需解压、文件夹含压缩包、单独压缩包。<br/>
             第四类型为安装文件夹，只在安装文件夹找到，下载文件夹没关联上，通常是直接装载镜像用官方安装程序安装的时候出现，下载文件夹和安装文件夹会作为两条独立记录出现。这时候直接导入安装文件夹后删除下载文件夹即可。<br/>
             下载存档时会下载klb_savedata_xxx的文件到游戏安装目录。删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
-            这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。
+            这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。<br/>
+            装载的时候可能用到win官方或第三方的软件，暂无法完整跟踪全流程，请自己留意盘符变化和处理弹出。
           </p>
         )}
+
+        <div className="flex items-center justify-between mb-4">
+          <input
+            type="text"
+            placeholder={t("downloadedFiles.search")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="px-3 py-2 text-sm border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neutral-500 w-64"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-brand-500 dark:text-brand-400 whitespace-nowrap">{t("downloadedFiles.statusLabel")}</span>
+            <BetterSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: "all", label: t("downloadedFiles.status.all") },
+                { value: "downloaded", label: t("downloadedFiles.status.downloaded") },
+                { value: "extracted", label: t("downloadedFiles.status.extracted") },
+                { value: "installed", label: t("downloadedFiles.status.installed") },
+                { value: "imported", label: t("downloadedFiles.status.imported") },
+              ]}
+              className="min-w-[120px]"
+            />
+            <span className="text-sm text-brand-500 dark:text-brand-400 whitespace-nowrap">{t("downloadedFiles.typeLabel")}</span>
+            <BetterSelect
+              value={typeFilter}
+              onChange={setTypeFilter}
+              options={[
+                { value: "all", label: t("downloadedFiles.type.all") },
+                { value: "0", label: t("downloadedFiles.type.folder") },
+                { value: "1", label: t("downloadedFiles.type.archive_folder") },
+                { value: "2", label: t("downloadedFiles.type.archive") },
+                { value: "3", label: t("downloadedFiles.type.installed_folder") },
+              ]}
+              className="min-w-[150px]"
+            />
+            <span className="text-sm text-brand-500 dark:text-brand-400 whitespace-nowrap">{t("downloadedFiles.sortLabel")}</span>
+            <BetterSelect
+              value={sortBy}
+              onChange={setSortBy}
+              options={[
+                { value: "name", label: t("downloadedFiles.sort.name") },
+                { value: "game_name", label: t("downloadedFiles.sort.game_name") },
+                { value: "time", label: t("downloadedFiles.sort.time") },
+              ]}
+              className="min-w-[120px]"
+            />
+            <button
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              className="px-3 py-2 text-sm bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 rounded-md"
+            >
+              {sortOrder === "asc" ? "↑" : "↓"}
+            </button>
+          </div>
+        </div>
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -773,7 +861,19 @@ export default function DownloadedFiles() {
               {t("downloadedFiles.empty")}
             </div>
           ) : (
-            items.map(item => (
+            filterItems
+              .sort((a, b) => {
+                let comparison = 0;
+                if (sortBy === "name") {
+                  comparison = a.name.localeCompare(b.name);
+                } else if (sortBy === "game_name") {
+                  comparison = (a.game_name || "").localeCompare(b.game_name || "");
+                } else if (sortBy === "time") {
+                  comparison = parseTime(a.time).getTime() - parseTime(b.time).getTime();
+                }
+                return sortOrder === "asc" ? comparison : -comparison;
+              })
+              .map(item => (
               <div
                 key={item.id}
                 className={`p-4 border rounded-lg ${
@@ -830,7 +930,8 @@ export default function DownloadedFiles() {
                       <div className="flex items-center gap-3 text-xs text-brand-500">
                         <span>类型：{item.type == 1 ? '文件夹含压缩包' : item.type ==0 ? '文件夹无需解压' : item.type == 3 ? '安装文件夹' : '单独压缩包'}</span>
                         <span>{item.size == 0 ? '' : formatSize(item.size)}</span>
-                        <span>{!item.is_extracted ? "" : "镜像数目:" + item.iso_items.length}</span>
+                        {/* <span>{!item.is_extracted ? "" : "镜像数目:" + item.iso_items.length}</span> */}
+                        <span>{parseTime(item.time).toLocaleDateString()}</span>
                         {item.is_downloading && (
                           <span className="text-orange-500 flex items-center gap-1">
                             <div className="i-mdi-download animate-pulse" />

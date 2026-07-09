@@ -1811,6 +1811,28 @@
     "runGame": "Run game",
     "selectExecutable": "Select executable to run",
     "noSevenZipPath": "7-Zip path not configured. Please configure the 7z.exe path in settings to use the extract function.",
-    "delete": "Delete"
+    "delete": "Delete",
+    "statusLabel": "Status:",
+    "typeLabel": "Type:",
+    "sortLabel": "Sort:",
+    "status": {
+      "all": "All",
+      "downloaded": "Downloaded",
+      "extracted": "Extracted",
+      "installed": "Installed",
+      "imported": "Imported"
+    },
+    "type": {
+      "all": "All",
+      "folder": "No Extract",
+      "archive_folder": "Has Archive",
+      "archive": "Archive",
+      "installed_folder": "Installed Folder"
+    },
+    "sort": {
+      "name": "Name",
+      "game_name": "Game Name",
+      "time": "Time"
+    }
   }
 }

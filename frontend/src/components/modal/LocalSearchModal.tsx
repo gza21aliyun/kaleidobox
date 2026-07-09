@@ -18,7 +18,7 @@ interface LocalSearchModalProps {
   onClose: () => void;
 }
 
-export function LocalSearchModal({ itemName, onOpenInfo, onClose }: LocalSearchModalProps) {
+export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose }: LocalSearchModalProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(itemName);
   const { games, fetchGames, gamesLoading } = useAppStore();
@@ -205,6 +205,15 @@ export function LocalSearchModal({ itemName, onOpenInfo, onClose }: LocalSearchM
                     >
                       <div className="i-mdi-information-variant text-lg" />
                     </button>
+                    {onChoose && (
+                      <button
+                        onClick={()=>{onChoose(game); onClose();}}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-green-500/80 active:scale-95"
+                        title={t('common.associate') || '关联'}
+                      >
+                        <div className="i-mdi-link text-lg" />
+                      </button>
+                    )}
                   </>}
                 />
               ))}

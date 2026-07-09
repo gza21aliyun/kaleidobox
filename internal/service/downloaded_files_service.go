@@ -1324,6 +1324,20 @@ func (s *DownloadedFilesService) SaveImportedID(itemPath, importedID string) err
 	return s.SaveDownloadInfo(itemPath, *info)
 }
 
+// SaveDownloadedFileInfo 保存下载单元信息到 download.klb
+func (s *DownloadedFilesService) SaveDownloadedFileInfo(itemPath string, info DownloadedFile) error {
+	// 对于压缩包，使用同名的解压文件夹路径
+	baseName := filepath.Base(itemPath)
+	ext := filepath.Ext(baseName)
+	if ext != "" {
+		folderPath := strings.TrimSuffix(itemPath, ext)
+		if stat, err := os.Stat(folderPath); err == nil && stat.IsDir() {
+			itemPath = folderPath
+		}
+	}
+	return s.SaveDownloadInfo(itemPath, info)
+}
+
 // ScanFolderForExecutables 扫描文件夹查找可执行文件
 func (s *DownloadedFilesService) ScanFolderForExecutables(folderPath string) ([]string, error) {
 

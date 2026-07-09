@@ -31,6 +31,8 @@
     "characterImage": "Character image",
     "deleteSuccess": "Deletion successful",
     "deleteFailed": "Deletion failed",
+    "associate": "Associate",
+    "associateSuccess": "Association successful",
     "previous": "Previous",
     "next": "Next",
     "gameStats": "Game stats",

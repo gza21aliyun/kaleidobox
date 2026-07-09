@@ -31,6 +31,8 @@
     "characterImage": "角色图片",
     "deleteSuccess": "删除成功",
     "deleteFailed": "删除失败",
+    "associate": "关联",
+    "associateSuccess": "关联成功",
     "previous": "上一个",
     "next": "下一个",
     "gameStats": "游戏统计",

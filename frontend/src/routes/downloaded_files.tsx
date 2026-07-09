@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo } from "../../wailsjs/go/service/DownloadedFilesService";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
 import type { service, models } from "../../wailsjs/go/models";
@@ -1213,10 +1213,21 @@ export default function DownloadedFiles() {
       )}
 
       {/* 游戏搜索弹窗 */}
-      {searchModalItem && (
+      {searchModalItem && searchModalItem.is_extracted && (
         <LocalSearchModal
           itemName={searchModalItem.game_name}
           onOpenInfo={(ge)=> {setGameEntity(ge)}}
+          onChoose={(game) => {
+            const updatedItem = { ...searchModalItem, is_imported: true, imported_id: game.id, installed_path: game.path, is_installed: true };
+            setItems(prevItems => prevItems.map(i =>
+              i.id === searchModalItem.id ? updatedItem : i
+            ));
+            SaveDownloadedFileInfo(searchModalItem.path, updatedItem as unknown as service.DownloadedFile).catch(err => {
+              console.error("Failed to save downloaded file info:", err);
+            });
+            setSearchModalItem(null);
+            toast.success(t('common.associateSuccess') || '关联成功');
+          }}
           onClose={() => setSearchModalItem(null)}
         />
       )}

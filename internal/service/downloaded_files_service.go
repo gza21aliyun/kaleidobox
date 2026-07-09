@@ -979,6 +979,7 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 		if err != nil {
 			return fmt.Errorf("打开MDF文件失败: %v", err)
 		}
+		time.Sleep(5 * time.Second)
 
 	} else {
 		// 挂载ISO

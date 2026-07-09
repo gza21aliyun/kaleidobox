@@ -775,7 +775,7 @@ export default function DownloadedFiles() {
                       <span className="text-xs">游戏名：</span>
                       <input
                         type="text"
-                        disabled={item.type == 2 && !item.is_extracted}
+                        disabled={item.type == 2 && !item.is_extracted || item.is_downloading}
                         value={item.game_name || ""}
                         onChange={(e) => handleGameNameChange(item, e.target.value)}
                         className="flex-1 text-xs px-1 py-0.5 border border-brand-300 dark:border-brand-600 rounded bg-transparent dark:bg-brand-700 min-w-0"

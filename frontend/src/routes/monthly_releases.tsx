@@ -25,12 +25,31 @@ export const Route = createRoute({
 function MonthlyReleasesPage() {
   const { t } = useTranslation();
 
-  // 初始化年月为当前年月
+  // 初始化年月为当前年月，从 localStorage 读取保存的值
   const now = new Date();
-  const [year, setYear] = useState<number>(now.getFullYear());
-  const [month, setMonth] = useState<number>(now.getMonth() + 1);
+  const [year, setYear] = useState<number>(() => {
+    const saved = localStorage.getItem('monthlyReleases_year');
+    return saved ? Number(saved) : now.getFullYear();
+  });
+  const [month, setMonth] = useState<number>(() => {
+    const saved = localStorage.getItem('monthlyReleases_month');
+    return saved ? Number(saved) : now.getMonth() + 1;
+  });
 
-  const [age, setAge] = useState<string>("all");
+  const [age, setAge] = useState<string>(() => {
+    return localStorage.getItem('monthlyReleases_age') || "all";
+  });
+
+  // 保存到 localStorage
+  useEffect(() => {
+    localStorage.setItem('monthlyReleases_year', String(year));
+  }, [year]);
+  useEffect(() => {
+    localStorage.setItem('monthlyReleases_month', String(month));
+  }, [month]);
+  useEffect(() => {
+    localStorage.setItem('monthlyReleases_age', age);
+  }, [age]);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<utils.MonthlyReleaseResult | null>(null);
 

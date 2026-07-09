@@ -14,6 +14,10 @@ localStorage.removeItem('searchQuery');
 localStorage.removeItem('categoryListFilter');
 localStorage.removeItem('categoryListSortBy');
 localStorage.removeItem('categoryListSortOrder');
+// 清除游戏资源页面的筛选状态
+localStorage.removeItem('monthlyReleases_year');
+localStorage.removeItem('monthlyReleases_month');
+localStorage.removeItem('monthlyReleases_age');
 
 const container = document.getElementById("root");
 

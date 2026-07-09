@@ -30,6 +30,7 @@ export default function DownloadedFiles() {
   const [showOverrideSave, setShowOverrideSave] = useState(false);
   const [md5AsFolder, setMd5AsFolder] = useState(false);
   const [directIsoInstall, setDirectIsoInstall] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalType, setConfirmModalType] = useState<string>("");
   const [confirmModalItem, setConfirmModalItem] = useState<DownloadedFile | null>(null);
@@ -594,18 +595,42 @@ export default function DownloadedFiles() {
 
       <div className="flex flex-col h-full">
         {/* 页面标题 */}
-        <h1 className="text-2xl font-bold text-brand-900 dark:text-white mb-2">
-          {t("nav.downloadedFiles")}
-        </h1>
+        <div className="flex items-center mb-2">
+          <h1 className="text-2xl font-bold text-brand-900 dark:text-white mr-2">
+            {t("nav.downloadedFiles")}
+          </h1>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300"
+              title={showHelp ? "收起说明" : "使用说明"}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300"
+              title={showHelp ? "收起说明" : "展开说明"}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showHelp ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+              </svg>
+            </button>
+          </div>
+        </div>
 
         {/* 提示信息 */}
-        <p className="text-sm text-brand-500 dark:text-brand-400 mb-4">
-          本页面目的是快速批量处理已下载的游戏。<br/>
-          根据下载游戏数据摆放方式主要分为文件夹不需解压、文件夹含压缩包、单独压缩包。<br/>
-          第四类型为安装文件夹，只在安装文件夹找到，下载文件夹没关联上，通常是直接装载镜像用官方安装程序安装的时候出现，下载文件夹和安装文件夹会作为两条独立记录出现。这时候直接导入安装文件夹后删除下载文件夹即可。<br/>
-          下载存档时会下载klb_savedata_xxx的文件到游戏安装目录。删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
-          这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。
-        </p>
+        {showHelp && (
+          <p className="text-sm text-brand-500 dark:text-brand-400 mb-4">
+            本页面目的是快速批量处理已下载的游戏。<br/>
+            根据下载游戏数据摆放方式主要分为文件夹不需解压、文件夹含压缩包、单独压缩包。<br/>
+            第四类型为安装文件夹，只在安装文件夹找到，下载文件夹没关联上，通常是直接装载镜像用官方安装程序安装的时候出现，下载文件夹和安装文件夹会作为两条独立记录出现。这时候直接导入安装文件夹后删除下载文件夹即可。<br/>
+            下载存档时会下载klb_savedata_xxx的文件到游戏安装目录。删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
+            这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。
+          </p>
+        )}
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

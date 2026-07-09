@@ -563,7 +563,7 @@ export default function DownloadedFiles() {
     }
   }
 
-  
+
   const handleForceCompleteDownload = async (item: DownloadedFile) => {
     const updatedItem = { ...item, is_downloading: false };
     setItems(prevItems => prevItems.map(i =>
@@ -1240,7 +1240,8 @@ export default function DownloadedFiles() {
           itemName={searchModalItem.game_name}
           onOpenInfo={(ge)=> {setGameEntity(ge)}}
           onChoose={(game) => {
-            const updatedItem = { ...searchModalItem, is_imported: true, imported_id: game.id, installed_path: game.path, is_installed: true };
+            const installedPath = game.path.replace(/[/\\][^/\\]+$/, '');
+            const updatedItem = { ...searchModalItem, is_imported: true, imported_id: game.id, installedPath, is_installed: true };
             setItems(prevItems => prevItems.map(i =>
               i.id === searchModalItem.id ? updatedItem : i
             ));

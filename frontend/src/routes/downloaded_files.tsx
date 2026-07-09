@@ -582,7 +582,7 @@ export default function DownloadedFiles() {
                   return false;
                 }
                 if (statusFilter === "downloaded") {
-                  return !item.is_extracted && !item.is_installed && !item.is_imported;
+                  return !item.is_extracted && !item.is_downloading;
                 }
                 if (statusFilter === "extracted") {
                   return item.is_extracted && !item.is_installed && !item.is_imported;
@@ -1134,7 +1134,7 @@ export default function DownloadedFiles() {
                         {item.iso_items.map((iso_path, idx) => (
                           <button 
                             key={idx} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-700 rounded"
-                            title={`装载${iso_path.split("\\").pop()}`}
+                            title={`装载${iso_path}`}
                             onClick={() => handleDirectMount(iso_path)}
                             disabled={item.is_installed}
                           >

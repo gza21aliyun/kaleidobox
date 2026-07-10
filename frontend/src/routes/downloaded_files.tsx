@@ -183,7 +183,7 @@ export default function DownloadedFiles() {
         await ExtractArchivesInFolder(item.path);
         const extractedFolder = await RefreshDownloadedFile(item as unknown as service.DownloadedFile);
         setItems(items.map(i =>
-          i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths, 
+          i.id === item.id ? { ...i, status: 2, extracted_paths: extractedFolder.extracted_paths, 
             iso_items: extractedFolder.iso_items, extracted_game_path: extractedFolder.extracted_game_path, inner_items: extractedFolder.inner_items } : i
         ));
         item.status = 2;
@@ -196,7 +196,7 @@ export default function DownloadedFiles() {
         const arc = await RefreshDownloadedFile(item as unknown as service.DownloadedFile);
         console.log("file extracted", arc);
         setItems(items.map(i =>
-          i.id === item.id ? { ...i, is_extracted: true, inner_items: arc.inner_items, iso_items: arc.iso_items, path: arc.path,
+          i.id === item.id ? { ...i, status: 2, inner_items: arc.inner_items, iso_items: arc.iso_items, path: arc.path,
             extracted_game_path: arc.extracted_game_path, extracted_paths: arc.extracted_paths } : i
         ));
         item.path = arc.path;
@@ -263,7 +263,7 @@ export default function DownloadedFiles() {
       // 更新单元状态，包含安装路径
       setItems(items.map(i =>
         i.id === confirmModalItem.id 
-          ? { ...i, is_installed: true, installed_path: installedPath } 
+          ? { ...i, status: 3, installed_path: installedPath } 
           : i
       ));
       confirmModalItem.installed_path = installedPath;
@@ -377,7 +377,7 @@ export default function DownloadedFiles() {
         await SaveImportedID(found.path, game.id);
         setItems(items.map(i =>
           i.id === found.id 
-            ? { ...i, imported_id: game.id, is_imported: true } 
+            ? { ...i, imported_id: game.id, status: 4 } 
             : i
         ));
         
@@ -389,7 +389,16 @@ export default function DownloadedFiles() {
       await DownloadSaves(games, showOverrideSave);
     }
     await fetchGames();
-    await loadItems();
+    if (games.length != 1 || batchImportModalItems.length != 1) {
+      await loadItems();
+    } else {
+      const item = await RefreshDownloadedFile(batchImportModalItems[0] as unknown as service.DownloadedFile)
+      setItems(items.map(i =>
+        i.id === item.id 
+          ? { ...i, imported_id: item.imported_id, status: item.status } 
+          : i
+      ));
+    }
     
     setBatchImportModalItems([]);
     setBatchImportCandidates([]);
@@ -537,7 +546,7 @@ export default function DownloadedFiles() {
                 extracted_game_path: "",
                 extracted_paths: [],
                 is_folder: false,
-                is_extracted: false,
+                status: 1,
                 size: archiveItem.size,
                 inner_items: archiveItem.inner_items,
                 iso_items: archiveItem.iso_items,
@@ -549,7 +558,7 @@ export default function DownloadedFiles() {
       } else {
         // 没有同名压缩包，只更新状态
         setItems(items.map(i =>
-          i.id === item.id ? { ...i, is_extracted: false, extracted_game_path: "", extracted_paths: [] } : i
+          i.id === item.id ? { ...i, status: 1, extracted_game_path: "", extracted_paths: [] } : i
         ));
       }
     } catch (err) {
@@ -566,7 +575,7 @@ export default function DownloadedFiles() {
       await DeleteInstalledGame(item as unknown as service.DownloadedFile);
       // 删除成功后更新单元状态
       setItems(items.map(i =>
-        i.id === item.id ? { ...i, is_installed: false, installed_path: "" } : i
+        i.id === item.id ? { ...i, status: 2, installed_path: "" } : i
       ));
     } catch (err) {
       console.error("Delete installed game failed:", err);
@@ -598,7 +607,12 @@ export default function DownloadedFiles() {
     // setConfirmModalItem(item)
     try {
       await DeleteGame(item.imported_id || '');
-      await loadItems();
+      // await loadItems();
+      const game = await RefreshDownloadedFile(item as unknown as service.DownloadedFile)
+      setItems(items.map(i =>
+        i.id === item.id ? { ...i, ...game } : i
+      ));
+
     } catch (err) {
       console.error("Delete failed:", err);
     }
@@ -606,7 +620,7 @@ export default function DownloadedFiles() {
 
 
   const handleForceCompleteDownload = async (item: DownloadedFile) => {
-    const updatedItem = { ...item, is_downloading: false };
+    const updatedItem = { ...item, status: 1 };
     setItems(prevItems => prevItems.map(i =>
       i.id === item.id ? updatedItem : i
     ));
@@ -1324,7 +1338,7 @@ export default function DownloadedFiles() {
           status={searchModalItem.status}
           onChoose={(game) => {
             const installedPath = game.path.replace(/[/\\][^/\\]+$/, '');
-            const updatedItem = { ...searchModalItem, is_imported: true, imported_id: game.id, installedPath, is_installed: true };
+            const updatedItem = { ...searchModalItem, status: 4, imported_id: game.id, installed_path: installedPath };
             setItems(prevItems => prevItems.map(i =>
               i.id === searchModalItem.id ? updatedItem : i
             ));
@@ -1355,7 +1369,7 @@ export default function DownloadedFiles() {
           }}
           onImportComplete={(games, isOpenUpdate) => {
             // 导入完成后刷新
-            loadItems();
+            // loadItems();
             if (games && games.length > 0) {
               handleBatchImportComplete(games);
               if (isOpenUpdate) {

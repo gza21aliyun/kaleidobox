@@ -178,6 +178,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 
 		// 检查是否有同名压缩包
 		if _, exists := archiveBaseNames[baseName]; exists {
+			// fmt.Printf("status ？ 01,name: %s, status:%d\n", folder.Name, folder.Status)
 			// 存在同名压缩包
 			folder.Type = 2
 			if s.checkIsDownloading(folder.Path, 2, savedInfo) {
@@ -187,6 +188,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 					folder.Status = 1
 				}
 				if s.checkIsExtracted(folder.Path, folder.BaseName, 2) && folder.Status < 2 {
+					// fmt.Printf("status 2 02,name: %s, status:%d\n", folder.Name, folder.Status)
 					folder.Status = 2
 				}
 			}
@@ -209,18 +211,21 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 						folder.Status = 1
 					}
 					if s.checkIsExtracted(folder.Path, folder.BaseName, 2) && folder.Status < 2 {
+						// fmt.Printf("status 2 01,name: %s, \n", folder.Name)
+
 						folder.Status = 2
 					}
 				}
 			} else {
 				folder.Type = 0
 				folder.Status = 2
+				// fmt.Printf("status 2 03,name: %s, \n", folder.Name)
 			}
 		}
 
 		if folder.Status >= 2 {
 			extractedGamePath, extractedPaths := s.getExtractedPaths(folder.Path, folder.BaseName, folder.Type)
-			fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
+			// fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
 			folder.ExtractedGamePath = extractedGamePath
 			folder.ExtractedPaths = extractedPaths
 		}
@@ -244,6 +249,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 				}
 				if s.checkIsExtracted(archive.Path, archive.BaseName, 2) && archive.Status < 2 {
 					archive.Status = 2
+					// fmt.Printf("status 2 04,name: %s, \n", archive.Name)
 				}
 			}
 			items = append(items, *archive)
@@ -260,7 +266,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 				isInDownloadFolder := utils.Contains(items, func(d DownloadedFile) bool {
 					return d.InstalledPath == itemPath
 				})
-				fmt.Printf("ListDown1 itemPath: %s, isInDownloadFolder: %v\n", itemPath, isInDownloadFolder)
+				// fmt.Printf("ListDown1 itemPath: %s, isInDownloadFolder: %v\n", itemPath, isInDownloadFolder)
 				if isInDownloadFolder {
 					continue
 				}
@@ -340,12 +346,14 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 	status := 0
 
 	if savedInfo != nil && savedInfo.ImportedId != "" {
+		status = savedInfo.Status
 		// 检查导入ID是否在数据库中真的存在
 		if !s.checkImportedIDInDB(savedInfo.ImportedId) && isFolder {
 			// 数据库中不存在，清空保存的导入信息
 			savedInfo.ImportedId = ""
 			if savedInfo.Status > 3 {
 				savedInfo.Status = 3
+				// fmt.Printf("status 3 01,name: %s, status:%d\n", name, savedInfo.Status)
 				status = 3
 			}
 			savedInfo.IsChanged = true
@@ -363,7 +371,9 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 
 	// 检查安装路径是否准确
 	installedPath := ""
+	// fmt.Printf("status 3 -2,name: %s, status:%d\n", name, status)
 	if savedInfo != nil && savedInfo.InstalledPath != "" {
+		status = savedInfo.Status
 		// 检查保存的安装路径是否真的存在
 		if _, err := os.Stat(savedInfo.InstalledPath); err == nil {
 			installedPath = savedInfo.InstalledPath
@@ -372,19 +382,41 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 			installedPath = s.checkAndGetInstalledPath(itemPath, savedInfo)
 			// 更新保存的安装路径
 			savedInfo.InstalledPath = installedPath
-			if installedPath != "" {
-				if savedInfo.Status < 3 {
-					savedInfo.Status = 3
-					status = 3
-				}
-			} else if savedInfo.Status > 2 {
-				savedInfo.Status = 2
-				status = 2
+
+			savedInfo.IsChanged = true
+		}
+		// fmt.Printf("status 3 -4,name: %s, status:%d, savedStatus:%d, installedPath:%s\n", name, status, savedInfo.Status, installedPath)
+		if installedPath != "" {
+			if savedInfo.Status < 3 {
+				savedInfo.Status = 3
+
+				// fmt.Printf("status 3 01,name: %s, status:%d\n", name, savedInfo.Status)
+				status = 3
+				savedInfo.IsChanged = true
 			}
+		} else if savedInfo.Status > 2 {
+			savedInfo.Status = 2
+			// fmt.Printf("status 2 05,name: %s, \n", savedInfo.Name)
+			status = 2
 			savedInfo.IsChanged = true
 		}
 	} else {
 		installedPath = s.checkAndGetInstalledPath(itemPath, savedInfo)
+		// fmt.Printf("status 3 -1,name: %s, status:%d, installedPath: %s\n", name, status, installedPath)
+		if installedPath != "" {
+			if status < 3 {
+				status = 3
+
+				// fmt.Printf("status 3 02,name: %s, status:%d\n", name, status)
+			}
+		} else if status > 2 {
+			status = 2
+		}
+		if savedInfo != nil {
+			savedInfo.IsChanged = true
+			savedInfo.Status = status
+			savedInfo.InstalledPath = installedPath
+		}
 	}
 	if savedInfo != nil && savedInfo.IsChanged && isFolder && shouldSave {
 		s.SaveDownloadInfo(itemPath, *savedInfo)

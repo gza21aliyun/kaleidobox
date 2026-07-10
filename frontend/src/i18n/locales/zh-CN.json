@@ -1844,6 +1844,12 @@
     "overwriteIsoMessage": "此单元包含镜像文件，请确保已正确装载镜像",
     "overwriteLayers": "覆盖文件夹层数",
     "confirmOverwrite": "确认覆盖",
-    "overwriteSuccess": "覆盖安装成功"
+    "overwriteSuccess": "覆盖安装成功",
+    "executing": "执行中...",
+    "executingTask": "任务",
+    "taskExtract": "解压",
+    "taskInstall": "安装",
+    "taskImport": "导入",
+    "taskDelete": "删除"
   }
 }

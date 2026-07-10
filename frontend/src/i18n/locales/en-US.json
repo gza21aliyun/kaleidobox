@@ -1842,6 +1842,12 @@
     "overwriteIsoMessage": "This item contains ISO files, please ensure the ISO is properly mounted",
     "overwriteLayers": "Overwrite Folder Layers",
     "confirmOverwrite": "Confirm Overwrite",
-    "overwriteSuccess": "Overwrite Install Successful"
+    "overwriteSuccess": "Overwrite Install Successful",
+    "executing": "Executing...",
+    "executingTask": "Task",
+    "taskExtract": "Extract",
+    "taskInstall": "Install",
+    "taskImport": "Import",
+    "taskDelete": "Delete"
   }
 }

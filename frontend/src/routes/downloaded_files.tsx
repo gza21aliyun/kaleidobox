@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
@@ -42,6 +42,9 @@ export default function DownloadedFiles() {
   const [searchModalItem, setSearchModalItem] = useState<DownloadedFile | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentExecutingName, setCurrentExecutingName] = useState("");
+  const [currentExecutingTask, setCurrentExecutingTask] = useState("");
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const listContainerRef = useRef<HTMLDivElement>(null);
   const [batchImportModalItems, setBatchImportModalItems] = useState<DownloadedFile[]>([]);
   const [batchImportCandidates, setBatchImportCandidates] = useState<vo.BatchImportCandidate[]>([]);
   const [runGameModalItem, setRunGameModalItem] = useState<DownloadedFile | null>(null);
@@ -75,6 +78,9 @@ export default function DownloadedFiles() {
   }, [config, t]);
 
   const loadItems = async () => {
+    if (listContainerRef.current) {
+      setScrollPosition(listContainerRef.current.scrollTop);
+    }
     setIsLoading(true);
     try {
       const result = await ListDownloadedFiles();
@@ -90,6 +96,12 @@ export default function DownloadedFiles() {
   useEffect(() => {
     loadItems();
   }, []);
+
+  useEffect(() => {
+    if (!isLoading && listContainerRef.current) {
+      listContainerRef.current.scrollTop = scrollPosition;
+    }
+  }, [items, isLoading, scrollPosition]);
 
   const handleSelectAll = () => {
     if (selectedItems.length === items.length) {
@@ -130,8 +142,10 @@ export default function DownloadedFiles() {
 
         // 解压步骤
         if (showExtract && item.status == 1) {
+          setCurrentExecutingTask(t("downloadedFiles.taskExtract"));
           setCurrentExecutingName(item.name);
           await handleExtract(item);
+          toast.success("解压完成status：" + item.status)
         }
         
         // 安装步骤：需要已解压，且如果镜像文件直接安装开关关闭，则有iso的单元不执行安装
@@ -139,6 +153,8 @@ export default function DownloadedFiles() {
         const shouldInstall = showInstall && item.status == 2 && item.extracted_game_path && (directIsoInstall || !hasIso);
         
         if (shouldInstall) {
+          setIsExecuting(true);
+          setCurrentExecutingTask(t("downloadedFiles.taskInstall"));
           setCurrentExecutingName(item.name);
           try {
             const installed_path = await InstallGame(item as unknown as service.DownloadedFile, md5AsFolder ? "md5" : "name");
@@ -162,6 +178,7 @@ export default function DownloadedFiles() {
         
       }
       if (showImport && itemsToImport.length > 0) {
+        setCurrentExecutingTask(t("downloadedFiles.taskImport"));
         await handleImport(itemsToImport);
       }
       if (showDownloadSave && itemsImported.length > 0) {
@@ -172,10 +189,12 @@ export default function DownloadedFiles() {
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
+      setCurrentExecutingTask("");
     }
   };
 
   const handleExtract = async (item: DownloadedFile) => {
+    setCurrentExecutingTask(t("downloadedFiles.taskExtract"));
     setCurrentExecutingName(item.name);
     setIsExecuting(true);
     try {
@@ -213,6 +232,7 @@ export default function DownloadedFiles() {
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
+      setCurrentExecutingTask("");
     }
   };
 
@@ -253,6 +273,7 @@ export default function DownloadedFiles() {
 
     // 立即显示执行中动画
     setIsExecuting(true);
+    setCurrentExecutingTask(t("downloadedFiles.taskInstall"));
     setCurrentExecutingName(confirmModalItem.name);
     // 关闭确认弹窗
     setShowConfirmModal(false);
@@ -275,6 +296,7 @@ export default function DownloadedFiles() {
       // 隐藏执行中动画
       setIsExecuting(false);
       setCurrentExecutingName("");
+      setCurrentExecutingTask("");
     }
 
 
@@ -291,6 +313,7 @@ export default function DownloadedFiles() {
     if (!confirmModalItem) return;
 
     setIsExecuting(true);
+    setCurrentExecutingTask(t("downloadedFiles.taskInstall"));
     setCurrentExecutingName(confirmModalItem.name);
     setShowConfirmModal(false);
     setConfirmModalItem(null);
@@ -315,6 +338,7 @@ export default function DownloadedFiles() {
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
+      setCurrentExecutingTask("");
     }
   };
 
@@ -518,6 +542,7 @@ export default function DownloadedFiles() {
       return;
     }
     setIsExecuting(true);
+    setCurrentExecutingTask(t("downloadedFiles.taskDelete"));
     setCurrentExecutingName(item.name);
     try {
       await DeleteItem(item.path);
@@ -525,12 +550,16 @@ export default function DownloadedFiles() {
     } catch (err) {
       console.error("Delete failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "删除失败");
+    } finally {
+      setIsExecuting(false);
+      setCurrentExecutingName("");
+      setCurrentExecutingTask("");
     }
-    setIsExecuting(false);
   };
 
   const handleDeleteExtracted = async (item: DownloadedFile) => {
     setIsExecuting(true);
+    setCurrentExecutingTask(t("downloadedFiles.taskDelete"));
     setCurrentExecutingName(item.name);
     try {
       const result = await DeleteExtractedFolder(item.path, item.base_name || '', item.extracted_paths || []);
@@ -564,12 +593,16 @@ export default function DownloadedFiles() {
     } catch (err) {
       console.error("Delete extracted folder failed:", err);
       setErrorMessage(err instanceof Error ? err.message : `删除解压文件夹失败:${err}`);
+    } finally {
+      setIsExecuting(false);
+      setCurrentExecutingName("");
+      setCurrentExecutingTask("");
     }
-    setIsExecuting(false);
   };
 
   const handleDeleteInstalled = async (item: DownloadedFile) => {
     setIsExecuting(true);
+    setCurrentExecutingTask(t("downloadedFiles.taskDelete"));
     setCurrentExecutingName(item.name);
     try {
       await DeleteInstalledGame(item as unknown as service.DownloadedFile);
@@ -580,8 +613,11 @@ export default function DownloadedFiles() {
     } catch (err) {
       console.error("Delete installed game failed:", err);
       setErrorMessage(err instanceof Error ? err.message : "删除安装失败");
+    } finally {
+      setIsExecuting(false);
+      setCurrentExecutingName("");
+      setCurrentExecutingTask("");
     }
-    setIsExecuting(false);
   };
 
 
@@ -678,6 +714,9 @@ export default function DownloadedFiles() {
           <div className="flex flex-col items-center gap-3 px-6 py-4">
             <div className="animate-spin rounded-full h-10 w-10 border-4 border-white/30 border-t-white"></div>
             <span className="text-base text-white/90 font-medium">{t("downloadedFiles.executing")}</span>
+            {currentExecutingTask && (
+              <span className="text-sm text-white/70">{t("downloadedFiles.executingTask")}: {currentExecutingTask}</span>
+            )}
             {currentExecutingName && (
               <span className="text-sm text-white/70 max-w-md text-center break-all" title={currentExecutingName}>
                 {currentExecutingName}
@@ -920,7 +959,7 @@ export default function DownloadedFiles() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto space-y-2">
+        <div className="flex-1 overflow-auto space-y-2" ref={listContainerRef}>
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>

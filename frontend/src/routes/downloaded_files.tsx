@@ -129,21 +129,21 @@ export default function DownloadedFiles() {
         if (!item) continue;
 
         // 解压步骤
-        if (showExtract && !item.is_extracted) {
+        if (showExtract && item.status == 1) {
           setCurrentExecutingName(item.name);
           await handleExtract(item);
         }
         
         // 安装步骤：需要已解压，且如果镜像文件直接安装开关关闭，则有iso的单元不执行安装
         const hasIso = item.iso_items && item.iso_items.length > 0;
-        const shouldInstall = showInstall && !item.is_installed && item.is_extracted && item.extracted_game_path && (directIsoInstall || !hasIso);
+        const shouldInstall = showInstall && item.status == 2 && item.extracted_game_path && (directIsoInstall || !hasIso);
         
         if (shouldInstall) {
           setCurrentExecutingName(item.name);
           try {
             const installed_path = await InstallGame(item as unknown as service.DownloadedFile, md5AsFolder ? "md5" : "name");
             item.installed_path = installed_path;
-            item.is_installed = true;
+            item.status = 3;
           } catch (err) {
             console.error("Install failed:", err);
             setErrorMessage(err instanceof Error ? err.message : "安装失败");
@@ -151,11 +151,11 @@ export default function DownloadedFiles() {
         }
         
         // 导入步骤：需要已安装
-        const shouldImport = showImport && !item.is_imported && item.is_installed;
+        const shouldImport = showImport && item.status == 3;
         if (shouldImport) {
           itemsToImport.push(item);
         }
-        if (item.is_imported && item.imported_id) {
+        if (item.status == 4 && item.imported_id) {
           itemsImported.push(item);
         }
         
@@ -186,7 +186,7 @@ export default function DownloadedFiles() {
           i.id === item.id ? { ...i, is_extracted: true, extracted_paths: extractedFolder.extracted_paths, 
             iso_items: extractedFolder.iso_items, extracted_game_path: extractedFolder.extracted_game_path, inner_items: extractedFolder.inner_items } : i
         ));
-        item.is_extracted = true;
+        item.status = 2;
         item.extracted_paths = extractedFolder.extracted_paths;
         item.extracted_game_path = extractedFolder.extracted_game_path;
         item.inner_items = extractedFolder.inner_items;
@@ -200,7 +200,7 @@ export default function DownloadedFiles() {
             extracted_game_path: arc.extracted_game_path, extracted_paths: arc.extracted_paths } : i
         ));
         item.path = arc.path;
-        item.is_extracted = true;
+        item.status = 2;
         item.inner_items = arc.inner_items;
         item.iso_items = arc.iso_items;
         item.extracted_game_path = arc.extracted_game_path;
@@ -267,7 +267,7 @@ export default function DownloadedFiles() {
           : i
       ));
       confirmModalItem.installed_path = installedPath;
-      confirmModalItem.is_installed = true;
+      confirmModalItem.status = 3;
     } catch (err) {
       console.error("Install failed:", err);
       setErrorMessage(err instanceof Error ? err.message : `安装失败${err}`);
@@ -373,7 +373,7 @@ export default function DownloadedFiles() {
       if (found) {
         // toast.success('找到导入');
         found.imported_id = game.id;
-        found.is_imported = true;
+        found.status = 4;
         await SaveImportedID(found.path, game.id);
         setItems(items.map(i =>
           i.id === found.id 
@@ -624,11 +624,11 @@ export default function DownloadedFiles() {
   };
 
   const canInstall = (item: DownloadedFile) => {
-    return item.is_extracted && item.iso_items.length <= 1;
+    return item.status == 2 && item.iso_items.length <= 1;
   };
 
   const canMount = (item: DownloadedFile) => {
-    return item.iso_items.length === 1 && !item.is_installed;
+    return item.iso_items.length === 1 && item.status == 2;
   };
 
   const filterItems = useMemo(() => { 
@@ -637,16 +637,16 @@ export default function DownloadedFiles() {
                   return false;
                 }
                 if (statusFilter === "downloaded") {
-                  return !item.is_extracted && !item.is_downloading;
+                  return item.status === 1;
                 }
                 if (statusFilter === "extracted") {
-                  return item.is_extracted && !item.is_installed && !item.is_imported;
+                  return item.status === 2;
                 }
                 if (statusFilter === "installed") {
-                  return item.is_installed && !item.is_imported;
+                  return item.status === 3;
                 }
                 if (statusFilter === "imported") {
-                  return item.is_imported;
+                  return item.status === 4;
                 }
                 if (typeFilter !== "all" && String(item.type) !== typeFilter) {
                   return false;
@@ -955,7 +955,7 @@ export default function DownloadedFiles() {
                       <span className="text-xs">游戏名：</span>
                       <input
                         type="text"
-                        disabled={item.type == 2 && !item.is_extracted || item.is_downloading}
+                        disabled={item.type == 2 && item.status < 2 || item.status < 1}
                         value={item.game_name || ""}
                         onChange={(e) => handleGameNameChange(item, e.target.value)}
                         className="flex-1 text-xs px-1 py-0.5 border border-brand-300 dark:border-brand-600 rounded bg-transparent dark:bg-brand-700 min-w-0"
@@ -987,7 +987,7 @@ export default function DownloadedFiles() {
                         <span>{item.size == 0 ? '' : formatSize(item.size)}</span>
                         {/* <span>{!item.is_extracted ? "" : "镜像数目:" + item.iso_items.length}</span> */}
                         <span>{parseTime(item.time).toLocaleDateString()}</span>
-                        {item.is_downloading && (
+                        {item.status == 0 && (
                           <span className="text-orange-500 flex items-center gap-1">
                             <div className="i-mdi-download animate-pulse" />
                             {t("downloadedFiles.downloading")}
@@ -998,7 +998,7 @@ export default function DownloadedFiles() {
                       {/* 按钮栏 */}
                       <div className="flex gap-1 flex-wrap">
                       {/* 解压按钮 */}
-                      {item.is_downloading ? (
+                      {item.status == 0 ? (
                         <>
                           <button
                             disabled
@@ -1015,7 +1015,7 @@ export default function DownloadedFiles() {
                             </button>
                           )}
                         </>
-                      ) : item.is_extracted && !item.is_installed ? (
+                      ) : item.status == 2 ? (
                         <>
                           <button
                             disabled
@@ -1023,7 +1023,7 @@ export default function DownloadedFiles() {
                           >
                             {t("downloadedFiles.extracted")}
                           </button>
-                          {item.type != 0 && !item.is_installed && (
+                          {item.type != 0 && (
                             <button
                               onClick={() => handleDeleteExtracted(item)}
                               disabled={isExecuting}
@@ -1034,7 +1034,7 @@ export default function DownloadedFiles() {
                             </button> )}
                           
                         </>
-                      ) : !item.is_extracted ? (
+                      ) : item.status == 1 ? (
                         <button
                           onClick={() => handleExtract(item)}
                           disabled={isExecuting}
@@ -1045,7 +1045,7 @@ export default function DownloadedFiles() {
                       ) : (<></>)}
 
                       {/* 安装按钮 */}
-                      {item.is_downloading ? (
+                      {item.status == 0 ? (
                         <button
                           disabled
                           className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
@@ -1059,14 +1059,14 @@ export default function DownloadedFiles() {
                         >
                           {t("downloadedFiles.install")}
                         </button>
-                      ) : item.is_installed && !item.is_imported ? (
+                      ) : item.status == 3 ? (
                         <button
                           disabled
                           className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
                         >
                           {t("downloadedFiles.installed")}
                         </button>
-                      ) : !item.is_installed ? (
+                      ) : item.status == 2 ? (
                         <button
                           onClick={() => handleInstall(item)}
                           className="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded"
@@ -1076,21 +1076,21 @@ export default function DownloadedFiles() {
                       ) : (<></>)}
 
                       {/* 导入按钮 */}
-                      {item.is_downloading ? (
+                      {item.status == 0 ? (
                         <button
                           disabled
                           className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
                         >
                           {t("downloadedFiles.import")}
                         </button>
-                      ) : item.is_imported ? (
+                      ) : item.status == 4 ? (
                         <button
                           disabled
                           className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
                         >
                           {t("downloadedFiles.imported")}
                         </button>
-                      ) : !item.is_installed ? (
+                      ) : item.status < 3 ? (
                         <button
                           disabled
                           className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
@@ -1107,7 +1107,7 @@ export default function DownloadedFiles() {
                       )}
 
                       {/* 打开游戏按钮 - 只有导入后显示 */}
-                      {item.is_imported && item.imported_id && (
+                      {item.status == 4 && item.imported_id && (
                         <button
                           onClick={() => handleOpenGame(item)}
                           className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
@@ -1117,7 +1117,7 @@ export default function DownloadedFiles() {
                       )}
 
                       {/* 运行游戏按钮 */}
-                      {item.is_installed && (
+                      {item.status >= 3 && (
                         <button
                           onClick={() => handleRunGame(item)}
                           className="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded"
@@ -1138,7 +1138,7 @@ export default function DownloadedFiles() {
                       
 
                       {/* 删除安装按钮 */}
-                      {item.is_installed && (item.type != 3 && !item.is_imported) && (
+                      {item.status == 3 && item.type != 3 && (
                         <button
                           onClick={() => handleDeleteInstalled(item)}
                           disabled={isExecuting}
@@ -1149,7 +1149,7 @@ export default function DownloadedFiles() {
                         </button>
                       )}
 
-                      {item.is_imported && item.imported_id && (
+                      {item.status == 4 && item.imported_id && (
                         <>
                           <button
                             onClick={() => handleDeleteImported(item)}
@@ -1171,7 +1171,7 @@ export default function DownloadedFiles() {
                       )}
 
                       {/* 搜索按钮 - 已导入的单元隐藏 */}
-                      {!item.is_imported && (
+                      {item.status < 4 && (
                         <button
                           onClick={() => handleOpenSearch(item)}
                           className="px-2 py-1 text-xs bg-brand-100 hover:bg-brand-200 dark:bg-brand-700 dark:hover:bg-brand-600 text-brand-700 dark:text-brand-300 rounded"
@@ -1181,7 +1181,7 @@ export default function DownloadedFiles() {
                       )}
 
                       {/* 装载按钮 */}
-                      {!item.is_downloading && canMount(item) && (
+                      {canMount(item) && (
                         <button
                           onClick={() => handleMount(item)}
                           className="px-2 py-1 text-xs bg-orange-500 hover:bg-orange-600 text-white rounded"
@@ -1213,7 +1213,7 @@ export default function DownloadedFiles() {
                             key={idx} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-700 rounded"
                             title={`装载${iso_path}`}
                             onClick={() => handleDirectMount(iso_path)}
-                            disabled={item.is_installed}
+                            disabled={item.status >= 3}
                           >
                             {iso_path.split("\\").pop()}
                           </button>
@@ -1316,10 +1316,12 @@ export default function DownloadedFiles() {
       )}
 
       {/* 游戏搜索弹窗 */}
-      {searchModalItem && searchModalItem.is_extracted && (
+      {searchModalItem && (
         <LocalSearchModal
           itemName={searchModalItem.game_name}
           onOpenInfo={(ge)=> {setGameEntity(ge)}}
+          type={searchModalItem.type}
+          status={searchModalItem.status}
           onChoose={(game) => {
             const installedPath = game.path.replace(/[/\\][^/\\]+$/, '');
             const updatedItem = { ...searchModalItem, is_imported: true, imported_id: game.id, installedPath, is_installed: true };

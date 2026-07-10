@@ -15,10 +15,12 @@ interface LocalSearchModalProps {
   itemName: string;
   onOpenInfo: (game: models.GameEntity) => void;
   onChoose?: (game: models.Game) => void;
+  type?: number;
+  status?: number;
   onClose: () => void;
 }
 
-export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose }: LocalSearchModalProps) {
+export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type, status }: LocalSearchModalProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(itemName);
   const { games, fetchGames, gamesLoading } = useAppStore();
@@ -205,7 +207,7 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose }: Lo
                     >
                       <div className="i-mdi-information-variant text-lg" />
                     </button>
-                    {onChoose && (
+                    {onChoose && type && type != 3 && status && status < 4 && status > 1 && (
                       <button
                         onClick={()=>{onChoose(game); onClose();}}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-green-500/80 active:scale-95"

@@ -50,11 +50,11 @@ type DownloadedFile struct {
 	// IsFolder          bool     `json:"is_folder"`
 	Type int `json:"type"` // 0:是文件夹没任何压缩包不需解压; 1: 单元文件夹里包含一个或多个压缩包;
 	// 2: 游戏下载文件夹下单个压缩包或多了同名文件夹（解压后）结构; 3：单独安装文件夹内的游戏文件夹，下载文件夹里没关联上也非已导入
-	Size          int64     `json:"size"`
-	IsDownloading bool      `json:"is_downloading"` // 是否有未下载完的临时文件
-	IsExtracted   bool      `json:"is_extracted"`
-	IsInstalled   bool      `json:"is_installed"`
-	IsImported    bool      `json:"is_imported"`
+	Size int64 `json:"size"`
+	// IsDownloading bool      `json:"is_downloading"` // 是否有未下载完的临时文件
+	// IsExtracted   bool      `json:"is_extracted"`
+	// IsInstalled   bool      `json:"is_installed"`
+	// IsImported    bool      `json:"is_imported"`
 	ImportedId    string    `json:"imported_id,omitempty"`
 	InstalledPath string    `json:"installed_path,omitempty"`
 	Time          time.Time `json:"time"`
@@ -65,6 +65,8 @@ type DownloadedFile struct {
 	InnerItems     []string `json:"inner_items"`
 	HasNumericName bool     `json:"has_numeric_name"`
 	GameName       string   `json:"game_name"` //从单元标题再继续去除描述性前缀和后缀
+	Status         int      `json:"status"`    //0:下载中、1:已下载、2:已解压、3:已安装 4:已导入
+	IsChanged      bool     `json:"is_changed"`
 }
 
 var compressedExtensions = map[string]bool{
@@ -120,8 +122,10 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 	}
 
 	var items []DownloadedFile
-	var folderItems []DownloadedFile
-	var archiveItems []DownloadedFile
+	// var folderItems []DownloadedFile
+	var folderItems2 map[*DownloadedFile]*DownloadedFile = make(map[*DownloadedFile]*DownloadedFile)
+	// var archiveItems []DownloadedFile
+	var archiveItems2 map[*DownloadedFile]*DownloadedFile = make(map[*DownloadedFile]*DownloadedFile)
 
 	// 第一遍：收集所有条目，分离文件夹和压缩包
 	for _, entry := range entries {
@@ -141,40 +145,51 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 		}
 		fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
 		fileTime := s.extractTimeFromName(fileNameWithoutExt, info.ModTime())
-		item := s.CreateDownloadedFile(itemPath, name, isFolder, info.Size(), fileTime)
+		item, savedInfo := s.CreateDownloadedFile(itemPath, name, isFolder, info.Size(), fileTime, false)
 		if isFolder {
-			folderItems = append(folderItems, item)
+			// folderItems = append(folderItems, item)
+			folderItems2[&item] = savedInfo
 		} else {
-			archiveItems = append(archiveItems, item)
+			// archiveItems = append(archiveItems, item)
+			archiveItems2[&item] = savedInfo
 		}
 	}
 
 	// 建立文件夹名称的集合
 	folderNames := make(map[string]bool)
-	for _, folder := range folderItems {
+	for folder, _ := range folderItems2 {
 		folderNames[folder.BaseName] = true
 	}
 
 	// 建立压缩包的基础名称映射
 	archiveBaseNames := make(map[string]DownloadedFile)
-	for _, archive := range archiveItems {
+	for archive, _ := range archiveItems2 {
 		baseName := strings.TrimSuffix(filepath.Base(archive.Path), filepath.Ext(archive.Path))
-		archiveBaseNames[baseName] = archive
+		archiveBaseNames[baseName] = *archive
 	}
 
 	// 记录哪些压缩包已经被显示（因为对应的文件夹有内容）
 	displayedArchives := make(map[string]bool)
 
 	// 合并逻辑：文件夹有内容时显示文件夹，没有内容但有同名压缩包时显示压缩包
-	for _, folder := range folderItems {
+	for folder, savedInfo := range folderItems2 {
 		baseName := strings.TrimSuffix(filepath.Base(folder.Path), filepath.Ext(folder.Path))
+		// savedInfo := s.LoadDownloadInfo(folder.Path)
 
 		// 检查是否有同名压缩包
 		if _, exists := archiveBaseNames[baseName]; exists {
 			// 存在同名压缩包
 			folder.Type = 2
-			folder.IsDownloading = s.checkIsDownloading(folder.Path, 2)
-			folder.IsExtracted = s.checkIsExtracted(folder.Path, folder.BaseName, 2)
+			if s.checkIsDownloading(folder.Path, 2, savedInfo) {
+				folder.Status = 0
+			} else {
+				if folder.Status < 1 {
+					folder.Status = 1
+				}
+				if s.checkIsExtracted(folder.Path, folder.BaseName, 2) && folder.Status < 2 {
+					folder.Status = 2
+				}
+			}
 
 			// 如果文件夹没有内容，不显示文件夹，后续会显示压缩包
 		} else {
@@ -187,34 +202,51 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 				// 文件夹有内容，显示文件夹，标记为已解压
 				// type=1: 文件夹包含多个压缩包
 				folder.Type = 1
-				folder.IsDownloading = s.checkIsDownloading(folder.Path, 1)
-				folder.IsExtracted = s.checkIsExtracted(folder.Path, folder.BaseName, 1)
+				if s.checkIsDownloading(folder.Path, 2, savedInfo) {
+					folder.Status = 0
+				} else {
+					if folder.Status < 1 {
+						folder.Status = 1
+					}
+					if s.checkIsExtracted(folder.Path, folder.BaseName, 2) && folder.Status < 2 {
+						folder.Status = 2
+					}
+				}
 			} else {
 				folder.Type = 0
-				folder.IsDownloading = s.checkIsDownloading(folder.Path, 0)
-				folder.IsExtracted = true
+				folder.Status = 2
 			}
-
 		}
-		if folder.IsExtracted {
+
+		if folder.Status >= 2 {
 			extractedGamePath, extractedPaths := s.getExtractedPaths(folder.Path, folder.BaseName, folder.Type)
 			fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
 			folder.ExtractedGamePath = extractedGamePath
 			folder.ExtractedPaths = extractedPaths
 		}
+		s.SaveDownloadInfo(folder.Path, *folder)
 
-		items = append(items, folder)
+		items = append(items, *folder)
 		displayedArchives[baseName] = true
 	}
 
 	// 添加没有被显示的压缩包
-	for _, archive := range archiveItems {
+	for archive, savedInfo := range archiveItems2 {
 		baseName := strings.TrimSuffix(archive.BaseName, filepath.Ext(archive.BaseName))
+		// savedInfo := s.LoadDownloadInfo(archive.Path)
 		if !displayedArchives[baseName] {
 			archive.Type = 2
-			archive.IsDownloading = s.checkIsDownloading(archive.Path, 2)
-			archive.IsExtracted = s.checkIsExtracted(archive.Path, archive.BaseName, 2)
-			items = append(items, archive)
+			if s.checkIsDownloading(archive.Path, 2, savedInfo) {
+				archive.Status = 0
+			} else {
+				if archive.Status < 1 {
+					archive.Status = 1
+				}
+				if s.checkIsExtracted(archive.Path, archive.BaseName, 2) && archive.Status < 2 {
+					archive.Status = 2
+				}
+			}
+			items = append(items, *archive)
 		}
 	}
 
@@ -241,10 +273,9 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 						defaultTime = info.ModTime()
 					}
 					fileTime := s.extractTimeFromName(fileNameWithoutExt, defaultTime)
-					item := s.CreateDownloadedFile(itemPath, base, true, 0, fileTime)
+					item, _ := s.CreateDownloadedFile(itemPath, base, true, 0, fileTime, true)
 					item.Type = 3
-					item.IsExtracted = true
-					item.IsInstalled = true
+					item.Status = 3
 					item.InstalledPath = itemPath
 					items = append(items, item)
 				}
@@ -274,7 +305,7 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
 		defaultTime = info.ModTime()
 	}
 	fileTime := s.extractTimeFromName(fileNameWithoutExt, defaultTime)
-	archive := s.CreateDownloadedFile(path, filepath.Base(path), true, 0, fileTime)
+	archive, _ := s.CreateDownloadedFile(path, filepath.Base(path), true, 0, fileTime, true)
 	if file.Type == 2 {
 		if archive.InnerItems != nil && len(archive.InnerItems) > 0 {
 			archive.ExtractedGamePath = path
@@ -291,10 +322,11 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
 }
 
 /**
+ * 创建下载文件对象
  * itemPath 全路径
  * name 包括后缀的文件名或文件夹名
  */
-func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isFolder bool, size int64, fileTime time.Time) DownloadedFile {
+func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isFolder bool, size int64, fileTime time.Time, shouldSave bool) (DownloadedFile, *DownloadedFile) {
 	fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
 
 	// 读取 download.klb 获取保存的信息
@@ -302,21 +334,29 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 
 	// 检测已导入的ID（优先从保存的信息读取）
 	importedID := ""
-	isChanged := false
+	if savedInfo != nil {
+		savedInfo.IsChanged = false
+	}
+	status := 0
+
 	if savedInfo != nil && savedInfo.ImportedId != "" {
 		// 检查导入ID是否在数据库中真的存在
 		if !s.checkImportedIDInDB(savedInfo.ImportedId) && isFolder {
 			// 数据库中不存在，清空保存的导入信息
 			savedInfo.ImportedId = ""
-			savedInfo.IsImported = false
-			isChanged = true
+			if savedInfo.Status > 3 {
+				savedInfo.Status = 3
+				status = 3
+			}
+			savedInfo.IsChanged = true
 		} else {
 			importedID = savedInfo.ImportedId
+			status = 4
 		}
 	}
 
 	// 使用保存的游戏名（如果有）
-	gameName := s.ExtractGameNameFromDLSite(fileNameWithoutExt)
+	gameName := s.ExtractGameName(fileNameWithoutExt)
 	if savedInfo != nil && savedInfo.GameName != "" {
 		gameName = savedInfo.GameName
 	}
@@ -329,16 +369,24 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 			installedPath = savedInfo.InstalledPath
 		} else {
 			// 路径不存在，使用原来的逻辑重新获取
-			installedPath = s.checkAndGetInstalledPath(itemPath)
+			installedPath = s.checkAndGetInstalledPath(itemPath, savedInfo)
 			// 更新保存的安装路径
 			savedInfo.InstalledPath = installedPath
-			savedInfo.IsInstalled = installedPath != ""
-			isChanged = true
+			if installedPath != "" {
+				if savedInfo.Status < 3 {
+					savedInfo.Status = 3
+					status = 3
+				}
+			} else if savedInfo.Status > 2 {
+				savedInfo.Status = 2
+				status = 2
+			}
+			savedInfo.IsChanged = true
 		}
 	} else {
-		installedPath = s.checkAndGetInstalledPath(itemPath)
+		installedPath = s.checkAndGetInstalledPath(itemPath, savedInfo)
 	}
-	if isChanged && isFolder {
+	if savedInfo != nil && savedInfo.IsChanged && isFolder && shouldSave {
 		s.SaveDownloadInfo(itemPath, *savedInfo)
 	}
 
@@ -354,8 +402,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		Time: fileTime,
 		// IsDownloading:     s.checkIsDownloading(itemPath, name, itemType),
 		// IsExtracted:       s.checkIsExtracted(itemPath, name, itemType),
-		IsInstalled:    installedPath != "",
-		IsImported:     importedID != "",
+		Status:         status,
 		ImportedId:     importedID,
 		InstalledPath:  installedPath,
 		HasNumericName: s.isNumericName(name),
@@ -367,7 +414,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		// fmt.Printf("InnerItems,name: %s, path:%s, count:%v\n", item.Name, item.Path, innerItems)
 		if item.HasNumericName {
 			item.Name = s.JudgeGameName(innerItems)
-			item.GameName = s.ExtractGameNameFromDLSite(item.Name)
+			item.GameName = s.ExtractGameName(item.Name)
 			fmt.Printf("GameName: %s changed from %s\n", item.GameName, item.Name)
 		}
 		// isoCount, isoPath, innerItems := s.countISOFiles(itemPath)
@@ -388,7 +435,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		item.Type = 2
 
 	}
-	return item
+	return item, savedInfo
 }
 
 func (s *DownloadedFilesService) DownloadSaves(games []models.Game, isOverride bool) error {
@@ -547,10 +594,10 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 	return extractedPaths[0], extractedPaths
 }
 
-func (s *DownloadedFilesService) checkIsInstalled(itemPath string) bool {
-	installedPath := s.checkAndGetInstalledPath(itemPath)
-	return installedPath != ""
-}
+// func (s *DownloadedFilesService) checkIsInstalled(itemPath string) bool {
+// 	installedPath := s.checkAndGetInstalledPath(itemPath)
+// 	return installedPath != ""
+// }
 
 const downloadInfoFileName = "download.klb"
 
@@ -579,9 +626,9 @@ func (s *DownloadedFilesService) LoadDownloadInfo(itemPath string) *DownloadedFi
 }
 
 // checkAndGetInstalledPath 检查是否已安装并返回安装路径
-func (s *DownloadedFilesService) checkAndGetInstalledPath(itemPath string) string {
+func (s *DownloadedFilesService) checkAndGetInstalledPath(itemPath string, info *DownloadedFile) string {
 	// 优先从 download.klb 读取安装路径
-	info := s.LoadDownloadInfo(itemPath)
+	// info := s.LoadDownloadInfo(itemPath)
 	if info != nil && info.InstalledPath != "" {
 		if _, err := os.Stat(info.InstalledPath); err == nil {
 			return info.InstalledPath
@@ -595,7 +642,7 @@ func (s *DownloadedFilesService) checkAndGetInstalledPath(itemPath string) strin
 
 	// 获取原始文件夹名作为游戏名
 	baseName := filepath.Base(itemPath)
-	gameName := s.ExtractGameNameFromDLSite(baseName)
+	gameName := s.ExtractGameName(baseName)
 
 	// 检查以游戏名命名的文件夹
 	gameNamePath := filepath.Join(installFolder, gameName)
@@ -658,9 +705,9 @@ func (s *DownloadedFilesService) checkPathImported(path string) bool {
 }
 
 // checkIsDownloading 检查是否有未下载完的临时文件（QBittorrent 的 .!qB 文件，uTorrent 的 .!ut 文件）
-func (s *DownloadedFilesService) checkIsDownloading(itemPath string, itemType int) bool {
-	savedInfo := s.LoadDownloadInfo(itemPath)
-	if savedInfo != nil && !savedInfo.IsDownloading {
+func (s *DownloadedFilesService) checkIsDownloading(itemPath string, itemType int, savedInfo *DownloadedFile) bool {
+	// savedInfo := s.LoadDownloadInfo(itemPath)
+	if savedInfo != nil && savedInfo.Status > 0 {
 		return false
 	}
 
@@ -1070,7 +1117,7 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 	baseName := filepath.Base(itemPath)
 
 	// 使用 ExtractGameNameFromDLSite 提取游戏名
-	extractedGameName := s.ExtractGameNameFromDLSite(baseName)
+	extractedGameName := s.ExtractGameName(baseName)
 
 	if installMethod == "md5" {
 		gameName = s.getGameNameMD5(extractedGameName)
@@ -1155,7 +1202,9 @@ func (s *DownloadedFilesService) saveInstallInfo(itemPath, installedPath string)
 		info = &DownloadedFile{}
 	}
 	info.InstalledPath = installedPath
-	info.IsInstalled = true
+	if info.Status < 3 {
+		info.Status = 3
+	}
 	s.SaveDownloadInfo(itemPath, *info)
 }
 
@@ -1270,7 +1319,7 @@ func (s *DownloadedFilesService) DeleteInstalledGame(downloadedFile DownloadedFi
 	if gameName == "" {
 		// 兼容旧数据，作为后备方案
 		baseName := filepath.Base(downloadedFile.Path)
-		gameName = s.ExtractGameNameFromDLSite(baseName)
+		gameName = s.ExtractGameName(baseName)
 	}
 
 	// 检查以游戏名命名的文件夹
@@ -1386,7 +1435,7 @@ func (s *DownloadedFilesService) DeleteExtractedFolder(itemPath, name string, ex
 			info, _ := os.Stat(archivePath)
 			fileTime := s.extractTimeFromName(baseName, info.ModTime())
 			// 传入完整的压缩包文件名（带扩展名）
-			ai := s.CreateDownloadedFile(archivePath, baseName+ext, false, info.Size(), fileTime)
+			ai, _ := s.CreateDownloadedFile(archivePath, baseName+ext, false, info.Size(), fileTime, true)
 			result.ArchiveItem = &ai
 			return result, nil
 		}
@@ -1414,7 +1463,9 @@ func (s *DownloadedFilesService) SaveImportedID(itemPath, importedID string) err
 		info = &DownloadedFile{}
 	}
 	info.ImportedId = importedID
-	info.IsImported = true
+	if info.Status < 4 {
+		info.Status = 4
+	}
 	return s.SaveDownloadInfo(itemPath, *info)
 }
 
@@ -1498,7 +1549,7 @@ func copyDirectory(src, dst string) error {
 // ExtractGameNameFromDLSite 从 DLSite 风格的文件名中提取游戏名称
 // 例如: "[260529][1358608][Whirlpool] Relirium -レリリウム- 遗迹と出逢いと冒険と メモリアル特装版 パッケージ版 (mdf+mds)"
 // 返回: "Relirium -レリリウム- 遗迹と出逢いと冒険と メモリアル特装版 パッケージ版"
-func (s *DownloadedFilesService) ExtractGameNameFromDLSite(filename string) string {
+func (s *DownloadedFilesService) ExtractGameName(filename string) string {
 	// DLSite 格式: (类型) [日期][编号][作者] 游戏名 (文件类型)
 	// 或: [日期][编号][作者] 游戏名 (文件类型)
 	// 或: [日期][编号][作者] 游戏名 + 附加内容

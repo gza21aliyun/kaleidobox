@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
 import { FetchMonthlyReleases, ClearGetchuTempImages, FetchGetchuGameDetail } from "../../wailsjs/go/service/MonthlyReleaseService";
 import { SearchBT, DownloadToQBittorrent } from "../../wailsjs/go/service/BTDownloadService";
-import { utils, models } from "../../wailsjs/go/models";
+import { ListDownloadedFiles } from "../../wailsjs/go/service/DownloadedFilesService";
+import { utils, models, service } from "../../wailsjs/go/models";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
 import { BetterSelect } from "../components/ui/BetterSelect";
@@ -65,6 +66,13 @@ function MonthlyReleasesPage() {
   const [localSearchModalOpen, setLocalSearchModalOpen] = useState(false);
   const [localSearchGame, setLocalSearchGame] = useState<utils.MonthlyReleaseGame | null>(null);
   const [gameEntity, setGameEntity] = useState<models.GameEntity | null>(null);
+
+  // 搜索下载文件夹弹窗状态
+  const [downloadSearchModalOpen, setDownloadSearchModalOpen] = useState(false);
+  const [downloadSearchGame, setDownloadSearchGame] = useState<utils.MonthlyReleaseGame | null>(null);
+  const [downloadSearchQuery, setDownloadSearchQuery] = useState("");
+  const [downloadSearchResults, setDownloadSearchResults] = useState<service.DownloadedFile[]>([]);
+  const [isDownloadSearching, setIsDownloadSearching] = useState(false);
 
   // 详情弹窗状态
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -139,6 +147,58 @@ function MonthlyReleasesPage() {
   const closeLocalSearchModal = () => {
     setLocalSearchModalOpen(false);
     setLocalSearchGame(null);
+  };
+
+  // 打开搜索下载文件夹弹窗
+  const openDownloadSearchModal = (game: utils.MonthlyReleaseGame) => {
+    setDownloadSearchGame(game);
+    setDownloadSearchQuery(game.name || "");
+    setDownloadSearchResults([]);
+    setDownloadSearchModalOpen(true);
+  };
+
+  // 关闭搜索下载文件夹弹窗
+  const closeDownloadSearchModal = () => {
+    setDownloadSearchModalOpen(false);
+    setDownloadSearchGame(null);
+    setDownloadSearchQuery("");
+    setDownloadSearchResults([]);
+  };
+
+  // 搜索下载文件夹 - 按标题（提取主标题）
+  const downloadSearchByTitle = async () => {
+    if (!downloadSearchGame?.name) return;
+    const name = downloadSearchGame.name || "";
+    const parts = name.split(/[－\-~～　＝ ・！：─―_!「\[\]]/);
+    const title = parts[0]?.trim() || name;
+    setDownloadSearchQuery(title);
+    await performDownloadSearch(title);
+  };
+
+  // 搜索下载文件夹 - 按全名
+  const downloadSearchByFullName = async () => {
+    if (!downloadSearchGame?.name) return;
+    const fullName = downloadSearchGame.name || "";
+    setDownloadSearchQuery(fullName);
+    await performDownloadSearch(fullName);
+  };
+
+  // 执行搜索下载文件夹
+  const performDownloadSearch = async (query: string) => {
+    if (!query.trim()) return;
+    setIsDownloadSearching(true);
+    try {
+      const files = await ListDownloadedFiles();
+      const results = files.filter(file => 
+        file.name.toLowerCase().includes(query.toLowerCase())
+      );
+      setDownloadSearchResults(results);
+    } catch (error) {
+      console.error("Failed to search downloaded files:", error);
+      toast.error("搜索下载文件夹失败");
+    } finally {
+      setIsDownloadSearching(false);
+    }
   };
 
   // 关闭搜索弹窗
@@ -373,6 +433,7 @@ function MonthlyReleasesPage() {
                 onBrowse={browseGame}
                 onSearch={openSearchModal}
                 onSearchLocal={openLocalSearchModal}
+                onSearchDownload={openDownloadSearchModal}
                 onViewDetail={openDetailModal}
               />
             ))}
@@ -406,6 +467,73 @@ function MonthlyReleasesPage() {
         />
       )}
 
+      {/* 搜索下载文件夹弹窗 */}
+      {downloadSearchModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-brand-800 rounded-lg p-6 w-96 max-h-[80vh] flex flex-col">
+            <h3 className="text-lg font-semibold mb-4">搜索下载文件夹</h3>
+            <input
+              type="text"
+              value={downloadSearchQuery}
+              onChange={(e) => setDownloadSearchQuery(e.target.value)}
+              placeholder="输入搜索关键词..."
+              className="flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-transparent dark:bg-brand-700 mb-3"
+            />
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={downloadSearchByTitle}
+                disabled={isDownloadSearching || !downloadSearchGame?.name}
+                className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md disabled:opacity-50"
+              >
+                搜索标题
+              </button>
+              <button
+                onClick={downloadSearchByFullName}
+                disabled={isDownloadSearching || !downloadSearchGame?.name}
+                className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md disabled:opacity-50"
+              >
+                搜索全名
+              </button>
+              <button
+                onClick={() => performDownloadSearch(downloadSearchQuery)}
+                disabled={isDownloadSearching || !downloadSearchQuery.trim()}
+                className="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md disabled:opacity-50"
+              >
+                搜索
+              </button>
+            </div>
+            {isDownloadSearching && (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-brand-600 border-t-transparent"></div>
+              </div>
+            )}
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {downloadSearchResults.map((file, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-brand-100 dark:bg-brand-700 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 cursor-pointer"
+                >
+                  <div className="font-medium text-sm" title={file.name}>{file.name}</div>
+                  <div className="text-xs text-brand-500" title={file.path}>{file.path}</div>
+                  <div className="text-xs mt-1">
+                    状态: {file.status == 0 ? '下载中' : file.status == 1 ? '已下载' : file.status == 2 ? '已解压' : file.status == 3 ? '已安装' : '已导入'}
+                  </div>
+                </div>
+              ))}
+              {!isDownloadSearching && downloadSearchResults.length === 0 && (
+                <div className="text-center text-gray-500 py-4">暂无搜索结果</div>
+              )}
+            </div>
+            <button
+              onClick={closeDownloadSearchModal}
+              className="mt-4 w-full px-4 py-2 bg-brand-200 dark:bg-brand-700 rounded-md hover:bg-brand-300 dark:hover:bg-brand-600"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      )}
+
       {gameEntity && (
         <GameInfoModal
           gameEntity={gameEntity}
@@ -431,14 +559,15 @@ interface GameItemProps {
   onBrowse: (game: utils.MonthlyReleaseGame) => void;
   onSearch: (game: utils.MonthlyReleaseGame) => void;
   onSearchLocal: (game: utils.MonthlyReleaseGame) => void;
+  onSearchDownload: (game: utils.MonthlyReleaseGame) => void;
   onViewDetail: (game: utils.MonthlyReleaseGame) => void;
 }
 
-function GameItem({ game, onBrowse, onSearch, onSearchLocal, onViewDetail }: GameItemProps) {
+function GameItem({ game, onBrowse, onSearch, onSearchLocal, onSearchDownload, onViewDetail }: GameItemProps) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
-  const { games, fetchGames } = useAppStore();
+  const { games, fetchGames, config } = useAppStore();
 
   useEffect(() => {
     if (games.length == 0) {
@@ -505,6 +634,18 @@ function GameItem({ game, onBrowse, onSearch, onSearchLocal, onViewDetail }: Gam
               >
                 <div className="i-mdi-folder-search text-xl" />
               </button>
+              {config?.game_download_folder && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSearchDownload(game);
+                  }}
+                  className="flex items-center justify-center w-full aspect-square rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                  title="搜索下载文件夹"
+                >
+                  <div className="i-mdi-download text-xl" />
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();

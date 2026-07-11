@@ -100,6 +100,12 @@ export default function DownloadedFiles() {
   
 
   useEffect(() => {
+    if (config && config.game_download_folder && config.game_install_folder) {
+      loadItems();
+    }
+  }, [config]);
+
+  useEffect(() => {
     if (!isLoading && listContainerRef.current) {
       listContainerRef.current.scrollTop = scrollPosition;
     }

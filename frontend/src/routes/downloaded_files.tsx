@@ -47,7 +47,9 @@ export default function DownloadedFiles() {
   const [currentExecutingTask, setCurrentExecutingTask] = useState("");
   const [scrollPosition, setScrollPosition] = useState(0);
   const listContainerRef = useRef<HTMLDivElement>(null);
+  const handleImportRef = useRef<(items: DownloadedFile[]) => Promise<void>>();
   const [batchImportModalItems, setBatchImportModalItems] = useState<DownloadedFile[]>([]);
+  const pendingItemsToImportRef = useRef<DownloadedFile[]>([]);
   const [batchImportCandidates, setBatchImportCandidates] = useState<vo.BatchImportCandidate[]>([]);
   const [runGameModalItem, setRunGameModalItem] = useState<DownloadedFile | null>(null);
   const [runGameExecutables, setRunGameExecutables] = useState<string[]>([]);
@@ -144,6 +146,14 @@ export default function DownloadedFiles() {
             setIsExecuting(false);
             setCurrentExecutingName("");
             setCurrentExecutingTask("");
+            
+            const backendItems = task.item_data && Array.isArray(task.item_data) ? task.item_data as DownloadedFile[] : [];
+            const allItemsToImport = [...pendingItemsToImportRef.current, ...backendItems];
+            
+            if (allItemsToImport.length > 0 && handleImportRef.current) {
+              handleImportRef.current(allItemsToImport);
+              pendingItemsToImportRef.current = [];
+            }
           }, 1500);
         }
       }
@@ -208,7 +218,8 @@ export default function DownloadedFiles() {
     }
     
     if (itemsNeedingProcess.length > 0) {
-      await ExecuteBatchTask(itemsNeedingProcess as unknown as service.DownloadedFile[], showExtract, showInstall, directIsoInstall, md5AsFolder ? "md5" : "name");
+      pendingItemsToImportRef.current = itemsToImport;
+      await ExecuteBatchTask(itemsNeedingProcess as unknown as service.DownloadedFile[], showExtract, showInstall, showImport, directIsoInstall, md5AsFolder ? "md5" : "name");
       toast(t("downloadedFiles.batchTaskStarted") || '批量处理任务已启动，可在任务页面查看进度');
       return;
     }
@@ -220,6 +231,7 @@ export default function DownloadedFiles() {
       }
       
       if (showDownloadSave && itemsImported.length > 0) {
+        setCurrentExecutingTask("下载存档");
         const games = await GetGamesByIdsStr(itemsImported.map(item => item.imported_id!).join(","));
         await DownloadSaves(games, showOverrideSave);
       }
@@ -422,6 +434,10 @@ export default function DownloadedFiles() {
     setBatchImportCandidates(candidates);
     setBatchImportModalItems(items);
   };
+  
+  useEffect(() => {
+    handleImportRef.current = handleImport;
+  }, [handleImport]);
   
   const handleBatchImportComplete = async (games: models.Game[]) => {
     if (games.length === 0 || batchImportModalItems.length === 0) {
@@ -1078,7 +1094,7 @@ export default function DownloadedFiles() {
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <div className="flex items-center gap-3 text-xs text-brand-500">
                         <span>类型：{item.type == 1 ? '文件夹含压缩包' : item.type ==0 ? '文件夹无需解压' : item.type == 3 ? '安装文件夹' : '单独压缩包'}</span>
-                        <span>{item.size == 0 ? '' : formatSize(item.size)}</span>
+                        <span>{item.size < 100000 ? '' : formatSize(item.size)}</span>
                         {/* <span>{!item.is_extracted ? "" : "镜像数目:" + item.iso_items.length}</span> */}
                         <span>{parseTime(item.time).toLocaleDateString()}</span>
                         {item.status == 0 && (
@@ -1147,12 +1163,13 @@ export default function DownloadedFiles() {
                           {t("downloadedFiles.install")}
                         </button>
                       ) : !canInstall(item) ? (
-                        <button
-                          disabled
-                          className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
-                        >
-                          {t("downloadedFiles.install")}
-                        </button>
+                        // <button
+                        //   disabled
+                        //   className="px-2 py-1 text-xs bg-brand-100 dark:bg-brand-700 text-brand-400 rounded cursor-not-allowed"
+                        // >
+                        //   {t("downloadedFiles.install")}
+                        // </button>
+                        <></>
                       ) : item.status == 3 ? (
                         <button
                           disabled

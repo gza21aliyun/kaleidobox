@@ -1657,18 +1657,19 @@ func (s *DownloadedFilesService) JudgeGameName(filenames []string) string {
 	return gameName
 }
 
-func (s *DownloadedFilesService) ExecuteBatchTask(items []DownloadedFile, showExtract, showInstall bool, directIsoInstall bool, installMethod string) error {
+func (s *DownloadedFilesService) ExecuteBatchTask(items []DownloadedFile, showExtract, showInstall, showImport bool, directIsoInstall bool, installMethod string) error {
 	if s.taskService == nil {
 		return fmt.Errorf("任务服务未初始化")
 	}
 
 	taskUUID := uuid.New().String()
-	s.taskService.RegisterTaskFunction(taskUUID, s.createBatchProcessTaskFunction(items, showExtract, showInstall, directIsoInstall, installMethod))
+	s.taskService.RegisterTaskFunction(taskUUID, s.createBatchProcessTaskFunction(items, showExtract, showInstall, showImport, directIsoInstall, installMethod))
 
 	taskData := map[string]interface{}{
 		"items":            items,
 		"showExtract":      showExtract,
 		"showInstall":      showInstall,
+		"showImport":       showImport,
 		"directIsoInstall": directIsoInstall,
 		"installMethod":    installMethod,
 	}
@@ -1676,13 +1677,14 @@ func (s *DownloadedFilesService) ExecuteBatchTask(items []DownloadedFile, showEx
 	return s.taskService.StartTask("game_updates", taskUUID, 0, enums.DownloadFiles, len(items), taskData)
 }
 
-func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []DownloadedFile, showExtract, showInstall bool, directIsoInstall bool, installMethod string) TaskFunction {
+func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []DownloadedFile, showExtract, showInstall, showImport bool, directIsoInstall bool, installMethod string) TaskFunction {
 	return func(ctx context.Context, data string, updateProgress func(completed int, total int,
 		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error {
 
 		updateProgress(0, len(items), "开始批量处理下载文件", "", "", enums.Started, nil)
 
-		for index, item := range items {
+		for index := range items {
+			item := &items[index]
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -1690,11 +1692,11 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 			}
 
 			updateProgress(index, len(items), fmt.Sprintf("处理文件: %s", item.Name),
-				"", item.ID, enums.Initial, item)
+				"", item.ID, enums.Initial, *item)
 
 			if showExtract && item.Status == 1 {
 				updateProgress(index, len(items), fmt.Sprintf("解压中: %s", item.Name),
-					"", item.ID, enums.Started, item)
+					"", item.ID, enums.Started, *item)
 
 				var err error
 				if item.Type == 1 {
@@ -1705,23 +1707,23 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 
 				if err != nil {
 					updateProgress(index+1, len(items), fmt.Sprintf("解压失败: %s", item.Name),
-						err.Error(), item.ID, enums.Error, item)
+						err.Error(), item.ID, enums.Error, *item)
 					continue
 				}
 				fmt.Printf("prerefresh %s, status:%d, type:%d, isos:%d\n", item.Name, item.Status, item.Type, len(item.ISOItems))
 
-				refreshedItem, err := s.RefreshDownloadedFile(item)
+				refreshedItem, err := s.RefreshDownloadedFile(*item)
 				if err != nil {
 					updateProgress(index+1, len(items), fmt.Sprintf("刷新状态失败: %s", item.Name),
-						err.Error(), item.ID, enums.Error, item)
+						err.Error(), item.ID, enums.Error, *item)
 					continue
 				}
 				refreshedItem.Type = item.Type
 				refreshedItem.Status = 2
-				item = refreshedItem
+				*item = refreshedItem
 
 				updateProgress(index, len(items), fmt.Sprintf("解压完成: %s", item.Name),
-					"", item.ID, enums.Completed, item)
+					"", item.ID, enums.Completed, *item)
 			}
 
 			hasIso := len(item.ISOItems) > 0
@@ -1730,12 +1732,12 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 
 			if shouldInstall {
 				updateProgress(index, len(items), fmt.Sprintf("安装中: %s", item.Name),
-					"", item.ID, enums.Started, item)
+					"", item.ID, enums.Started, *item)
 
-				installedPath, err := s.InstallGame(item, installMethod)
+				installedPath, err := s.InstallGame(*item, installMethod)
 				if err != nil {
 					updateProgress(index+1, len(items), fmt.Sprintf("安装失败: %s", item.Name),
-						err.Error(), item.ID, enums.Error, item)
+						err.Error(), item.ID, enums.Error, *item)
 					continue
 				}
 
@@ -1743,14 +1745,24 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 				item.Status = 3
 
 				updateProgress(index+1, len(items), fmt.Sprintf("安装完成: %s", item.Name),
-					"", item.ID, enums.Completed, item)
+					"", item.ID, enums.Completed, *item)
 			} else {
 				updateProgress(index+1, len(items), fmt.Sprintf("跳过安装: %s", item.Name),
-					"", item.ID, enums.Completed, item)
+					"", item.ID, enums.Completed, *item)
 			}
 		}
 
-		updateProgress(len(items), len(items), "批量处理完成", "", "", enums.Completed, nil)
+		var importItems []DownloadedFile
+		if showImport {
+			importItems = []DownloadedFile{}
+			for _, item := range items {
+				if item.Status == 3 {
+					importItems = append(importItems, item)
+				}
+			}
+		}
+
+		updateProgress(len(items), len(items), "批量处理完成", "", "", enums.Completed, importItems)
 		return nil
 	}
 }

@@ -1005,7 +1005,7 @@ export default function DownloadedFiles() {
 
             <button
               onClick={() => {
-                handleDelete(items.filter((i)=>{selectedItems.includes(i.id)}));
+                handleDelete(items.filter((i) => i.selected));
               }}
               disabled={selectedItems.length === 0}
               className="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"

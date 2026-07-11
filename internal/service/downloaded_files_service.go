@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"lunabox/internal/appconf"
@@ -1309,12 +1310,15 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 		extractedExePath = foundExePaths[0]
 		sourcePath = filepath.Dir(extractedExePath)
 
-		for i := 0; i < layers; i++ {
+		for i := 0; i < layers-1; i++ {
 			sourcePath = filepath.Dir(sourcePath)
 			targetBasePath = filepath.Dir(targetBasePath)
 		}
 
 		applog.LogInfof(s.ctx, "覆盖目录: %s -> %s", sourcePath, targetBasePath)
+		if strings.Contains(s.config.GameInstallFolder, targetBasePath) {
+			return errors.New("无法覆盖游戏安装根目录或其父目录，请调整层级")
+		}
 		return copyDirectory(sourcePath, targetBasePath)
 	} else if len(downloadedFile.ISOItems) == 1 {
 		isoPath := downloadedFile.ISOItems[0]
@@ -1351,9 +1355,12 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 		extractedExePath = foundExePaths[0]
 		sourcePath = filepath.Dir(extractedExePath)
 
-		for i := 0; i < layers; i++ {
+		for i := 0; i < layers-1; i++ {
 			sourcePath = filepath.Dir(sourcePath)
 			targetBasePath = filepath.Dir(targetBasePath)
+		}
+		if strings.Contains(s.config.GameInstallFolder, targetBasePath) {
+			return errors.New("无法覆盖游戏安装根目录或其父目录，请调整层级")
 		}
 
 		applog.LogInfof(s.ctx, "从临时目录覆盖: %s -> %s", sourcePath, targetBasePath)

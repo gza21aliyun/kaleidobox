@@ -97,9 +97,7 @@ export default function DownloadedFiles() {
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    loadItems();
-  }, []);
+  
 
   useEffect(() => {
     if (!isLoading && listContainerRef.current) {
@@ -774,6 +772,30 @@ export default function DownloadedFiles() {
   }, [items, searchQuery, statusFilter, typeFilter]);
 
 
+  if (!config) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-4 border-brand-600/30 border-t-brand-600"></div>
+        <span className="text-sm text-gray-500">正在检查配置...</span>
+      </div>
+    );
+  }
+  
+  if (!config.game_download_folder || !config.game_install_folder) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <div className="text-xl font-medium text-red-500">请先配置游戏下载和安装路径</div>
+        <div className="text-sm text-gray-500">需要设置游戏下载文件夹和游戏安装文件夹才能使用本页面</div>
+        <button
+          onClick={() => navigate({ to: "/settings" })}
+          className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700"
+        >
+          前往设置页面
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 h-full overflow-auto relative">
       {/* 执行中动画 - 覆盖整个页面内容 */}
@@ -836,7 +858,7 @@ export default function DownloadedFiles() {
             根据下载游戏数据摆放方式主要分为文件夹不需解压、文件夹含压缩包、单独压缩包。<br/>
             第四类型为安装文件夹，只在安装文件夹找到，下载文件夹没关联上，通常是直接装载镜像用官方安装程序安装的时候出现，下载文件夹和安装文件夹会作为两条独立记录出现。这时候直接导入安装文件夹后删除下载文件夹即可。<br/>
             下载存档时会下载klb_savedata_xxx的文件到游戏安装目录，只有导入后才能下载。删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
-            能选择md5文件夹名或游戏名安装游戏，因此安装后不运行修改游戏名。<br/>
+            能选择md5文件夹名或游戏名安装游戏，因此安装后不运行修改游戏名。如想覆盖安装来修复已导入游戏，应该在解压后搜索已导入=》关联=》覆盖安装。<br/>
             这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。<br/>
             装载的时候可能用到win官方或第三方的软件，暂无法完整跟踪全流程，请自己留意盘符变化和处理弹出。
           </p>

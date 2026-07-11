@@ -35,7 +35,7 @@ export default function DownloadedFiles() {
   const [showOverrideSave, setShowOverrideSave] = useState(false);
   const [md5AsFolder, setMd5AsFolder] = useState(false);
   const [directIsoInstall, setDirectIsoInstall] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalType, setConfirmModalType] = useState<string>("");
   const [confirmModalItem, setConfirmModalItem] = useState<DownloadedFile | null>(null);
@@ -435,6 +435,11 @@ export default function DownloadedFiles() {
     setBatchImportModalItems(items);
   };
   
+  // 使用 useEffect 将 handleImport 函数的引用保存到 useRef 中
+  // 解决 React 闭包问题：事件监听回调（在 useEffect 中注册）会捕获当时的函数引用
+  // 如果直接在事件监听中使用 handleImport，当 handleImport 依赖的状态变化导致函数重新创建时
+  // 事件监听中使用的仍然是旧的函数引用，无法访问最新的状态和函数逻辑
+  // 通过 useRef 保存最新的函数引用，事件监听中使用 handleImportRef.current 就能始终获取到最新的函数
   useEffect(() => {
     handleImportRef.current = handleImport;
   }, [handleImport]);
@@ -590,15 +595,22 @@ export default function DownloadedFiles() {
     setSearchModalItem(item);
   };
 
-  const handleDelete = async (item: DownloadedFile) => {
+  const handleDelete = async (items: DownloadedFile[]) => {
+    if (items.length === 0) {
+      toast.error("请选择要删除的项");  
+      return;
+    }
+    const item = items[0];
     if (!confirm(t("downloadedFiles.confirmDelete", { name: item.name }))) {
       return;
     }
     setIsExecuting(true);
     setCurrentExecutingTask(t("downloadedFiles.taskDelete"));
-    setCurrentExecutingName(item.name);
     try {
-      await DeleteItem(item.path);
+      for (const item of items) {        
+        setCurrentExecutingName(item.name);
+        await DeleteItem(item as unknown as service.DownloadedFile);
+      }
       await loadItems();
     } catch (err) {
       console.error("Delete failed:", err);
@@ -823,7 +835,8 @@ export default function DownloadedFiles() {
             本页面目的是快速批量处理已下载的游戏。<br/>
             根据下载游戏数据摆放方式主要分为文件夹不需解压、文件夹含压缩包、单独压缩包。<br/>
             第四类型为安装文件夹，只在安装文件夹找到，下载文件夹没关联上，通常是直接装载镜像用官方安装程序安装的时候出现，下载文件夹和安装文件夹会作为两条独立记录出现。这时候直接导入安装文件夹后删除下载文件夹即可。<br/>
-            下载存档时会下载klb_savedata_xxx的文件到游戏安装目录。删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
+            下载存档时会下载klb_savedata_xxx的文件到游戏安装目录，只有导入后才能下载。删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
+            能选择md5文件夹名或游戏名安装游戏，因此安装后不运行修改游戏名。<br/>
             这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。<br/>
             装载的时候可能用到win官方或第三方的软件，暂无法完整跟踪全流程，请自己留意盘符变化和处理弹出。
           </p>
@@ -992,10 +1005,7 @@ export default function DownloadedFiles() {
 
             <button
               onClick={() => {
-                selectedItems.forEach(id => {
-                  const item = items.find(i => i.id === id);
-                  if (item) handleDelete(item);
-                });
+                handleDelete(items.filter((i)=>{selectedItems.includes(i.id)}));
               }}
               disabled={selectedItems.length === 0}
               className="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1065,7 +1075,7 @@ export default function DownloadedFiles() {
                       <span className="text-xs">游戏名：</span>
                       <input
                         type="text"
-                        disabled={item.type == 2 && item.status < 2 || item.status < 1}
+                        disabled={item.type == 2 && item.status < 2 || item.status < 1 || item.status > 2}
                         value={item.game_name || ""}
                         onChange={(e) => handleGameNameChange(item, e.target.value)}
                         className="flex-1 text-xs px-1 py-0.5 border border-brand-300 dark:border-brand-600 rounded bg-transparent dark:bg-brand-700 min-w-0"
@@ -1303,7 +1313,7 @@ export default function DownloadedFiles() {
 
                       {/* 删除按钮 */}
                       <button
-                        onClick={() => handleDelete(item)}
+                        onClick={() => handleDelete([item])}
                         className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded"
                       >
                         {t("downloadedFiles.delete")}

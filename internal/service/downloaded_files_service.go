@@ -216,7 +216,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 					if folder.Status < 1 {
 						folder.Status = 1
 					}
-					if s.checkIsExtracted(folder.Path, folder.BaseName, 2) && folder.Status < 2 {
+					if s.checkIsExtracted(folder.Path, folder.BaseName, 1) && folder.Status < 2 {
 						// fmt.Printf("status 2 01,name: %s, \n", folder.Name)
 
 						folder.Status = 2
@@ -319,7 +319,13 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
 	archive, _ := s.CreateDownloadedFile(path, filepath.Base(path), true, 0, fileTime, true)
 	if file.Type == 2 {
 		if archive.InnerItems != nil && len(archive.InnerItems) > 0 {
-			archive.ExtractedGamePath = path
+			if len(archive.InnerItems) == 1 {
+				gamepath := filepath.Join(path, archive.InnerItems[0])
+				archive.ExtractedGamePath = gamepath
+			} else {
+				archive.ExtractedGamePath = path
+			}
+
 			archive.ExtractedPaths = []string{path}
 			return archive, nil
 		}
@@ -546,12 +552,31 @@ func (s *DownloadedFilesService) hasExtractedContent(folderPath string) (bool, b
 func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileType int) (string, []string) {
 	downloadFolder := s.config.GameDownloadFolder
 	var extractedPaths []string
+	// fmt.Printf("getExtractedPaths 01 %s\n", name)
 
 	if fileType == 2 {
 		// 对于压缩包，返回同名文件夹路径
 		baseName := strings.TrimSuffix(name, filepath.Ext(name))
 		folderPath := filepath.Join(downloadFolder, baseName)
+		// fmt.Printf("getExtractedPaths 02 %s\n", name)
 		if info, err := os.Stat(folderPath); err == nil && info.IsDir() {
+
+			// fmt.Printf("getExtractedPaths 03 %s\n", name)
+			subEntries, err := os.ReadDir(folderPath)
+			if err == nil {
+				folders := []string{}
+				for _, entry := range subEntries {
+					if entry.IsDir() {
+						folders = append(folders, entry.Name())
+					}
+				}
+				if len(folders) == 1 && len(subEntries) <= 2 {
+					// fmt.Printf("getExtractedPaths 04 %s\n", name)
+					fullpath := filepath.Join(folderPath, folders[0])
+					return fullpath, []string{folderPath}
+				}
+
+			}
 			return folderPath, []string{folderPath}
 		}
 		return "", nil
@@ -1404,29 +1429,15 @@ func (s *DownloadedFilesService) OpenFolder(itemPath string) error {
 	return cmd.Start()
 }
 
-func (s *DownloadedFilesService) DeleteItem(itemPath string) error {
-	err := os.RemoveAll(itemPath)
-	upperPath := filepath.Dir(itemPath)
-	baseName := filepath.Base(itemPath)
-	entries, err := os.ReadDir(upperPath)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		} else {
-			ext := filepath.Ext(entry.Name())
-			entryNameWithoutExt := strings.TrimSuffix(entry.Name(), ext)
-			if entryNameWithoutExt == baseName {
-				// 删除与文件夹名同名的压缩包
-				archivePath := filepath.Join(upperPath, entry.Name())
-				if err := os.RemoveAll(archivePath); err != nil {
-					applog.LogErrorf(s.ctx, "Failed to remove archive %s: %v", archivePath, err)
-				}
-			}
+func (s *DownloadedFilesService) DeleteItem(downloadedFile DownloadedFile) error {
+	itemPath := downloadedFile.Path
+	var err error = nil
+	if downloadedFile.Status > 1 && len(downloadedFile.ExtractedPaths) > 0 {
+		for _, extractedPath := range downloadedFile.ExtractedPaths {
+			err = os.RemoveAll(extractedPath)
 		}
 	}
+	err = os.RemoveAll(itemPath)
 	return err
 }
 

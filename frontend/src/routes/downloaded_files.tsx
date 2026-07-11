@@ -2,10 +2,12 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask } from "../../wailsjs/go/service/DownloadedFilesService";
+import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
-import type { service, models } from "../../wailsjs/go/models";
+import type { service } from "../../wailsjs/go/models";
+import { models, enums } from "../../wailsjs/go/models";
 import { OpenLocalPath, DeleteGame, GetGamesByIdsStr } from "../../wailsjs/go/service/GameService";
 import { useAppStore } from "../store";
 import { vo } from "../../wailsjs/go/models";
@@ -103,6 +105,53 @@ export default function DownloadedFiles() {
     }
   }, [items, isLoading, scrollPosition]);
 
+  useEffect(() => {
+    const unlisten = EventsOn("game_updates", (data: any) => {
+      const task = new models.TaskNotice(data);
+      
+      if (task.type === enums.TaskType.DOWNLOAD_FILES) {
+        if (task.working_on) {
+          const nameMatch = task.working_on.match(/: (.+)$/);
+          if (nameMatch) {
+            setCurrentExecutingName(nameMatch[1]);
+          }
+          
+          if (task.working_on.includes("解压")) {
+            setCurrentExecutingTask(t("downloadedFiles.taskExtract"));
+          } else if (task.working_on.includes("安装")) {
+            setCurrentExecutingTask(t("downloadedFiles.taskInstall"));
+          } else if (task.working_on.includes("删除")) {
+            setCurrentExecutingTask(t("downloadedFiles.taskDelete"));
+          } else {
+            setCurrentExecutingTask(task.working_on);
+          }
+        }
+        
+        if (task.item_data && task.item_id) {
+          setItems(prevItems => prevItems.map(item => {
+            if (item.id === task.item_id) {
+              return { ...item, ...task.item_data };
+            }
+            return item;
+          }));
+        }
+        
+        if (task.status === enums.TaskStatus.COMPLETED || 
+            task.status === enums.TaskStatus.ERROR || 
+            task.status === enums.TaskStatus.CANCELED) {
+          setTimeout(() => loadItems(), 1000);
+          setTimeout(() => {
+            setIsExecuting(false);
+            setCurrentExecutingName("");
+            setCurrentExecutingTask("");
+          }, 1500);
+        }
+      }
+    });
+
+    return () => unlisten();
+  }, [t]);
+
   const handleSelectAll = () => {
     if (selectedItems.length === items.length) {
       setItems(items.map(item => ({ ...item, selected: false })));
@@ -133,59 +182,47 @@ export default function DownloadedFiles() {
   const handleExecute = async () => {
     setIsExecuting(true);
     setCurrentExecutingName("");
-    try {
-      const itemsToImport: DownloadedFile[] = []
-      const itemsImported: DownloadedFile[] = []
-      for (const itemId of selectedItems) {
-        const item = items.find(i => i.id === itemId);
-        if (!item) continue;
+    const itemsToImport: DownloadedFile[] = [];
+    const itemsImported: DownloadedFile[] = [];
+    
+    const itemsNeedingProcess: DownloadedFile[] = [];
+    
+    for (const itemId of selectedItems) {
+      const item = items.find(i => i.id === itemId);
+      if (!item) continue;
 
-        // 解压步骤
-        if (showExtract && item.status == 1) {
-          setCurrentExecutingTask(t("downloadedFiles.taskExtract"));
-          setCurrentExecutingName(item.name);
-          await handleExtract(item);
-          toast.success("解压完成status：" + item.status)
-        }
-        
-        // 安装步骤：需要已解压，且如果镜像文件直接安装开关关闭，则有iso的单元不执行安装
-        const hasIso = item.iso_items && item.iso_items.length > 0;
-        const shouldInstall = showInstall && item.status == 2 && item.extracted_game_path && (directIsoInstall || !hasIso);
-        
-        if (shouldInstall) {
-          setIsExecuting(true);
-          setCurrentExecutingTask(t("downloadedFiles.taskInstall"));
-          setCurrentExecutingName(item.name);
-          try {
-            const installed_path = await InstallGame(item as unknown as service.DownloadedFile, md5AsFolder ? "md5" : "name");
-            item.installed_path = installed_path;
-            item.status = 3;
-          } catch (err) {
-            console.error("Install failed:", err);
-            setErrorMessage(err instanceof Error ? err.message : "安装失败");
-          }
-        }
-        
-        // 导入步骤：需要已安装
-        const shouldImport = showImport && item.status == 3;
-        if (shouldImport) {
-          itemsToImport.push(item);
-        }
-        if (item.status == 4 && item.imported_id) {
-          itemsImported.push(item);
-        }
-        
-        
+      if (item.status == 3 && showImport) {
+        itemsToImport.push(item);
       }
+      if (item.status == 4 && item.imported_id) {
+        itemsImported.push(item);
+      }
+      
+      const needsExtract = showExtract && item.status == 1;
+      const hasIso = item.iso_items && item.iso_items.length > 0;
+      const needsInstall = showInstall && item.status == 2 && item.extracted_game_path && (directIsoInstall || !hasIso);
+      
+      if (needsExtract || needsInstall) {
+        itemsNeedingProcess.push(item);
+      }
+    }
+    
+    if (itemsNeedingProcess.length > 0) {
+      await ExecuteBatchTask(itemsNeedingProcess as unknown as service.DownloadedFile[], showExtract, showInstall, directIsoInstall, md5AsFolder ? "md5" : "name");
+      toast(t("downloadedFiles.batchTaskStarted") || '批量处理任务已启动，可在任务页面查看进度');
+      return;
+    }
+    
+    try {
       if (showImport && itemsToImport.length > 0) {
         setCurrentExecutingTask(t("downloadedFiles.taskImport"));
         await handleImport(itemsToImport);
       }
+      
       if (showDownloadSave && itemsImported.length > 0) {
         const games = await GetGamesByIdsStr(itemsImported.map(item => item.imported_id!).join(","));
         await DownloadSaves(games, showOverrideSave);
       }
-      await loadItems();
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
@@ -689,6 +726,9 @@ export default function DownloadedFiles() {
                 if (statusFilter === "downloaded") {
                   return item.status === 1;
                 }
+                if (statusFilter === "downloading") {
+                  return item.status === 0;
+                }
                 if (statusFilter === "extracted") {
                   return item.status === 2;
                 }
@@ -788,6 +828,7 @@ export default function DownloadedFiles() {
               onChange={setStatusFilter}
               options={[
                 { value: "all", label: t("downloadedFiles.status.all") },
+                { value: "downloading", label: "下载中" },
                 { value: "downloaded", label: t("downloadedFiles.status.downloaded") },
                 { value: "extracted", label: t("downloadedFiles.status.extracted") },
                 { value: "installed", label: t("downloadedFiles.status.installed") },

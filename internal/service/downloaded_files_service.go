@@ -10,6 +10,7 @@ import (
 	"io"
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
+	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"lunabox/internal/utils"
 	"os"
@@ -25,9 +26,10 @@ import (
 )
 
 type DownloadedFilesService struct {
-	ctx    context.Context
-	db     *sql.DB
-	config *appconf.AppConfig
+	ctx         context.Context
+	db          *sql.DB
+	config      *appconf.AppConfig
+	taskService *TaskService
 }
 
 func NewDownloadedFilesService() *DownloadedFilesService {
@@ -38,6 +40,10 @@ func (s *DownloadedFilesService) Init(ctx context.Context, db *sql.DB, config *a
 	s.ctx = ctx
 	s.db = db
 	s.config = config
+}
+
+func (s *DownloadedFilesService) SetTaskService(taskService *TaskService) {
+	s.taskService = taskService
 }
 
 type DownloadedFile struct {
@@ -204,7 +210,7 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 				// 文件夹有内容，显示文件夹，标记为已解压
 				// type=1: 文件夹包含多个压缩包
 				folder.Type = 1
-				if s.checkIsDownloading(folder.Path, 2, savedInfo) {
+				if s.checkIsDownloading(folder.Path, 1, savedInfo) {
 					folder.Status = 0
 				} else {
 					if folder.Status < 1 {
@@ -258,7 +264,6 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 
 	//查找安装文件夹看看有没type3的文件夹
 	if s.config.GameInstallFolder != "" {
-		fmt.Printf("ListDown0")
 		installedEntries, err := os.ReadDir(s.config.GameInstallFolder)
 		if err == nil {
 			for _, entry := range installedEntries {
@@ -518,6 +523,10 @@ func (s *DownloadedFilesService) hasExtractedContent(folderPath string) (bool, b
 			// break
 		}
 		ext := strings.ToLower(filepath.Ext(entry.Name()))
+		baseName := strings.ToLower(strings.TrimSuffix(entry.Name(), ext))
+		if ext == ".!ut" || ext == ".!qb" {
+			ext = strings.ToLower(filepath.Ext(baseName))
+		}
 		if compressedExtensions[ext] {
 			hasArchive = true
 		}
@@ -1617,7 +1626,7 @@ func (s *DownloadedFilesService) JudgeGameName(filenames []string) string {
 	}
 	gameNameScores := []GameNameScore{}
 	plusWords := []string{"パッケージ版", "mdf", "mds", "iso"}
-	minusWords := []string{"サウンドトラック", "wav", "mp3", "flac", "cue", "ボイス", "ドラマ", "アップデート", "update", "特典", "Drama", "CD", "part", "00"}
+	minusWords := []string{"サウンドトラック", "wav", "mp3", "flac", "cue", "ボイス", "ドラマ", "アップデート", "update", "特典", "Drama", "CD", "part", "00", "download", "klb"}
 	for _, filename := range filenames {
 		score := 1.0
 
@@ -1646,4 +1655,102 @@ func (s *DownloadedFilesService) JudgeGameName(filenames []string) string {
 	}
 
 	return gameName
+}
+
+func (s *DownloadedFilesService) ExecuteBatchTask(items []DownloadedFile, showExtract, showInstall bool, directIsoInstall bool, installMethod string) error {
+	if s.taskService == nil {
+		return fmt.Errorf("任务服务未初始化")
+	}
+
+	taskUUID := uuid.New().String()
+	s.taskService.RegisterTaskFunction(taskUUID, s.createBatchProcessTaskFunction(items, showExtract, showInstall, directIsoInstall, installMethod))
+
+	taskData := map[string]interface{}{
+		"items":            items,
+		"showExtract":      showExtract,
+		"showInstall":      showInstall,
+		"directIsoInstall": directIsoInstall,
+		"installMethod":    installMethod,
+	}
+
+	return s.taskService.StartTask("game_updates", taskUUID, 0, enums.DownloadFiles, len(items), taskData)
+}
+
+func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []DownloadedFile, showExtract, showInstall bool, directIsoInstall bool, installMethod string) TaskFunction {
+	return func(ctx context.Context, data string, updateProgress func(completed int, total int,
+		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error {
+
+		updateProgress(0, len(items), "开始批量处理下载文件", "", "", enums.Started, nil)
+
+		for index, item := range items {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+
+			updateProgress(index, len(items), fmt.Sprintf("处理文件: %s", item.Name),
+				"", item.ID, enums.Initial, item)
+
+			if showExtract && item.Status == 1 {
+				updateProgress(index, len(items), fmt.Sprintf("解压中: %s", item.Name),
+					"", item.ID, enums.Started, item)
+
+				var err error
+				if item.Type == 1 {
+					err = s.ExtractArchivesInFolder(item.Path)
+				} else {
+					err = s.ExtractItem(item.Path)
+				}
+
+				if err != nil {
+					updateProgress(index+1, len(items), fmt.Sprintf("解压失败: %s", item.Name),
+						err.Error(), item.ID, enums.Error, item)
+					continue
+				}
+				fmt.Printf("prerefresh %s, status:%d, type:%d, isos:%d\n", item.Name, item.Status, item.Type, len(item.ISOItems))
+
+				refreshedItem, err := s.RefreshDownloadedFile(item)
+				if err != nil {
+					updateProgress(index+1, len(items), fmt.Sprintf("刷新状态失败: %s", item.Name),
+						err.Error(), item.ID, enums.Error, item)
+					continue
+				}
+				refreshedItem.Type = item.Type
+				refreshedItem.Status = 2
+				item = refreshedItem
+
+				updateProgress(index, len(items), fmt.Sprintf("解压完成: %s", item.Name),
+					"", item.ID, enums.Completed, item)
+			}
+
+			hasIso := len(item.ISOItems) > 0
+			shouldInstall := showInstall && item.Status == 2 && item.ExtractedGamePath != "" && (directIsoInstall || !hasIso)
+			fmt.Printf("shouldInstall %s: %v, status:%d, type:%d, isos:%d\n", item.Name, shouldInstall, item.Status, item.Type, len(item.ISOItems))
+
+			if shouldInstall {
+				updateProgress(index, len(items), fmt.Sprintf("安装中: %s", item.Name),
+					"", item.ID, enums.Started, item)
+
+				installedPath, err := s.InstallGame(item, installMethod)
+				if err != nil {
+					updateProgress(index+1, len(items), fmt.Sprintf("安装失败: %s", item.Name),
+						err.Error(), item.ID, enums.Error, item)
+					continue
+				}
+
+				item.InstalledPath = installedPath
+				item.Status = 3
+
+				updateProgress(index+1, len(items), fmt.Sprintf("安装完成: %s", item.Name),
+					"", item.ID, enums.Completed, item)
+			} else {
+				updateProgress(index+1, len(items), fmt.Sprintf("跳过安装: %s", item.Name),
+					"", item.ID, enums.Completed, item)
+			}
+		}
+
+		updateProgress(len(items), len(items), "批量处理完成", "", "", enums.Completed, nil)
+		return nil
+	}
 }

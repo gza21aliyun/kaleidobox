@@ -496,6 +496,7 @@ func main() {
 			monthlyReleaseService.Init(ctx)
 			btDownloadService.Init(ctx)
 			downloadedFilesService.Init(ctx, db, config)
+			downloadedFilesService.SetTaskService(taskService)
 			workService.SetServices(staffService, charactorService, imageService)
 			gameService.SetServices(taskService, charactorService, staffService, workService, tagService, imageService)
 			vmService.Init(ctx, db, config)

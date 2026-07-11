@@ -1850,6 +1850,7 @@
     "taskExtract": "解压",
     "taskInstall": "安装",
     "taskImport": "导入",
-    "taskDelete": "删除"
+    "taskDelete": "删除",
+    "batchTaskStarted": "批量处理任务已启动，可在任务页面查看进度"
   }
 }

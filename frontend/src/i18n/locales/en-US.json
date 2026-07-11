@@ -1848,6 +1848,7 @@
     "taskExtract": "Extract",
     "taskInstall": "Install",
     "taskImport": "Import",
-    "taskDelete": "Delete"
+    "taskDelete": "Delete",
+    "batchTaskStarted": "Batch processing task started, check task page for progress"
   }
 }

@@ -269,7 +269,7 @@ func (s *TaskService) StartTask(name string, id string, delay int, taskType enum
 		Completed:   0,
 		Total:       total,
 		WorkingOn:   "准备开始",
-		Description: fmt.Sprintf("任务: %s 类型: %s 总数: %d", name, taskType, total),
+		Description: fmt.Sprintf("任务: %s 总数: %d", taskType, total),
 		Warning:     "",
 		Deley:       delay,
 		Data:        data, // 存储任务数据

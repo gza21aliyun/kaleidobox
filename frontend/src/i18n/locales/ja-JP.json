@@ -1811,6 +1811,7 @@
     "taskExtract": "解凍",
     "taskInstall": "インストール",
     "taskImport": "インポート",
-    "taskDelete": "削除"
+    "taskDelete": "削除",
+    "batchTaskStarted": "バッチ処理タスクが開始されました。タスクページで進捗を確認してください"
   }
 }

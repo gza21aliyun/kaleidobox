@@ -67,12 +67,12 @@ function TaskPage() {
       </div>
 
       {tasks.length > 0 ? (
-        <div className="task-list flex flex-col gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {tasks.map((task) => (
             <div key={task.id} className="bg-white dark:bg-brand-700 rounded-lg border border-brand-200 dark:border-brand-600 p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start">
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-brand-900 dark:text-white truncate">{task.name}</h4>
+                  {/* <h4 className="font-medium text-brand-900 dark:text-white truncate">{task.name}</h4> */}
                   <div className="flex items-center gap-2 mt-1 text-xs text-brand-500 dark:text-brand-400">
                     <span className={`px-2 py-0.5 rounded-full ${
                       task.status === "完成" ? "bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-400" :

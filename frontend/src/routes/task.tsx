@@ -62,7 +62,7 @@ function TaskPage() {
           className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
           title={t('task.actions.searchVideo')}
         >
-          为游戏搜索视频
+          {t('task.actions.searchVideo')}
         </button>
       </div>
 
@@ -81,7 +81,12 @@ function TaskPage() {
                       task.status === "暂停" ? "bg-info-100 text-info-800 dark:bg-info-900/30 dark:text-info-400" :
                       "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
                     }`}>
-                      {task.status}
+                      {task.status === "完成" ? t('task.status.completed') :
+                       task.status === "错误" ? t('task.status.error') :
+                       task.status === "取消" ? t('task.status.canceled') :
+                       task.status === "暂停" ? t('task.status.paused') :
+                       task.status === "已开始" ? t('task.status.started') :
+                       task.status}
                     </span>
                     <span className="capitalize">{task.type}</span>
                   </div>

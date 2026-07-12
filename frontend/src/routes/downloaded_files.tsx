@@ -93,7 +93,7 @@ export default function DownloadedFiles() {
       setSelectedItems([]);
     } catch (err) {
       console.error("Failed to load items:", err);
-      setErrorMessage(err instanceof Error ? err.message : "加载失败");
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.loadFailed"));
     }
     setIsLoading(false);
   };
@@ -196,6 +196,14 @@ export default function DownloadedFiles() {
   };
 
   const handleExecute = async () => {
+    if (!selectedItems.length) {
+      toast.error("请选择要执行的游戏单元");
+      return;
+    }
+    if (!showExtract && !showInstall && !showImport && !showDownloadSave) {
+      toast.error("请选择要执行的操作");
+      return
+    }
     setIsExecuting(true);
     setCurrentExecutingName("");
     const itemsToImport: DownloadedFile[] = [];
@@ -222,24 +230,42 @@ export default function DownloadedFiles() {
         itemsNeedingProcess.push(item);
       }
     }
+    var errInfoCode = 0;
     
     if (itemsNeedingProcess.length > 0) {
       pendingItemsToImportRef.current = itemsToImport;
       await ExecuteBatchTask(itemsNeedingProcess as unknown as service.DownloadedFile[], showExtract, showInstall, showImport, directIsoInstall, md5AsFolder ? "md5" : "name");
       toast(t("downloadedFiles.batchTaskStarted") || '批量处理任务已启动，可在任务页面查看进度');
       return;
+    } else if (showExtract || showInstall) {
+      errInfoCode = 1;
     }
     
     try {
       if (showImport && itemsToImport.length > 0) {
         setCurrentExecutingTask(t("downloadedFiles.taskImport"));
         await handleImport(itemsToImport);
+      } else if (showImport && !showExtract && !showInstall) {
+        errInfoCode = 2;
       }
       
       if (showDownloadSave && itemsImported.length > 0) {
-        setCurrentExecutingTask("下载存档");
+        setCurrentExecutingTask(t("downloadedFiles.taskDownloadSave"));
         const games = await GetGamesByIdsStr(itemsImported.map(item => item.imported_id!).join(","));
         await DownloadSaves(games, showOverrideSave);
+      } else if (showDownloadSave && !showImport) {
+        errInfoCode = 3;
+      }
+
+      switch (errInfoCode) {
+        case 3:
+          toast.error("要下载存档，请先导入游戏")
+          break;
+        case 2:
+          toast.error("要导入游戏，请准备好已安装游戏")
+          break;
+        case 1:
+          toast.error("解压和安装出现问题，无法发送后台任务")
       }
     } finally {
       setIsExecuting(false);
@@ -283,7 +309,7 @@ export default function DownloadedFiles() {
       }
     } catch (err) {
       console.error("Extract failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : "解压失败");
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.extractFailed"));
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
@@ -295,10 +321,10 @@ export default function DownloadedFiles() {
     if (item.iso_items.length < 1) return;
     try {
       await MountISO(item.iso_items[0]);
-      toast.success("已装载" + item.iso_items[0]);
+      toast.success(t("downloadedFiles.mounted") + item.iso_items[0]);
     } catch (err) {
       console.error("Mount failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : "装载失败");
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.mountFailed"));
     }
   };
 
@@ -307,7 +333,7 @@ export default function DownloadedFiles() {
       await MountISO(iso_path);
     } catch (err) {
       console.error("Mount failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : "装载失败：" + err);
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.mountFailed") + ": " + err);
     }
   };
 
@@ -346,7 +372,7 @@ export default function DownloadedFiles() {
       confirmModalItem.status = 3;
     } catch (err) {
       console.error("Install failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : `安装失败${err}`);
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.installFailed") + err);
     } finally {
       // 隐藏执行中动画
       setIsExecuting(false);
@@ -521,11 +547,11 @@ export default function DownloadedFiles() {
         foundPath = item.installed_path;
       }
     } catch (err) {
-      toast.error(`扫描可执行文件失败：${err}`);
+      toast.error(t("downloadedFiles.scanExecutableFailed") + ": " + err);
     }
     
     if (executables.length === 0) {
-      setErrorMessage("未找到可执行文件");
+      setErrorMessage(t("downloadedFiles.noExecutableFound"));
       return;
     }
     
@@ -535,7 +561,7 @@ export default function DownloadedFiles() {
         await DirectRunExe(`${executables[0]}`);
       } catch (err) {
         console.error("运行游戏失败:", err);
-        setErrorMessage("运行游戏失败");
+        setErrorMessage(t("downloadedFiles.runGameFailed"));
       }
       return;
     }
@@ -558,7 +584,7 @@ export default function DownloadedFiles() {
       await StartGameTemp(exePath);
     } catch (err) {
       console.error("运行游戏失败:", err);
-      setErrorMessage("运行游戏失败");
+      setErrorMessage(t("downloadedFiles.runGameFailed"));
     }
     
     setRunGameModalItem(null);
@@ -603,7 +629,7 @@ export default function DownloadedFiles() {
 
   const handleDelete = async (items: DownloadedFile[]) => {
     if (items.length === 0) {
-      toast.error("请选择要删除的项");  
+      toast.error(t("downloadedFiles.pleaseSelectItems"));  
       return;
     }
     const item = items[0];
@@ -620,7 +646,7 @@ export default function DownloadedFiles() {
       await loadItems();
     } catch (err) {
       console.error("Delete failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : "删除失败");
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.deleteFailed"));
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
@@ -663,7 +689,7 @@ export default function DownloadedFiles() {
       }
     } catch (err) {
       console.error("Delete extracted folder failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : `删除解压文件夹失败:${err}`);
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.deleteExtractedFailed") + ": " + err);
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
@@ -683,7 +709,7 @@ export default function DownloadedFiles() {
       ));
     } catch (err) {
       console.error("Delete installed game failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : "删除安装失败");
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.deleteInstallFailed"));
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
@@ -708,7 +734,7 @@ export default function DownloadedFiles() {
   //   };
 
   const handleDeleteImported = async (item: DownloadedFile) => {
-    if (!confirm(`确定要删除“${item.game_name}”的导入吗？`)) {
+    if (!confirm(t("downloadedFiles.confirmDeleteImport", { name: item.game_name }))) {
       return;
     }
     // setConfirmModalItem(item)
@@ -784,7 +810,7 @@ export default function DownloadedFiles() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="animate-spin rounded-full h-8 w-8 border-4 border-brand-600/30 border-t-brand-600"></div>
-        <span className="text-sm text-gray-500">正在检查配置...</span>
+        <span className="text-sm text-gray-500">{t("downloadedFiles.checkingConfig")}</span>
       </div>
     );
   }
@@ -792,13 +818,13 @@ export default function DownloadedFiles() {
   if (!config.game_download_folder || !config.game_install_folder) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <div className="text-xl font-medium text-red-500">请先配置游戏下载和安装路径</div>
-        <div className="text-sm text-gray-500">需要设置游戏下载文件夹和游戏安装文件夹才能使用本页面</div>
+        <div className="text-xl font-medium text-red-500">{t("downloadedFiles.noPathConfig")}</div>
+        <div className="text-sm text-gray-500">{t("downloadedFiles.noPathConfigHint")}</div>
         <button
           onClick={() => navigate({ to: "/settings" })}
           className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700"
         >
-          前往设置页面
+          {t("downloadedFiles.goToSettings")}
         </button>
       </div>
     );
@@ -841,7 +867,7 @@ export default function DownloadedFiles() {
             <button
               onClick={() => setShowHelp(!showHelp)}
               className="text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300"
-              title={showHelp ? "收起说明" : "使用说明"}
+              title={showHelp ? t("downloadedFiles.collapseHelp") : t("downloadedFiles.showHelp")}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -850,7 +876,7 @@ export default function DownloadedFiles() {
             <button
               onClick={() => setShowHelp(!showHelp)}
               className="text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300"
-              title={showHelp ? "收起说明" : "展开说明"}
+              title={showHelp ? t("downloadedFiles.collapseHelp") : t("downloadedFiles.expandHelp")}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showHelp ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
@@ -862,14 +888,7 @@ export default function DownloadedFiles() {
         {/* 提示信息 */}
         {showHelp && (
           <p className="text-sm text-brand-500 dark:text-brand-400 mb-4">
-            本页面目的是快速批量处理已下载的游戏。<br/>
-            根据下载游戏数据摆放方式主要分为文件夹不需解压、文件夹含压缩包、单独压缩包。<br/>
-            第四类型为安装文件夹，只在安装文件夹找到，下载文件夹没关联上，通常是直接装载镜像用官方安装程序安装的时候出现，下载文件夹和安装文件夹会作为两条独立记录出现。这时候直接导入安装文件夹后删除下载文件夹即可。<br/>
-            下载存档时会下载klb_savedata_xxx的文件到游戏安装目录，只有导入后才能下载。覆盖存档会去寻找存档位置，为提高成功率，请先完成搜刮和运行游戏。<br/>
-            删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
-            能选择md5文件夹名或游戏名安装游戏，因此安装后不运行修改游戏名。如想覆盖安装来修复已导入游戏，应该在解压后搜索已导入=》关联=》覆盖安装。<br/>
-            这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。<br/>
-            装载的时候可能用到win官方或第三方的软件，暂无法完整跟踪全流程，请自己留意盘符变化和处理弹出。
+            {t("downloadedFiles.helpText")}
           </p>
         )}
 
@@ -888,7 +907,7 @@ export default function DownloadedFiles() {
               onChange={setStatusFilter}
               options={[
                 { value: "all", label: t("downloadedFiles.status.all") },
-                { value: "downloading", label: "下载中" },
+                { value: "downloading", label: t("downloadedFiles.status.downloading") },
                 { value: "downloaded", label: t("downloadedFiles.status.downloaded") },
                 { value: "extracted", label: t("downloadedFiles.status.extracted") },
                 { value: "installed", label: t("downloadedFiles.status.installed") },
@@ -951,25 +970,25 @@ export default function DownloadedFiles() {
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm" title="如果已解压下载文件夹里有且只有一个镜像，会直接解压到安装目录。如不打开且文件夹里有镜像，将不执行安装。">
+            <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.directIsoInstallHint")}>
               <input
                 type="checkbox"
                 checked={directIsoInstall}
                 onChange={(e) => setDirectIsoInstall(e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
-              安装镜像
+              {t("downloadedFiles.directIsoInstall")}
             </label>
-            <label className="flex items-center gap-2 text-sm" title="以游戏名生成MD5，安装时会以此命名游戏安装文件夹名，用于只允许英数字路径名的游戏，选否时将使用游戏名。">
+            <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.md5AsFolderHint")}>
               <input
                 type="checkbox"
                 checked={md5AsFolder}
                 onChange={(e) => setMd5AsFolder(e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
-              MD5文件夹名
+              {t("downloadedFiles.md5AsFolder")}
             </label>
-            <label className="flex items-center gap-2 text-sm" title="解压压缩包到同路径的同名文件夹">
+            <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.extractHint")}>
               <input
                 type="checkbox"
                 checked={showExtract}
@@ -978,7 +997,7 @@ export default function DownloadedFiles() {
               />
               {t("downloadedFiles.extract")}
             </label>
-            <label className="flex items-center gap-2 text-sm" title="将游戏解压目录复制到设置好的游戏安装文件夹下">
+            <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.installHint")}>
               <input
                 type="checkbox"
                 checked={showInstall}
@@ -987,9 +1006,7 @@ export default function DownloadedFiles() {
               />
               {t("downloadedFiles.install")}
             </label>
-            <label className="flex items-center gap-2 text-sm"
-              title="批量导入游戏选中并执行后，将在完成前一步后为选中的已安装游戏准备好数据打开批量导入弹窗直接跳到选择导入阶段"
-            >
+            <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.importHint")}>
               <input
                 type="checkbox"
                 checked={showImport}
@@ -999,28 +1016,24 @@ export default function DownloadedFiles() {
               {t("downloadedFiles.import")}
             </label>
 
-            <label className="flex items-center gap-2 text-sm"
-              title="开启后将在导入后自动下载游戏存档到游戏执行文件的同一目录下"
-            >
+            <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.downloadSaveHint")}>
               <input
                 type="checkbox"
                 checked={showDownloadSave}
                 onChange={(e) => setShowDownloadSave(e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
-              下载存档
+              {t("downloadedFiles.downloadSave")}
             </label>
 
-            <label className="flex items-center gap-2 text-sm"
-              title="在下载存档后会搜索游戏存放存档位置解压存档覆盖到该位置，但很多游戏在运行游戏前并没生成存档文件夹"
-            >
+            <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.overrideSaveHint")}>
               <input
                 type="checkbox"
                 checked={showOverrideSave}
                 onChange={(e) => setShowOverrideSave(e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
-              覆盖存档
+              {t("downloadedFiles.overrideSave")}
             </label>
 
             
@@ -1103,7 +1116,7 @@ export default function DownloadedFiles() {
                     </div>
 
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs">游戏名：</span>
+                      <span className="text-xs">{t("downloadedFiles.gameName")}</span>
                       <input
                         type="text"
                         disabled={item.type == 2 && item.status < 2 || item.status < 1 || item.status > 2}
@@ -1114,7 +1127,7 @@ export default function DownloadedFiles() {
                     </div>
                     {item.extracted_game_path && (
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs truncate min-w-0" title={item.extracted_game_path}>游戏解压目录： {item.extracted_game_path}</span>
+                        <span className="text-xs truncate min-w-0" title={item.extracted_game_path}>{t("downloadedFiles.extractedPath")} {item.extracted_game_path}</span>
                       </div>
                     )}
                     {item.installed_path && (
@@ -1122,7 +1135,7 @@ export default function DownloadedFiles() {
                         onClick={() => handleOpenInstalled(item)}
                         className="flex items-center gap-2 min-w-0 hover:text-brand-500 text-left"
                       >
-                        <span className="text-xs truncate min-w-0" title={item.installed_path}>游戏安装目录： {item.installed_path}</span>
+                        <span className="text-xs truncate min-w-0" title={item.installed_path}>{t("downloadedFiles.installedPath")} {item.installed_path}</span>
                       </button>
                     )}
                     {/* {item.iso_items.length > 0 && (
@@ -1134,7 +1147,7 @@ export default function DownloadedFiles() {
                     {/* 第二行：类型、大小、下载状态 + 按钮栏 */}
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <div className="flex items-center gap-3 text-xs text-brand-500">
-                        <span>类型：{item.type == 1 ? '文件夹含压缩包' : item.type ==0 ? '文件夹无需解压' : item.type == 3 ? '安装文件夹' : '单独压缩包'}</span>
+                        <span>{t("downloadedFiles.typeLabel")}{item.type == 1 ? t("downloadedFiles.type.archive_folder") : item.type ==0 ? t("downloadedFiles.type.folder") : item.type == 3 ? t("downloadedFiles.type.installed_folder") : t("downloadedFiles.type.archive")}</span>
                         <span>{item.size < 100000 ? '' : formatSize(item.size)}</span>
                         {/* <span>{!item.is_extracted ? "" : "镜像数目:" + item.iso_items.length}</span> */}
                         <span>{parseTime(item.time).toLocaleDateString()}</span>
@@ -1272,7 +1285,7 @@ export default function DownloadedFiles() {
                           }}
                           className="px-2 py-1 text-xs bg-pink-500 hover:bg-pink-600 text-white rounded"
                         >
-                          搜刮
+                          {t("downloadedFiles.scrape")}
                         </button>
                       )}
 
@@ -1325,9 +1338,9 @@ export default function DownloadedFiles() {
                             onClick={() => handleDeleteImported(item)}
                             disabled={isExecuting}
                             className="px-2 py-1 text-xs bg-red-400 hover:bg-red-500 text-white rounded disabled:opacity-50"
-                            title="删除导入"
+                            title={t("downloadedFiles.deleteImported")}
                           >
-                            删除导入
+                            {t("downloadedFiles.deleteImported")}
                           </button>
                           <button
                             onClick={() => handleOverwrite(item)}
@@ -1381,7 +1394,7 @@ export default function DownloadedFiles() {
                         {item.iso_items.map((iso_path, idx) => (
                           <button 
                             key={idx} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-700 rounded"
-                            title={`装载${iso_path}`}
+                            title={t("downloadedFiles.mount") + iso_path}
                             onClick={() => handleDirectMount(iso_path)}
                             disabled={item.status >= 3}
                           >

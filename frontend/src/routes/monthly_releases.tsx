@@ -195,7 +195,7 @@ function MonthlyReleasesPage() {
       setDownloadSearchResults(results);
     } catch (error) {
       console.error("Failed to search downloaded files:", error);
-      toast.error("搜索下载文件夹失败");
+      toast.error(t("monthlyReleases.searchDownloadFailed"));
     } finally {
       setIsDownloadSearching(false);
     }
@@ -258,7 +258,7 @@ function MonthlyReleasesPage() {
     }
 
     if (!result.link) {
-      toast.error("No download link available");
+      toast.error(t("monthlyReleases.noDownloadLink"));
       return;
     }
 
@@ -474,12 +474,12 @@ function MonthlyReleasesPage() {
       {downloadSearchModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-brand-800 rounded-lg p-6 w-96 max-h-[80vh] flex flex-col">
-            <h3 className="text-lg font-semibold mb-4">搜索下载文件夹</h3>
+            <h3 className="text-lg font-semibold mb-4">{t("monthlyReleases.searchDownloadFolder")}</h3>
             <input
               type="text"
               value={downloadSearchQuery}
               onChange={(e) => setDownloadSearchQuery(e.target.value)}
-              placeholder="输入搜索关键词..."
+              placeholder={t("monthlyReleases.searchPlaceholder")}
               className="flex-1 px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-transparent dark:bg-brand-700 mb-3"
             />
             <div className="flex gap-2 mb-4">
@@ -488,21 +488,21 @@ function MonthlyReleasesPage() {
                 disabled={isDownloadSearching || !downloadSearchGame?.name}
                 className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md disabled:opacity-50"
               >
-                搜索标题
+                {t("downloadedFiles.searchByTitle")}
               </button>
               <button
                 onClick={downloadSearchByFullName}
                 disabled={isDownloadSearching || !downloadSearchGame?.name}
                 className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md disabled:opacity-50"
               >
-                搜索全名
+                {t("downloadedFiles.searchByFullName")}
               </button>
               <button
                 onClick={() => performDownloadSearch(downloadSearchQuery)}
                 disabled={isDownloadSearching || !downloadSearchQuery.trim()}
                 className="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md disabled:opacity-50"
               >
-                搜索
+                {t("downloadedFiles.search")}
               </button>
             </div>
             {isDownloadSearching && (
@@ -519,19 +519,19 @@ function MonthlyReleasesPage() {
                   <div className="font-medium text-sm" title={file.name}>{file.name}</div>
                   <div className="text-xs text-brand-500" title={file.path}>{file.path}</div>
                   <div className="text-xs mt-1">
-                    状态: {file.status == 0 ? '下载中' : file.status == 1 ? '已下载' : file.status == 2 ? '已解压' : file.status == 3 ? '已安装' : '已导入'}
+                    {t("downloadedFiles.statusLabel")}{file.status == 0 ? t("downloadedFiles.status.downloading") : file.status == 1 ? t("downloadedFiles.status.downloaded") : file.status == 2 ? t("downloadedFiles.status.extracted") : file.status == 3 ? t("downloadedFiles.status.installed") : t("downloadedFiles.status.imported")}
                   </div>
                 </div>
               ))}
               {!isDownloadSearching && downloadSearchResults.length === 0 && (
-                <div className="text-center text-gray-500 py-4">暂无搜索结果</div>
+                <div className="text-center text-gray-500 py-4">{t("downloadedFiles.noSearchResults")}</div>
               )}
             </div>
             <button
               onClick={closeDownloadSearchModal}
               className="mt-4 w-full px-4 py-2 bg-brand-200 dark:bg-brand-700 rounded-md hover:bg-brand-300 dark:hover:bg-brand-600"
             >
-              关闭
+              {t("common.close")}
             </button>
           </div>
         </div>
@@ -876,11 +876,11 @@ function BTSearchModal({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`px-1.5 py-0.5 text-xs rounded ${result.link?.startsWith('magnet:') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'}`}>
-                          {result.link?.startsWith('magnet:') ? '磁链' : '种子'}
+                          {result.link?.startsWith('magnet:') ? t("btDownload.magnet") : t("btDownload.torrent")}
                         </span>
                         {result.trusted && (
                           <span className="px-1.5 py-0.5 text-xs rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300">
-                            受信任
+                            {t("btDownload.trusted")}
                           </span>
                         )}
                         <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">

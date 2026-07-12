@@ -117,6 +117,7 @@ export default function DownloadedFiles() {
       
       if (task.type === enums.TaskType.DOWNLOAD_FILES) {
         if (task.working_on) {
+          setIsExecuting(true);
           const nameMatch = task.working_on.match(/: (.+)$/);
           if (nameMatch) {
             setCurrentExecutingName(nameMatch[1]);

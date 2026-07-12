@@ -25,10 +25,11 @@ interface ImageBackupProps {
   hasNext?: boolean;
   hasPrev?: boolean;
   currentIndex?: number;
+  onClose?: () => void;
 }
 
 export function ImageBackupCard({
-    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, isShowTime = false, clickNext, hasNext, hasPrev, currentIndex = 0,
+    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, isShowTime = false, clickNext, hasNext, hasPrev, currentIndex = 0, onClose,
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
@@ -101,6 +102,7 @@ export function ImageBackupCard({
             e.preventDefault();
         } else if (e.key === 'Escape') {
             setIsModalOpen(false);
+            onClose?.();
             e.preventDefault();
         } else if (e.key === 'ArrowRight') {
             if (hasNext && clickNext) {
@@ -174,7 +176,10 @@ export function ImageBackupCard({
             {isModalOpen && createPortal(
                 <div 
                     className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 image-modal-overlay"
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={() => {
+                        setIsModalOpen(false);
+                        onClose?.();
+                    }}
                     onWheel={handleWheel}
                 >
                     <div 
@@ -197,14 +202,17 @@ export function ImageBackupCard({
                                         e.stopPropagation();
                                         handleFullscreen();
                                     }}
-                                    title="全屏显示"
+                                    title="全屏显示，注意该功能会修改Magpie裁剪设置"
                                 >
                                     ⛶
                                 </button>
                             )}
                             <button
                                 className="text-white hover:text-gray-300 text-3xl font-bold"
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={() => {
+                                    setIsModalOpen(false);
+                                    onClose?.();
+                                }}
                             >
                                 ×
                             </button>
@@ -467,6 +475,7 @@ export function ImageCard({
                     hasNext={index < urls.length - 1}
                     hasPrev={index > 0}
                     currentIndex={index}
+                    onClose={() => setIndex(urls.indexOf(url))}
                     />
             </div>
         );

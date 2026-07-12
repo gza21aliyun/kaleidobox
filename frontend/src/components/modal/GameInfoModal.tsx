@@ -1,9 +1,10 @@
 import { models, enums } from "../../../wailsjs/go/models";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { workMapForEach, charactorsForEach } from "../utils/Utility";
 import { ImageCard } from "../card/ImageCard";
 import { createPortal } from "react-dom";
+import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 
 interface GameInfoModalProps {
   gameEntity: models.GameEntity | null;
@@ -13,14 +14,28 @@ interface GameInfoModalProps {
 export function GameInfoModal({ gameEntity, onClose }: GameInfoModalProps) {
   const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
 
   const game = gameEntity?.game || null;
 
-  const images = (() => {
+  
+
+  const getImages = async () => {
     if (!game) return [];
-    const imagesStr = game.images || "";
+    var imagesStr = game.images || "";
+    if (!imagesStr && game.id) {
+      let imgs = await FetchImages(game.id, 0, 2, false);
+      return imgs.map(item => item.url);
+    }
+    
     return imagesStr.split(",").filter((img: string) => img && img.trim() !== "");
-  })();
+  };
+
+  useEffect(() => {
+    getImages().then((imgs) => {
+      setImages(imgs);
+    });
+  }, [game]);
 
   const worksMap = (() => {
     const map = new Map<string, models.Work[]>();
@@ -150,6 +165,7 @@ export function GameInfoModal({ gameEntity, onClose }: GameInfoModalProps) {
                       key={index}
                       url={imgUrl}
                       tempDownload={true}
+                      urls={images}
                       style={{ width: '100%', aspectRatio: '16/9' }}
                     />
                   ))}

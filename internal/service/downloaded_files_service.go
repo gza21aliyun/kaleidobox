@@ -792,8 +792,8 @@ func (s *DownloadedFilesService) checkIsDownloading(itemPath string, itemType in
 		// }
 		// 也检查文件夹内部是否有临时文件
 		entries, err := os.ReadDir(itemPath)
-		if err != nil {
-			return false
+		if err != nil || len(entries) == 0 {
+			return true
 		}
 		for _, entry := range entries {
 			if strings.HasSuffix(entry.Name(), ".!qB") || strings.HasSuffix(entry.Name(), ".!ut") {

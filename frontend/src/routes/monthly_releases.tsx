@@ -319,13 +319,16 @@ function MonthlyReleasesPage() {
           )}
         </h1>
         {/* 搜索按钮 */}
-        <button
-          onClick={() => openSearchModal({ name: "" } as utils.MonthlyReleaseGame)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors"
-        >
-          <div className="i-mdi-magnify" />
-          <span>{t("monthlyReleases.searchBT") || "搜索BT"}</span>
-        </button>
+        {config?.rss_url && (
+          <button
+            onClick={() => openSearchModal({ name: "" } as utils.MonthlyReleaseGame)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors"
+          >
+            <div className="i-mdi-magnify" />
+            <span>{t("monthlyReleases.searchBT") || "搜索BT"}</span>
+          </button>
+        )}
+        
       </div>
 
       {/* 年月选择器 */}

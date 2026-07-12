@@ -1,7 +1,10 @@
 import { models } from "../../../wailsjs/go/models";
-import { GetImageBackupByUrl, FetchGetchuImages } from "../../../wailsjs/go/service/ImageService";
+import { GetImageBackupByUrl, FetchGetchuImages, ScaleImageWithMagpie } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useAppStore } from "../../store";
+import { u } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
+import toast from "react-hot-toast";
 
 
 
@@ -18,13 +21,47 @@ interface ImageBackupProps {
     onDragStart?: React.DragEventHandler | undefined;
     onError?: React.ReactEventHandler | undefined;
   isShowTime?: boolean;
+  imageBackups?: models.ImageBackup[];
+  clickNext?: (isNext: boolean, url: string) => Promise<models.ImageBackup | null>;
+  hasNext?: boolean;
+  hasPrev?: boolean;
 }
 
 export function ImageBackupCard({
-    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, isShowTime = false
+    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, isShowTime = false, imageBackups = [imageBackup], clickNext, hasNext, hasPrev,
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
+    const { config } = useAppStore();
+    const imgRef = useRef<HTMLImageElement>(null);
+    const [cImg, setCImg] = useState<models.ImageBackup>(imageBackup);
+
+    const switchImage = async (isNext: boolean) => { 
+        if (clickNext) {
+            const ib = await clickNext(isNext, cImg.url);
+            if (ib) {
+                setCImg(ib);
+            }
+        }
+        
+    };
+
+    const handleFullscreen = async () => {
+        if (!imgRef.current) return;
+        const rect = imgRef.current.getBoundingClientRect();
+        try {
+            await ScaleImageWithMagpie(
+                Math.round(rect.left),
+                Math.round(rect.top),
+                Math.round(rect.width),
+                Math.round(rect.height),
+                window.innerWidth,
+                window.innerHeight
+            );
+        } catch (error) {
+            console.error("Failed to scale image with Magpie:", error);
+        }
+    };
 
     // 格式化时间显示（通用格式，不需要翻译）
     const formatTime = (time: any) => {
@@ -43,11 +80,11 @@ export function ImageBackupCard({
         }
     };
 
-    const getImageUrl = () => {
-        if (imageBackup.local_path !== "") {
-            return getLocalPath(imageBackup.local_path);
+    const getImageUrl = (ib: models.ImageBackup) => {
+        if (ib.local_path !== "") {
+            return getLocalPath(ib.local_path);
         }
-        return imageBackup.url;
+        return ib.url;
     };
 
     const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
@@ -57,14 +94,28 @@ export function ImageBackupCard({
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+        if (e.key === 'ArrowUp') {
             setScale(prev => Math.min(5, prev * 1.1));
             e.preventDefault();
-        } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-            setScale(prev => Math.max(0.1, prev * 0.9));
+        } else if (e.key === 'ArrowDown') {
+            // setScale(prev => Math.max(0.1, prev * 0.9));
+            if (hasNext && clickNext) {
+                // toast.success('已自动切换到下一张图片2');
+                switchImage(true);
+            }
             e.preventDefault();
         } else if (e.key === 'Escape') {
             setIsModalOpen(false);
+            e.preventDefault();
+        } else if (e.key === 'ArrowRight') {
+            if (hasNext && clickNext) {
+                switchImage(true);
+            }
+            e.preventDefault();
+        } else if (e.key === 'ArrowLeft') {
+            if (hasPrev && clickNext) {
+                switchImage(false);
+            }
             e.preventDefault();
         }
     };
@@ -83,6 +134,7 @@ export function ImageBackupCard({
         if (selectMode && onSelect) {
             onSelect(imageBackup);
         } else {
+            setCImg(imageBackup)
             setIsModalOpen(true);
         }
         
@@ -99,7 +151,7 @@ export function ImageBackupCard({
                     style={style}
                 >
                     { imageBackup.local_path !== "" ? 
-                    (<img src={getImageUrl()} 
+                    (<img src={getImageUrl(imageBackup)} 
                     alt={alt || "Image"}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     draggable={false}
@@ -138,15 +190,30 @@ export function ImageBackupCard({
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <button
-                            className="absolute -top-10 right-0 text-white hover:text-gray-300 text-3xl font-bold"
-                            onClick={() => setIsModalOpen(false)}
-                        >
-                            ×
-                        </button>
-                        <img 
-                            src={getImageUrl()} 
-                            alt="Image" 
+                        <div className="absolute -top-10 right-0 flex gap-2">
+                            {config?.magpie_path && (
+                                <button
+                                    className="text-white hover:text-gray-300 text-2xl font-bold"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleFullscreen();
+                                    }}
+                                    title="全屏显示"
+                                >
+                                    ⛶
+                                </button>
+                            )}
+                            <button
+                                className="text-white hover:text-gray-300 text-3xl font-bold"
+                                onClick={() => setIsModalOpen(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <img
+                            ref={imgRef}
+                            src={getImageUrl(cImg)}
+                            alt="Image"
                             className="max-w-full max-h-[90vh] object-contain"
                         />
                     </div>
@@ -184,6 +251,7 @@ interface ImageCardProps {
   selectMode?: boolean;
   onSelect?: (selected: models.ImageBackup) => void;
   tempDownload?: boolean; // 为true时下载到临时文件夹，不保存到数据库
+  urls?: string[];
 }
 export function ImageCard({
     url,
@@ -197,13 +265,16 @@ export function ImageCard({
     lazyLoad = true,
     selectMode = false,
     onSelect,
-    tempDownload = false
+    tempDownload = false,
+    urls = [url],
 }: ImageCardProps) {
+    // const [cUrl, setCUrl] = useState(url);
     const [imageBackup, setImageBackup] = useState<models.ImageBackup | null>(null);
     const [loading, setLoading] = useState(false);
     const [isVisible, setIsVisible] = useState(!lazyLoad); // 非懒加载时默认可见
     const ref = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = useState(false);
+    const [index, setIndex] = useState(0);
 
     // 组件挂载完成
     useEffect(() => {
@@ -278,30 +349,11 @@ export function ImageCard({
         
         const fetchImage = async () => {
             try {
-                if (tempDownload) {
-                    // 下载到临时文件夹，不保存到数据库
-                    const localPaths = await FetchGetchuImages([url]);
-                    if (mounted && localPaths.length > 0) {
-                        const ar = localPaths[0].split("\\");
-                        if (ar.length >= 3) {
-                            const localUrl = `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`;
-                            setImageBackup({
-                                url: url,
-                                local_path: localPaths[0],
-                                subject_id: "",
-                                subject_type: 0,
-                                image_type: 0,
-                                game_id: "",
-                                created_at: new Date()
-                            } as unknown as models.ImageBackup);
-                        }
-                    }
-                } else {
-                    const res = await GetImageBackupByUrl(url, true);
-                    if (mounted) {
-                        setImageBackup(res);
-                    }
+                const ib = await FetchImageData(url, tempDownload);
+                if (ib && mounted) {
+                    setImageBackup(ib);
                 }
+            
                 if (mounted) {
                     setLoading(false);
                 }
@@ -319,6 +371,30 @@ export function ImageCard({
             setLoading(false);
         };
     }, [url, isVisible, mounted]);
+
+    // var index = urls.indexOf(cUrl);
+    const clickN: (isNext: boolean, u: string) => Promise<models.ImageBackup | null> = async (isNext: boolean, u: string) => { 
+        
+        const i = urls.indexOf(u);
+        toast.success("clickN index:" + index + ", u:" + u);
+        // setCUrl(u);
+        
+        if(isNext){
+            if(i < urls.length - 1){
+                const nUrl = urls[i + 1];
+                toast.success("clickN 2 index:" + i + ", u:" + nUrl);
+                setIndex(i + 1)
+                return await FetchImageData(nUrl, tempDownload)
+            }
+        }else{
+            if(index > 0){
+                const nUrl = urls[i - 1];
+                setIndex(i - 1)
+                return await FetchImageData(nUrl, tempDownload)
+            }
+        }
+        return null;
+    };
 
     // 渲染逻辑
     const renderContent = () => {
@@ -361,6 +437,9 @@ export function ImageCard({
                     onError={onError}
                     selectMode={selectMode}
                     onSelect={onSelect}
+                    clickNext={clickN}
+                    hasNext={index < urls.length - 1}
+                    hasPrev={index > 0}
                     />
             </div>
         );
@@ -369,46 +448,29 @@ export function ImageCard({
     return renderContent();
 }
 
+export async function FetchImageData(url: string, isTemp: boolean): Promise<models.ImageBackup | null> { 
+    if (isTemp) {
+        // 下载到临时文件夹，不保存到数据库
+        const localPaths = await FetchGetchuImages([url]);
+        if (localPaths.length > 0) {
+            const ar = localPaths[0].split("\\");
+            if (ar.length >= 3) {
+                const localUrl = `/local/${ar[ar.length - 3]}/${ar[ar.length - 2]}/${ar[ar.length - 1]}`;
+                return {
+                    url: url,
+                    local_path: localPaths[0],
+                    subject_id: "",
+                    subject_type: 0,
+                    image_type: 0,
+                    game_id: "",
+                    created_at: new Date()
+                } as unknown as models.ImageBackup;
+            }
+        }
+    } else {
+        const res = await GetImageBackupByUrl(url, true);
+        return res;
+    }
+    return null;
+}
 
-//     const [imageBackup, setImageBackup] = useState<models.ImageBackup | null>(null);
-//     const [loading, setLoading] = useState(true);
-
-//     useEffect(() => {
-//         setLoading(true);
-//         GetImageBackupByUrl(url, true).then((res) => {
-//             setImageBackup(res);
-//             setLoading(false);
-//         }).catch(() => {
-//             setLoading(false);
-//         });
-//         return () => {
-//             setImageBackup(null);
-//             setLoading(false);
-//          };
-//     }, [url]);
-
-//     if (loading) {
-//         return (
-//             <div className="image-card-loading flex items-center justify-center bg-gray-100 rounded-md" style={{ ...style, minHeight: style?.height ? `${parseInt(style.height.toString()) * 3}px` : '120px' }}>
-//                 <div className="w-8 h-8 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
-//             </div>
-//         );
-//     }
-
-//     if (!imageBackup) {
-//         return null;
-//     }
-
-//     return (
-//         <ImageBackupCard 
-//             imageBackup={imageBackup} 
-//             alt={alt}
-//             className={className}
-//             style={style}
-//             draggable={draggable}
-//             onDragStart={onDragStart}
-//             referrerPolicy={referrerPolicy}
-//             onError={onError}
-//             />
-//     );
-// }

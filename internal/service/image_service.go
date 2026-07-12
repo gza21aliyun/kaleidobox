@@ -3,8 +3,11 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
@@ -1143,4 +1146,154 @@ func determineReferer(imageURL string) string {
 
 	// 其他情况不设置 Referer
 	return ""
+}
+
+// ScaleImageWithMagpie 在当前应用窗口内用 Magpie 裁剪并全屏化图片
+// imgLeft/imgTop/imgWidth/imgHeight: 图片在视口中的位置和尺寸（CSS 像素）
+// viewportWidth/viewportHeight: 视口尺寸（window.innerWidth/innerHeight）
+func (s *ImageService) ScaleImageWithMagpie(imgLeft, imgTop, imgWidth, imgHeight, viewportWidth, viewportHeight int) error {
+	if s.config.MagpiePath == "" {
+		return fmt.Errorf("Magpie 路径未设置")
+	}
+
+	hwnd, _, _ := procGetForegroundWindow.Call()
+	if hwnd == 0 {
+		return fmt.Errorf("无法获取前台窗口")
+	}
+
+	procGetClientRect := user32.NewProc("GetClientRect")
+	procClientToScreen := user32.NewProc("ClientToScreen")
+	procSetForegroundWindow := user32.NewProc("SetForegroundWindow")
+
+	var winRect [4]int32
+	procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&winRect[0])))
+	winWidth := int(winRect[2] - winRect[0])
+	winHeight := int(winRect[3] - winRect[1])
+
+	var clientRect [4]int32
+	procGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&clientRect[0])))
+	clientWidth := int(clientRect[2])
+	clientHeight := int(clientRect[3])
+
+	var pt [2]int32
+	procClientToScreen.Call(hwnd, uintptr(unsafe.Pointer(&pt[0])))
+	clientOffsetX := int(pt[0]) - int(winRect[0])
+	clientOffsetY := int(pt[1]) - int(winRect[1])
+
+	scaleX := 1.0
+	scaleY := 1.0
+	if viewportWidth > 0 {
+		scaleX = float64(clientWidth) / float64(viewportWidth)
+	}
+	if viewportHeight > 0 {
+		scaleY = float64(clientHeight) / float64(viewportHeight)
+	}
+
+	imgXInWindow := clientOffsetX + int(float64(imgLeft)*scaleX)
+	imgYInWindow := clientOffsetY + int(float64(imgTop)*scaleY)
+	imgWInWindow := int(float64(imgWidth) * scaleX)
+	imgHInWindow := int(float64(imgHeight) * scaleY)
+
+	cropLeft := imgXInWindow
+	cropTop := imgYInWindow
+	cropRight := winWidth - imgXInWindow - imgWInWindow
+	cropBottom := winHeight - imgYInWindow - imgHInWindow
+	if cropLeft < 0 {
+		cropLeft = 0
+	}
+	if cropTop < 0 {
+		cropTop = 0
+	}
+	if cropRight < 0 {
+		cropRight = 0
+	}
+	if cropBottom < 0 {
+		cropBottom = 0
+	}
+
+	applog.LogInfof(s.ctx, "Magpie 裁剪: left=%d, top=%d, right=%d, bottom=%d (窗口=%dx%d, 图片=%dx%d@(%d,%d))",
+		cropLeft, cropTop, cropRight, cropBottom, winWidth, winHeight, imgWInWindow, imgHInWindow, imgXInWindow, imgYInWindow)
+
+	if err := s.configureMagpieCroppingForImage(cropLeft, cropTop, cropRight, cropBottom); err != nil {
+		applog.LogWarningf(s.ctx, "配置 Magpie 裁剪失败: %v", err)
+	}
+
+	procSetForegroundWindow.Call(hwnd)
+	time.Sleep(300 * time.Millisecond)
+
+	hotkeyStr := s.config.MagpieHotkey
+	if hotkeyStr == "" {
+		hotkeyStr = "Win+Shift+A"
+	}
+	utils.SendHotkey(hotkeyStr)
+
+	applog.LogInfof(s.ctx, "已发送 Magpie 缩放快捷键")
+	return nil
+}
+
+// configureMagpieCroppingForImage 配置 Magpie 裁剪参数并重启 Magpie
+func (s *ImageService) configureMagpieCroppingForImage(left, top, right, bottom int) error {
+	configPath := s.config.MagpieConfigPath
+	if configPath == "" {
+		homeDir := os.Getenv("USERPROFILE")
+		configPath = filepath.Join(homeDir, "AppData", "Local", "Magpie", "config", "v4", "config.json")
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+
+	var config map[string]interface{}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return err
+	}
+
+	profiles, ok := config["profiles"].([]interface{})
+	if !ok || len(profiles) == 0 {
+		return fmt.Errorf("配置文件中没有 profiles 数组")
+	}
+
+	profile, ok := profiles[0].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("profiles[0] 不是 map")
+	}
+
+	profile["croppingEnabled"] = true
+	profile["cropping"] = map[string]interface{}{
+		"left":   left,
+		"top":    top,
+		"right":  right,
+		"bottom": bottom,
+	}
+
+	newData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(configPath, newData, 0644); err != nil {
+		return err
+	}
+
+	return s.restartMagpieForImage()
+}
+
+// restartMagpieForImage 重启 Magpie 进程
+func (s *ImageService) restartMagpieForImage() error {
+	applog.LogInfof(s.ctx, "重启 Magpie...")
+	killCmd := exec.Command("taskkill", "/F", "/IM", "Magpie.exe")
+	_ = killCmd.Run()
+	time.Sleep(1 * time.Second)
+
+	cmd := exec.Command(s.config.MagpiePath, "-t")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: 0x08000000,
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	time.Sleep(2 * time.Second)
+	applog.LogInfof(s.ctx, "Magpie 已重启")
+	return nil
 }

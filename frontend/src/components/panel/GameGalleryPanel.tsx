@@ -241,6 +241,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
                   key={image.url}
                   selectMode={isSelectCover}
                   onSelect={handleSelectCover}
+                  urls={galleryImages.map((image) => image.url)}
                   />
               ))}
           </div>

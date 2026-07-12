@@ -21,29 +21,28 @@ interface ImageBackupProps {
     onDragStart?: React.DragEventHandler | undefined;
     onError?: React.ReactEventHandler | undefined;
   isShowTime?: boolean;
-  imageBackups?: models.ImageBackup[];
-  clickNext?: (isNext: boolean, url: string) => Promise<models.ImageBackup | null>;
+  clickNext?: (isNext: boolean, currentIndex: number) => Promise<models.ImageBackup | null>;
   hasNext?: boolean;
   hasPrev?: boolean;
+  currentIndex?: number;
 }
 
 export function ImageBackupCard({
-    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, isShowTime = false, imageBackups = [imageBackup], clickNext, hasNext, hasPrev,
+    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, isShowTime = false, clickNext, hasNext, hasPrev, currentIndex = 0,
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
     const { config } = useAppStore();
     const imgRef = useRef<HTMLImageElement>(null);
     const [cImg, setCImg] = useState<models.ImageBackup>(imageBackup);
+    const [isHovering, setIsHovering] = useState(false);
 
     const switchImage = async (isNext: boolean) => { 
-        if (clickNext) {
-            const ib = await clickNext(isNext, cImg.url);
-            if (ib) {
-                setCImg(ib);
-            }
+        if (!clickNext) return;
+        const ib = await clickNext(isNext, currentIndex);
+        if (ib) {
+            setCImg(ib);
         }
-        
     };
 
     const handleFullscreen = async () => {
@@ -98,11 +97,7 @@ export function ImageBackupCard({
             setScale(prev => Math.min(5, prev * 1.1));
             e.preventDefault();
         } else if (e.key === 'ArrowDown') {
-            // setScale(prev => Math.max(0.1, prev * 0.9));
-            if (hasNext && clickNext) {
-                // toast.success('已自动切换到下一张图片2');
-                switchImage(true);
-            }
+            setScale(prev => Math.max(0.1, prev * 0.9));
             e.preventDefault();
         } else if (e.key === 'Escape') {
             setIsModalOpen(false);
@@ -128,7 +123,7 @@ export function ImageBackupCard({
                 setScale(1);
             };
         }
-    }, [isModalOpen]);
+    }, [isModalOpen, hasNext, hasPrev, clickNext]);
 
     const handleClickImg = () => { 
         if (selectMode && onSelect) {
@@ -189,6 +184,8 @@ export function ImageBackupCard({
                             maxHeight: '90vh'
                         }}
                         onClick={(e) => e.stopPropagation()}
+                        onMouseEnter={() => setIsHovering(true)}
+                        onMouseLeave={() => setIsHovering(false)}
                     >
                         <div className="absolute -top-10 right-0 flex gap-2">
                             {config?.magpie_path && (
@@ -210,6 +207,35 @@ export function ImageBackupCard({
                                 ×
                             </button>
                         </div>
+
+                        {hasPrev && (
+                            <button
+                                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 transition-opacity duration-200 text-white text-4xl font-bold drop-shadow-lg ${isHovering ? 'opacity-100' : 'opacity-0'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (clickNext) {
+                                        switchImage(false);
+                                    }
+                                }}
+                            >
+                                ◀
+                            </button>
+                        )}
+
+                        {hasNext && (
+                            <button
+                                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 transition-opacity duration-200 text-white text-4xl font-bold drop-shadow-lg ${isHovering ? 'opacity-100' : 'opacity-0'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (clickNext) {
+                                        switchImage(true);
+                                    }
+                                }}
+                            >
+                                ▶
+                            </button>
+                        )}
+
                         <img
                             ref={imgRef}
                             src={getImageUrl(cImg)}
@@ -274,7 +300,11 @@ export function ImageCard({
     const [isVisible, setIsVisible] = useState(!lazyLoad); // 非懒加载时默认可见
     const ref = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = useState(false);
-    const [index, setIndex] = useState(0);
+    const [index, setIndex] = useState(urls.indexOf(url));
+
+    useEffect(() => {
+        setIndex(urls.indexOf(url));
+    }, [url, urls]);
 
     // 组件挂载完成
     useEffect(() => {
@@ -349,7 +379,7 @@ export function ImageCard({
         
         const fetchImage = async () => {
             try {
-                const ib = await FetchImageData(url, tempDownload);
+                const ib = await FetchImageData(url, tempDownload, index);
                 if (ib && mounted) {
                     setImageBackup(ib);
                 }
@@ -373,24 +403,18 @@ export function ImageCard({
     }, [url, isVisible, mounted]);
 
     // var index = urls.indexOf(cUrl);
-    const clickN: (isNext: boolean, u: string) => Promise<models.ImageBackup | null> = async (isNext: boolean, u: string) => { 
-        
-        const i = urls.indexOf(u);
-        toast.success("clickN index:" + index + ", u:" + u);
-        // setCUrl(u);
-        
+    const clickN: (isNext: boolean, currentIndex: number) => Promise<models.ImageBackup | null> = async (isNext: boolean, currentIndex: number) => { 
         if(isNext){
-            if(i < urls.length - 1){
-                const nUrl = urls[i + 1];
-                toast.success("clickN 2 index:" + i + ", u:" + nUrl);
-                setIndex(i + 1)
-                return await FetchImageData(nUrl, tempDownload)
+            if(currentIndex < urls.length - 1){
+                const nUrl = urls[currentIndex + 1];
+                setIndex(currentIndex + 1);
+                return await FetchImageData(nUrl, tempDownload, currentIndex + 1);
             }
         }else{
-            if(index > 0){
-                const nUrl = urls[i - 1];
-                setIndex(i - 1)
-                return await FetchImageData(nUrl, tempDownload)
+            if(currentIndex > 0){
+                const nUrl = urls[currentIndex - 1];
+                setIndex(currentIndex - 1);
+                return await FetchImageData(nUrl, tempDownload, currentIndex - 1);
             }
         }
         return null;
@@ -440,6 +464,7 @@ export function ImageCard({
                     clickNext={clickN}
                     hasNext={index < urls.length - 1}
                     hasPrev={index > 0}
+                    currentIndex={index}
                     />
             </div>
         );
@@ -448,7 +473,7 @@ export function ImageCard({
     return renderContent();
 }
 
-export async function FetchImageData(url: string, isTemp: boolean): Promise<models.ImageBackup | null> { 
+export async function FetchImageData(url: string, isTemp: boolean, index?: number): Promise<models.ImageBackup | null> { 
     if (isTemp) {
         // 下载到临时文件夹，不保存到数据库
         const localPaths = await FetchGetchuImages([url]);
@@ -463,12 +488,16 @@ export async function FetchImageData(url: string, isTemp: boolean): Promise<mode
                     subject_type: 0,
                     image_type: 0,
                     game_id: "",
-                    created_at: new Date()
+                    created_at: new Date(),
+                    index: index ?? 0
                 } as unknown as models.ImageBackup;
             }
         }
     } else {
         const res = await GetImageBackupByUrl(url, true);
+        if (res) {
+            (res as any).index = index ?? 0;
+        }
         return res;
     }
     return null;

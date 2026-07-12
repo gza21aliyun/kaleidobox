@@ -865,7 +865,8 @@ export default function DownloadedFiles() {
             本页面目的是快速批量处理已下载的游戏。<br/>
             根据下载游戏数据摆放方式主要分为文件夹不需解压、文件夹含压缩包、单独压缩包。<br/>
             第四类型为安装文件夹，只在安装文件夹找到，下载文件夹没关联上，通常是直接装载镜像用官方安装程序安装的时候出现，下载文件夹和安装文件夹会作为两条独立记录出现。这时候直接导入安装文件夹后删除下载文件夹即可。<br/>
-            下载存档时会下载klb_savedata_xxx的文件到游戏安装目录，只有导入后才能下载。删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
+            下载存档时会下载klb_savedata_xxx的文件到游戏安装目录，只有导入后才能下载。覆盖存档会去寻找存档位置，为提高成功率，请先完成搜刮和运行游戏。<br/>
+            删除解压或删除记录时注意要手动把已装载到虚拟光驱的弹出，否则会删除失败。<br/>
             能选择md5文件夹名或游戏名安装游戏，因此安装后不运行修改游戏名。如想覆盖安装来修复已导入游戏，应该在解压后搜索已导入=》关联=》覆盖安装。<br/>
             这页面修改的临时信息如游戏名会存在游戏下载目录的download.klb文件中,删除解压时如果类型是单独压缩包会一并清理。<br/>
             装载的时候可能用到win官方或第三方的软件，暂无法完整跟踪全流程，请自己留意盘符变化和处理弹出。
@@ -1254,6 +1255,24 @@ export default function DownloadedFiles() {
                           className="px-2 py-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded"
                         >
                           {t("downloadedFiles.import")}
+                        </button>
+                      )}
+
+                      {item.status == 4 && item.imported_id && (
+                        <button
+                          onClick={() => {
+                            GetGamesByIdsStr(item.imported_id!).then((res) => { 
+                              if (res.length == 0) {
+                                return
+                              }
+                              setImportedGames(res)
+                              setIsBatchUpdateOpen(true)
+                            })
+                            
+                          }}
+                          className="px-2 py-1 text-xs bg-pink-500 hover:bg-pink-600 text-white rounded"
+                        >
+                          搜刮
                         </button>
                       )}
 

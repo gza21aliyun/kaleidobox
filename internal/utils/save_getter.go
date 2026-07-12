@@ -242,6 +242,8 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 			}
 		}
 		if foundIndex == -1 {
+			fmt.Println("未找到存档文件夹", len(entries))
+			os.RemoveAll(extractedDir)
 			continue
 		}
 		eTarget := filepath.Join(extractedDir, entries[foundIndex].Name())
@@ -253,10 +255,15 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 				break
 			}
 		}
+
 		if foundIndex == -1 {
+			fmt.Println("copying 01", eTarget, "to", target)
+			CopyDir(eTarget, target)
+			os.RemoveAll(extractedDir)
 			continue
 		}
 		eTarget = filepath.Join(eTarget, entries[foundIndex].Name())
+		fmt.Println("copying 02", eTarget, "to", target)
 		CopyDir(eTarget, target)
 		os.RemoveAll(extractedDir)
 	}

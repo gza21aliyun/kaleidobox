@@ -81,7 +81,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
 
   // 用于中断匹配过程的标志
   const abortMatchRef = useRef(false);
-  const categoryVos = useRef<vo.CategoryVO[]>([]);
+  const [categoryVos, setCategoryVos] = useState<vo.CategoryVO[]>([]);
 
   // 手动选择弹窗状态
   const [showManualSelect, setShowManualSelect] = useState(false);
@@ -95,7 +95,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
     const loadCategoriesForModal = async () => {
       try {
         const vos = await GetCategories();
-        categoryVos.current = vos || [];
+        setCategoryVos(vos || []);
       }
       catch (error) {
         console.error("Failed to fetch categories:", error);
@@ -470,10 +470,10 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
                 <BetterSelect
                           value={selectedCategoryVo?.id ?? ""}
                           onChange={(value) => {
-                            setSelectedCategoryVo(categoryVos.current.find(c => c.id === value) || null);
+                            setSelectedCategoryVo(categoryVos.find(c => c.id === value) || null);
                           
                           }}
-                          options={[{ value: "", label: t('batchImport.notAddToCollection') }, ...categoryVos.current.map(c => ({ value: c.id, label: c.name }))]}
+                          options={[{ value: "", label: t('batchImport.notAddToCollection') }, ...categoryVos.map(c => ({ value: c.id, label: c.name }))]}
                           className="min-w-[200px] w-[150px]"
                         />
                   {/* <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">

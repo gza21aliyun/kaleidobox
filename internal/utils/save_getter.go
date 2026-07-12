@@ -223,17 +223,42 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 		target := game.SavePath
 		if target == "" {
 			newGame, err := SearchSave(game)
-			if err != nil {
+			if err == nil {
 				target = newGame.SavePath
 				if target == "" {
 					continue
 				}
 			}
-			continue
 		}
+		fmt.Printf("存档位置：%s\n", target)
 		extractedDir := filepath.Join(os.TempDir()+"extracted", game.ID)
 		err = extractZip(saveTargetPath, extractedDir)
-		CopyDir(extractedDir, target)
+		entries, err := os.ReadDir(extractedDir)
+		foundIndex := -1
+		for i, entry := range entries {
+			if entry.IsDir() {
+				foundIndex = i
+				break
+			}
+		}
+		if foundIndex == -1 {
+			continue
+		}
+		eTarget := filepath.Join(extractedDir, entries[foundIndex].Name())
+		entries, err = os.ReadDir(eTarget)
+		foundIndex = -1
+		for i, entry := range entries {
+			if entry.IsDir() {
+				foundIndex = i
+				break
+			}
+		}
+		if foundIndex == -1 {
+			continue
+		}
+		eTarget = filepath.Join(eTarget, entries[foundIndex].Name())
+		CopyDir(eTarget, target)
+		os.RemoveAll(extractedDir)
 	}
 	return nil
 }

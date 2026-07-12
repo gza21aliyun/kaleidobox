@@ -9,6 +9,7 @@ import { BatchImportModal } from "../components/modal/BatchImportModal";
 import type { service } from "../../wailsjs/go/models";
 import { models, enums } from "../../wailsjs/go/models";
 import { OpenLocalPath, DeleteGame, GetGamesByIdsStr } from "../../wailsjs/go/service/GameService";
+import { DirectRunExe } from "../../wailsjs/go/service/StartService";
 import { useAppStore } from "../store";
 import { vo } from "../../wailsjs/go/models";
 import toast from "react-hot-toast";
@@ -531,7 +532,7 @@ export default function DownloadedFiles() {
     // 如果只有一个exe，直接运行
     if (executables.length === 1) {
       try {
-        await OpenLocalPath(`${foundPath}/${executables[0]}`);
+        await DirectRunExe(`${executables[0]}`);
       } catch (err) {
         console.error("运行游戏失败:", err);
         setErrorMessage("运行游戏失败");

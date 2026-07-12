@@ -1319,7 +1319,7 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 		if strings.Contains(s.config.GameInstallFolder, targetBasePath) {
 			return errors.New("无法覆盖游戏安装根目录或其父目录，请调整层级")
 		}
-		return copyDirectory(sourcePath, targetBasePath)
+		return copyDirectoryOverwrite(sourcePath, targetBasePath)
 	} else if len(downloadedFile.ISOItems) == 1 {
 		isoPath := downloadedFile.ISOItems[0]
 
@@ -1364,7 +1364,7 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 		}
 
 		applog.LogInfof(s.ctx, "从临时目录覆盖: %s -> %s", sourcePath, targetBasePath)
-		return copyDirectory(sourcePath, targetBasePath)
+		return copyDirectoryOverwrite(sourcePath, targetBasePath)
 	} else {
 		return fmt.Errorf("包含多个镜像文件，无法自动覆盖安装")
 	}
@@ -1438,6 +1438,7 @@ func (s *DownloadedFilesService) OpenFolder(itemPath string) error {
 
 func (s *DownloadedFilesService) DeleteItem(downloadedFile DownloadedFile) error {
 	itemPath := downloadedFile.Path
+	fileName := filepath.Base(itemPath)
 	var err error = nil
 	if downloadedFile.Status > 1 && len(downloadedFile.ExtractedPaths) > 0 {
 		for _, extractedPath := range downloadedFile.ExtractedPaths {
@@ -1445,6 +1446,23 @@ func (s *DownloadedFilesService) DeleteItem(downloadedFile DownloadedFile) error
 		}
 	}
 	err = os.RemoveAll(itemPath)
+	entries, _ := os.ReadDir(s.config.GameDownloadFolder)
+	if downloadedFile.Type != 2 {
+		return err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		ext := filepath.Ext(entry.Name())
+		baseName := strings.TrimSuffix(entry.Name(), ext)
+		if baseName == fileName && compressedExtensions[ext] {
+			err = os.Remove(filepath.Join(s.config.GameDownloadFolder, entry.Name()))
+			return err
+
+		}
+	}
 	return err
 }
 
@@ -1582,6 +1600,52 @@ func copyDirectory(src, dst string) error {
 
 		if info.IsDir() {
 			return os.MkdirAll(targetPath, info.Mode())
+		}
+
+		srcFile, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer srcFile.Close()
+
+		dstFile, err := os.Create(targetPath)
+		if err != nil {
+			return err
+		}
+		defer dstFile.Close()
+
+		_, err = io.Copy(dstFile, srcFile)
+		if err != nil {
+			return err
+		}
+
+		return os.Chmod(targetPath, info.Mode())
+	})
+}
+
+// copyDirectoryOverwrite 逐个文件覆盖目录，.ini文件如果目标存在则跳过
+func copyDirectoryOverwrite(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		targetPath := filepath.Join(dst, relPath)
+
+		if info.IsDir() {
+			return os.MkdirAll(targetPath, info.Mode())
+		}
+
+		// .ini文件如果目标存在则跳过
+		if strings.EqualFold(filepath.Ext(path), ".ini") {
+			if _, err := os.Stat(targetPath); err == nil {
+				return nil
+			}
 		}
 
 		srcFile, err := os.Open(path)

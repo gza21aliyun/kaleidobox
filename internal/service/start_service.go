@@ -1621,4 +1621,11 @@ func (s *StartService) SearchSavePath(processName, processPath string) (string, 
 	return "", fmt.Errorf("未检测到存档文件")
 }
 
+func (s *StartService) DirectRunExe(exePath string) error {
+	cmd := exec.Command(exePath)
+	cmd.Dir = filepath.Dir(exePath)
+	applog.InfoLogSaveAppLog("运行游戏：%s", exePath)
+	return cmd.Start()
+}
+
 // ... existing code ...

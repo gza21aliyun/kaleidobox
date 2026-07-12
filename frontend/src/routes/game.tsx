@@ -236,12 +236,16 @@ function GameDetailPage() {
       // 特殊键处理
       switch (e.code) {
         case "ArrowLeft":
-          e.preventDefault();
-          goToPrevGame();
+          if (!document.querySelector('.image-modal-overlay')) {
+            e.preventDefault();
+            goToPrevGame();
+          }
           break;
         case "ArrowRight":
-          e.preventDefault();
-          goToNextGame();
+          if (!document.querySelector('.image-modal-overlay')) {
+            e.preventDefault();
+            goToNextGame();
+          }
           break;
         
       }

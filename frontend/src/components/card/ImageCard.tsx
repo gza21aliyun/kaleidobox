@@ -105,11 +105,13 @@ export function ImageBackupCard({
         } else if (e.key === 'ArrowRight') {
             if (hasNext && clickNext) {
                 switchImage(true);
+                e.stopPropagation();
             }
             e.preventDefault();
         } else if (e.key === 'ArrowLeft') {
             if (hasPrev && clickNext) {
                 switchImage(false);
+                e.stopPropagation();
             }
             e.preventDefault();
         }
@@ -171,7 +173,7 @@ export function ImageBackupCard({
 
             {isModalOpen && createPortal(
                 <div 
-                    className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+                    className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 image-modal-overlay"
                     onClick={() => setIsModalOpen(false)}
                     onWheel={handleWheel}
                 >

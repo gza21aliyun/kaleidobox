@@ -27,7 +27,6 @@ type DownloadedFile = Omit<service.DownloadedFile, "convertValues"> & {
 export default function DownloadedFiles() {
   const { t } = useTranslation();
   const [items, setItems] = useState<DownloadedFile[]>([]);
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showExtract, setShowExtract] = useState(true);
   const [showInstall, setShowInstall] = useState(true);
@@ -71,6 +70,7 @@ export default function DownloadedFiles() {
   const config = useAppStore(state => state.config);
   const fetchConfig = useAppStore(state => state.fetchConfig);
   const fetchGames = useAppStore(state => state.fetchGames);
+  // const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   useEffect(() => {
     fetchConfig();
@@ -82,6 +82,10 @@ export default function DownloadedFiles() {
     }
   }, [config, t]);
 
+  const selectedItems = (()=>{
+    return items.filter(item => item.selected).map(item => item.id)
+  })();
+
   const loadItems = async () => {
     if (listContainerRef.current) {
       setScrollPosition(listContainerRef.current.scrollTop);
@@ -90,7 +94,7 @@ export default function DownloadedFiles() {
     try {
       const result = await ListDownloadedFiles();
       setItems(result.map(item => ({ ...item, selected: false })));
-      setSelectedItems([]);
+      // setSelectedItems([]);
     } catch (err) {
       console.error("Failed to load items:", err);
       setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.loadFailed"));
@@ -171,10 +175,10 @@ export default function DownloadedFiles() {
   const handleSelectAll = () => {
     if (selectedItems.length === items.length) {
       setItems(items.map(item => ({ ...item, selected: false })));
-      setSelectedItems([]);
+      // setSelectedItems([]);
     } else {
       setItems(items.map(item => ({ ...item, selected: true })));
-      setSelectedItems(items.map(item => item.id));
+      // setSelectedItems(items.map(item => item.id));
     }
   };
 
@@ -187,12 +191,12 @@ export default function DownloadedFiles() {
       : [...selectedItems, itemId];
 
     setItems(items.map(i => ({ ...i, selected: newSelected.includes(i.id) })));
-    setSelectedItems(newSelected);
+    // setSelectedItems(newSelected);
   };
 
   const handleClearAll = () => {
     setItems(items.map(item => ({ ...item, selected: false })));
-    setSelectedItems([]);
+    // setSelectedItems([]);
   };
 
   const handleExecute = async () => {
@@ -743,7 +747,7 @@ export default function DownloadedFiles() {
       // await loadItems();
       const game = await RefreshDownloadedFile(item as unknown as service.DownloadedFile)
       setItems(items.map(i =>
-        i.id === item.id ? { ...i, ...game } : i
+        i.id === item.id ? { ...i, status: game.status, imported_id: undefined } : i
       ));
 
     } catch (err) {

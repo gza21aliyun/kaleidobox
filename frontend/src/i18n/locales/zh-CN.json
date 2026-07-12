@@ -1825,7 +1825,8 @@
       "downloaded": "已下载",
       "extracted": "已解压",
       "installed": "已安装",
-      "imported": "已导入"
+      "imported": "已导入",
+      "downloading": "下载中"
     },
     "type": {
       "all": "全部",

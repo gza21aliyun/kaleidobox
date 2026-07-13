@@ -74,6 +74,7 @@ type DownloadedFile struct {
 	GameName       string   `json:"game_name"` //从单元标题再继续去除描述性前缀和后缀
 	Status         int      `json:"status"`    //0:下载中、1:已下载、2:已解压、3:已安装 4:已导入
 	IsChanged      bool     `json:"is_changed"`
+	CrackPath      string   `json:"crack_path,omitempty"`
 }
 
 var compressedExtensions = map[string]bool{
@@ -454,7 +455,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 	}
 
 	if isFolder {
-		innerItems, isoItems := s.getInnerItems(itemPath)
+		innerItems, isoItems, size, crackPath := s.getInnerItems(itemPath)
 		// fmt.Printf("InnerItems,name: %s, path:%s, count:%v\n", item.Name, item.Path, innerItems)
 		if item.HasNumericName {
 			item.Name = s.JudgeGameName(innerItems)
@@ -472,6 +473,8 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		// }
 		// type=1: 文件夹包含多个压缩包
 		item.Type = 1
+		item.Size = size
+		item.CrackPath = crackPath
 	} else {
 		item.InnerItems = s.getArchiveInnerItems(itemPath)
 		item.ISOItems = []string{}
@@ -530,7 +533,7 @@ func (s *DownloadedFilesService) hasExtractedContent(folderPath string) (bool, b
 			// break
 		}
 		ext := strings.ToLower(filepath.Ext(entry.Name()))
-		baseName := strings.ToLower(strings.TrimSuffix(entry.Name(), ext))
+		baseName := strings.TrimSuffix(strings.ToLower(entry.Name()), ext)
 		if ext == ".!ut" || ext == ".!qb" {
 			ext = strings.ToLower(filepath.Ext(baseName))
 		}
@@ -825,19 +828,23 @@ func (s *DownloadedFilesService) isNumericName(name string) bool {
 	return re.MatchString(baseName)
 }
 
-func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []string) {
+func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []string, int64, string) {
 	itemsMap := make(map[string]string)
 	items := []string{}
 	entries, err := os.ReadDir(folderPath)
 	isoItems := []string{}
+	crackPath := ""
+	var size int64 = 0
 	if err != nil {
-		return items, isoItems
+		return items, isoItems, size, crackPath
 	}
 
 	for i, entry := range entries {
 		if i >= 5 {
 			// break
 		}
+		info, _ := entry.Info()
+		size += info.Size()
 		filename := entry.Name()
 		filebase := strings.TrimSuffix(filename, filepath.Ext(filename))
 		// itemsMap[filebase] = filename
@@ -868,6 +875,13 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 			}
 		} else {
 			itemsMap[filebase] = filename
+			crackWords := []string{"crack", "activate", "hack", "nodvd"}
+			for _, crackWord := range crackWords {
+				if strings.Contains(strings.ToLower(entry.Name()), crackWord) {
+					crackPath = filepath.Join(folderPath, entry.Name())
+					break
+				}
+			}
 		}
 	}
 	for _, v := range itemsMap {
@@ -876,7 +890,7 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 	sort.Slice(items, func(i, j int) bool {
 		return len(items[i]) < len(items[j])
 	})
-	return items, isoItems
+	return items, isoItems, size, crackPath
 }
 
 func (s *DownloadedFilesService) getArchiveInnerItems(archivePath string) []string {
@@ -1171,6 +1185,11 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 	return fmt.Errorf("未检测到新挂载的盘符")
 }
 
+func (s *DownloadedFilesService) OverwriteCracker(downloadedFile DownloadedFile) error {
+	return copyDirectory(downloadedFile.CrackPath, downloadedFile.InstalledPath)
+
+}
+
 func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, installMethod string) (string, error) {
 	itemPath := downloadedFile.Path
 	installFolder := s.config.GameInstallFolder
@@ -1181,10 +1200,10 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 	applog.LogInfof(s.ctx, "开始安装: %s", itemPath)
 
 	var gameName string
-	baseName := filepath.Base(itemPath)
+	// baseName := filepath.Base(itemPath)
 
 	// 使用 ExtractGameNameFromDLSite 提取游戏名
-	extractedGameName := s.ExtractGameName(baseName)
+	extractedGameName := downloadedFile.GameName
 
 	if installMethod == "md5" {
 		gameName = s.getGameNameMD5(extractedGameName)
@@ -1198,29 +1217,16 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 		return "", fmt.Errorf("目标路径已存在: %s", targetPath)
 	}
 
-	files, err := os.ReadDir(itemPath)
-	if err != nil {
-		applog.LogErrorf(s.ctx, "读取目录失败: %s, 错误: %v", itemPath, err)
-		return "", err
-	}
+	// files, err := os.ReadDir(itemPath)
+	// if err != nil {
+	// 	applog.LogErrorf(s.ctx, "读取目录失败: %s, 错误: %v", itemPath, err)
+	// 	return "", err
+	// }
 
-	hasISO := false
-	for _, file := range files {
-		ext := strings.ToLower(filepath.Ext(file.Name()))
-		if imageExtensions[ext] {
-			hasISO = true
-			break
-		}
-	}
+	hasISO := len(downloadedFile.ISOItems) > 0
 
 	if hasISO {
-		isoFiles := []string{}
-		for _, file := range files {
-			ext := strings.ToLower(filepath.Ext(file.Name()))
-			if imageExtensions[ext] {
-				isoFiles = append(isoFiles, filepath.Join(itemPath, file.Name()))
-			}
-		}
+		isoFiles := downloadedFile.ISOItems
 
 		if len(isoFiles) == 1 {
 			if err := os.MkdirAll(targetPath, 0755); err != nil {
@@ -1234,7 +1240,10 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 				return "", err
 			}
 			// 保存安装信息到 download.klb
-			s.saveInstallInfo(downloadedFile.Path, targetPath)
+			downloadedFile.Status = 3
+			downloadedFile.InstalledPath = targetPath
+			s.SaveDownloadInfo(downloadedFile.Path, downloadedFile)
+			// s.saveInstallInfo(downloadedFile.Path, targetPath)
 			applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
 			return targetPath, nil
 		}
@@ -1255,7 +1264,10 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 	}
 
 	// 保存安装信息到 download.klb
-	s.saveInstallInfo(downloadedFile.Path, targetPath)
+	downloadedFile.Status = 3
+	downloadedFile.InstalledPath = targetPath
+	s.SaveDownloadInfo(downloadedFile.Path, downloadedFile)
+	// s.saveInstallInfo(downloadedFile.Path, targetPath)
 
 	applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
 	return targetPath, nil
@@ -1388,37 +1400,46 @@ func (s *DownloadedFilesService) DeleteInstalledGame(downloadedFile DownloadedFi
 	}
 
 	// 直接使用单元的 gameName 字段，而不是重新计算
-	gameName := downloadedFile.GameName
-	if gameName == "" {
-		// 兼容旧数据，作为后备方案
-		baseName := filepath.Base(downloadedFile.Path)
-		gameName = s.ExtractGameName(baseName)
+	// gameName := downloadedFile.GameName
+	// if gameName == "" {
+	// 	// 兼容旧数据，作为后备方案
+	// 	baseName := filepath.Base(downloadedFile.Path)
+	// 	gameName = s.ExtractGameName(baseName)
+	// }
+
+	if _, err := os.Stat(downloadedFile.InstalledPath); err == nil {
+		applog.LogInfof(s.ctx, "删除安装目录: %s", downloadedFile.InstalledPath)
+		if err := os.RemoveAll(downloadedFile.InstalledPath); err != nil {
+			applog.LogErrorf(s.ctx, "删除安装目录失败: %v", err)
+			return err
+		}
+		return nil
 	}
 
 	// 检查以游戏名命名的文件夹
-	targetPath := filepath.Join(installFolder, gameName)
-	if _, err := os.Stat(targetPath); err == nil {
-		applog.LogInfof(s.ctx, "删除安装目录: %s", targetPath)
-		if err := os.RemoveAll(targetPath); err != nil {
-			applog.LogErrorf(s.ctx, "删除安装目录失败: %v", err)
-			return err
-		}
-		return nil
-	}
+	// targetPath := filepath.Join(installFolder, gameName)
+	// if _, err := os.Stat(targetPath); err == nil {
+	// 	applog.LogInfof(s.ctx, "删除安装目录: %s", targetPath)
+	// 	if err := os.RemoveAll(targetPath); err != nil {
+	// 		applog.LogErrorf(s.ctx, "删除安装目录失败: %v", err)
+	// 		return err
+	// 	}
+	// 	return nil
+	// }
 
-	// 检查以 md5 命名的文件夹
-	md5Name := s.getGameNameMD5(gameName)
-	md5Path := filepath.Join(installFolder, md5Name)
-	if _, err := os.Stat(md5Path); err == nil {
-		applog.LogInfof(s.ctx, "删除安装目录: %s", md5Path)
-		if err := os.RemoveAll(md5Path); err != nil {
-			applog.LogErrorf(s.ctx, "删除安装目录失败: %v", err)
-			return err
-		}
-		return nil
-	}
+	// // 检查以 md5 命名的文件夹
+	// md5Name := s.getGameNameMD5(gameName)
+	// md5Path := filepath.Join(installFolder, md5Name)
+	// if _, err := os.Stat(md5Path); err == nil {
+	// 	applog.LogInfof(s.ctx, "删除安装目录: %s", md5Path)
+	// 	if err := os.RemoveAll(md5Path); err != nil {
+	// 		applog.LogErrorf(s.ctx, "删除安装目录失败: %v", err)
+	// 		return err
+	// 	}
+	// 	return nil
+	// }
 
-	return fmt.Errorf("未找到安装目录: %s 或 %s", targetPath, md5Path)
+	return fmt.Errorf("未找到安装目录: %s", downloadedFile.InstalledPath)
 }
 
 func (s *DownloadedFilesService) ExtractISO(isoPath, targetPath string) error {

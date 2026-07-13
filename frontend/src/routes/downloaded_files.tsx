@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker } from "../../wailsjs/go/service/DownloadedFilesService";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
@@ -47,6 +47,7 @@ export default function DownloadedFiles() {
   const [currentExecutingTask, setCurrentExecutingTask] = useState("");
   const [scrollPosition, setScrollPosition] = useState(0);
   const listContainerRef = useRef<HTMLDivElement>(null);
+  const needsScrollRestore = useRef(false);
   const handleImportRef = useRef<(items: DownloadedFile[]) => Promise<void>>();
   const [batchImportModalItems, setBatchImportModalItems] = useState<DownloadedFile[]>([]);
   const pendingItemsToImportRef = useRef<DownloadedFile[]>([]);
@@ -90,6 +91,7 @@ export default function DownloadedFiles() {
     if (listContainerRef.current) {
       setScrollPosition(listContainerRef.current.scrollTop);
     }
+    needsScrollRestore.current = true;
     setIsLoading(true);
     try {
       const result = await ListDownloadedFiles();
@@ -111,10 +113,11 @@ export default function DownloadedFiles() {
   }, [config]);
 
   useEffect(() => {
-    if (!isLoading && listContainerRef.current) {
+    if (needsScrollRestore.current && !isLoading && listContainerRef.current) {
       listContainerRef.current.scrollTop = scrollPosition;
+      needsScrollRestore.current = false;
     }
-  }, [items, isLoading, scrollPosition]);
+  }, [items, isLoading]);
 
   useEffect(() => {
     const unlisten = EventsOn("game_updates", (data: any) => {
@@ -214,10 +217,12 @@ export default function DownloadedFiles() {
     const itemsImported: DownloadedFile[] = [];
     
     const itemsNeedingProcess: DownloadedFile[] = [];
+    var errInfoCode = 0;
     
     for (const itemId of selectedItems) {
       const item = items.find(i => i.id === itemId);
       if (!item) continue;
+      // toast.success(`正在处理 ${item.name}`);
 
       if (item.status == 3 && showImport) {
         itemsToImport.push(item);
@@ -229,17 +234,23 @@ export default function DownloadedFiles() {
       const needsExtract = showExtract && item.status == 1;
       const hasIso = item.iso_items && item.iso_items.length > 0;
       const needsInstall = showInstall && item.status == 2 && item.extracted_game_path && (directIsoInstall || !hasIso);
+      if (showInstall && hasIso && !directIsoInstall) {
+        errInfoCode = 4
+      }
+      // toast.success("需要安装：" + needsInstall +",status: " + item.status + ",directIsoInstall: " + directIsoInstall + ",hasIso: " + hasIso)
+
       
       if (needsExtract || needsInstall) {
         itemsNeedingProcess.push(item);
       }
     }
-    var errInfoCode = 0;
+    
     
     if (itemsNeedingProcess.length > 0) {
       pendingItemsToImportRef.current = itemsToImport;
       await ExecuteBatchTask(itemsNeedingProcess as unknown as service.DownloadedFile[], showExtract, showInstall, showImport, directIsoInstall, md5AsFolder ? "md5" : "name");
       toast(t("downloadedFiles.batchTaskStarted") || '批量处理任务已启动，可在任务页面查看进度');
+      errInfoCode = 0;
       return;
     } else if (showExtract || showInstall) {
       errInfoCode = 1;
@@ -247,6 +258,7 @@ export default function DownloadedFiles() {
     
     try {
       if (showImport && itemsToImport.length > 0) {
+        errInfoCode = 0;
         setCurrentExecutingTask(t("downloadedFiles.taskImport"));
         await handleImport(itemsToImport);
       } else if (showImport && !showExtract && !showInstall) {
@@ -254,6 +266,7 @@ export default function DownloadedFiles() {
       }
       
       if (showDownloadSave && itemsImported.length > 0) {
+        errInfoCode = 0;
         setCurrentExecutingTask(t("downloadedFiles.taskDownloadSave"));
         const games = await GetGamesByIdsStr(itemsImported.map(item => item.imported_id!).join(","));
         await DownloadSaves(games, showOverrideSave);
@@ -262,6 +275,9 @@ export default function DownloadedFiles() {
       }
 
       switch (errInfoCode) {
+        case 4:
+          toast.error("游戏文件夹含镜像文件，需要勾选安装镜像");
+          break;
         case 3:
           toast.error("要下载存档，请先导入游戏")
           break;
@@ -481,6 +497,7 @@ export default function DownloadedFiles() {
   }, [handleImport]);
   
   const handleBatchImportComplete = async (games: models.Game[]) => {
+    toast.success(`成功导入 ${games.length} 个游戏`);
     if (games.length === 0 || batchImportModalItems.length === 0) {
       setBatchImportModalItems([]);
       setBatchImportCandidates([]);
@@ -585,7 +602,8 @@ export default function DownloadedFiles() {
     }
     
     try {
-      await StartGameTemp(exePath);
+      // await StartGameTemp(exePath);
+      await DirectRunExe(exePath);
     } catch (err) {
       console.error("运行游戏失败:", err);
       setErrorMessage(t("downloadedFiles.runGameFailed"));
@@ -891,7 +909,7 @@ export default function DownloadedFiles() {
 
         {/* 提示信息 */}
         {showHelp && (
-          <p className="text-sm text-brand-500 dark:text-brand-400 mb-4">
+          <p className="text-sm text-brand-500 dark:text-brand-400 mb-4 whitespace-pre-line">
             {t("downloadedFiles.helpText")}
           </p>
         )}
@@ -1293,6 +1311,23 @@ export default function DownloadedFiles() {
                         </button>
                       )}
 
+                      {item.status == 4 && item.imported_id && (
+                        <button
+                          onClick={() => {
+                            item.imported_id = undefined
+                            item.status = 2
+                            item.installed_path = undefined
+                            SaveDownloadInfo(item.path, item as unknown as service.DownloadedFile)
+                            setItems(items.map(i => i.id == item.id ? { ...i, imported_id: undefined, status: 2, installed_path: undefined } : i))
+                            
+                          }}
+                          className="px-2 py-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded"
+                          title="解除下载文件跟已导入游戏的关联"
+                        >
+                          解除导入
+                        </button>
+                      )}
+
                       {/* 打开游戏按钮 - 只有导入后显示 */}
                       {item.status == 4 && item.imported_id && (
                         <button
@@ -1310,6 +1345,20 @@ export default function DownloadedFiles() {
                           className="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded"
                         >
                           {t("downloadedFiles.runGame")}
+                        </button>
+                      )}
+
+                      {item.status == 3 && item.crack_path && (
+                        <button
+                          onClick={() => {
+                            OverwriteCracker(item as unknown as service.DownloadedFile)
+                              .then(() => {
+                                toast.success("已覆盖破解")
+                              })
+                          }}
+                          className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
+                        >
+                          覆盖破解
                         </button>
                       )}
 
@@ -1546,7 +1595,7 @@ export default function DownloadedFiles() {
             if (games && games.length > 0) {
               handleBatchImportComplete(games);
               if (isOpenUpdate) {
-                setImportedGames(importedGames)
+                setImportedGames(games)
                 setIsBatchUpdateOpen(true);
               }
               

@@ -107,6 +107,12 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
     //  });
   };
 
+  const handleGameDetails = async (game: models.Game) => {
+    navigate({ 
+      to: `/game/${game.id}`,
+     });
+  };
+
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-4xl max-h-[80vh] rounded-xl bg-white dark:bg-brand-800 shadow-xl border border-brand-200 dark:border-brand-700 flex flex-col">
@@ -207,6 +213,15 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
                     >
                       <div className="i-mdi-information-variant text-lg" />
                     </button>
+
+                    <button
+                        onClick={()=>{handleGameDetails(game)}}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-blue-500/80 active:scale-95"
+                        title="打开游戏"
+                      >
+                      <div className="i-mdi-play text-lg" />
+                    </button>
+
                     {onChoose && type && type != 3 && status && status < 4 && status > 1 && (
                       <button
                         onClick={()=>{onChoose(game); onClose();}}

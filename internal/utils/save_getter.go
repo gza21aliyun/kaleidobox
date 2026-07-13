@@ -799,17 +799,19 @@ func SearchSave(game models.Game) (models.Game, error) {
 		return game, nil
 	}
 	brandMap := map[string]string{
-		"FrontWing":    "フロントウイング",
-		"ETERNAL":      "WillPuls",
-		"シルキーズSAKURA":  "SilkysSakura",
-		"でぼの巣製作所":      "DebonosuWorks",
-		"アストロノーツ・シリウス": "Sirius",
-		"かえるそふと":       "Kaeru Soft",
-		"ミルフィーユ":       "mille-feuille",
-		"GrayZone":     "My Games",
-		"monoceros+黒":  "モノセロスプラス黒",
-		"コンプリーツ":       "Complets",
-		"calcite":      "skdata",
+		"FrontWing":      "フロントウイング",
+		"ETERNAL":        "WillPuls",
+		"シルキーズSAKURA":    "SilkysSakura",
+		"でぼの巣製作所":        "DebonosuWorks",
+		"アストロノーツ・シリウス":   "Sirius",
+		"かえるそふと":         "Kaeru Soft",
+		"ミルフィーユ":         "mille-feuille",
+		"GrayZone":       "My Games",
+		"monoceros+黒":    "モノセロスプラス黒",
+		"コンプリーツ":         "Complets",
+		"calcite":        "skdata",
+		"シルキーズプラスWASABI": "SilkysPlus",
+		"シルキーズプラス":       "SilkysPlus",
 	}
 	newGame, engine, exeName, folderName, err := SearchGamePathSave(game)
 	applog.InfoLogSaveAppLog("engine: %s, exeName: %s, folderName: %s", engine, exeName, folderName)

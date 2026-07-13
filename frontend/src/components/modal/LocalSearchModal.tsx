@@ -222,7 +222,7 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
                       <div className="i-mdi-play text-lg" />
                     </button>
 
-                    {onChoose && type && type != 3 && status && status < 4 && status > 1 && (
+                    {onChoose && type !== undefined && type != 3 && status && status < 4 && status > 1 && (
                       <button
                         onClick={()=>{onChoose(game); onClose();}}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-green-500/80 active:scale-95"
@@ -231,6 +231,7 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
                         <div className="i-mdi-link text-lg" />
                       </button>
                     )}
+                    {/* <p title={`type:${type}, status:${status}`}>{`type:${type}, status:${status}`}</p> */}
                   </>}
                 />
               ))}

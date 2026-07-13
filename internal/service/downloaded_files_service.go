@@ -1273,6 +1273,53 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 	return targetPath, nil
 }
 
+func (s *DownloadedFilesService) InstallImage(downloadedFile DownloadedFile, imgPath string, installMethod string) (string, error) {
+	itemPath := downloadedFile.Path
+	installFolder := s.config.GameInstallFolder
+	if installFolder == "" {
+		return "", fmt.Errorf("游戏安装文件夹未配置")
+	}
+
+	applog.LogInfof(s.ctx, "开始安装: %s", itemPath)
+
+	var gameName string
+	// baseName := filepath.Base(itemPath)
+
+	// 使用 ExtractGameNameFromDLSite 提取游戏名
+	extractedGameName := downloadedFile.GameName
+
+	if installMethod == "md5" {
+		gameName = s.getGameNameMD5(extractedGameName)
+	} else {
+		gameName = extractedGameName
+	}
+
+	targetPath := filepath.Join(installFolder, gameName)
+
+	if _, err := os.Stat(targetPath); err == nil {
+		return "", fmt.Errorf("目标路径已存在: %s", targetPath)
+	}
+
+	if err := os.MkdirAll(targetPath, 0755); err != nil {
+		applog.LogErrorf(s.ctx, "创建目录失败: %s, 错误: %v", targetPath, err)
+		return "", err
+	}
+	applog.LogInfof(s.ctx, "开始解压ISO: %s -> %s", imgPath, targetPath)
+	err := s.ExtractISO(imgPath, targetPath)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "解压ISO失败: %v", err)
+		return "", err
+	}
+	// 保存安装信息到 download.klb
+	downloadedFile.Status = 3
+	downloadedFile.InstalledPath = targetPath
+	s.SaveDownloadInfo(downloadedFile.Path, downloadedFile)
+	// s.saveInstallInfo(downloadedFile.Path, targetPath)
+	applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
+	return targetPath, nil
+
+}
+
 // saveInstallInfo 保存安装信息到 download.klb
 func (s *DownloadedFilesService) saveInstallInfo(itemPath, installedPath string) {
 	// 读取现有信息

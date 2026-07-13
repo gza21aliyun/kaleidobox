@@ -973,7 +973,7 @@ func IsEnglishWords(s string) bool {
 		return false
 	}
 	for _, c := range s {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == ' ' || c == ',') {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '1' && c <= '9') || c == '_' || c == ' ' || c == ',') {
 			return false
 		}
 	}

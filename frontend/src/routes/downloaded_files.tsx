@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker, InstallImage } from "../../wailsjs/go/service/DownloadedFilesService";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
@@ -19,6 +19,7 @@ import { ConfirmModal } from "../components/modal/ConfirmModal";
 import { BetterSelect } from "../components/ui/BetterSelect";
 import { parseTime } from "../utils/time";
 import { GameInfoModal } from "../components/modal/GameInfoModal";
+import { dir } from "i18next";
 
 type DownloadedFile = Omit<service.DownloadedFile, "convertValues"> & {
   selected: boolean;
@@ -348,9 +349,21 @@ export default function DownloadedFiles() {
     }
   };
 
-  const handleDirectMount = async (iso_path: string) => {
+  const handleDirectMount = async (iso_path: string, item: DownloadedFile) => {
     try {
-      await MountISO(iso_path);
+      if (directIsoInstall) {
+        setIsExecuting(true);
+        setCurrentExecutingName(item.name);
+        setCurrentExecutingTask(t("downloadedFiles.install"));
+        await InstallImage(item as unknown as service.DownloadedFile, iso_path, md5AsFolder ? "md5" : "name");
+        const i = await RefreshDownloadedFile(item as unknown as service.DownloadedFile)
+        setItems(items.map((it) => (it.id === item.id ? { ...it, status: i.status, installed_path: i.installed_path } : it)));
+        setIsExecuting(false);
+      } else {
+        await MountISO(iso_path);
+        toast.success("已挂载镜像");
+      }
+      
     } catch (err) {
       console.error("Mount failed:", err);
       setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.mountFailed") + ": " + err);
@@ -381,7 +394,7 @@ export default function DownloadedFiles() {
     setConfirmModalItem(null);
 
     try {
-      const installedPath = await InstallGame(confirmModalItem as unknown as service.DownloadedFile, md5AsFolder ? "md5" : installMethod);
+      const installedPath = await InstallGame(confirmModalItem as unknown as service.DownloadedFile, md5AsFolder ? "md5" : "name");
       // 更新单元状态，包含安装路径
       setItems(items.map(i =>
         i.id === confirmModalItem.id 
@@ -1447,8 +1460,8 @@ export default function DownloadedFiles() {
                         {item.iso_items.map((iso_path, idx) => (
                           <button 
                             key={idx} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-700 rounded"
-                            title={t("downloadedFiles.mount") + iso_path}
-                            onClick={() => handleDirectMount(iso_path)}
+                            title={t(directIsoInstall ? "downloadedFiles.install" : "downloadedFiles.mount") + iso_path}
+                            onClick={() => handleDirectMount(iso_path, item)}
                             disabled={item.status >= 3}
                           >
                             {iso_path.split("\\").pop()}

@@ -1695,7 +1695,11 @@
     "searchLocal": "インポートを検索",
     "viewDetail": "詳細を表示",
     "goToGame": "ゲームへ移動",
-    "gameDetail": "ゲーム詳細"
+    "gameDetail": "ゲーム詳細",
+    "searchDownloadFailed": "ダウンロードフォルダの検索に失敗しました",
+    "noDownloadLink": "利用可能なダウンロードリンクがありません",
+    "searchDownloadFolder": "ダウンロードフォルダを検索",
+    "searchPlaceholder": "ゲーム名で検索"
   },
   "btDownload": {
     "rssUrl": "RSS URL",
@@ -1728,7 +1732,10 @@
     "sevenZipPath": "7-Zip パス",
     "sevenZipPathPlaceholder": "7z.exe パス",
     "sevenZipPathHint": "アーカイブを展開するための 7z.exe のフルパスを設定",
-    "select": "選択"
+    "select": "選択",
+    "magnet": "マグネット",
+    "torrent": "トレント",
+    "trusted": "信頼"
   },
   "downloadedFiles": {
     "selectAll": "全て選択",
@@ -1776,6 +1783,7 @@
     "runGame": "ゲームを実行",
     "selectExecutable": "実行ファイルを選択",
     "noSevenZipPath": "7-Zip パスが設定されていません。解压機能を使用するには、設定で 7z.exe のパスを設定してください。",
+    "no_need_extract": "解凍不要",
     "delete": "削除",
     "execute": "実行",
     "statusLabel": "ステータス：",
@@ -1849,6 +1857,24 @@
     "installHint": "ゲームの展開ディレクトリを設定されたゲームインストールフォルダにコピー",
     "importHint": "バッチインポートを選択して実行した後、選択されたインストール済みゲームのデータが準備され、バッチインポートモーダルが開いてインポート選択段階にスキップします",
     "downloadSaveHint": "有効にすると、インポート後にゲームセーブが自動的にゲーム実行ファイルの同じディレクトリにダウンロードされます",
-    "overrideSaveHint": "セーブをダウンロードした後、ゲームのセーブ位置を検索し、セーブをそれらの位置に展開/上書きします。ただし、多くのゲームは実行前にセーブフォルダを生成しません"
+    "overrideSaveHint": "セーブをダウンロードした後、ゲームのセーブ位置を検索し、セーブをそれらの位置に展開/上書きします。ただし、多くのゲームは実行前にセーブフォルダを生成しません",
+    "selectItems": "実行するゲーム項目を選択してください",
+    "selectAction": "実行する操作を選択してください",
+    "hasIsoNeedDirectInstall": "ゲームフォルダにISOファイルが含まれています。ISO直接インストールをチェックしてください。",
+    "downloadSaveNeedImport": "セーブをダウンロードするには、先にゲームをインポートしてください",
+    "importNeedInstall": "ゲームをインポートするには、先にインストールしたゲームを準備してください",
+    "extractInstallError": "解凍とインストールにエラーが発生しました。バックグラウンドタスクを送信できません",
+    "mountedSuccess": "ISOがマウントされました",
+    "noImportId": "インポートIDが見つかりません",
+    "noGameFound": "関連するゲームが見つかりません",
+    "noExecutablePath": "ゲーム実行ファイルのパスが空です",
+    "overwriteFailed": "上書きインストールに失敗しました",
+    "importSuccess": "{{count}} 個のゲームをインポートしました",
+    "noImportFound": "インポートが見つかりません",
+    "gameNotInstalled": "ゲームがインストールされていません",
+    "removeImport": "インポートを解除",
+    "removeImportTitle": "ダウンロードファイルとインポートされたゲームの関連付けを解除",
+    "crackApplied": "クラックが適用されました",
+    "applyCrack": "クラックを適用"
   }
 }

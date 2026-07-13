@@ -205,11 +205,11 @@ export default function DownloadedFiles() {
 
   const handleExecute = async () => {
     if (!selectedItems.length) {
-      toast.error("请选择要执行的游戏单元");
+      toast.error(t("downloadedFiles.selectItems"));
       return;
     }
     if (!showExtract && !showInstall && !showImport && !showDownloadSave) {
-      toast.error("请选择要执行的操作");
+      toast.error(t("downloadedFiles.selectAction"));
       return
     }
     setIsExecuting(true);
@@ -277,16 +277,16 @@ export default function DownloadedFiles() {
 
       switch (errInfoCode) {
         case 4:
-          toast.error("游戏文件夹含镜像文件，需要勾选安装镜像");
+          toast.error(t("downloadedFiles.hasIsoNeedDirectInstall"));
           break;
         case 3:
-          toast.error("要下载存档，请先导入游戏")
+          toast.error(t("downloadedFiles.downloadSaveNeedImport"))
           break;
         case 2:
-          toast.error("要导入游戏，请准备好已安装游戏")
+          toast.error(t("downloadedFiles.importNeedInstall"))
           break;
         case 1:
-          toast.error("解压和安装出现问题，无法发送后台任务")
+          toast.error(t("downloadedFiles.extractInstallError"))
       }
     } finally {
       setIsExecuting(false);
@@ -361,7 +361,7 @@ export default function DownloadedFiles() {
         setIsExecuting(false);
       } else {
         await MountISO(iso_path);
-        toast.success("已挂载镜像");
+        toast.success(t("downloadedFiles.mountedSuccess"));
       }
       
     } catch (err) {
@@ -434,21 +434,21 @@ export default function DownloadedFiles() {
 
     try {
       if (!confirmModalItem.imported_id) {
-        throw new Error("未找到导入ID");
+        throw new Error(t("downloadedFiles.noImportId"));
       }
       const games = await GetGamesByIdsStr(confirmModalItem.imported_id);
       if (games.length === 0) {
-        throw new Error("未找到关联的游戏");
+        throw new Error(t("downloadedFiles.noGameFound"));
       }
       const exePath = games[0].path;
       if (!exePath) {
-        throw new Error("游戏执行路径为空");
+        throw new Error(t("downloadedFiles.noExecutablePath"));
       }
       await OverwriteInstall(confirmModalItem as unknown as service.DownloadedFile, exePath, overwriteLayers);
       toast.success(t('downloadedFiles.overwriteSuccess') || '覆盖安装成功');
     } catch (err) {
       console.error("Overwrite failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : `覆盖安装失败${err}`);
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.overwriteFailed") + err);
     } finally {
       setIsExecuting(false);
       setCurrentExecutingName("");
@@ -510,7 +510,7 @@ export default function DownloadedFiles() {
   }, [handleImport]);
   
   const handleBatchImportComplete = async (games: models.Game[]) => {
-    toast.success(`成功导入 ${games.length} 个游戏`);
+    toast.success(t("downloadedFiles.importSuccess", { count: games.length }));
     if (games.length === 0 || batchImportModalItems.length === 0) {
       setBatchImportModalItems([]);
       setBatchImportCandidates([]);
@@ -530,7 +530,7 @@ export default function DownloadedFiles() {
         ));
         
       } else {
-        toast.error('未找到导入' + game.path);
+        toast.error(t("downloadedFiles.noImportFound") + game.path);
       }
     }
     if (showDownloadSave) {
@@ -562,7 +562,7 @@ export default function DownloadedFiles() {
   
   const handleRunGame = async (item: DownloadedFile) => {
     if (!item.installed_path) {
-      setErrorMessage("游戏未安装");
+      setErrorMessage(t("downloadedFiles.gameNotInstalled"));
       return;
     }
     
@@ -1335,9 +1335,9 @@ export default function DownloadedFiles() {
                             
                           }}
                           className="px-2 py-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded"
-                          title="解除下载文件跟已导入游戏的关联"
+                          title={t("downloadedFiles.removeImportTitle")}
                         >
-                          解除导入
+                          {t("downloadedFiles.removeImport")}
                         </button>
                       )}
 
@@ -1366,12 +1366,12 @@ export default function DownloadedFiles() {
                           onClick={() => {
                             OverwriteCracker(item as unknown as service.DownloadedFile)
                               .then(() => {
-                                toast.success("已覆盖破解")
+                                toast.success(t("downloadedFiles.crackApplied"))
                               })
                           }}
                           className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
                         >
-                          覆盖破解
+                          {t("downloadedFiles.applyCrack")}
                         </button>
                       )}
 

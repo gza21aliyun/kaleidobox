@@ -1732,7 +1732,11 @@
     "searchLocal": "Search Local Import",
     "viewDetail": "View Detail",
     "goToGame": "Go to Game",
-    "gameDetail": "Game Detail"
+    "gameDetail": "Game Detail",
+    "searchDownloadFailed": "Failed to search download folder",
+    "noDownloadLink": "No download link available",
+    "searchDownloadFolder": "Search Download Folder",
+    "searchPlaceholder": "Search by game name"
   },
   "btDownload": {
     "rssUrl": "RSS URL",
@@ -1765,7 +1769,10 @@
     "sevenZipPath": "7-Zip Path",
     "sevenZipPathPlaceholder": "7z.exe path",
     "sevenZipPathHint": "Configure the full path to 7z.exe for extracting archives",
-    "select": "Select"
+    "select": "Select",
+    "magnet": "Magnet",
+    "torrent": "Torrent",
+    "trusted": "Trusted"
   },
   "downloadedFiles": {
     "selectAll": "Select All",
@@ -1814,6 +1821,7 @@
     "runGame": "Run game",
     "selectExecutable": "Select executable to run",
     "noSevenZipPath": "7-Zip path not configured. Please configure the 7z.exe path in settings to use the extract function.",
+    "no_need_extract": "No Extract Needed",
     "delete": "Delete",
     "statusLabel": "Status:",
     "typeLabel": "Type:",
@@ -1886,6 +1894,24 @@
     "installHint": "Copy the game extracted directory to the configured game install folder",
     "importHint": "After selecting and executing batch import, data will be prepared for selected installed games and the batch import modal will open to skip to the import selection stage",
     "downloadSaveHint": "When enabled, game saves will be automatically downloaded to the same directory as the game executable after import",
-    "overrideSaveHint": "After downloading saves, it will search for game save locations and extract/overwrite saves to those locations. However, many games do not generate save folders before running"
+    "overrideSaveHint": "After downloading saves, it will search for game save locations and extract/overwrite saves to those locations. However, many games do not generate save folders before running",
+    "selectItems": "Please select game items to execute",
+    "selectAction": "Please select an action to execute",
+    "hasIsoNeedDirectInstall": "The game folder contains ISO files. Please check direct ISO install.",
+    "downloadSaveNeedImport": "To download saves, please import the game first",
+    "importNeedInstall": "To import games, please prepare installed games first",
+    "extractInstallError": "Error in extraction and installation, cannot send background task",
+    "mountedSuccess": "ISO mounted successfully",
+    "noImportId": "Import ID not found",
+    "noGameFound": "No associated game found",
+    "noExecutablePath": "Game executable path is empty",
+    "overwriteFailed": "Overwrite install failed",
+    "importSuccess": "Successfully imported {{count}} games",
+    "noImportFound": "Import not found",
+    "gameNotInstalled": "Game not installed",
+    "removeImport": "Remove Import",
+    "removeImportTitle": "Remove association between downloaded file and imported game",
+    "crackApplied": "Crack applied",
+    "applyCrack": "Apply Crack"
   }
 }

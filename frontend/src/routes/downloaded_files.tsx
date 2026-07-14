@@ -46,11 +46,10 @@ export default function DownloadedFiles() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentExecutingName, setCurrentExecutingName] = useState("");
   const [currentExecutingTask, setCurrentExecutingTask] = useState("");
-  const [scrollPosition, setScrollPosition] = useState<number>(()=>{
-    return 0;
-  });
   const listContainerRef = useRef<HTMLDivElement>(null);
   const needsScrollRestore = useRef(false);
+  const scrollPositionRef = useRef<number>(0);
+  const isFirstLoadRef = useRef(true);
   const handleImportRef = useRef<(items: DownloadedFile[]) => Promise<void>>();
   const [batchImportModalItems, setBatchImportModalItems] = useState<DownloadedFile[]>([]);
   const pendingItemsToImportRef = useRef<DownloadedFile[]>([]);
@@ -86,19 +85,16 @@ export default function DownloadedFiles() {
     }
   }, [config, t]);
 
-  useEffect(() => { 
-    localStorage.setItem("downloaded_files_scroll_position", scrollPosition.toString());
-  }, [scrollPosition]);
 
   const selectedItems = (()=>{
     return items.filter(item => item.selected).map(item => item.id)
   })();
 
   const loadItems = async () => {
-    if (listContainerRef.current) {
-      setScrollPosition(listContainerRef.current.scrollTop);
-    }
     needsScrollRestore.current = true;
+    if (listContainerRef.current && !isFirstLoadRef.current) {
+      scrollPositionRef.current = listContainerRef.current.scrollTop;
+    }
     setIsLoading(true);
     try {
       const result = await ListDownloadedFiles();
@@ -115,22 +111,21 @@ export default function DownloadedFiles() {
 
   useEffect(() => {
     if (config && config.game_download_folder && config.game_install_folder) {
-      const p = localStorage.getItem("downloaded_files_scroll_position");
-      
-      loadItems().then(() => {
-        needsScrollRestore.current = true;
-        setIsLoading(true);
-        
-        setScrollPosition(p ? Number(p) : 0);
-        setIsLoading(false);
-      });
+      const savedPosition = localStorage.getItem("downloaded_files_scroll_position");
+      scrollPositionRef.current = savedPosition ? Number(savedPosition) : 0;
+      loadItems();
     }
   }, [config]);
 
   useEffect(() => {
-    if (needsScrollRestore.current && !isLoading && listContainerRef.current) {
-      listContainerRef.current.scrollTop = scrollPosition;
-      needsScrollRestore.current = false;
+    if (needsScrollRestore.current && !isLoading && items.length > 0 && listContainerRef.current) {
+      requestAnimationFrame(() => {
+        if (listContainerRef.current) {
+          listContainerRef.current.scrollTop = scrollPositionRef.current;
+        }
+        needsScrollRestore.current = false;
+        isFirstLoadRef.current = false;
+      });
     }
   }, [items, isLoading]);
 
@@ -1135,7 +1130,16 @@ export default function DownloadedFiles() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto space-y-2" ref={listContainerRef}>
+        <div 
+          className="flex-1 overflow-auto space-y-2" 
+          ref={listContainerRef}
+          onScroll={(e) => {
+            if (needsScrollRestore.current) return;
+            const scrollTop = (e.currentTarget as HTMLDivElement).scrollTop;
+            scrollPositionRef.current = scrollTop;
+            localStorage.setItem("downloaded_files_scroll_position", String(scrollTop));
+          }}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>

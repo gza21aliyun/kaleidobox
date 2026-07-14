@@ -72,6 +72,13 @@
 ![更新](screenshot/games_update.png)
 联合搜主要给批评空间用，如果源是批评空间的时候，能同时获得dlsite，dmm，getchu的id。但批评空间本身没游戏介绍，如果获得这些id后就能从这些源把搜刮一次。简单来说，等同于搜刮一次后再以所有选项选否的形式再在dmm源搜刮一次。重匹配意思就是重新用名字来搜数据即使已经有源匹配id，否则如果有id的话就直接从详情页拉数据。
 
+![已下载文件](screenshot/downloaded_files.png)
+已下载文件页，能批量处理。
+
+![游戏资源](screenshot/monthly_release.png)
+游戏资源页，能发送bt到qbittorent，能看是否已经导入或已下载。
+
+
 
 ## 🛠️ 技术栈
 

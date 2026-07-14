@@ -75,6 +75,7 @@ type DownloadedFile struct {
 	Status         int      `json:"status"`    //0:下载中、1:已下载、2:已解压、3:已安装 4:已导入
 	IsChanged      bool     `json:"is_changed"`
 	CrackPath      string   `json:"crack_path,omitempty"`
+	SaveStatus     int      `json:"save_status"`
 }
 
 var compressedExtensions = map[string]bool{
@@ -353,8 +354,10 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 
 	// 检测已导入的ID（优先从保存的信息读取）
 	importedID := ""
+	saveSatus := 0
 	if savedInfo != nil {
 		savedInfo.IsChanged = false
+		saveSatus = savedInfo.SaveStatus
 	}
 	status := 0
 
@@ -452,6 +455,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		InstalledPath:  installedPath,
 		HasNumericName: s.isNumericName(name),
 		GameName:       gameName,
+		SaveStatus:     saveSatus,
 	}
 
 	if isFolder {
@@ -636,9 +640,9 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 	if len(extractedPaths) == 0 {
 		return "", []string{}
 	}
-
+	gamePath := ""
 	if len(extractedPaths) == 1 {
-		return extractedPaths[0], extractedPaths
+		gamePath = extractedPaths[0]
 	}
 
 	// 多个解压文件夹时，使用 JudgeGameName 判断哪个是真正的游戏文件夹
@@ -648,20 +652,32 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, name string, fileTy
 	}
 
 	gameFolderName := s.JudgeGameName(folderNames)
+
 	if gameFolderName != "" {
 		for _, path := range extractedPaths {
 			if filepath.Base(path) == gameFolderName {
-				entries, err := os.ReadDir(path)
-				if err == nil && len(entries) == 1 && entries[0].IsDir() {
-					return filepath.Join(path, entries[0].Name()), extractedPaths
-				}
-				return path, extractedPaths
+				gamePath = path
+				break
+
+			}
+		}
+	}
+	if gamePath == "" && len(extractedPaths) > 0 {
+		gamePath = extractedPaths[0]
+	}
+	if gamePath != "" {
+		entries, err := os.ReadDir(gamePath)
+		if err == nil && len(entries) == 1 && entries[0].IsDir() {
+			gamePath = filepath.Join(gamePath, entries[0].Name())
+			entries, err = os.ReadDir(gamePath)
+			if err == nil && len(entries) == 1 && entries[0].IsDir() {
+				gamePath = filepath.Join(gamePath, entries[0].Name())
 			}
 		}
 	}
 
 	// 如果 JudgeGameName 没找到，返回第一个
-	return extractedPaths[0], extractedPaths
+	return gamePath, extractedPaths
 }
 
 // func (s *DownloadedFilesService) checkIsInstalled(itemPath string) bool {
@@ -673,12 +689,28 @@ const downloadInfoFileName = "download.klb"
 
 // SaveDownloadInfo 保存下载单元信息到 download.klb 文件
 func (s *DownloadedFilesService) SaveDownloadInfo(itemPath string, info DownloadedFile) error {
+	if info.Type == 2 && info.Status <= 1 {
+		return nil
+	}
 	klbPath := filepath.Join(itemPath, downloadInfoFileName)
 	data, err := json.Marshal(info)
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(klbPath, data, 0644)
+}
+
+func (s *DownloadedFilesService) DeleteDownloadInfo(itemPath string) error {
+	path := itemPath
+	ext := filepath.Ext(itemPath)
+	if ext != "" {
+		path = filepath.Dir(itemPath)
+	}
+	klbPath := filepath.Join(path, downloadInfoFileName)
+	if _, err := os.Stat(klbPath); os.IsNotExist(err) {
+		return nil
+	}
+	return os.Remove(klbPath)
 }
 
 // LoadDownloadInfo 从 download.klb 文件加载下载单元信息

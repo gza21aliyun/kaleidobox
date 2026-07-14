@@ -1833,7 +1833,8 @@
       "extracted": "已解压",
       "installed": "已安装",
       "imported": "已导入",
-      "downloading": "下载中"
+      "downloading": "下载中",
+      "not_downloading": "非下载中"
     },
     "type": {
       "all": "全部",
@@ -1895,7 +1896,7 @@
     "installHint": "将游戏解压目录复制到设置好的游戏安装文件夹下",
     "importHint": "批量导入游戏选中并执行后，将在完成前一步后为选中的已安装游戏准备好数据打开批量导入弹窗直接跳到选择导入阶段",
     "downloadSaveHint": "开启后将在导入后自动下载游戏存档到游戏执行文件的同一目录下",
-    "overrideSaveHint": "在下载存档后会搜索游戏存放存档位置解压存档覆盖到该位置，但很多游戏在运行游戏前并没生成存档文件夹",
+    "overrideSaveHint": "在下载存档后会搜索游戏存放存档位置解压存档覆盖到该位置，但很多游戏在运行游戏前并没生成存档文件夹。请注意覆盖有可能找错位置覆盖掉重要存档，请先备份。",
     "selectItems": "请选择要执行的游戏单元",
     "selectAction": "请选择要执行的操作",
     "hasIsoNeedDirectInstall": "游戏文件夹含镜像文件，需要勾选安装镜像",

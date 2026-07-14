@@ -88,7 +88,7 @@ func (b SaveInfoGetter) FetchSeiyaSave(name string, folder string, isOverride bo
 		if err != nil {
 			return "", fmt.Errorf("解压失败: %v", err)
 		}
-		err = overrideFiles(extractedDir, target)
+		err = overrideFiles(extractedDir, target, "")
 		if err != nil {
 			return "", fmt.Errorf("FetchSeiyaSave错误：%v", err)
 		}
@@ -231,7 +231,7 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 			}
 		}
 		fmt.Printf("存档位置：%s\n", target)
-		extractedDir := filepath.Join(os.TempDir()+"extracted", game.ID)
+		extractedDir := filepath.Join(os.TempDir(), "extracted", game.ID)
 		err = extractZip(saveTargetPath, extractedDir)
 		entries, err := os.ReadDir(extractedDir)
 		foundIndex := -1
@@ -259,13 +259,13 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 		if foundIndex == -1 {
 			fmt.Println("copying 01", eTarget, "to", target)
 			// CopyDir(eTarget, target)
-			overrideFiles(eTarget, target)
+			overrideFiles(eTarget, target, filepath.Dir(game.Path))
 			os.RemoveAll(extractedDir)
 			continue
 		}
 		eTarget = filepath.Join(eTarget, entries[foundIndex].Name())
 		fmt.Println("copying 02", eTarget, "to", target)
-		overrideFiles(eTarget, target)
+		overrideFiles(eTarget, target, filepath.Dir(game.Path))
 		// CopyDir(eTarget, target)
 		os.RemoveAll(extractedDir)
 	}
@@ -589,7 +589,7 @@ func downloadFile(url, localPath string) error {
 
 // overrideFiles 将 sourcePath 中的所有文件覆盖到 targetPath 中
 // 支持任意目标路径结构，仅通过文件名匹配
-func overrideFiles(sourcePath string, targetPath string) error {
+func overrideFiles(sourcePath string, targetPath string, exePath string) error {
 	overwrittenCount := 0 // 记录覆盖的文件数量
 
 	// 遍历 sourcePath 中的所有文件
@@ -608,14 +608,19 @@ func overrideFiles(sourcePath string, targetPath string) error {
 
 		// 在目标路径中查找同名文件
 		dstFilePath, err := findFileInTarget(srcFileName, targetPath)
-		if err != nil {
-			return fmt.Errorf("查找目标文件失败: %v", err)
+		// if err != nil {
+		// 	return fmt.Errorf("查找目标文件失败: %v", err)
+		// }
+		if dstFilePath == "" && exePath != "" {
+			dstFilePath, err = findFileInTarget(srcFileName, exePath)
 		}
 
 		// 如果未找到匹配文件，跳过
 		if dstFilePath == "" {
-			fmt.Printf("未找到匹配文件，跳过: %s\n", srcFileName)
-			return nil
+			fmt.Printf("未找到匹配文件，直接复制: %s\n", srcFileName)
+			dstFilePath = filepath.Join(targetPath, srcFileName)
+			err = copyFile(srcFilePath, dstFilePath)
+			return err
 		}
 
 		// 执行覆盖操作
@@ -814,6 +819,7 @@ func SearchSave(game models.Game) (models.Game, error) {
 		"calcite":        "skdata",
 		"シルキーズプラスWASABI": "SilkysPlus",
 		"シルキーズプラス":       "SilkysPlus",
+		"えどわ～る":          "edoire",
 	}
 	newGame, engine, exeName, folderName, err := SearchGamePathSave(game)
 	applog.InfoLogSaveAppLog("engine: %s, exeName: %s, folderName: %s", engine, exeName, folderName)
@@ -1000,7 +1006,12 @@ func searchSpSave(exeName, gameName, folderName, brand, engine, exePath string) 
 	}
 	if engine == "willplus" {
 		rs = filepath.Join(homeDir, "Saved Games", "WillPlus")
-		return searchGameSave(rs, exeName, gameName, folderName, engine, 1)
+		path := searchGameSave(rs, exeName, gameName, folderName, engine, 0.8)
+		if path != "" {
+			return path
+		}
+		rs = filepath.Join(homeDir, "AppData", "Roaming", "WillPlus")
+		return searchFolderSave(rs, exeName, gameName, folderName, brand, engine, true)
 	}
 	if engine == "unity" {
 		rs = filepath.Join(homeDir, "AppData", "LocalLow")

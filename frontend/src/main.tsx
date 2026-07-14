@@ -18,6 +18,7 @@ localStorage.removeItem('categoryListSortOrder');
 localStorage.removeItem('monthlyReleases_year');
 localStorage.removeItem('monthlyReleases_month');
 localStorage.removeItem('monthlyReleases_age');
+localStorage.removeItem('downloaded_files_scroll_position');
 
 const container = document.getElementById("root");
 

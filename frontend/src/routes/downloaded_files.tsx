@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, StartGameTemp, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker, InstallImage } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, DeleteDownloadInfo, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker, InstallImage } from "../../wailsjs/go/service/DownloadedFilesService";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
@@ -46,7 +46,9 @@ export default function DownloadedFiles() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentExecutingName, setCurrentExecutingName] = useState("");
   const [currentExecutingTask, setCurrentExecutingTask] = useState("");
-  const [scrollPosition, setScrollPosition] = useState(0);
+  const [scrollPosition, setScrollPosition] = useState<number>(()=>{
+    return 0;
+  });
   const listContainerRef = useRef<HTMLDivElement>(null);
   const needsScrollRestore = useRef(false);
   const handleImportRef = useRef<(items: DownloadedFile[]) => Promise<void>>();
@@ -84,6 +86,10 @@ export default function DownloadedFiles() {
     }
   }, [config, t]);
 
+  useEffect(() => { 
+    localStorage.setItem("downloaded_files_scroll_position", scrollPosition.toString());
+  }, [scrollPosition]);
+
   const selectedItems = (()=>{
     return items.filter(item => item.selected).map(item => item.id)
   })();
@@ -109,7 +115,15 @@ export default function DownloadedFiles() {
 
   useEffect(() => {
     if (config && config.game_download_folder && config.game_install_folder) {
-      loadItems();
+      const p = localStorage.getItem("downloaded_files_scroll_position");
+      
+      loadItems().then(() => {
+        needsScrollRestore.current = true;
+        setIsLoading(true);
+        
+        setScrollPosition(p ? Number(p) : 0);
+        setIsLoading(false);
+      });
     }
   }, [config]);
 
@@ -177,11 +191,12 @@ export default function DownloadedFiles() {
   }, [t]);
 
   const handleSelectAll = () => {
+    const filteredIds = [...filterItems].map(item => item.id);
     if (selectedItems.length === items.length) {
       setItems(items.map(item => ({ ...item, selected: false })));
       // setSelectedItems([]);
     } else {
-      setItems(items.map(item => ({ ...item, selected: true })));
+      setItems(items.map(item => (filteredIds.includes(item.id) ? { ...item, selected: true } : item)));
       // setSelectedItems(items.map(item => item.id));
     }
   };
@@ -271,6 +286,11 @@ export default function DownloadedFiles() {
         setCurrentExecutingTask(t("downloadedFiles.taskDownloadSave"));
         const games = await GetGamesByIdsStr(itemsImported.map(item => item.imported_id!).join(","));
         await DownloadSaves(games, showOverrideSave);
+        for (const info of itemsImported) {
+          info.save_status = showOverrideSave ? 2 : 1;
+          await SaveDownloadInfo(info.path, info as unknown as service.DownloadedFile)
+        }
+        await loadItems();
       } else if (showDownloadSave && !showImport) {
         errInfoCode = 3;
       }
@@ -516,6 +536,7 @@ export default function DownloadedFiles() {
       setBatchImportCandidates([]);
       return;
     }
+    const importedDownloadedIds = batchImportModalItems;
     for (const game of games) {
       const found = batchImportModalItems.find(i => game.path.includes(i.installed_path!))
       if (found) {
@@ -535,6 +556,11 @@ export default function DownloadedFiles() {
     }
     if (showDownloadSave) {
       await DownloadSaves(games, showOverrideSave);
+      for (const info of importedDownloadedIds) {
+        info.save_status = showOverrideSave ? 2 : 1;
+        await SaveDownloadInfo(info.path, info as unknown as service.DownloadedFile)
+      }
+      await loadItems();
     }
     await fetchGames();
     if (games.length != 1 || batchImportModalItems.length != 1) {
@@ -833,6 +859,9 @@ export default function DownloadedFiles() {
                 if (statusFilter === "imported") {
                   return item.status === 4;
                 }
+                if (statusFilter === "not_downloading") {
+                  return item.status !== 0;
+                }
                 if (typeFilter !== "all" && String(item.type) !== typeFilter) {
                   return false;
                 }
@@ -902,7 +931,7 @@ export default function DownloadedFiles() {
             <button
               onClick={() => setShowHelp(!showHelp)}
               className="text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300"
-              title={showHelp ? t("downloadedFiles.collapseHelp") : t("downloadedFiles.showHelp")}
+              title={t("downloadedFiles.helpText")}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -911,7 +940,7 @@ export default function DownloadedFiles() {
             <button
               onClick={() => setShowHelp(!showHelp)}
               className="text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300"
-              title={showHelp ? t("downloadedFiles.collapseHelp") : t("downloadedFiles.expandHelp")}
+              title={t("downloadedFiles.helpText")}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showHelp ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
@@ -921,11 +950,11 @@ export default function DownloadedFiles() {
         </div>
 
         {/* 提示信息 */}
-        {showHelp && (
+        {/* {showHelp && (
           <p className="text-sm text-brand-500 dark:text-brand-400 mb-4 whitespace-pre-line">
             {t("downloadedFiles.helpText")}
           </p>
-        )}
+        )} */}
 
         <div className="flex items-center justify-between mb-4">
           <input
@@ -947,6 +976,7 @@ export default function DownloadedFiles() {
                 { value: "extracted", label: t("downloadedFiles.status.extracted") },
                 { value: "installed", label: t("downloadedFiles.status.installed") },
                 { value: "imported", label: t("downloadedFiles.status.imported") },
+                { value: "not_downloading", label: t("downloadedFiles.status.not_downloading") },
               ]}
               className="min-w-[120px]"
             />
@@ -1186,6 +1216,7 @@ export default function DownloadedFiles() {
                         <span>{item.size < 100000 ? '' : formatSize(item.size)}</span>
                         {/* <span>{!item.is_extracted ? "" : "镜像数目:" + item.iso_items.length}</span> */}
                         <span>{parseTime(item.time).toLocaleDateString()}</span>
+                        <span>{item.save_status === 2 ? "存档已覆盖" : item.save_status === 1 ? "存档已下载" : ""}</span>
                         {item.status == 0 && (
                           <span className="text-orange-500 flex items-center gap-1">
                             <div className="i-mdi-download animate-pulse" />
@@ -1361,7 +1392,7 @@ export default function DownloadedFiles() {
                         </button>
                       )}
 
-                      {item.status == 3 && item.crack_path && (
+                      {item.status >= 3 && item.crack_path && (
                         <button
                           onClick={() => {
                             OverwriteCracker(item as unknown as service.DownloadedFile)
@@ -1574,13 +1605,15 @@ export default function DownloadedFiles() {
           onChoose={(game) => {
             const installedPath = game.path.replace(/[/\\][^/\\]+$/, '');
             const updatedItem = { ...searchModalItem, status: 4, imported_id: game.id, installed_path: installedPath };
-            setItems(prevItems => prevItems.map(i =>
-              i.id === searchModalItem.id ? updatedItem : i
-            ));
+            // setItems(prevItems => prevItems.map(i =>
+            //   i.id === searchModalItem.id ? updatedItem : i
+            // ));
             SaveDownloadedFileInfo(searchModalItem.path, updatedItem as unknown as service.DownloadedFile).catch(err => {
               console.error("Failed to save downloaded file info:", err);
             });
+            DeleteDownloadInfo(game.path)
             setSearchModalItem(null);
+            loadItems();
             toast.success(t('common.associateSuccess') || '关联成功');
           }}
           onClose={() => setSearchModalItem(null)}

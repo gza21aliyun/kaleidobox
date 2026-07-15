@@ -197,6 +197,12 @@ func (b SaveInfoGetter) FetchSeiyaSaveUrl(name string) (string, error) {
 	return gameLink, err
 }
 
+type SaveResult struct {
+	GameName    string `json:"game_name"`
+	ArchiveName string `json:"archive_name"`
+	SavePath    string `json:"save_path"`
+}
+
 func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bool) error {
 	names := []string{}
 	for _, game := range games {
@@ -220,17 +226,7 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 		if err != nil || !isOverride {
 			continue
 		}
-		target := game.SavePath
-		if target == "" {
-			newGame, err := SearchSave(game)
-			if err == nil {
-				target = newGame.SavePath
-				if target == "" {
-					continue
-				}
-			}
-		}
-		fmt.Printf("存档位置：%s\n", target)
+
 		extractedDir := filepath.Join(os.TempDir(), "extracted", game.ID)
 		err = extractZip(saveTargetPath, extractedDir)
 		entries, err := os.ReadDir(extractedDir)
@@ -247,6 +243,22 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 			continue
 		}
 		eTarget := filepath.Join(extractedDir, entries[foundIndex].Name())
+		target := getSavePathFromReadme(eTarget, &game)
+		fmt.Println("存档说明书中位置：", target)
+		if target == "" {
+			target = game.SavePath
+		}
+		if target == "" {
+			newGame, err := SearchSave(game)
+			if err == nil {
+				target = newGame.SavePath
+				if target == "" {
+					continue
+				}
+			}
+		}
+		fmt.Printf("存档位置：%s\n", target)
+
 		entries, err = os.ReadDir(eTarget)
 		foundIndex = -1
 		for i, entry := range entries {
@@ -270,6 +282,66 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 		os.RemoveAll(extractedDir)
 	}
 	return nil
+}
+
+func getSavePathFromReadme(eTarget string, game *models.Game) string {
+	readmePath := filepath.Join(eTarget, "説明書.txt")
+	entries, err := os.ReadDir(eTarget)
+	data, err := os.ReadFile(readmePath)
+	if err != nil {
+		sjisReadme, _ := utf8ToShiftJIS("説明書.txt")
+		readmePath = filepath.Join(eTarget, sjisReadme)
+		data, err = os.ReadFile(readmePath)
+		if err != nil {
+			return ""
+		}
+	}
+	decoder := japanese.ShiftJIS.NewDecoder()
+	reader := transform.NewReader(bytes.NewReader(data), decoder)
+	utf8Content, err := io.ReadAll(reader)
+	if err != nil {
+		return filepath.Dir(game.Path)
+	}
+	fmt.Println("ds16")
+	lines := strings.Split(string(utf8Content), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "C:\\Users\\") {
+			start := strings.Index(line, "\\Users\\") + len("\\Users\\")
+			end := strings.IndexAny(line[start:], "\\\r\n ")
+			if end == -1 {
+				end = len(line) - start
+			}
+			rest := line[start+end+1:]
+			end2 := strings.IndexAny(rest, " \t\r\n　")
+			if end2 == -1 {
+				end2 = len(rest)
+			}
+			relPath := rest[:end2]
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return filepath.Dir(game.Path)
+			}
+			fullpath := filepath.Join(homeDir, relPath)
+			base := filepath.Base(fullpath)
+			if len(entries) == 1 && entries[0].Name() == base {
+				fullpath = filepath.Dir(fullpath)
+			}
+			return fullpath
+		}
+	}
+
+	return filepath.Dir(game.Path)
+}
+
+func utf8ToShiftJIS(utf8Data string) (string, error) {
+	encoder := japanese.ShiftJIS.NewEncoder()
+	reader := transform.NewReader(strings.NewReader(utf8Data), encoder)
+	sjisData, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+	return string(sjisData), nil
 }
 
 func (b SaveInfoGetter) FetchSeiyaSaveUrlMap(names []string) (map[string]string, error) {

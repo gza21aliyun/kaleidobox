@@ -929,6 +929,10 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 			subFolderPath := filepath.Join(folderPath, entry.Name())
 			subEntries, err := os.ReadDir(subFolderPath)
 			if err == nil {
+				if len(subEntries) == 1 && subEntries[0].IsDir() {
+					subFolderPath = filepath.Join(subFolderPath, subEntries[0].Name())
+					subEntries, err = os.ReadDir(subFolderPath)
+				}
 				for _, subEntry := range subEntries {
 					// fmt.Println("crack 01", folderPath, " ", entry.Name())
 					ext := strings.ToLower(filepath.Ext(subEntry.Name()))
@@ -946,6 +950,7 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 						}
 					}
 				}
+
 			}
 
 		}
@@ -1254,9 +1259,12 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 func (s *DownloadedFilesService) OverwriteCracker(downloadedFile DownloadedFile) error {
 	ext := strings.ToLower(filepath.Ext(downloadedFile.CrackPath))
 	if compressedExtensions[ext] {
-		return s.extractArchive(downloadedFile.CrackPath, downloadedFile.InstalledPath)
+		ePath := filepath.Join(os.TempDir(), uuid.NewString())
+		defer os.RemoveAll(ePath)
+		s.extractArchive(downloadedFile.CrackPath, ePath)
+		return utils.OverrideFiles(ePath, downloadedFile.InstalledPath, "")
 	}
-	return copyDirectory(downloadedFile.CrackPath, downloadedFile.InstalledPath)
+	return utils.OverrideFiles(downloadedFile.CrackPath, downloadedFile.InstalledPath, "")
 
 }
 
@@ -1868,17 +1876,18 @@ func (s *DownloadedFilesService) JudgeGameName(filenames []string) string {
 	}
 	gameNameScores := []GameNameScore{}
 	plusWords := []string{"パッケージ版", "mdf", "mds", "iso"}
-	minusWords := []string{"サウンドトラック", "wav", "mp3", "flac", "cue", "ボイス", "ドラマ", "アップデート", "update", "特典", "Drama", "CD", "part", "00", "download", "klb"}
+	minusWords := []string{"サウンドトラック", "wav", "mp3", "flac", "cue", "ボイス", "ドラマ", "アップデート", "update", "特典", "drama", "cd", "part", "00", "download", "klb", "crack"}
 	for _, filename := range filenames {
 		score := 1.0
+		fn := strings.ToLower(filename)
 
 		for _, word := range plusWords {
-			if strings.Contains(filename, word) {
+			if strings.Contains(fn, word) {
 				score += 0.5
 			}
 		}
 		for _, word := range minusWords {
-			if strings.Contains(filename, word) {
+			if strings.Contains(fn, word) {
 				score -= 0.4
 			}
 		}

@@ -291,7 +291,13 @@ export default function DownloadedFiles() {
             return;
           }
         } else {
-          await DownloadSaves(games, showOverrideSave);
+          if (games.length > 0) {
+            const rs = await DownloadSaves(games, showOverrideSave);
+            if (rs.length === 0) {
+              toast.error("找不到存档")
+            }
+          }
+          
         }
         for (const info of itemsImported) {
           info.save_status = 1;
@@ -1552,7 +1558,7 @@ export default function DownloadedFiles() {
                             key={idx} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-700 rounded"
                             title={t(directIsoInstall ? "downloadedFiles.install" : "downloadedFiles.mount") + iso_path}
                             onClick={() => handleDirectMount(iso_path, item)}
-                            disabled={item.status >= 3}
+                            disabled={directIsoInstall ? item.status >= 3 : false}
                           >
                             {iso_path.split("\\").pop()}
                           </button>
@@ -1561,8 +1567,8 @@ export default function DownloadedFiles() {
                           <button 
                             key={idx} className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-700 rounded"
                             title={"执行" + exe_path}
-                            onClick={() => StartGameTemp(exe_path)}
-                            disabled={item.status >= 2}
+                            onClick={() => DirectRunExe(exe_path)}
+                            disabled={item.status > 2}
                           >
                             {exe_path.split("\\").pop()}
                           </button>
@@ -1757,7 +1763,7 @@ export default function DownloadedFiles() {
                   key={idx}
                   onClick={() => handleSelectExecutable(exe)}
                   className="w-full px-4 py-2 text-left bg-brand-100 dark:bg-brand-700 hover:bg-brand-200 dark:hover:bg-brand-600 rounded"
-                >
+                  title={`执行${exe}`}                >
                   {exe.split("\\").pop()}
                 </button>
               ))}

@@ -89,7 +89,7 @@ func (b SaveInfoGetter) FetchSeiyaSave(name string, folder string, isOverride bo
 		if err != nil {
 			return "", fmt.Errorf("解压失败: %v", err)
 		}
-		err = overrideFiles(extractedDir, target, "")
+		err = OverrideFiles(extractedDir, target, "")
 		if err != nil {
 			return "", fmt.Errorf("FetchSeiyaSave错误：%v", err)
 		}
@@ -293,7 +293,7 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 func (b SaveInfoGetter) OverrideSaves(results []SaveResult) error {
 	for _, result := range results {
 		fmt.Println("copying", result.SourcePath, "to", result.SavePath)
-		overrideFiles(result.SourcePath, result.SavePath, filepath.Dir(result.GamePath))
+		OverrideFiles(result.SourcePath, result.SavePath, filepath.Dir(result.GamePath))
 		extractedDir := filepath.Join(os.TempDir(), "extracted", result.GameID)
 		os.RemoveAll(extractedDir)
 	}
@@ -335,17 +335,18 @@ func getSavePathFromReadme(eTarget string, game *models.Game) string {
 		for _, line := range lines {
 			line = strings.TrimSpace(line)
 			if strings.HasPrefix(line, "C:\\Users\\") {
-				start := strings.Index(line, "\\Users\\") + len("\\Users\\")
-				end := strings.IndexAny(line[start:], "\\\r\n ")
+				fullPathEnd := strings.IndexAny(line, "　\r\n")
+				if fullPathEnd == -1 {
+					fullPathEnd = len(line)
+				}
+				fullPath := line[:fullPathEnd]
+
+				start := strings.Index(fullPath, "\\Users\\") + len("\\Users\\")
+				end := strings.Index(fullPath[start:], "\\")
 				if end == -1 {
-					end = len(line) - start
+					continue
 				}
-				rest := line[start+end+1:]
-				end2 := strings.IndexAny(rest, " \t\r\n　")
-				if end2 == -1 {
-					end2 = len(rest)
-				}
-				relPath := rest[:end2]
+				relPath := fullPath[start+end+1:]
 				homeDir, err := os.UserHomeDir()
 				if err != nil {
 					continue
@@ -704,7 +705,7 @@ func downloadFile(url, localPath string) error {
 
 // overrideFiles 将 sourcePath 中的所有文件覆盖到 targetPath 中
 // 支持任意目标路径结构，仅通过文件名匹配
-func overrideFiles(sourcePath string, targetPath string, exePath string) error {
+func OverrideFiles(sourcePath string, targetPath string, exePath string) error {
 	overwrittenCount := 0 // 记录覆盖的文件数量
 
 	// 遍历 sourcePath 中的所有文件

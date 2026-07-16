@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, DeleteDownloadInfo, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker, InstallImage } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, DeleteDownloadInfo, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker, InstallImage, OverrideSaves, StartGameTemp } from "../../wailsjs/go/service/DownloadedFilesService";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
@@ -16,6 +16,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "@tanstack/react-router";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 import { ConfirmModal } from "../components/modal/ConfirmModal";
+import { OverrideSaveModal, type SaveResult } from "../components/modal/OverrideSaveModal";
 import { BetterSelect } from "../components/ui/BetterSelect";
 import { parseTime } from "../utils/time";
 import { GameInfoModal } from "../components/modal/GameInfoModal";
@@ -61,6 +62,8 @@ export default function DownloadedFiles() {
   const [importedGames, setImportedGames] = useState<models.Game[]>([]);
   const [gameEntity, setGameEntity] = useState<models.GameEntity | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isOverrideSaveModalOpen, setIsOverrideSaveModalOpen] = useState(false);
+  const [overrideSaveResults, setOverrideSaveResults] = useState<SaveResult[]>([]);
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -280,9 +283,18 @@ export default function DownloadedFiles() {
         errInfoCode = 0;
         setCurrentExecutingTask(t("downloadedFiles.taskDownloadSave"));
         const games = await GetGamesByIdsStr(itemsImported.map(item => item.imported_id!).join(","));
-        await DownloadSaves(games, showOverrideSave);
+        if (showOverrideSave) {
+          const results = await DownloadSaves(games, showOverrideSave);
+          if (results && results.length > 0) {
+            setOverrideSaveResults(results);
+            setIsOverrideSaveModalOpen(true);
+            return;
+          }
+        } else {
+          await DownloadSaves(games, showOverrideSave);
+        }
         for (const info of itemsImported) {
-          info.save_status = showOverrideSave ? 2 : 1;
+          info.save_status = 1;
           await SaveDownloadInfo(info.path, info as unknown as service.DownloadedFile)
         }
         await loadItems();
@@ -550,9 +562,18 @@ export default function DownloadedFiles() {
       }
     }
     if (showDownloadSave) {
-      await DownloadSaves(games, showOverrideSave);
+      if (showOverrideSave) {
+        const results = await DownloadSaves(games, showOverrideSave);
+        if (results && results.length > 0) {
+          setOverrideSaveResults(results);
+          setIsOverrideSaveModalOpen(true);
+          return;
+        }
+      } else {
+        await DownloadSaves(games, showOverrideSave);
+      }
       for (const info of importedDownloadedIds) {
-        info.save_status = showOverrideSave ? 2 : 1;
+        info.save_status = 1;
         await SaveDownloadInfo(info.path, info as unknown as service.DownloadedFile)
       }
       await loadItems();
@@ -571,6 +592,28 @@ export default function DownloadedFiles() {
     
     setBatchImportModalItems([]);
     setBatchImportCandidates([]);
+  };
+
+  const handleConfirmOverrideSaves = async (selectedResults: SaveResult[]) => {
+    setIsExecuting(true);
+    setCurrentExecutingTask(t("downloadedFiles.taskOverrideSave"));
+    const ids = selectedResults.map((i)=>i.game_id)
+    try {
+      await OverrideSaves(selectedResults);
+      for (const it of items.filter((i)=>ids.includes(i.imported_id ?? ""))) {
+        it.save_status = 2;
+        await SaveDownloadInfo(it.path, it as unknown as service.DownloadedFile);
+      }
+      toast.success(t("downloadedFiles.overrideSaveSuccess") || '覆盖存档成功');
+      await loadItems();
+    } catch (err) {
+      console.error("Override saves failed:", err);
+      setErrorMessage(err instanceof Error ? err.message : t("downloadedFiles.overrideSaveFailed"));
+    } finally {
+      setIsExecuting(false);
+      setCurrentExecutingTask("");
+      setOverrideSaveResults([]);
+    }
   };
   
   const handleOpenGame = (item: DownloadedFile) => {
@@ -1481,6 +1524,18 @@ export default function DownloadedFiles() {
                       >
                         {t("downloadedFiles.delete")}
                       </button>
+
+                      {/* <button
+                        onClick={() => {
+                          RefreshDownloadedFile(item as unknown as service.DownloadedFile)
+                            .then((res) => {
+                              setItems(items.map((i) => (i.id === item.id ? {...i, crack_path:res.crack_path, } : i)))
+                            })
+                        }}
+                        className="px-2 py-1 text-xs bg-yellow-500 hover:bg-yellow-600 text-white rounded"
+                      >
+                        刷新
+                      </button> */}
                     </div>
                     </div>
 
@@ -1500,6 +1555,16 @@ export default function DownloadedFiles() {
                             disabled={item.status >= 3}
                           >
                             {iso_path.split("\\").pop()}
+                          </button>
+                        ))}
+                        {item.exe_paths.map((exe_path, idx) => (
+                          <button 
+                            key={idx} className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-700 rounded"
+                            title={"执行" + exe_path}
+                            onClick={() => StartGameTemp(exe_path)}
+                            disabled={item.status >= 2}
+                          >
+                            {exe_path.split("\\").pop()}
                           </button>
                         ))}
                         {/* {item.inner_items.length > 5 && (
@@ -1711,6 +1776,19 @@ export default function DownloadedFiles() {
           </div>
         </div>
       )}
+
+      {/* 覆盖存档确认弹窗 */}
+      <OverrideSaveModal
+        isOpen={isOverrideSaveModalOpen}
+        results={overrideSaveResults}
+        onClose={() => {
+          setIsOverrideSaveModalOpen(false);
+          setOverrideSaveResults([]);
+          setIsExecuting(false);
+          setCurrentExecutingTask("");
+        }}
+        onConfirm={handleConfirmOverrideSaves}
+      />
     </div>
   );
 }

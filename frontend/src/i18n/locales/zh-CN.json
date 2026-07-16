@@ -1914,6 +1914,13 @@
     "removeImport": "解除导入",
     "removeImportTitle": "解除下载文件跟已导入游戏的关联",
     "crackApplied": "已覆盖破解",
-    "applyCrack": "覆盖破解"
+    "applyCrack": "覆盖破解",
+    "overrideSaveConfirm": "确认覆盖存档",
+    "archiveName": "存档文件名",
+    "savePath": "存档目标路径",
+    "confirmOverride": "确认覆盖",
+    "taskOverrideSave": "覆盖存档",
+    "overrideSaveSuccess": "覆盖存档成功",
+    "overrideSaveFailed": "覆盖存档失败"
   }
 }

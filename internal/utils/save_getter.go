@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"lunabox/internal/applog"
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
@@ -201,16 +202,20 @@ type SaveResult struct {
 	GameName    string `json:"game_name"`
 	ArchiveName string `json:"archive_name"`
 	SavePath    string `json:"save_path"`
+	SourcePath  string `json:"source_path"`
+	GameID      string `json:"game_id"`
+	GamePath    string `json:"game_path"`
 }
 
-func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bool) error {
+func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bool) ([]SaveResult, error) {
+	var results []SaveResult
 	names := []string{}
 	for _, game := range games {
 		names = append(names, game.SearchName)
 	}
 	savesMap, err := b.FetchSeiyaSaveUrlMap(names)
 	if err != nil {
-		return err
+		return results, err
 	}
 	for _, game := range games {
 		saveLink, ok := savesMap[game.SearchName]
@@ -268,17 +273,28 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 			}
 		}
 
-		if foundIndex == -1 {
-			fmt.Println("copying 01", eTarget, "to", target)
-			// CopyDir(eTarget, target)
-			overrideFiles(eTarget, target, filepath.Dir(game.Path))
-			os.RemoveAll(extractedDir)
-			continue
+		sourcePath := eTarget
+		if foundIndex != -1 {
+			sourcePath = filepath.Join(eTarget, entries[foundIndex].Name())
 		}
-		eTarget = filepath.Join(eTarget, entries[foundIndex].Name())
-		fmt.Println("copying 02", eTarget, "to", target)
-		overrideFiles(eTarget, target, filepath.Dir(game.Path))
-		// CopyDir(eTarget, target)
+
+		results = append(results, SaveResult{
+			GameName:    game.Name,
+			ArchiveName: fileName,
+			SavePath:    target,
+			SourcePath:  sourcePath,
+			GameID:      game.ID,
+			GamePath:    game.Path,
+		})
+	}
+	return results, nil
+}
+
+func (b SaveInfoGetter) OverrideSaves(results []SaveResult) error {
+	for _, result := range results {
+		fmt.Println("copying", result.SourcePath, "to", result.SavePath)
+		overrideFiles(result.SourcePath, result.SavePath, filepath.Dir(result.GamePath))
+		extractedDir := filepath.Join(os.TempDir(), "extracted", result.GameID)
 		os.RemoveAll(extractedDir)
 	}
 	return nil
@@ -287,6 +303,17 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 func getSavePathFromReadme(eTarget string, game *models.Game) string {
 	readmePath := filepath.Join(eTarget, "説明書.txt")
 	entries, err := os.ReadDir(eTarget)
+	saveFileName := ""
+	fullpath := ""
+	for _, entry := range entries {
+		ext := filepath.Ext(entry.Name())
+		if ext != ".txt" {
+			saveFileName = entry.Name()
+		}
+	}
+	if saveFileName == "" {
+		return ""
+	}
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
 		sjisReadme, _ := utf8ToShiftJIS("説明書.txt")
@@ -304,34 +331,50 @@ func getSavePathFromReadme(eTarget string, game *models.Game) string {
 	}
 	fmt.Println("ds16")
 	lines := strings.Split(string(utf8Content), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "C:\\Users\\") {
-			start := strings.Index(line, "\\Users\\") + len("\\Users\\")
-			end := strings.IndexAny(line[start:], "\\\r\n ")
-			if end == -1 {
-				end = len(line) - start
+	if entries != nil && len(entries) > 0 {
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "C:\\Users\\") {
+				start := strings.Index(line, "\\Users\\") + len("\\Users\\")
+				end := strings.IndexAny(line[start:], "\\\r\n ")
+				if end == -1 {
+					end = len(line) - start
+				}
+				rest := line[start+end+1:]
+				end2 := strings.IndexAny(rest, " \t\r\n　")
+				if end2 == -1 {
+					end2 = len(rest)
+				}
+				relPath := rest[:end2]
+				homeDir, err := os.UserHomeDir()
+				if err != nil {
+					continue
+				}
+				fullpath = filepath.Join(homeDir, relPath)
+				base := filepath.Base(fullpath)
+				if saveFileName == base {
+					fullpath = filepath.Dir(fullpath)
+				}
+
+				return fullpath
 			}
-			rest := line[start+end+1:]
-			end2 := strings.IndexAny(rest, " \t\r\n　")
-			if end2 == -1 {
-				end2 = len(rest)
-			}
-			relPath := rest[:end2]
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				return filepath.Dir(game.Path)
-			}
-			fullpath := filepath.Join(homeDir, relPath)
-			base := filepath.Base(fullpath)
-			if len(entries) == 1 && entries[0].Name() == base {
-				fullpath = filepath.Dir(fullpath)
-			}
-			return fullpath
 		}
 	}
 
-	return filepath.Dir(game.Path)
+	if fullpath == "" {
+		gameDir := filepath.Dir(game.Path)
+		filepath.Walk(gameDir, func(path string, info fs.FileInfo, err error) error {
+			baseName := filepath.Base(path)
+			if !info.IsDir() && baseName == saveFileName {
+				fullpath = filepath.Dir(path)
+				return errors.New("")
+			}
+
+			return nil
+		})
+	}
+
+	return fullpath
 }
 
 func utf8ToShiftJIS(utf8Data string) (string, error) {

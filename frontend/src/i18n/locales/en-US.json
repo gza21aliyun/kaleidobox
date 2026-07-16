@@ -1912,6 +1912,13 @@
     "removeImport": "Remove Import",
     "removeImportTitle": "Remove association between downloaded file and imported game",
     "crackApplied": "Crack applied",
-    "applyCrack": "Apply Crack"
+    "applyCrack": "Apply Crack",
+    "overrideSaveConfirm": "Confirm Override Save",
+    "archiveName": "Archive Name",
+    "savePath": "Save Path",
+    "confirmOverride": "Confirm Override",
+    "taskOverrideSave": "Override Save",
+    "overrideSaveSuccess": "Override save successful",
+    "overrideSaveFailed": "Override save failed"
   }
 }

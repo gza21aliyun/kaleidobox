@@ -1875,6 +1875,13 @@
     "removeImport": "インポートを解除",
     "removeImportTitle": "ダウンロードファイルとインポートされたゲームの関連付けを解除",
     "crackApplied": "クラックが適用されました",
-    "applyCrack": "クラックを適用"
+    "applyCrack": "クラックを適用",
+    "overrideSaveConfirm": "セーブ上書きの確認",
+    "archiveName": "アーカイブ名",
+    "savePath": "セーブパス",
+    "confirmOverride": "上書きを確認",
+    "taskOverrideSave": "セーブ上書き",
+    "overrideSaveSuccess": "セーブ上書きに成功しました",
+    "overrideSaveFailed": "セーブ上書きに失敗しました"
   }
 }

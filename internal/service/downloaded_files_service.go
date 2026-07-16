@@ -76,6 +76,7 @@ type DownloadedFile struct {
 	IsChanged      bool     `json:"is_changed"`
 	CrackPath      string   `json:"crack_path,omitempty"`
 	SaveStatus     int      `json:"save_status"`
+	ExePaths       []string `json:"exe_paths"`
 }
 
 var compressedExtensions = map[string]bool{
@@ -309,6 +310,7 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
 	// if err != nil {
 	// 	return DownloadedFile{}, err
 	// }
+	fmt.Println("RefreshDownloadedFile")
 	itemPath := file.Path
 	ext := filepath.Ext(itemPath)
 	path := strings.TrimSuffix(itemPath, ext)
@@ -347,6 +349,7 @@ func (s *DownloadedFilesService) RefreshDownloadedFile(file DownloadedFile) (Dow
  * name 包括后缀的文件名或文件夹名
  */
 func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isFolder bool, size int64, fileTime time.Time, shouldSave bool) (DownloadedFile, *DownloadedFile) {
+	// fmt.Println("CreateDownloadedFile")
 	fileNameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
 
 	// 读取 download.klb 获取保存的信息
@@ -459,7 +462,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 	}
 
 	if isFolder {
-		innerItems, isoItems, size, crackPath := s.getInnerItems(itemPath)
+		innerItems, isoItems, size, crackPath, exeItems := s.getInnerItems(itemPath)
 		// fmt.Printf("InnerItems,name: %s, path:%s, count:%v\n", item.Name, item.Path, innerItems)
 		if item.HasNumericName {
 			item.Name = s.JudgeGameName(innerItems)
@@ -470,6 +473,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 		// isoCount := len(isoItems)
 		item.InnerItems = innerItems
 		item.ISOItems = isoItems
+		item.ExePaths = exeItems
 		// item.ISOCount = isoCount
 		// item.ContainsISO = isoCount > 0
 		// if isoCount == 1 {
@@ -489,12 +493,17 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, name string, isF
 	return item, savedInfo
 }
 
-func (s *DownloadedFilesService) DownloadSaves(games []models.Game, isOverride bool) error {
+func (s *DownloadedFilesService) DownloadSaves(games []models.Game, isOverride bool) ([]utils.SaveResult, error) {
 	if len(games) == 0 {
-		return nil
+		return nil, nil
 	}
 	getter := utils.NewSaveInfoGetter()
 	return getter.DownloadSavesForGames(games, isOverride)
+}
+
+func (s *DownloadedFilesService) OverrideSaves(results []utils.SaveResult) error {
+	getter := utils.NewSaveInfoGetter()
+	return getter.OverrideSaves(results)
 }
 
 /**
@@ -860,15 +869,16 @@ func (s *DownloadedFilesService) isNumericName(name string) bool {
 	return re.MatchString(baseName)
 }
 
-func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []string, int64, string) {
+func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []string, int64, string, []string) {
 	itemsMap := make(map[string]string)
 	items := []string{}
 	entries, err := os.ReadDir(folderPath)
 	isoItems := []string{}
+	exeItems := []string{}
 	crackPath := ""
 	var size int64 = 0
 	if err != nil {
-		return items, isoItems, size, crackPath
+		return items, isoItems, size, crackPath, exeItems
 	}
 
 	for i, entry := range entries {
@@ -903,7 +913,9 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 				isoItems = append(isoItems, fullpath)
 			} else {
 				itemsMap[filebase] = filename
-
+				if ext == ".exe" {
+					exeItems = append(exeItems, filepath.Join(folderPath, filename))
+				}
 			}
 		} else {
 			itemsMap[filebase] = filename
@@ -914,6 +926,28 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 					break
 				}
 			}
+			subFolderPath := filepath.Join(folderPath, entry.Name())
+			subEntries, err := os.ReadDir(subFolderPath)
+			if err == nil {
+				for _, subEntry := range subEntries {
+					// fmt.Println("crack 01", folderPath, " ", entry.Name())
+					ext := strings.ToLower(filepath.Ext(subEntry.Name()))
+					if ext == ".exe" {
+						exeItems = append(exeItems, filepath.Join(subFolderPath, subEntry.Name()))
+					}
+					if crackPath != "" {
+						continue
+					}
+					// fmt.Println("crack 02", folderPath, " ", entry.Name())
+					for _, crackWord := range crackWords {
+						if strings.Contains(strings.ToLower(subEntry.Name()), crackWord) {
+							crackPath = filepath.Join(subFolderPath, subEntry.Name())
+							break
+						}
+					}
+				}
+			}
+
 		}
 	}
 	for _, v := range itemsMap {
@@ -922,7 +956,7 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 	sort.Slice(items, func(i, j int) bool {
 		return len(items[i]) < len(items[j])
 	})
-	return items, isoItems, size, crackPath
+	return items, isoItems, size, crackPath, exeItems
 }
 
 func (s *DownloadedFilesService) getArchiveInnerItems(archivePath string) []string {
@@ -1218,6 +1252,10 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 }
 
 func (s *DownloadedFilesService) OverwriteCracker(downloadedFile DownloadedFile) error {
+	ext := strings.ToLower(filepath.Ext(downloadedFile.CrackPath))
+	if compressedExtensions[ext] {
+		return s.extractArchive(downloadedFile.CrackPath, downloadedFile.InstalledPath)
+	}
 	return copyDirectory(downloadedFile.CrackPath, downloadedFile.InstalledPath)
 
 }
@@ -1303,6 +1341,27 @@ func (s *DownloadedFilesService) InstallGame(downloadedFile DownloadedFile, inst
 
 	applog.LogInfof(s.ctx, "安装完成: %s", targetPath)
 	return targetPath, nil
+}
+
+func (s *DownloadedFilesService) SearchCracker(downloadedFile *DownloadedFile) error {
+	if downloadedFile.CrackPath != "" {
+		return nil
+	}
+
+	installPath := downloadedFile.InstalledPath
+	entries, err := os.ReadDir(installPath)
+	if err != nil {
+		return nil
+	}
+	for _, entry := range entries {
+		name := strings.ToLower(entry.Name())
+		if strings.Contains(name, "crack") {
+			downloadedFile.CrackPath = filepath.Join(installPath, entry.Name())
+			return nil
+		}
+	}
+
+	return nil
 }
 
 func (s *DownloadedFilesService) InstallImage(downloadedFile DownloadedFile, imgPath string, installMethod string) (string, error) {
@@ -1682,6 +1741,7 @@ func (s *DownloadedFilesService) ScanFolderForExecutables(folderPath string) ([]
 
 func (s *DownloadedFilesService) StartGameTemp(path string) error {
 	var cmd *exec.Cmd = exec.Command(path)
+	cmd.Dir = filepath.Dir(path)
 	return cmd.Start()
 }
 

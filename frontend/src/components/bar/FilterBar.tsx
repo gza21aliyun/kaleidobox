@@ -56,8 +56,8 @@ interface FilterBarProps {
   releaseEndDate?: string;
   onReleaseEndDateChange?: (date: string) => void;
   // 视图模式
-  viewMode?: "list" | "small" | "large";
-  onViewModeChange?: (mode: "list" | "small" | "large") => void;
+  viewMode?: "list" | "small" | "large" | "gallery";
+  onViewModeChange?: (mode: "list" | "small" | "large" | "gallery") => void;
   // 标签交集模式
   tagsIntersectionMode?: boolean;
   onTagsIntersectionModeChange?: (enabled: boolean) => void;
@@ -394,6 +394,18 @@ export function FilterBar({
                 title={t('library.viewMode.small')}
               >
                 <div className="i-mdi-view-module text-lg" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewModeChange("gallery")}
+                className={`p-2 rounded-lg border transition-colors ${
+                  viewMode === "gallery"
+                    ? "bg-brand-100 dark:bg-brand-700 border-brand-300 dark:border-brand-600 text-brand-900 dark:text-white"
+                    : "bg-white dark:bg-brand-800 border-brand-200 dark:border-brand-700 text-brand-500 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-700"
+                }`}
+                title={t('library.viewMode.gallery')}
+              >
+                <div className="i-mdi-image-multiple text-lg" />
               </button>
             </div>
           )}

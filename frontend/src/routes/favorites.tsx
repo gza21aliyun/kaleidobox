@@ -65,7 +65,7 @@ function CategoryDetailPage() {
   const [tagsLoaded, setTagsLoaded] = useState<Map<string, models.Tag[]>>(new Map());
   const [releaseStartDate, setReleaseStartDate] = useState<string>("");
   const [releaseEndDate, setReleaseEndDate] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"list" | "small" | "large">(() => {
+  const [viewMode, setViewMode] = useState<"list" | "small" | "large" | "gallery">(() => {
     const savedViewMode = localStorage.getItem('categoryViewMode');
     return (savedViewMode as "list" | "small" | "large") || "small";
   });

@@ -46,7 +46,7 @@ function SeriesGamesPage() {
   const [tagsLoaded, setTagsLoaded] = useState<Map<string, models.Tag[]>>(new Map());
   const [releaseStartDate, setReleaseStartDate] = useState<string>("");
   const [releaseEndDate, setReleaseEndDate] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"list" | "small" | "large">(() => {
+  const [viewMode, setViewMode] = useState<"list" | "small" | "large" | "gallery">(() => {
     const savedViewMode = localStorage.getItem('seriesViewMode');
     return (savedViewMode as "list" | "small" | "large") || "small";
   });

@@ -45,9 +45,9 @@ function CategoryGamesPage() {
   const [tagsLoaded, setTagsLoaded] = useState<Map<string, models.Tag[]>>(new Map());
   const [releaseStartDate, setReleaseStartDate] = useState<string>("");
   const [releaseEndDate, setReleaseEndDate] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"list" | "small" | "large">(() => {
+  const [viewMode, setViewMode] = useState<"list" | "small" | "large" | "gallery">(() => {
     const savedViewMode = localStorage.getItem('categoryGamesViewMode');
-    return (savedViewMode as "list" | "small" | "large") || "small";
+    return (savedViewMode as "list" | "small" | "large" | "gallery") || "small";
   });
   const [tagsIntersectionMode, setTagsIntersectionMode] = useState<boolean>(() => {
     const savedMode = localStorage.getItem('categoryGamesTagsIntersectionMode');
@@ -358,7 +358,7 @@ function CategoryGamesPage() {
               filteredGames.length > 0
                 ? (
                     <div className={
-                      viewMode === "list"
+                      viewMode === "list" || viewMode === "gallery"
                         ? "flex flex-col gap-2"
                         : viewMode === "large"
                           ? "grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4"

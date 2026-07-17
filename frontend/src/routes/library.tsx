@@ -99,9 +99,9 @@ function LibraryPage() {
     const savedMode = localStorage.getItem('libraryTagsIntersectionMode');
     return savedMode ? JSON.parse(savedMode) : false;
   });
-  const [viewMode, setViewMode] = useState<"list" | "small" | "large">(() => {
+  const [viewMode, setViewMode] = useState<"list" | "small" | "large" | "gallery">(() => {
     const savedViewMode = localStorage.getItem('libraryViewMode');
-    return (savedViewMode as "list" | "small" | "large") || "small";
+    return (savedViewMode as "list" | "small" | "large" | "gallery") || "small";
   });
   
   // 选择返回模式
@@ -914,7 +914,28 @@ function LibraryPage() {
                   </div>
                 </div>
               )
-            : (
+            : viewMode === "gallery"
+              ? (
+                  <div 
+                    className="flex-1 overflow-y-auto"
+                  >
+                    <div className="flex flex-col gap-2">
+                      {filteredGames.map(game => (
+                        <GameCard
+                          key={game.id}
+                          game={game}
+                          searchQuery={searchQuery}
+                          selectionMode={batchMode}
+                          selected={selectedGameIds.includes(game.id)}
+                          onSelectChange={(selected, event) => setGameSelection(game.id, selected, event)}
+                          filteredGameIdsStr={filteredGameIdsStr}
+                          viewMode={viewMode}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )
+              : (
                 <div 
                   className="flex-1 overflow-y-auto"
                   key={`grid-${gridKey}`}

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { enums } from "../../../wailsjs/go/models";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
 import { GetGamesByTag } from "../../../wailsjs/go/service/GameService";
+import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { ImageCard } from "./ImageCard";
 import { formatDurationSimple, formatLastDateText, formatLocalDate, parseTime } from "../../utils/time";
 import { useAppStore } from "../../store";
@@ -88,7 +89,7 @@ interface GameCardProps {
   searchQuery?: string;
   filteredGameIdsStr?: string[];
   /** 视图模式 */
-  viewMode?: "list" | "small" | "large";
+  viewMode?: "list" | "small" | "large" | "gallery";
   onDelete?: (game: models.Game) => void;
 }
 
@@ -105,6 +106,10 @@ export function GameCard({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { gameStats } = useAppStore();
+
+  const [galleryImages, setGalleryImages] = useState<models.ImageBackup[]>([]);
+  const [isGalleryLoading, setIsGalleryLoading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleToggleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -166,6 +171,32 @@ export function GameCard({
       navigate({
         to: '/monthly_releases',
       });
+    }
+  };
+
+  useEffect(() => {
+    if (viewMode !== "gallery") return;
+
+    const timer = setTimeout(() => {
+      loadGalleryImages();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [viewMode, game.id]);
+
+  const loadGalleryImages = async () => {
+    if (!game.id) return;
+    setIsGalleryLoading(true);
+    try {
+      const screenshots = await FetchImages(game.id, 0, 3, false);
+      const images = await FetchImages(game.id, 0, 2, false);
+      const allImages = [...(screenshots || []), ...(images || [])]
+        .filter(img => img.url && img.url.trim() !== "" && !img.url.endsWith("pl.jpg"));
+      setGalleryImages(allImages);
+    } catch (error) {
+      console.error("Failed to load gallery images:", error);
+    } finally {
+      setIsGalleryLoading(false);
     }
   };
 
@@ -289,6 +320,145 @@ export function GameCard({
             >
               <div className="i-mdi-information-variant text-base" />
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (viewMode === "gallery") {
+    return (
+      <div
+        ref={cardRef}
+        className={`glass-card group relative flex w-full items-stretch gap-4 overflow-hidden rounded-xl border border-brand-100 bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
+        onClick={selectionMode ? handleToggleSelect : undefined}
+      >
+        {selectionMode && (
+          <button
+            type="button"
+            onClick={handleToggleSelect}
+            className={`absolute left-2 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border
+                        ${selected
+              ? "bg-neutral-600 text-white border-neutral-600"
+              : "bg-white/90 text-transparent border-brand-300 dark:bg-brand-800/90 dark:border-brand-600"}
+                        shadow-sm`}
+            title={selected ? t('common.cancelSelection') : t('common.select')}
+          >
+            <div className="i-mdi-check text-sm" />
+          </button>
+        )}
+
+        <div className="flex-shrink-0 w-28 flex flex-col">
+          <div className="relative aspect-[3/3.6] w-full overflow-hidden rounded-lg bg-brand-200 dark:bg-brand-700">
+            {game.cover_url
+              ? (
+                  <ImageCard
+                    url={game.cover_url}
+                    alt={game.name}
+                    lazyLoad={true}
+                    referrerPolicy="no-referrer"
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                    onDragStart={e => e.preventDefault()}
+                  />
+                )
+              : (
+                  <div className="flex h-full items-center justify-center text-brand-400">
+                    <div className="i-mdi-image-off text-4xl" />
+                  </div>
+                )}
+
+            {isCompleted && (
+              <div className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 shadow-lg">
+                <div className="i-mdi-trophy text-sm text-white" />
+              </div>
+            )}
+
+            {!selectionMode && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 backdrop-blur-[2px] transition-all duration-300 group-hover:opacity-100">
+                <button
+                  onClick={handleStartGame}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-600 text-white shadow-lg transition-transform hover:scale-110 hover:bg-neutral-500 active:scale-95"
+                  title={t('game.buttons.launchGame')}
+                >
+                  <div className="i-mdi-play text-lg" />
+                </button>
+                <button
+                  onClick={handleViewDetails}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
+                  title={t('common.viewDetails')}
+                >
+                  <div className="i-mdi-information-variant text-lg" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="px-1 mt-1">
+            <h3 className="truncate text-sm font-bold text-brand-900 dark:text-white leading-tight" title={game.name}>
+              <HighlightText text={game.name} query={searchQuery} />
+            </h3>
+            <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight" title={companyDisplay}>
+              {game.company ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCompanyClick(game.company);
+                  }}
+                  className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 hover:underline transition-colors"
+                >
+                  <HighlightText text={companyDisplay} query={searchQuery} />
+                </button>
+              ) : (
+                <HighlightText text={companyDisplay} query={searchQuery} />
+              )}
+            </p>
+            {game.release_at ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReleaseDateClick();
+                }}
+                className="truncate text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 hover:underline transition-colors leading-tight"
+              >
+                {formatLocalDate(game.release_at)}
+              </button>
+            ) : (
+              <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight">
+                {formatLocalDate(game.release_at)}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 h-full overflow-hidden">
+          <div className="flex h-full overflow-x-auto">
+            {isGalleryLoading ? (
+              <div className="flex h-full gap-1.5">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div
+                    key={i}
+                    className="h-full w-36 flex-shrink-0 rounded-lg bg-brand-200 dark:bg-brand-700 animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : galleryImages.length > 0 ? (
+              galleryImages.map((image, index) => (
+                <ImageCard
+                  key={image.url}
+                  url={image.url}
+                  alt={`Gallery ${index + 1}`}
+                  lazyLoad={true}
+                  urls={galleryImages.map((i)=>i.url)}
+                  referrerPolicy="no-referrer"
+                  className="h-45 aspect-video flex-shrink-0 rounded-lg object-cover object-center hover:opacity-80 transition-opacity cursor-pointer"
+                  onDragStart={e => e.preventDefault()}
+                />
+              ))
+            ) : (
+              <div className="text-sm text-brand-400 dark:text-brand-500 italic flex items-center h-full px-2">
+                No gallery images
+              </div>
+            )}
           </div>
         </div>
       </div>

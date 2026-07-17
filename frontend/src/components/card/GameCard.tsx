@@ -5,8 +5,9 @@ import { toast } from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { enums } from "../../../wailsjs/go/models";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
+import { GetGamesByTag } from "../../../wailsjs/go/service/GameService";
 import { ImageCard } from "./ImageCard";
-import { formatDurationSimple, formatLastDateText, formatLocalDate } from "../../utils/time";
+import { formatDurationSimple, formatLastDateText, formatLocalDate, parseTime } from "../../utils/time";
 import { useAppStore } from "../../store";
 
 // ── 高亮工具：将文本中匹配 query 的部分高亮显示 ──────────────────────────────
@@ -136,6 +137,38 @@ export function GameCard({
      });
   };
 
+  const handleCompanyClick = async (companyName: string) => {
+    try {
+      const games = await GetGamesByTag(companyName);
+      const gameIds = games.map(g => g.id).filter((id): id is string => !!id);
+      if (gameIds.length > 0) {
+        navigate({
+          to: '/category_games',
+          search: {
+            selectedGameIds: gameIds.join(','),
+            title: companyName,
+          } as Record<string, string>
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load games for company:', error);
+      toast.error('Failed to load games for this company');
+    }
+  };
+
+  const handleReleaseDateClick = () => {
+    if (game.release_at) {
+      const date = parseTime(game.release_at);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      localStorage.setItem('monthlyReleases_year', year.toString());
+      localStorage.setItem('monthlyReleases_month', month.toString());
+      navigate({
+        to: '/monthly_releases',
+      });
+    }
+  };
+
   const isCompleted = game.status === enums.GameStatus.COMPLETED;
   const companyDisplay = game.company || "Unknown Developer";
 
@@ -194,7 +227,19 @@ export function GameCard({
               <HighlightText text={game.name} query={searchQuery} />
             </h3>
             <p className="truncate text-xs text-brand-500 dark:text-brand-400" title={companyDisplay}>
-              <HighlightText text={companyDisplay} query={searchQuery} />
+              {game.company ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCompanyClick(game.company);
+                  }}
+                  className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 hover:underline transition-colors"
+                >
+                  <HighlightText text={companyDisplay} query={searchQuery} />
+                </button>
+              ) : (
+                <HighlightText text={companyDisplay} query={searchQuery} />
+              )}
             </p>
             {game.search_name && (
               <p className="truncate text-xs text-brand-400 dark:text-brand-500" title={game.search_name}>
@@ -214,9 +259,21 @@ export function GameCard({
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">
-          <p className="text-xs text-brand-500 dark:text-brand-400">
-            {formatLocalDate(game.release_at)}
-          </p>
+          {game.release_at ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReleaseDateClick();
+              }}
+              className="text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 hover:underline transition-colors"
+            >
+              {formatLocalDate(game.release_at)}
+            </button>
+          ) : (
+            <p className="text-xs text-brand-500 dark:text-brand-400">
+              {formatLocalDate(game.release_at)}
+            </p>
+          )}
           <div className="flex items-center gap-2 ml-2">
             <button
               onClick={handleStartGame}
@@ -321,11 +378,35 @@ export function GameCard({
           <HighlightText text={game.name} query={searchQuery} />
         </h3>
         <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight" title={companyDisplay}>
-          <HighlightText text={companyDisplay} query={searchQuery} />
+          {game.company ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCompanyClick(game.company);
+              }}
+              className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 hover:underline transition-colors"
+            >
+              <HighlightText text={companyDisplay} query={searchQuery} />
+            </button>
+          ) : (
+            <HighlightText text={companyDisplay} query={searchQuery} />
+          )}
         </p>
-        <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight">
-          {formatLocalDate(game.release_at)}
-        </p>
+        {game.release_at ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleReleaseDateClick();
+            }}
+            className="truncate text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 hover:underline transition-colors leading-tight"
+          >
+            {formatLocalDate(game.release_at)}
+          </button>
+        ) : (
+          <p className="truncate text-xs text-brand-500 dark:text-brand-400 leading-tight">
+            {formatLocalDate(game.release_at)}
+          </p>
+        )}
       </div>
     </div>
   );

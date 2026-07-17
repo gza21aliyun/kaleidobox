@@ -74,7 +74,8 @@
       "expand": "展开过滤器",
       "allStatus": "全部状态"
     },
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "noGalleryImages": "无画廊图片"
   },
   "topbar": {
     "minimize": "最小化",

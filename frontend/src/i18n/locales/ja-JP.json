@@ -72,7 +72,8 @@
       "collapse": "フィルターを折りたたむ",
       "expand": "フィルターを展開"
     },
-    "refresh": "更新"
+    "refresh": "更新",
+    "noGalleryImages": "ギャラリー画像がありません"
   },
   "topbar": {
     "minimize": "最小化",

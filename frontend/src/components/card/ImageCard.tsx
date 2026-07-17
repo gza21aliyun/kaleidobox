@@ -124,8 +124,13 @@ export function ImageBackupCard({
             document.addEventListener('keydown', handleKeyDown);
             return () => {
                 document.removeEventListener('keydown', handleKeyDown);
-                setScale(1);
+                // setScale(1);
             };
+        } else {
+            // return () => {
+            //     setScale(1);
+            //  };
+            setScale(1);
         }
     }, [isModalOpen, hasNext, hasPrev, clickNext]);
 

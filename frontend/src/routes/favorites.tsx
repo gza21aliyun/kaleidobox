@@ -834,7 +834,7 @@ function CategoryDetailPage() {
               filteredGames.length > 0
                 ? (
                     <div className={
-                      viewMode === "list" 
+                      viewMode === "list" || viewMode === "gallery"
                         ? "flex flex-col gap-2"
                         : viewMode === "large"
                           ? "grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4"

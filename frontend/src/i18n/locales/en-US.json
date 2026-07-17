@@ -74,7 +74,8 @@
       "collapse": "Collapse filters",
       "expand": "Expand filters"
     },
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "noGalleryImages": "No gallery images"
   },
   "topbar": {
     "minimize": "Minimize",

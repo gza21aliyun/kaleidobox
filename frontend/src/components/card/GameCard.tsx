@@ -110,6 +110,7 @@ export function GameCard({
   const [galleryImages, setGalleryImages] = useState<models.ImageBackup[]>([]);
   const [isGalleryLoading, setIsGalleryLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const hasLoadedGallery = useRef(false);
 
   const handleToggleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -177,12 +178,31 @@ export function GameCard({
   useEffect(() => {
     if (viewMode !== "gallery") return;
 
-    const timer = setTimeout(() => {
-      loadGalleryImages();
-    }, 100);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasLoadedGallery.current) {
+          hasLoadedGallery.current = true;
+          loadGalleryImages();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.01, rootMargin: "200px" }
+    );
 
-    return () => clearTimeout(timer);
-  }, [viewMode, game.id]);
+    const observe = () => {
+      if (cardRef.current) {
+        observer.observe(cardRef.current);
+      }
+    };
+
+    observe();
+    const timer = setTimeout(observe, 50);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [viewMode]);
 
   const loadGalleryImages = async () => {
     if (!game.id) return;
@@ -456,7 +476,7 @@ export function GameCard({
               ))
             ) : (
               <div className="text-sm text-brand-400 dark:text-brand-500 italic flex items-center h-full px-2">
-                No gallery images
+                {t('common.noGalleryImages')}
               </div>
             )}
           </div>

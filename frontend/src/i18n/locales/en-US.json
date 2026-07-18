@@ -160,7 +160,8 @@
     "viewMode": {
       "list": "List view",
       "large": "Large card view",
-      "small": "Small card view"
+      "small": "Small card view",
+      "gallery": "Gallery view"
     },
     "buttons": {
       "setStatus": "Set as status",
@@ -359,7 +360,8 @@
       "eroscape": "ErogameScape",
       "playVideo": "Play video",
       "getchu": "Getchu",
-      "dlsite": "DlSite"
+      "dlsite": "DlSite",
+      "info": "Info Modal"
     },
     "labels": {
       "source": "Data source",

@@ -158,7 +158,8 @@
     "viewMode": {
       "list": "リストビュー",
       "large": "大カードビュー",
-      "small": "小カードビュー"
+      "small": "小カードビュー",
+      "gallery": "ギャラリービュー"
     },
     "buttons": {
       "setStatus": "ステータスを設定",
@@ -357,7 +358,8 @@
       "eroscape": "批評空間",
       "playVideo": "動画を再生",
       "getchu": "Getchu",
-      "dlsite": "DlSite"
+      "dlsite": "DlSite",
+      "info": "情報モーダル"
     },
     "labels": {
       "source": "データソース",

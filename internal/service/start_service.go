@@ -450,6 +450,7 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 
 	// 如果启用了 Magpie，对真正的游戏进程触发缩放
 	if usedMagpie && s.config.MagpiePath != "" {
+		time.Sleep(time.Millisecond * 500)
 		go s.triggerMagpieScaling(actualProcessID)
 	}
 

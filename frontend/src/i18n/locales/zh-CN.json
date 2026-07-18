@@ -160,7 +160,8 @@
     "viewMode": {
       "list": "列表视图",
       "large": "大卡片视图",
-      "small": "小卡片视图"
+      "small": "小卡片视图",
+      "gallery": "画廊视图"
     },
     "buttons": {
       "setStatus": "设为状态",
@@ -359,7 +360,8 @@
       "eroscape": "批评空间",
       "playVideo": "播放视频",
       "getchu": "Getchu",
-      "dlsite": "DlSite"
+      "dlsite": "DlSite",
+      "info": "详情弹窗"
     },
     "labels": {
       "source": "数据来源",

@@ -5,9 +5,10 @@ import { toast } from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { enums } from "../../../wailsjs/go/models";
 import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
-import { GetGamesByTag } from "../../../wailsjs/go/service/GameService";
+import { GetGamesByTag, GetGameEntityByID } from "../../../wailsjs/go/service/GameService";
 import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 import { ImageCard } from "./ImageCard";
+import { GameInfoModal } from "../modal/GameInfoModal";
 import { formatDurationSimple, formatLastDateText, formatLocalDate, parseTime } from "../../utils/time";
 import { useAppStore } from "../../store";
 
@@ -109,6 +110,8 @@ export function GameCard({
 
   const [galleryImages, setGalleryImages] = useState<models.ImageBackup[]>([]);
   const [isGalleryLoading, setIsGalleryLoading] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [gameEntity, setGameEntity] = useState<models.GameEntity | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const hasLoadedGallery = useRef(false);
 
@@ -175,6 +178,17 @@ export function GameCard({
     }
   };
 
+  const handleOpenInfoModal = async () => {
+    try {
+      const entity = await GetGameEntityByID(game.id);
+      setGameEntity(entity);
+      setShowInfoModal(true);
+    } catch (error) {
+      console.error("Failed to load game entity:", error);
+      toast.error(t('game.toasts.loadFailed'));
+    }
+  };
+
   useEffect(() => {
     if (viewMode !== "gallery") return;
 
@@ -231,10 +245,11 @@ export function GameCard({
 
   if (viewMode === "list") {
     return (
-      <div
-        className={`glass-card group relative flex w-full items-center gap-4 overflow-hidden rounded-xl border border-brand-100 bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
-        onClick={selectionMode ? handleToggleSelect : undefined}
-      >
+      <>
+        <div
+          className={`glass-card group relative flex w-full items-center gap-4 overflow-hidden rounded-xl border border-brand-100 bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
+          onClick={selectionMode ? handleToggleSelect : undefined}
+        >
         {selectionMode && (
           <button
             type="button"
@@ -340,17 +355,32 @@ export function GameCard({
             >
               <div className="i-mdi-information-variant text-base" />
             </button>
+            <button
+              onClick={handleOpenInfoModal}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-brand-400 active:scale-95"
+              title={t('game.buttons.info')}
+            >
+              <div className="i-mdi-file-document text-base" />
+            </button>
           </div>
         </div>
       </div>
+      {showInfoModal && (
+        <GameInfoModal
+          gameEntity={gameEntity}
+          onClose={() => setShowInfoModal(false)}
+        />
+      )}
+      </>
     );
   }
 
   if (viewMode === "gallery") {
     return (
-      <div
-        ref={cardRef}
-        className={`glass-card group relative flex w-full items-stretch gap-4 overflow-hidden rounded-xl border border-brand-100 bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
+      <>
+        <div
+          ref={cardRef}
+          className={`glass-card group relative flex w-full items-stretch gap-4 overflow-hidden rounded-xl border border-brand-100 bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
         onClick={selectionMode ? handleToggleSelect : undefined}
       >
         {selectionMode && (
@@ -409,6 +439,25 @@ export function GameCard({
                 >
                   <div className="i-mdi-information-variant text-lg" />
                 </button>
+                <button
+                  onClick={handleOpenInfoModal}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
+                  title={t('game.buttons.info')}
+                >
+                  <div className="i-mdi-file-document text-lg" />
+                </button>
+                {onDelete && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(game);
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/80 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-red-500/80 active:scale-95"
+                    title={t('common.delete')}
+                  >
+                    <div className="i-mdi-delete text-lg" />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -482,14 +531,22 @@ export function GameCard({
           </div>
         </div>
       </div>
+      {showInfoModal && (
+        <GameInfoModal
+          gameEntity={gameEntity}
+          onClose={() => setShowInfoModal(false)}
+        />
+      )}
+      </>
     );
   }
 
   return (
-    <div
-      className={`glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""} ${viewMode === "large" ? "aspect-[8/11]" : ""}`}
-      onClick={selectionMode ? handleToggleSelect : undefined}
-    >
+    <>
+      <div
+        className={`glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""} ${viewMode === "large" ? "aspect-[8/11]" : ""}`}
+        onClick={selectionMode ? handleToggleSelect : undefined}
+      >
       {selectionMode && (
         <button
           type="button"
@@ -547,6 +604,13 @@ export function GameCard({
             >
               <div className="i-mdi-information-variant text-lg" />
             </button>
+            <button
+              onClick={handleOpenInfoModal}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
+              title={t('game.buttons.info')}
+            >
+              <div className="i-mdi-file-document text-lg" />
+            </button>
             {onDelete && (
               <button
                 onClick={(e) => {
@@ -599,5 +663,12 @@ export function GameCard({
         )}
       </div>
     </div>
-  );
-}
+    {showInfoModal && (
+        <GameInfoModal
+          gameEntity={gameEntity}
+          onClose={() => setShowInfoModal(false)}
+        />
+      )}
+      </>
+    );
+  }

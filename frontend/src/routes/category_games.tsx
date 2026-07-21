@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { models, enums } from "../../wailsjs/go/models";
 import { createRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { GetGamesByIdsStr } from "../../wailsjs/go/service/GameService";
 import { FilterBar } from "../components/bar/FilterBar";
@@ -28,6 +28,8 @@ function CategoryGamesPage() {
   const { gameStats, loadStats } = useAppStore();
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const mainContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "release_at" | "company" | "last_played" | "play_time"> ("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc"> ("desc");
@@ -105,6 +107,9 @@ function CategoryGamesPage() {
   };
 
   const onBack = () => {
+    if (mainContainerRef.current) {
+      sessionStorage.setItem('categoryGamesScrollPosition', mainContainerRef.current.scrollTop.toString());
+    }
     localStorage.setItem('scrollDelayMs', '400');
     window.history.back();
     // navigate({ to: "/category_list" });
@@ -295,8 +300,45 @@ function CategoryGamesPage() {
     init();
   }, [selectedGameIdsFromParams]);
 
+  useEffect(() => {
+    const savedPosition = sessionStorage.getItem('categoryGamesScrollPosition');
+    if (savedPosition) {
+      scrollPositionRef.current = parseInt(savedPosition);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loading && games.length > 0 && mainContainerRef.current) {
+      requestAnimationFrame(() => {
+        if (mainContainerRef.current) {
+          mainContainerRef.current.scrollTop = scrollPositionRef.current;
+        }
+      });
+    }
+  }, [loading, games]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (mainContainerRef.current) {
+        scrollPositionRef.current = mainContainerRef.current.scrollTop;
+        sessionStorage.setItem('categoryGamesScrollPosition', mainContainerRef.current.scrollTop.toString());
+      }
+    };
+
+    if (mainContainerRef.current) {
+      mainContainerRef.current.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (mainContainerRef.current) {
+        sessionStorage.setItem('categoryGamesScrollPosition', mainContainerRef.current.scrollTop.toString());
+        mainContainerRef.current.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
+
   return (
-    <div className={`h-full w-full overflow-y-auto p-8 transition-opacity duration-300 ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+    <div ref={mainContainerRef} className={`h-full w-full overflow-y-auto p-8 transition-opacity duration-300 ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       <button
         onClick={onBack}
         className="flex rounded-md items-center text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-200 transition-colors mb-6"

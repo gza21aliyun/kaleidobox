@@ -634,7 +634,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                   {t('common.cancel')}
                 </button>
                 <div className="flex gap-3">
-                  {pendingCount > 0 && (
+                  {pendingCount > 0 && !(config?.hide_old_matching_btns ?? true) && (
                     <button
                       type="button"
                       onClick={handleStartMatch}

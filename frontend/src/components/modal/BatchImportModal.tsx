@@ -763,22 +763,14 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
                     disabled={selectedCount === 0}
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-success-600 hover:bg-success-700"
                   >
-                    {t('batchImport.import')}
-                    {" "}
-                    {selectedCount}
-                    {" "}
-                    {t('batchImport.games')}
+                    {t('batchImport.importGames', { count: selectedCount })}
                   </button>
                   <button
                     onClick={handleUpdate}
                     disabled={selectedCount === 0}
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-success-600 hover:bg-success-700"
                   >
-                    {t('batchImport.import')}
-                    {" "}
-                    {selectedCount}
-                    {" "}
-                    {t('batchImport.games')} {t('batchImport.andUpdateInBackground')}
+                    {t('batchImport.importGamesAndUpdate', { count: selectedCount })}
                   </button>
                 </div>
               </div>

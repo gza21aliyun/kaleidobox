@@ -346,7 +346,7 @@ export default function DownloadedFiles() {
         item.inner_items = extractedFolder.inner_items;
         item.iso_items = extractedFolder.iso_items;
       } else {
-        await ExtractItem(item.path);
+        await ExtractItem(item as unknown as service.DownloadedFile);
         const arc = await RefreshDownloadedFile(item as unknown as service.DownloadedFile);
         console.log("file extracted", arc);
         setItems(items.map(i =>
@@ -764,7 +764,7 @@ export default function DownloadedFiles() {
     setCurrentExecutingTask(t("downloadedFiles.taskDelete"));
     setCurrentExecutingName(item.name);
     try {
-      const result = await DeleteExtractedFolder(item.path, item.base_name || '', item.extracted_paths || []);
+      const result = await DeleteExtractedFolder(item as unknown as service.DownloadedFile);
       if (result && result.has_archive && result.archive_item) {
         // 有同名压缩包，更新当前单元的信息（但保持 id 和 selected 状态）
         const archiveItem = result.archive_item;

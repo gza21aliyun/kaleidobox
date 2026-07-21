@@ -353,7 +353,7 @@ func getSavePathFromReadme(eTarget string, game *models.Game) string {
 				}
 				fullpath = filepath.Join(homeDir, relPath)
 				base := filepath.Base(fullpath)
-				if saveFileName == base {
+				if saveFileName == base || strings.Contains(base, "保存") {
 					fullpath = filepath.Dir(fullpath)
 				}
 

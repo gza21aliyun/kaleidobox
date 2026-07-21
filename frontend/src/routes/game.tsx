@@ -357,7 +357,8 @@ function GameDetailPage() {
       await DeleteGame(game.id);
       setGames([])
       toast.success(t('common.deleteSuccess'));
-      navigate({ to: "/library" });
+      window.history.back();
+      // navigate({ to: "/library" });
     }
     catch (error) {
       console.error("Failed to delete game:", error);

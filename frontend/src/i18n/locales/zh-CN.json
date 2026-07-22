@@ -1359,6 +1359,7 @@
         "action": "操作",
         "matchMetadata": "匹配元数据",
         "import": "导入 {{count}} 个游戏",
+        "importAndUpdate": "导入 {{count}} 个游戏并更新",
         "matchingMetadata": "正在匹配元数据...",
         "matchingNote": "可能需要一些时间，请耐心等待",
         "stopMatching": "停止匹配",

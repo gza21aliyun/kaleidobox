@@ -22,7 +22,7 @@ interface DragDropImportModalProps {
   droppedPaths: string[];
   isLnk: boolean;
   onClose: () => void;
-  onImportComplete: () => void;
+  onImportComplete: (candidates: models.Game[], isOpenUpdate: boolean) => void;
 }
 
 type Step = "processing" | "preview" | "match" | "importing" | "result";
@@ -241,6 +241,46 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
     }
   };
 
+  const handleUpdate = () => {
+    const importCandidates: vo.BatchImportCandidate[] = candidates
+      .filter(c => c.isSelected)
+      .map((c) => {
+        const candidate = new vo.BatchImportCandidate({
+          folder_path: c.folderPath,
+          folder_name: c.folderName,
+          executables: c.executables,
+          selected_exe: c.selectedExe,
+          search_name: c.searchName,
+          is_selected: c.isSelected,
+          match_status: c.matchStatus,
+        });
+        if (c.matchedGame) {
+          candidate.matched_game = c.matchedGame;
+        }
+        if (c.matchSource) {
+          candidate.match_source = c.matchSource;
+        }
+        return candidate;
+      });
+
+    BatchImportGamesSearch(importCandidates, isSearchFolder).then((res) => {
+      onImportComplete(res.games, true);
+      if (res.games && res.games.length > 0 && selectedCategoryVo?.id) {
+        AddGamesToCategories(res.games.map(g => g.id), [selectedCategoryVo.id])
+          .then(() => {
+            triggerCategoriesRefresh();
+          });
+      }
+      if (res.skipped_games && res.skipped_games.length > 0 && selectedCategoryVo?.id) {
+        AddGamesToCategories(res.skipped_games.map(g => g.id), [selectedCategoryVo.id])
+          .then(() => {
+            triggerCategoriesRefresh();
+          });
+      }
+      resetAndClose();
+    });
+  };
+
   const handleImport = async () => {
     setStep("importing");
     setIsLoading(true);
@@ -280,7 +320,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
 
       if (result.success > 0) {
         toast.success(t('import.toasts.importSuccess', { count: result.success }));
-        onImportComplete();
+        onImportComplete(result.games, false);
       }
       if (selectedCategoryVo?.id) {
         triggerCategoriesRefresh();
@@ -650,6 +690,14 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                     className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-primary-600 hover:bg-primary-700"
                   >
                     {t('import.modals.dragDrop.import', { count: selectedCount })}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUpdate}
+                    disabled={selectedCount === 0}
+                    className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 bg-primary-600 hover:bg-primary-700"
+                  >
+                    {t('import.modals.dragDrop.importAndUpdate', { count: selectedCount })}
                   </button>
                 </div>
               </div>

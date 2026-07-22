@@ -1355,6 +1355,7 @@
         "action": "Action",
         "matchMetadata": "Match metadata",
         "import": "Import {{count}} games",
+        "importAndUpdate": "Import {{count}} games and update",
         "matchingMetadata": "Matching metadata...",
         "matchingNote": "This may take some time, please wait",
         "stopMatching": "Stop matching",

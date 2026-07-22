@@ -4,7 +4,9 @@ import { OnFileDrop, OnFileDropOff } from "../../wailsjs/runtime/runtime";
 import { SideBar } from "../components/bar/SideBar";
 import { TopBar } from "../components/bar/TopBar";
 import { DragDropImportModal } from "../components/modal/DragDropImportModal";
+import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 import { useAppStore } from "../store";
+import { models } from "../../wailsjs/go/models";
 
 function RootLayout() {
   const { config, fetchGames } = useAppStore();
@@ -14,6 +16,8 @@ function RootLayout() {
   const [isLnk, setIsLnk] = useState(false);
   const [currentDropArea, setCurrentDropArea] = useState<'regular' | 'lnk' | null>(null);
   const currentDropAreaRef = useRef<'regular' | 'lnk' | null>(null);
+  const [isBatchUpdateOpen, setIsBatchUpdateOpen] = useState(false);
+  const [importedGamesForUpdate, setImportedGamesForUpdate] = useState<models.Game[]>([]);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const scrollPositions = useRef<Record<string, number>>({});
@@ -157,8 +161,12 @@ function RootLayout() {
     };
   }, [location.pathname]);
 
-  const handleImportComplete = () => {
+  const handleImportComplete = (importedGames: models.Game[], isOpenUpdate: boolean) => {
     fetchGames();
+    if (isOpenUpdate) {
+      setImportedGamesForUpdate(importedGames);
+      setIsBatchUpdateOpen(true);
+    }
   };
 
   const handleCloseDragDropModal = () => {
@@ -251,6 +259,15 @@ function RootLayout() {
         isLnk={isLnk}
         onClose={handleCloseDragDropModal}
         onImportComplete={handleImportComplete}
+      />
+
+      <BatchUpdateModal
+        isOpen={isBatchUpdateOpen}
+        onClose={() => setIsBatchUpdateOpen(false)}
+        onUpdateComplete={() => {
+          setIsBatchUpdateOpen(false);
+        }}
+        games={importedGamesForUpdate}
       />
     </div>
   );

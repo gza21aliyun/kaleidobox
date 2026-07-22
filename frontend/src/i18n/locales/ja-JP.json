@@ -1424,6 +1424,7 @@
         "action": "アクション",
         "matchMetadata": "メタデータをマッチ",
         "import": "{{count}} 個のゲームをインポート",
+        "importAndUpdate": "{{count}} 個のゲームをインポートして更新",
         "matchingMetadata": "メタデータをマッチ中...",
         "matchingNote": "時間がかかる場合がありますので、お待ちください",
         "stopMatching": "マッチを停止",

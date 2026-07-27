@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { ListDownloadedFiles, ExtractItem, DeleteDownloadInfo, MountISO, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker, InstallImage, OverrideSaves, StartGameTemp } from "../../wailsjs/go/service/DownloadedFilesService";
+import { ListDownloadedFiles, ExtractItem, DeleteDownloadInfo, MountISO, LinkGame, InstallGame, DeleteItem, DeleteExtractedFolder, DeleteInstalledGame, RefreshDownloadedFile, ExtractArchivesInFolder, SaveDownloadInfo, SaveImportedID, ScanFolderForExecutables, UpdateGameName, DownloadSaves, SaveDownloadedFileInfo, OverwriteInstall, ExecuteBatchTask, OverwriteCracker, InstallImage, OverrideSaves, StartGameTemp } from "../../wailsjs/go/service/DownloadedFilesService";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
 import { BatchImportModal } from "../components/modal/BatchImportModal";
@@ -1683,10 +1683,11 @@ export default function DownloadedFiles() {
             // setItems(prevItems => prevItems.map(i =>
             //   i.id === searchModalItem.id ? updatedItem : i
             // ));
-            SaveDownloadedFileInfo(searchModalItem.path, updatedItem as unknown as service.DownloadedFile).catch(err => {
+            LinkGame(updatedItem as unknown as service.DownloadedFile).catch(err => {
+              toast.error("Failed to save downloaded file info:", err);
               console.error("Failed to save downloaded file info:", err);
             });
-            DeleteDownloadInfo(game.path)
+            // DeleteDownloadInfo(game.path)
             setSearchModalItem(null);
             loadItems();
             toast.success(t('common.associateSuccess') || '关联成功');

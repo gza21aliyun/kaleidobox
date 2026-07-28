@@ -18,7 +18,7 @@ import { KeyMappingPanel } from "../components/panel/KeyMappingPanel";
 import { GameStatsPanel } from "../components/panel/GameStatsPanel";
 import { GameDetailSkeleton } from "../components/skeleton/GameDetailSkeleton";
 import { useAppStore } from "../store";
-import { formatLocalDate } from "../utils/time";
+import { formatLocalDate, parseTime } from "../utils/time";
 import { Route as rootRoute } from "./__root";
 import { GameInfoPanel } from "../components/panel/GameInfoPanel";
 import { GameGalleryPanel } from "../components/panel/GameGalleryPanel"; // 新增导入
@@ -330,6 +330,19 @@ function GameDetailPage() {
       </div>
     );
   }
+
+  const handleReleaseDateClick = () => {
+      if (game.release_at) {
+        const date = parseTime(game.release_at);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        localStorage.setItem('monthlyReleases_year', year.toString());
+        localStorage.setItem('monthlyReleases_month', month.toString());
+        navigate({
+          to: '/monthly_releases',
+        });
+      }
+    };
 
   const handleSelectExecutable = async () => {
     try {
@@ -726,7 +739,16 @@ function GameDetailPage() {
             </div>
             <div>
               <div className="font-semibold mb-1">{t('game.labels.releaseDate')}</div>
-              <div>{formatLocalDate(game.release_at, config?.time_zone)}</div>
+              {/* handleReleaseDateClick */}
+              {game.release_at ? (
+                  <button
+                    onClick={handleReleaseDateClick}
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                  >
+                    {formatLocalDate(game.release_at, config?.time_zone)}
+                  </button>
+                ) : "-"}
+              {/* <div>{formatLocalDate(game.release_at, config?.time_zone)}</div> */}
             </div>
             {/* Placeholders for missing data */}
           </div>

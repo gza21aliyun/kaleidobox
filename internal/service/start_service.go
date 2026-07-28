@@ -448,17 +448,11 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 	fmt.Printf("start tracking pid:%d, pName:%s\n", actualProcessID, actualProcessName)
 	s.sessionService.UpdateProcess(sessionID, actualProcessName, int(actualProcessID))
 
-	// 如果启用了 Magpie，对真正的游戏进程触发缩放
-	if usedMagpie && s.config.MagpiePath != "" {
-		time.Sleep(time.Millisecond * 500)
-		go s.triggerMagpieScaling(actualProcessID)
-	}
-
 	if s.config.DisplayName != "" {
 		monitor, err := utils.GetDisplayByName(s.config.DisplayName)
 		if err == nil {
 			time.Sleep(time.Millisecond * 500)
-			hwnds, err := utils.EnumWindowsByProcessID(actualProcessID)
+			hwnds, err := utils.EnumWindowsByProcessID(actualProcessID, false)
 			if err == nil && len(hwnds) > 0 {
 				for _, hwnd := range hwnds {
 					err = utils.MoveWindowToMonitor(hwnd, monitor)
@@ -468,6 +462,12 @@ func (s *StartService) detectAndMonitorProcess(cmd *exec.Cmd, sessionID string, 
 				}
 			}
 		}
+	}
+
+	// 如果启用了 Magpie，对真正的游戏进程触发缩放
+	if usedMagpie && s.config.MagpiePath != "" {
+		time.Sleep(time.Millisecond * 500)
+		go s.triggerMagpieScaling(actualProcessID)
 	}
 
 	go s.hotkeyService.readyHotkeysForGame(gameID)
@@ -1085,12 +1085,13 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	}
 
 	applog.LogInfof(s.ctx, "Magpie trigger: looking for game window with PID %d", gamePID)
+	time.Sleep(8000 * time.Millisecond)
 
 	// 等待游戏窗口出现
 	var gameHWND uintptr = 0
 	for i := 0; i < 30; i++ {
 		// 通过 gamePID 枚举窗口
-		hwnds, err := utils.EnumWindowsByProcessID(gamePID)
+		hwnds, err := utils.EnumWindowsByProcessID(gamePID, true)
 		if err == nil && len(hwnds) > 0 {
 			gameHWND = hwnds[0]
 			applog.LogInfof(s.ctx, "Magpie trigger: found game window from PID %d", gamePID)
@@ -1113,6 +1114,16 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	}
 
 	if gameHWND == 0 {
+		time.Sleep(500 * time.Millisecond)
+		hwnds, err := utils.EnumWindowsByProcessID(gamePID, false)
+		if err == nil && len(hwnds) > 0 {
+			gameHWND = hwnds[0]
+			applog.LogInfof(s.ctx, "Magpie trigger 2: found game window from PID %d", gamePID)
+		}
+
+	}
+
+	if gameHWND == 0 {
 		applog.LogInfof(s.ctx, "Magpie trigger: game window not found")
 		return
 	}
@@ -1129,13 +1140,15 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 
 	// 获取游戏窗口的线程ID
 	gameThreadId, _, _ := procGetWindowThreadProcessId.Call(gameHWND, 0)
+	fmt.Printf("Magpie trigger 011:gamePid:%d, gameThreadId:%d, currentFGThreadId:%d\n", gamePID, gameThreadId, currentFGThreadId)
 
 	// 附加线程输入以允许 SetForegroundWindow
 	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
 		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 1)
+		fmt.Printf("Magpie trigger 012:gamePid:%d, gameThreadId:%d, currentFGThreadId:%d\n", gamePID, gameThreadId, currentFGThreadId)
 	}
-	time.Sleep(8000 * time.Millisecond)
 
+	procAllowSetForeground.Call(0xFFFFFFFF)
 	// 设置游戏窗口为前景
 	procSetForegroundWindow.Call(gameHWND)
 
@@ -1155,7 +1168,7 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	applog.InfoLogSaveAppLog("Magpie trigger: sending configured hotkey: %s", hotkeyStr)
 
 	// 使用公共函数发送快捷键
-	utils.SendHotkey(hotkeyStr)
+	// utils.SendHotkey(hotkeyStr)
 
 	applog.InfoLogSaveAppLog("Magpie trigger: scaling hotkey sent successfully")
 }

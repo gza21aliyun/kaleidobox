@@ -151,11 +151,13 @@ func GetDisplayByName(name string) (models.MonitorInfo, error) {
 // ... existing code ...
 
 // EnumWindowsByProcessID 根据进程 ID 枚举窗口
-func EnumWindowsByProcessID(pid uint32) ([]uintptr, error) {
-	data := &windowEnumData{
+func EnumWindowsByProcessID(pid uint32, needVisible bool) ([]uintptr, error) {
+	data0 := &windowEnumData{
 		pid:   pid,
 		hwnds: make([]uintptr, 0),
 	}
+	procGetWindowTextW := user32.NewProc("GetWindowTextW")
+	procGetWindowTextLengthW := user32.NewProc("GetWindowTextLengthW")
 
 	// 保存回调函数引用 - 注意返回值必须是 uintptr
 	windowEnumCallbackRef = syscall.NewCallback(func(hwnd uintptr, lParam uintptr) uintptr {
@@ -164,12 +166,22 @@ func EnumWindowsByProcessID(pid uint32) ([]uintptr, error) {
 		var processID uint32
 		ret, _, _ := procGetWindowThreadProcessId.Call(hwnd, uintptr(unsafe.Pointer(&processID)))
 
-		if ret != 0 && processID == data.pid {
+		if ret != 0 && processID == data.pid && processID == pid {
 			// 检查窗口是否可见
 			visible, _, _ := procIsWindowVisible.Call(hwnd)
-			if visible != 0 {
+			if !needVisible || visible != 0 {
 				data.hwnds = append(data.hwnds, hwnd)
-				fmt.Printf(">>> Window found: hwnd=%d, pid=%d\n", hwnd, processID)
+				ret2, _, _ := procGetWindowTextLengthW.Call(hwnd)
+				title := ""
+				if ret2 != 0 {
+					// 分配缓冲区
+					buf := make([]uint16, ret2+1)
+					procGetWindowTextW.Call(hwnd, uintptr(unsafe.Pointer(&buf[0])), ret2+1)
+					title = syscall.UTF16ToString(buf)
+
+				}
+
+				fmt.Printf(">>> Window found: hwnd=%d, pid=%d, ret=%d, title:%s\n", hwnd, processID, ret, title)
 			}
 		}
 
@@ -178,15 +190,15 @@ func EnumWindowsByProcessID(pid uint32) ([]uintptr, error) {
 
 	ret, _, err := procEnumWindows.Call(
 		windowEnumCallbackRef,
-		uintptr(unsafe.Pointer(data)),
+		uintptr(unsafe.Pointer(data0)),
 	)
 
 	if ret == 0 {
 		return nil, err
 	}
 
-	fmt.Printf("Total windows found for PID %d: %d\n", pid, len(data.hwnds))
-	return data.hwnds, nil
+	fmt.Printf("Total windows found for PID %d: %d\n", pid, len(data0.hwnds))
+	return data0.hwnds, nil
 }
 
 // ... existing code ...

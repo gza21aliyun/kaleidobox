@@ -1149,13 +1149,9 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	}
 
 	procAllowSetForeground.Call(0xFFFFFFFF)
+	procBringWindowToTop.Call(gameHWND)
 	// 设置游戏窗口为前景
 	procSetForegroundWindow.Call(gameHWND)
-
-	// 取消线程附加
-	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
-		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 0)
-	}
 
 	// 等待窗口激活
 	time.Sleep(200 * time.Millisecond)
@@ -1168,7 +1164,12 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	applog.InfoLogSaveAppLog("Magpie trigger: sending configured hotkey: %s", hotkeyStr)
 
 	// 使用公共函数发送快捷键
-	// utils.SendHotkey(hotkeyStr)
+	utils.SendHotkey(hotkeyStr)
+
+	// 取消线程附加（延迟到按键发送完成后）
+	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
+		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 0)
+	}
 
 	applog.InfoLogSaveAppLog("Magpie trigger: scaling hotkey sent successfully")
 }

@@ -17,6 +17,7 @@ interface ImageBackupProps {
   draggable?: boolean | undefined;
   selectMode?: boolean;
   onSelect?: (selected: models.ImageBackup) => void;
+  onDelete?: (selected: models.ImageBackup) => void;
   referrerPolicy?: React.HTMLAttributeReferrerPolicy | undefined;  
     onDragStart?: React.DragEventHandler | undefined;
     onError?: React.ReactEventHandler | undefined;
@@ -29,7 +30,7 @@ interface ImageBackupProps {
 }
 
 export function ImageBackupCard({
-    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, isShowTime = false, clickNext, hasNext, hasPrev, currentIndex = 0, onClose,
+    imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, onDelete, isShowTime = false, clickNext, hasNext, hasPrev, currentIndex = 0, onClose,
 }: ImageBackupProps) { 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
@@ -136,7 +137,8 @@ export function ImageBackupCard({
 
     const handleClickImg = () => { 
         if (selectMode && onSelect) {
-            onSelect(imageBackup);
+            // 在选择模式下，点击不直接选择，而是通过悬浮按键栏操作
+            return;
         } else {
             setCImg(imageBackup)
             setIsModalOpen(true);
@@ -147,7 +149,7 @@ export function ImageBackupCard({
     return (
         <>
             <div 
-                className={`cursor-pointer hover:opacity-80 transition-all ${selectMode ? 'ring-2 ring-brand-500 ring-offset-2 dark:ring-offset-brand-900 rounded-md' : ''}`} 
+                className={`cursor-pointer transition-all ${selectMode ? 'group relative ring-2 ring-brand-500 ring-offset-2 dark:ring-offset-brand-900 rounded-md' : 'hover:opacity-80'}`} 
                 onClick={() => handleClickImg()}
             >
                 <div 
@@ -174,6 +176,33 @@ export function ImageBackupCard({
                 {isShowTime && imageBackup.created_at && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-1 truncate">
                         {formatTime(imageBackup.created_at)}
+                    </div>
+                )}
+                
+                {selectMode && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 backdrop-blur-[2px] transition-all duration-300 group-hover:opacity-100 z-10">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onSelect?.(imageBackup);
+                            }}
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-brand-400 active:scale-95"
+                            title="选择为封面"
+                        >
+                            <div className="i-mdi-image-plus text-lg" />
+                        </button>
+                        {onDelete && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete(imageBackup);
+                                }}
+                                className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/80 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-red-500/80 active:scale-95"
+                                title="删除"
+                            >
+                                <div className="i-mdi-delete text-lg" />
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -291,6 +320,7 @@ interface ImageCardProps {
   lazyLoad?: boolean;
   selectMode?: boolean;
   onSelect?: (selected: models.ImageBackup) => void;
+  onDelete?: (selected: models.ImageBackup) => void;
   tempDownload?: boolean; // 为true时下载到临时文件夹，不保存到数据库
   urls?: string[];
 }
@@ -306,6 +336,7 @@ export function ImageCard({
     lazyLoad = true,
     selectMode = false,
     onSelect,
+    onDelete,
     tempDownload = false,
     urls = [url],
 }: ImageCardProps) {
@@ -476,6 +507,7 @@ export function ImageCard({
                     onError={onError}
                     selectMode={selectMode}
                     onSelect={onSelect}
+                    onDelete={onDelete}
                     clickNext={clickN}
                     hasNext={index < urls.length - 1}
                     hasPrev={index > 0}

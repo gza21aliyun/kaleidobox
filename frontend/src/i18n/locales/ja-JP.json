@@ -1040,7 +1040,11 @@
     "openLocation": "ファイルエクスプローラーで場所を開く",
     "openPathError": "パスを開くのに失敗しました。ファイル/ディレクトリが存在しない可能性があります。",
     "refresh": "更新",
-    "selectCover": "表紙画像を選択"
+    "selectCover": "表紙画像を選択",
+    "confirmDelete": "この画像を削除してもよろしいですか？",
+    "deleteSuccess": "削除しました",
+    "deleteFailed": "削除に失敗しました：",
+    "cannotDeleteCover": "現在の表紙画像は削除できません。先に表紙画像を変更してください"
   },
   "gameInfo": {
     "staffInfo": "スタッフ",

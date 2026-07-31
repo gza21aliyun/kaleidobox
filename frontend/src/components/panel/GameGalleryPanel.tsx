@@ -3,7 +3,7 @@ import {
   GetGlobalHotkeys, UpdateHotkey, DeleteHotkey,
   AddHotkey } from "../../../wailsjs/go/service/HotkeyService";
 import { OpenLocalPath } from "../../../wailsjs/go/service/GameService";
-import { FetchImages } from "../../../wailsjs/go/service/ImageService";
+import { FetchImages, DeleteImageBackup } from "../../../wailsjs/go/service/ImageService";
 import { useState, useEffect } from "react";
 import { ScreenshotHotkeyModal } from "../modal/ScreenshotHotkeyModal";
 import { ImageBackupCard, ImageCard } from "../card/ImageCard";
@@ -111,6 +111,24 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
     setIsSelectCover(false)
   };
 
+  const handleDeleteImage = async (img: models.ImageBackup) => {
+    if (img.url === game.cover_url) {
+      toast.error(t('gameGallery.cannotDeleteCover'));
+      return;
+    }
+    if (!confirm(t('gameGallery.confirmDelete'))) {
+      return;
+    }
+    try {
+      await DeleteImageBackup(img.url);
+      toast.success(t('gameGallery.deleteSuccess'));
+      loadScreenshots();
+    } catch (error) {
+      console.error("删除图片失败:", error);
+      toast.error(t('gameGallery.deleteFailed') + error);
+    }
+  };
+
 
   // 处理图片数组，过滤封面图和特定后缀的图片
   const galleryImages = hasImages
@@ -195,6 +213,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
                   key={screenshot.url}
                   selectMode={isSelectCover}
                   onSelect={handleSelectCover}
+                  onDelete={handleDeleteImage}
                   isShowTime={true}
                   />
               ))}
@@ -241,6 +260,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
                   key={image.url}
                   selectMode={isSelectCover}
                   onSelect={handleSelectCover}
+                  onDelete={handleDeleteImage}
                   urls={galleryImages.map((image) => image.url)}
                   />
               ))}

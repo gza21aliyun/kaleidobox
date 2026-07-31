@@ -295,11 +295,29 @@ func (s *ImageService) UpdateImageBackup(imageBackup *models.ImageBackup) error 
 	return err
 }
 
-// DeleteImageBackup 删除 ImageBackup 记录
+// DeleteImageBackup 删除 ImageBackup 记录，同时删除本地图片文件
 func (s *ImageService) DeleteImageBackup(url string) error {
+	// 先查询记录以获取本地文件路径
+	record, err := s.GetImageBackupByUrl(url, false)
+	if err != nil {
+		return err
+	}
+
+	// 删除数据库记录
 	query := `DELETE FROM image_backups WHERE url = ?`
-	_, err := s.db.ExecContext(s.ctx, query, url)
-	return err
+	_, err = s.db.ExecContext(s.ctx, query, url)
+	if err != nil {
+		return err
+	}
+
+	// 如果有本地文件，删除它
+	if record != nil && record.LocalPath != "" {
+		if err := os.Remove(record.LocalPath); err != nil {
+			applog.LogWarningf(s.ctx, "删除本地图片文件失败 %s: %v", record.LocalPath, err)
+		}
+	}
+
+	return nil
 }
 
 func (s *ImageService) FetchImages(id string, subjectType int, imageType int, download bool) ([]models.ImageBackup, error) {

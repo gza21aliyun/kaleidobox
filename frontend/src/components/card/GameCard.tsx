@@ -192,6 +192,20 @@ export function GameCard({
   useEffect(() => {
     if (viewMode !== "gallery") return;
 
+    // 立即同步检测：初始挂载时上千个游戏同步过滤排序会阻塞主线程，
+    // IntersectionObserver 对已可见元素的初始回调可能不触发。
+    // 直接在 effect 中用 getBoundingClientRect 强制布局并检测可见性，
+    // 对可见卡片立即加载，不可见卡片才用 IntersectionObserver 懒加载。
+    if (cardRef.current && !hasLoadedGallery.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      const isVisible = rect.bottom > -200 && rect.top < window.innerHeight + 200;
+      if (isVisible) {
+        hasLoadedGallery.current = true;
+        loadGalleryImages();
+        return;
+      }
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasLoadedGallery.current) {
@@ -203,14 +217,21 @@ export function GameCard({
       { threshold: 0.01, rootMargin: "200px" }
     );
 
-    const observe = () => {
-      if (cardRef.current) {
-        observer.observe(cardRef.current);
-      }
-    };
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
 
-    observe();
-    const timer = setTimeout(observe, 50);
+    const timer = setTimeout(() => {
+      if (cardRef.current && !hasLoadedGallery.current) {
+        const rect = cardRef.current.getBoundingClientRect();
+        const isVisible = rect.bottom > -200 && rect.top < window.innerHeight + 200;
+        if (isVisible) {
+          hasLoadedGallery.current = true;
+          loadGalleryImages();
+          observer.disconnect();
+        }
+      }
+    }, 200);
 
     return () => {
       clearTimeout(timer);

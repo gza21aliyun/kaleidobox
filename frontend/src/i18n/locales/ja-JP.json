@@ -1040,7 +1040,7 @@
     "openLocation": "ファイルエクスプローラーで場所を開く",
     "openPathError": "パスを開くのに失敗しました。ファイル/ディレクトリが存在しない可能性があります。",
     "refresh": "更新",
-    "selectCover": "表紙画像を選択",
+    "selectCover": "画像を選択して削除または表紙に設定",
     "confirmDelete": "この画像を削除してもよろしいですか？",
     "deleteSuccess": "削除しました",
     "deleteFailed": "削除に失敗しました：",

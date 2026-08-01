@@ -1045,7 +1045,7 @@
     "openLocation": "在文件管理器中打开位置",
     "openPathError": "打开路径失败，文件/目录可能不存在",
     "refresh": "刷新",
-    "selectCover": "选择封面图",
+    "selectCover": "选择图片删除或做封面图",
     "confirmDelete": "确定要删除这张图片吗？",
     "deleteSuccess": "删除成功",
     "deleteFailed": "删除失败：",

@@ -870,7 +870,15 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 		runtime.EventsEmit(s.ctx, "screenshot:saved", gameId)
 	}
 
-	// 发送 Windows 通知
+	// 查询游戏名
+	var gameName string
+	_ = s.db.QueryRow("SELECT COALESCE(name, '') FROM games WHERE id = $1", gameId).Scan(&gameName)
+	notifyTitle := "游戏截图已保存"
+	if gameName != "" {
+		notifyTitle = fmt.Sprintf("%s - 截图已保存", gameName)
+	}
+
+	// 发送 Windows Toast 通知（保留在通知中心）
 	go func() {
 		uriPath := strings.ReplaceAll(filepath.ToSlash(fileName), " ", "%20")
 		script := fmt.Sprintf(`
@@ -881,17 +889,87 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 			<toast activationType="protocol" launch="file:///%s">
 				<visual>
 					<binding template="ToastGeneric">
-						<text>游戏截图已保存</text>
+						<text>%s</text>
 						<image placement="inline" src="file:///%s" />
 					</binding>
 				</visual>
+				<audio silent="true" />
 			</toast>
 "@
 			$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
 			$xml.LoadXml($template)
 			$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 			[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("KaleidoBox").Show($toast)
-		`, uriPath, uriPath)
+		`, uriPath, notifyTitle, uriPath)
+		cmd := exec.Command("powershell", "-NoProfile", "-Command", script)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000,
+		}
+		_ = cmd.Start()
+		if cmd.Process != nil {
+			cmd.Process.Release()
+		}
+	}()
+
+	// 显示 WPF 顶层窗口通知（绕过 D3D 独占全屏模式的通知抑制，确保 Magpie 放大时可见）
+	go func() {
+		absPath, err := filepath.Abs(fileName)
+		if err != nil {
+			return
+		}
+		fileURI := "file:///" + strings.ReplaceAll(filepath.ToSlash(absPath), " ", "%20")
+		script := fmt.Sprintf(`
+			Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
+			$window = New-Object System.Windows.Window
+			$window.WindowStyle = [System.Windows.WindowStyle]::None
+			$window.AllowsTransparency = $true
+			$window.Background = [System.Windows.Media.Brushes]::Transparent
+			$window.Topmost = $true
+			$window.ShowInTaskbar = $false
+			$window.SizeToContent = [System.Windows.SizeToContent]::WidthAndHeight
+			$window.WindowStartupLocation = [System.Windows.WindowStartupLocation]::Manual
+
+			$stackPanel = New-Object System.Windows.Controls.StackPanel
+
+			$text = New-Object System.Windows.Controls.TextBlock
+			$text.Text = "%s"
+			$text.Foreground = [System.Windows.Media.Brushes]::White
+			$text.FontSize = 14
+			$text.FontWeight = [System.Windows.FontWeights]::Bold
+			$text.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+			$text.Margin = New-Object System.Windows.Thickness(0, 6, 0, 4)
+			$stackPanel.Children.Add($text)
+
+			$image = New-Object System.Windows.Controls.Image
+			$bitmap = New-Object System.Windows.Media.Imaging.BitmapImage
+			$bitmap.BeginInit()
+			$bitmap.UriSource = New-Object System.Uri("%s")
+			$bitmap.EndInit()
+			$image.Source = $bitmap
+			$image.MaxWidth = 320
+			$image.MaxHeight = 180
+			$image.Stretch = [System.Windows.Media.Stretch]::Uniform
+			$image.Margin = New-Object System.Windows.Thickness(4, 0, 4, 4)
+			$stackPanel.Children.Add($image)
+
+			$border = New-Object System.Windows.Controls.Border
+			$border.Child = $stackPanel
+			$border.Background = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromArgb(220, 30, 30, 30))
+			$border.CornerRadius = New-Object System.Windows.CornerRadius(8)
+			$border.Margin = New-Object System.Windows.Thickness(10)
+			$window.Content = $border
+
+			$workArea = [System.Windows.SystemParameters]::WorkArea
+			$window.Left = $workArea.Right - 360
+			$window.Top = $workArea.Bottom - 260
+
+			$timer = New-Object System.Windows.Threading.DispatcherTimer
+			$timer.Interval = [TimeSpan]::FromSeconds(6)
+			$timer.Add_Tick({ $window.Close() })
+			$timer.Start()
+			$window.Add_MouseLeftButtonDown({ $window.Close() })
+			$window.ShowDialog()
+		`, notifyTitle, fileURI)
 		cmd := exec.Command("powershell", "-NoProfile", "-Command", script)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			CreationFlags: 0x08000000,

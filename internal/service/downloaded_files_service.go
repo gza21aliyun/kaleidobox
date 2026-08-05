@@ -1559,7 +1559,7 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() && filepath.Base(path) == exeFileName {
+			if !info.IsDir() && strings.ToLower(filepath.Base(path)) == strings.ToLower(exeFileName) {
 				foundExePaths = append(foundExePaths, path)
 			}
 			return nil
@@ -1569,7 +1569,7 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 		}
 
 		if len(foundExePaths) != 1 {
-			return fmt.Errorf("找到 %d 个匹配的执行文件，需要找到恰好1个", len(foundExePaths))
+			return fmt.Errorf("在路径 %s 找到 %d 个匹配的执行文件 %s，需要找到恰好1个", downloadedFile.ExtractedGamePath, len(foundExePaths), exeFileName)
 		}
 
 		extractedExePath = foundExePaths[0]
@@ -1612,7 +1612,7 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() && filepath.Base(path) == exeFileName {
+			if !info.IsDir() && strings.ToLower(filepath.Base(path)) == strings.ToLower(exeFileName) {
 				foundExePaths = append(foundExePaths, path)
 			}
 			return nil
@@ -1622,11 +1622,19 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 		}
 
 		if len(foundExePaths) != 1 {
-			return fmt.Errorf("在镜像中找到 %d 个匹配的执行文件，需要找到恰好1个", len(foundExePaths))
+			return fmt.Errorf("在路径 %s 找到 %d 个匹配的执行文件 %s，需要找到恰好1个", tmpDir, len(foundExePaths), exeFileName)
 		}
 
 		extractedExePath = foundExePaths[0]
 		sourcePath = filepath.Dir(extractedExePath)
+		ext := filepath.Ext(extractedExePath)
+		basePath := strings.TrimSuffix(extractedExePath, ext)
+		if _, err := os.Stat(basePath + ".old"); err == nil {
+			return fmt.Errorf("破解文件已存在，不适合直接覆盖")
+		}
+		if _, err := os.Stat(basePath + ".OLD"); err == nil {
+			return fmt.Errorf("破解文件已存在，不适合直接覆盖")
+		}
 
 		for i := 0; i < layers-1; i++ {
 			sourcePath = filepath.Dir(sourcePath)

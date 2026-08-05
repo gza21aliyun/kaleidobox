@@ -17,7 +17,7 @@ import (
 var (
 	ExcludeExeKeywords []string = []string{
 		"courier_i", "courier", "acmp", "curl", "unitycrashhandler64", "krkr", "krkrconf", "krkrfont", "krkrlt", "krkrrel", "krkrsign", "krkrtpc", "tcwfcomp",
-		"settings", "setting", "python", "protect", "instx86", "instx64", "install", "inst", "config2", "autorun", "supporttools", "filechecker",
+		"settings", "setting", "python", "protect", "instx86", "instx64", "install", "inst", "config2", "autorun", "supporttools", "filechecker", "bootstrap",
 		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst", "bhvc", "unitycrashhandler32",
 		"vcredist_x86", "vcredist_x64", "vc_redist.x86", "updchk", "upgrade", "uninstx86", "uninstx64", "uninstcl", "uninstaller", "tracelog",
 		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール", "システム詳細設定", "エンジン設定", "maliecfg",

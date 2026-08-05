@@ -222,72 +222,80 @@ func (b SaveInfoGetter) DownloadSavesForGames(games []models.Game, isOverride bo
 		if !ok {
 			continue
 		}
-		fileName, err := ExtractFilename(saveLink)
-		if err != nil {
+		result, err := b.DownloadSaveForGame(game, saveLink, isOverride)
+		if err != nil || result == nil {
 			continue
 		}
-		saveTargetPath := filepath.Join(filepath.Dir(game.Path), fileName)
-		err = downloadFile(saveLink, saveTargetPath)
-		if err != nil || !isOverride {
-			continue
-		}
-
-		extractedDir := filepath.Join(os.TempDir(), "extracted", game.ID)
-		err = extractZip(saveTargetPath, extractedDir)
-		entries, err := os.ReadDir(extractedDir)
-		foundIndex := -1
-		for i, entry := range entries {
-			if entry.IsDir() {
-				foundIndex = i
-				break
-			}
-		}
-		if foundIndex == -1 {
-			fmt.Println("未找到存档文件夹", len(entries))
-			os.RemoveAll(extractedDir)
-			continue
-		}
-		eTarget := filepath.Join(extractedDir, entries[foundIndex].Name())
-		target := getSavePathFromReadme(eTarget, &game)
-		fmt.Println("存档说明书中位置：", target)
-		if target == "" {
-			target = game.SavePath
-		}
-		if target == "" {
-			newGame, err := SearchSave(game)
-			if err == nil {
-				target = newGame.SavePath
-				if target == "" {
-					continue
-				}
-			}
-		}
-		fmt.Printf("存档位置：%s\n", target)
-
-		entries, err = os.ReadDir(eTarget)
-		foundIndex = -1
-		for i, entry := range entries {
-			if entry.IsDir() {
-				foundIndex = i
-				break
-			}
-		}
-
-		sourcePath := eTarget
-		if foundIndex != -1 {
-			sourcePath = filepath.Join(eTarget, entries[foundIndex].Name())
-		}
-
-		results = append(results, SaveResult{
-			GameName:    game.Name,
-			ArchiveName: fileName,
-			SavePath:    target,
-			SourcePath:  sourcePath,
-			GameID:      game.ID,
-			GamePath:    game.Path,
-		})
+		results = append(results, *result)
 	}
 	return results, nil
+}
+
+func (b SaveInfoGetter) DownloadSaveForGame(game models.Game, saveLink string, isOverride bool) (*SaveResult, error) {
+	fileName, err := ExtractFilename(saveLink)
+	if err != nil {
+		return nil, err
+	}
+	saveTargetPath := filepath.Join(filepath.Dir(game.Path), fileName)
+	err = downloadFile(saveLink, saveTargetPath)
+	if err != nil || !isOverride {
+		return nil, err
+	}
+
+	extractedDir := filepath.Join(os.TempDir(), "extracted", game.ID)
+	err = extractZip(saveTargetPath, extractedDir)
+	entries, err := os.ReadDir(extractedDir)
+	foundIndex := -1
+	for i, entry := range entries {
+		if entry.IsDir() {
+			foundIndex = i
+			break
+		}
+	}
+	if foundIndex == -1 {
+		fmt.Println("未找到存档文件夹", len(entries))
+		os.RemoveAll(extractedDir)
+		return nil, err
+	}
+	eTarget := filepath.Join(extractedDir, entries[foundIndex].Name())
+	target := getSavePathFromReadme(eTarget, &game)
+	fmt.Println("存档说明书中位置：", target)
+	if target == "" {
+		target = game.SavePath
+	}
+	if target == "" {
+		newGame, err := SearchSave(game)
+		if err == nil {
+			target = newGame.SavePath
+			if target == "" {
+				return nil, err
+			}
+		}
+	}
+	fmt.Printf("存档位置：%s\n", target)
+
+	entries, err = os.ReadDir(eTarget)
+	foundIndex = -1
+	for i, entry := range entries {
+		if entry.IsDir() {
+			foundIndex = i
+			break
+		}
+	}
+
+	sourcePath := eTarget
+	if foundIndex != -1 {
+		sourcePath = filepath.Join(eTarget, entries[foundIndex].Name())
+	}
+
+	return &SaveResult{
+		GameName:    game.Name,
+		ArchiveName: fileName,
+		SavePath:    target,
+		SourcePath:  sourcePath,
+		GameID:      game.ID,
+		GamePath:    game.Path,
+	}, nil
 }
 
 func (b SaveInfoGetter) OverrideSaves(results []SaveResult) error {

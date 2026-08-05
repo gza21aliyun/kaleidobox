@@ -30,6 +30,8 @@ export default function DownloadedFiles() {
   const { t } = useTranslation();
   const [items, setItems] = useState<DownloadedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [showToastTime, setShowToastTime] = useState(0);
   const [showExtract, setShowExtract] = useState(true);
   const [showInstall, setShowInstall] = useState(true);
   const [showImport, setShowImport] = useState(true);
@@ -153,6 +155,9 @@ export default function DownloadedFiles() {
           } else {
             setCurrentExecutingTask(task.working_on);
           }
+          if (showToast) {
+            toast.success(`${currentExecutingName} 正在 ${currentExecutingTask}`)
+          }
         }
         
         if (task.item_data && task.item_id) {
@@ -169,6 +174,9 @@ export default function DownloadedFiles() {
             task.status === enums.TaskStatus.CANCELED) {
           setTimeout(() => loadItems(), 1000);
           setTimeout(() => {
+            if (showToast && task.status === enums.TaskStatus.COMPLETED) {
+              toast.success(`${currentExecutingName} 完成 ${currentExecutingTask}`)
+            }
             setIsExecuting(false);
             setCurrentExecutingName("");
             setCurrentExecutingTask("");
@@ -187,6 +195,15 @@ export default function DownloadedFiles() {
 
     return () => unlisten();
   }, [t]);
+
+  // useEffect(()=>{
+  //   const now = new Date().getMilliseconds
+  //   if (showToast && isExecuting) {
+  //     toast.success(`${currentExecutingName} 正在 ${currentExecutingTask}`)
+  //     setShowToastTime(now)
+  //   }
+
+  // },[isExecuting, currentExecutingName, currentExecutingTask])
 
   const handleSelectAll = () => {
     const filteredIds = [...filterItems].map(item => item.id);
@@ -698,7 +715,7 @@ export default function DownloadedFiles() {
 
   const handleOpen = async (item: DownloadedFile) => {
     try {
-      await OpenLocalPath(item.path);
+      await OpenLocalPath(item.folder_path ? item.folder_path : item.path);
     } catch (err) {
       console.error("Open failed:", err);
     }
@@ -941,7 +958,7 @@ export default function DownloadedFiles() {
   return (
     <div className="p-6 h-full overflow-auto relative">
       {/* 执行中动画 - 覆盖整个页面内容 */}
-      {isExecuting && (
+      {isExecuting && !showToast && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70">
           <div className="flex flex-col items-center gap-3 px-6 py-4">
             <div className="animate-spin rounded-full h-10 w-10 border-4 border-white/30 border-t-white"></div>
@@ -1079,6 +1096,15 @@ export default function DownloadedFiles() {
           </div>
 
           <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm" title="选择后执行时显示霸占界面的转圈动画，否的话只会显示信息方便操作，但由于执行中单元状态频繁变化，建议只有完全清楚当前状态的时候选否">
+              <input
+                type="checkbox"
+                checked={!showToast}
+                onChange={(e) => setShowToast(!e.target.checked)}
+                className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
+              />
+              执行中动画
+            </label>
             <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.directIsoInstallHint")}>
               <input
                 type="checkbox"

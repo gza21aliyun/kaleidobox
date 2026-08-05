@@ -1043,7 +1043,8 @@
     "selectCover": "画像を選択して削除または表紙に設定",
     "confirmDelete": "この画像を削除してもよろしいですか？",
     "deleteSuccess": "削除しました",
-    "deleteFailed": "削除に失敗しました：",
+    "deleteFailed": "削除に失敗しました：{{error}}",
+    "saveHotkeyFailed": "ショートカットキーの保存に失敗しました：{{error}}",
     "cannotDeleteCover": "現在の表紙画像は削除できません。先に表紙画像を変更してください"
   },
   "gameInfo": {

@@ -1048,7 +1048,8 @@
     "selectCover": "选择图片删除或做封面图",
     "confirmDelete": "确定要删除这张图片吗？",
     "deleteSuccess": "删除成功",
-    "deleteFailed": "删除失败：",
+    "deleteFailed": "删除失败：{{error}}",
+    "saveHotkeyFailed": "保存快捷键失败：{{error}}",
     "cannotDeleteCover": "当前封面图不能删除，请先更换封面图"
   },
   "gameInfo": {

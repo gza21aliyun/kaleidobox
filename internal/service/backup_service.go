@@ -637,6 +637,14 @@ func (s *BackupService) DownloadFileInDownload(url string) (string, error) {
 	return getter.DownloadFileInFolder(url)
 }
 
+func (s *BackupService) DownloadSaveInDownload(saveLink string, game models.Game) (*utils.SaveResult, error) {
+	if saveLink == "" {
+		return nil, fmt.Errorf("没存档位置")
+	}
+	getter := utils.NewSaveInfoGetter()
+	return getter.DownloadSaveForGame(game, saveLink, true)
+}
+
 func (s *BackupService) FetchGameGuide(game models.Game) (models.GuideContent, error) {
 	guide := models.GuideContent{}
 	if game.Name == "" {
@@ -644,12 +652,6 @@ func (s *BackupService) FetchGameGuide(game models.Game) (models.GuideContent, e
 	}
 	getter := utils.NewSaveInfoGetter()
 	guide, err := getter.FetchSeiyaGuide(game.SearchName, 0)
-	// if guide.Link == "" {
-	// 	guide, err = getter.FetchSeiyaGuide(game.Name, 1)
-	// }
-	// if guide.Link == "" {
-	// 	guide, err = getter.FetchSeiyaGuide(game.Name, 2)
-	// }
 	return guide, err
 }
 

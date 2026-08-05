@@ -1,11 +1,13 @@
-import type { models } from "../../../wailsjs/go/models";
+import type { models, utils } from "../../../wailsjs/go/models";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import { FetchGameGuide,DownloadFileInDownload } from "../../../wailsjs/go/service/BackupService";
+import { FetchGameGuide,DownloadFileInDownload, DownloadSaveInDownload } from "../../../wailsjs/go/service/BackupService";
 import { GetGameByID } from "../../../wailsjs/go/service/GameService";
 import { OpenBrowser } from '../../../wailsjs/go/service/ImportService';
 import { BetterButton } from "../ui/BetterButton";
+import { OverrideSaveModal } from "../modal/OverrideSaveModal";
+import { OverrideSaves } from "../../../wailsjs/go/service/DownloadedFilesService";
 
 interface GuidePanelProps {
   game: models.Game;
@@ -15,6 +17,8 @@ export function GuidePanel({ game }: GuidePanelProps) {
   const { t } = useTranslation();
   const [guideContent, setGuideContent] = useState<models.GuideContent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isOverrideSaveModalOpen, setIsOverrideSaveModalOpen] = useState(false);
+  const [overrideSaveResults, setOverrideSaveResults] = useState<utils.SaveResult[]>([]);
 
   const loadGuideContent = useCallback(async () => {
     setLoading(true);
@@ -43,13 +47,28 @@ export function GuidePanel({ game }: GuidePanelProps) {
       return;
     }
     try {
-      await DownloadFileInDownload(guideContent?.SaveLink ?? "");
+      // await DownloadFileInDownload(guideContent?.SaveLink ?? "");
+      const rs = await DownloadSaveInDownload(guideContent?.SaveLink ?? "", game);
+      setOverrideSaveResults([rs]);
+      setIsOverrideSaveModalOpen(true);
       toast.success(t('guide.downloadSuccess'));
     } catch (err) {
       console.error("Failed to download", err);
       toast.error(t('guide.downloadError'));
     }
   };
+
+  const handleConfirmOverrideSaves = async (selectedResults: utils.SaveResult[]) => {
+      const ids = selectedResults.map((i)=>i.game_id)
+      try {
+        await OverrideSaves(selectedResults);
+        toast.success(t("downloadedFiles.overrideSaveSuccess") || '覆盖存档成功');
+      } catch (err) {
+        console.error("Override saves failed:", err);
+      } finally {
+        setOverrideSaveResults([]);
+      }
+    };
 
   return (
     <div className="space-y-6">
@@ -125,6 +144,17 @@ export function GuidePanel({ game }: GuidePanelProps) {
                 </div>
               )}
       </div>
+
+      {/* 覆盖存档确认弹窗 */}
+            <OverrideSaveModal
+              isOpen={isOverrideSaveModalOpen}
+              results={overrideSaveResults}
+              onClose={() => {
+                setIsOverrideSaveModalOpen(false);
+                setOverrideSaveResults([]);
+              }}
+              onConfirm={handleConfirmOverrideSaves}
+            />
     </div>
   );
 }

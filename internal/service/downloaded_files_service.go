@@ -1574,6 +1574,14 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 
 		extractedExePath = foundExePaths[0]
 		sourcePath = filepath.Dir(extractedExePath)
+		ext := filepath.Ext(extractedExePath)
+		basePath := strings.TrimSuffix(extractedExePath, ext)
+		if _, err := os.Stat(basePath + ".old"); err == nil {
+			return fmt.Errorf("破解文件已存在，不适合直接覆盖")
+		}
+		if _, err := os.Stat(basePath + ".OLD"); err == nil {
+			return fmt.Errorf("破解文件已存在，不适合直接覆盖")
+		}
 
 		for i := 0; i < layers-1; i++ {
 			sourcePath = filepath.Dir(sourcePath)

@@ -36,6 +36,10 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
   const [loading, setLoading] = useState(true);
   const [isSelectCover, setIsSelectCover] = useState(false);
 
+  const getDeviceLabel = (deviceType: enums.DeviceType) => t(`deviceType.${deviceType}`);
+  const getModifiersLabel = (modifiers?: string) =>
+    modifiers ? modifiers.split('+').map(m => t(`modifierKey.${m.trim().toUpperCase()}`)).join(' + ') : '';
+
   // 检查是否有图片且过滤条件满足
   const hasImages = images && images.length > 0;
   
@@ -98,7 +102,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
       setScreenshotHotkey(hotkey);
     } catch (error) {
       console.error("保存快捷键失败:", error);
-      toast.error("保存快捷键失败" + error);
+      toast.error(t('gameGallery.saveHotkeyFailed', { error: String(error) }));
       throw error;
     }
   };
@@ -125,7 +129,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
       loadScreenshots();
     } catch (error) {
       console.error("删除图片失败:", error);
-      toast.error(t('gameGallery.deleteFailed') + error);
+      toast.error(t('gameGallery.deleteFailed', { error: String(error) }));
     }
   };
 
@@ -188,8 +192,8 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
               {screenshotHotkey && (
                 <span className="px-2 py-1 bg-brand-100 text-brand-700 text-sm rounded dark:bg-brand-900/30 dark:text-brand-300">
                   {screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers
-                    ? `${screenshotHotkey.device_type}   ${screenshotHotkey.modifiers.split('+').join(' + ')} + ${screenshotHotkey.name}`
-                    : `${screenshotHotkey.device_type}   ${screenshotHotkey.name}`
+                    ? `${getDeviceLabel(screenshotHotkey.device_type)}   ${getModifiersLabel(screenshotHotkey.modifiers)} + ${screenshotHotkey.name}`
+                    : `${getDeviceLabel(screenshotHotkey.device_type)}   ${screenshotHotkey.name}`
                   }
                 </span>
               )}
@@ -223,8 +227,8 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
               {screenshotHotkey 
                 ? t('gameGallery.useHotkey', { 
                     hotkey: screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers
-                      ? `${screenshotHotkey.modifiers.split('+').join(' + ')} + ${screenshotHotkey.key_code}`
-                      : screenshotHotkey.key_code
+                      ? `${getDeviceLabel(screenshotHotkey.device_type)}   ${getModifiersLabel(screenshotHotkey.modifiers)} + ${screenshotHotkey.key_code}`
+                      : `${getDeviceLabel(screenshotHotkey.device_type)}   ${screenshotHotkey.key_code}`
                   })
                 : t('gameGallery.noScreenshots')}
             </div>

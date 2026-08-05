@@ -1045,7 +1045,8 @@
     "selectCover": "Select image to delete or set as cover",
     "confirmDelete": "Are you sure you want to delete this image?",
     "deleteSuccess": "Deleted successfully",
-    "deleteFailed": "Delete failed: ",
+    "deleteFailed": "Delete failed: {{error}}",
+    "saveHotkeyFailed": "Failed to save hotkey: {{error}}",
     "cannotDeleteCover": "Cannot delete the current cover image, please change the cover first"
   },
   "gameInfo": {

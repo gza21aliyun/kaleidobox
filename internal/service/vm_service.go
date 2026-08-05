@@ -576,7 +576,12 @@ func (s *VMService) StartGameInsideWs(vm *models.Vms, path, arguments string) (b
 	// 等待虚拟机启动
 	time.Sleep(10 * time.Second)
 
-	// 构建vmrun命令在虚拟机中启动游戏
+	// 使用 cmd.exe /s /c 启动游戏，而不是直接调用 exe。
+	// 原因与 ESX 版本相同：直接通过 vmrun runProgramInGuest 调用 exe 会跳过 Shell 初始化流程，
+	// 导致：1) 用户环境变量未完全加载（PATH、APPDATA 等）；2) 缺少兼容性垫片；
+	// 3) 快捷方式(.lnk)无法解析；4) 路径含空格时解析异常。
+	// vmrun 会自动对含空格的参数（如游戏路径）加引号，
+	// /s 确保 cmd.exe 不会剥离这些引号，从而正确处理含空格路径。
 	var vmrunArgs []string
 	vmrunArgs = append(vmrunArgs, "-T", "ws")
 	vmrunArgs = append(vmrunArgs, "-gu", vm.VmUserName)
@@ -586,12 +591,15 @@ func (s *VMService) StartGameInsideWs(vm *models.Vms, path, arguments string) (b
 	vmrunArgs = append(vmrunArgs, "-noWait")
 	vmrunArgs = append(vmrunArgs, "-interactive")
 	vmrunArgs = append(vmrunArgs, "-activeWindow")
+	vmrunArgs = append(vmrunArgs, "C:\\Windows\\System32\\cmd.exe")
+	vmrunArgs = append(vmrunArgs, "/s", "/c")
 	vmrunArgs = append(vmrunArgs, path)
 	if arguments != "" {
 		vmrunArgs = append(vmrunArgs, arguments)
 	}
 
-	applog.LogInfof(s.ctx, "在 Workstation 虚拟机中启动游戏")
+	applog.LogInfof(s.ctx, "在 Workstation 虚拟机中启动游戏, path=%s args=%s", path, arguments)
+	fmt.Printf("Ws 启动命令: vmrun runProgramInGuest cmd.exe /s /c %s %s\n", path, arguments)
 	cmd := exec.Command(s.config.VmrunPath, vmrunArgs...)
 
 	if err := cmd.Start(); err != nil {

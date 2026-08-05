@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"lunabox/internal/appconf"
@@ -674,20 +675,35 @@ func (s *VMService) StartGameInsideEsx(vm *models.Vms, path, arguments string) (
 	if ext := filepath.Ext(gameExeName); ext != "" {
 		gameExeName = gameExeName[:len(gameExeName)-len(ext)]
 	}
+	workingDir := filepath.Dir(path)
+
+	// 使用 cmd.exe /s /c 启动游戏，而不是直接调用 exe。
+	// 原因：直接通过 StartProgramInGuest 调用 exe 会跳过 Shell 的初始化流程，
+	// 导致：1) 用户环境变量未完全加载（PATH、APPDATA 等）；2) 缺少兼容性垫片；
+	// 3) 快捷方式(.lnk)无法解析；4) 路径含空格时解析异常。
+	// 用 cmd.exe /s /c 包裹等价于在命令提示符中执行，行为更接近用户双击运行。
+	// 引号规则：cmd /s /c 会剥离首尾的一对引号，因此用 ""X"" 包裹，剥离后剩 "X"，
+	// 从而正确保留路径本身的引号（处理含空格路径）。
+	var cmdArgs string
+	if arguments != "" {
+		cmdArgs = fmt.Sprintf(`/s /c ""%s" %s"`, path, arguments)
+	} else {
+		cmdArgs = fmt.Sprintf(`/s /c ""%s""`, path)
+	}
+
+	applog.LogInfof(s.ctx, "ESX 启动命令: ProgramPath=C:\\Windows\\System32\\cmd.exe Arguments=%s WorkingDir=%s", cmdArgs, workingDir)
+	fmt.Printf("ESX 启动命令: cmd.exe %s (工作目录: %s)\n", cmdArgs, workingDir)
 
 	spec := &types.GuestProgramSpec{
-		ProgramPath:      path,
-		Arguments:        arguments,
-		WorkingDirectory: filepath.Dir(path),
+		ProgramPath:      "C:\\Windows\\System32\\cmd.exe",
+		Arguments:        cmdArgs,
+		WorkingDirectory: workingDir,
 	}
-	// 关键：获取 ServiceContent 中的 GuestOperationsManager 引用
-	// c 是 *vim25.Client，它内部有一个 ServiceContent 字段
-	// 获取 ServiceContent
 
 	// 手动构建 StartProgramInGuest 请求
 	req := types.StartProgramInGuest{
-		This: *guestOpsMgr.ProcessManager, // 关键点：使用 ProcessManager 的引用
-		Vm:   vmObj.Reference(),           // 虚拟机引用
+		This: *guestOpsMgr.ProcessManager,
+		Vm:   vmObj.Reference(),
 		Auth: guestAuth,
 		Spec: spec,
 	}
@@ -697,43 +713,40 @@ func (s *VMService) StartGameInsideEsx(vm *models.Vms, path, arguments string) (
 	res, err := methods.StartProgramInGuest(s.ctx, c, &req)
 	if err != nil {
 		fmt.Println("无法启动游戏:", err)
+		applog.LogErrorf(s.ctx, "无法启动游戏, path=%s args=%s err=%v", path, arguments, err)
 		return false, fmt.Errorf("无法启动游戏: %v", err)
 	}
-	//需要添加更多代码，包括获取 GuestOperationsManager 并执行命令
-	// 获取 Service Content 以找到 GuestOperationsManager
 
 	fmt.Printf("游戏已在虚拟机中成功启动，进程 ID: %d\n", res.Returnval)
 	applog.LogInfof(s.ctx, "游戏已在虚拟机中成功启动，进程 ID: %d\n", res.Returnval)
 
-	// go func() {
-	// 	time.Sleep(5 * time.Second) // 等待游戏初始化
+	// 启动后激活窗口到前台，模拟 vmrun -activeWindow 行为
+	go func() {
+		time.Sleep(5 * time.Second) // 等待游戏初始化
 
-	// 	gameExeName := filepath.Base(path)
-	// 	if ext := filepath.Ext(gameExeName); ext != "" {
-	// 		gameExeName = gameExeName[:len(gameExeName)-len(ext)]
-	// 	}
+		// 使用简单的 AppActivate，兼容性最好
+		activateScript := fmt.Sprintf(`$wshell = New-Object -ComObject WScript.Shell; if ($wshell.AppActivate('%s')) { Write-Host 'Activated' } else { Write-Host 'Failed to find window' }`, gameExeName)
 
-	// 	// 使用简单的 AppActivate，兼容性最好
-	// 	activateScript := fmt.Sprintf(`$wshell = New-Object -ComObject WScript.Shell; if ($wshell.AppActivate('%s')) { Write-Host 'Activated' } else { Write-Host 'Failed to find window' }`, gameExeName)
+		encoded := base64.StdEncoding.EncodeToString([]byte(activateScript))
+		activateSpec := &types.GuestProgramSpec{
+			ProgramPath: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+			Arguments:   fmt.Sprintf("-NoProfile -WindowStyle Hidden -EncodedCommand %s", encoded),
+		}
 
-	// 	encoded := base64.StdEncoding.EncodeToString([]byte(activateScript))
-	// 	activateSpec := &types.GuestProgramSpec{
-	// 		ProgramPath: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-	// 		Arguments:   fmt.Sprintf("-NoProfile -WindowStyle Hidden -EncodedCommand %s", encoded),
-	// 	}
+		// 再次发起请求
+		_, err := methods.StartProgramInGuest(s.ctx, c, &types.StartProgramInGuest{
+			This: *guestOpsMgr.ProcessManager,
+			Vm:   vmObj.Reference(),
+			Auth: guestAuth,
+			Spec: activateSpec,
+		})
 
-	// 	// 再次发起请求
-	// 	_, err := methods.StartProgramInGuest(s.ctx, c, &types.StartProgramInGuest{
-	// 		This: *guestOpsMgr.ProcessManager,
-	// 		Vm:   vmObj.Reference(),
-	// 		Auth: guestAuth,
-	// 		Spec: activateSpec,
-	// 	})
-
-	// 	if err != nil {
-	// 		applog.LogWarningf(s.ctx, "窗口激活脚本执行失败: %v", err)
-	// 	}
-	// }()
+		if err != nil {
+			applog.LogWarningf(s.ctx, "窗口激活脚本执行失败: %v", err)
+		} else {
+			applog.LogInfof(s.ctx, "窗口激活脚本已执行: %s", gameExeName)
+		}
+	}()
 
 	return true, nil
 }

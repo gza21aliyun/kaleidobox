@@ -1589,7 +1589,7 @@ export default function DownloadedFiles() {
                             {iso_path.split("\\").pop()}
                           </button>
                         ))}
-                        {item.exe_paths.map((exe_path, idx) => (
+                        {(item.exe_paths || []).map((exe_path, idx) => (
                           <button 
                             key={idx} className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-700 rounded"
                             title={"执行" + exe_path}

@@ -518,6 +518,7 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, baseName string,
 	} else {
 		item.InnerItems = s.getArchiveInnerItems(itemPath)
 		item.ISOItems = []string{}
+		item.ExePaths = []string{}
 		// type=2: 压缩包解压后多了同名文件夹结构
 		item.Type = 2
 

@@ -1596,11 +1596,34 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 		return copyDirectoryOverwrite(sourcePath, targetBasePath)
 	} else if len(downloadedFile.ISOItems) == 1 {
 		isoPath := downloadedFile.ISOItems[0]
+
+		// 先在不解压的情况下检查 ISO 中是否包含目标 exe，避免浪费时间和硬盘空间
+
+		isoFiles, err := s.ListISOContents(isoPath)
+		applog.LogInfof(s.ctx, "检查ISO内容是否包含执行文件%s: %s, iso内文件数: %d", exeFileName, isoPath, len(isoFiles))
+		var foundExePaths []string
+		if err != nil {
+			fmt.Printf("列出ISO内容失败: %v\n", err)
+		} else {
+			for _, filePath := range isoFiles {
+				if strings.ToLower(filepath.Base(filePath)) == strings.ToLower(exeFileName) {
+					foundExePaths = append(foundExePaths, filePath)
+					fmt.Printf("找到匹配的执行文件: %s\n", filePath)
+				} else {
+					fmt.Printf("未找到匹配的执行文件: %s\n", filePath)
+				}
+			}
+
+			if len(foundExePaths) != 1 {
+				return fmt.Errorf("在ISO中找到 %d 个匹配的执行文件 %s，需要找到恰好1个", len(foundExePaths), exeFileName)
+			}
+		}
+
 		isoExt := filepath.Ext(isoPath)
 		isoBase := strings.TrimSuffix(isoPath, isoExt)
 		tmpDir := isoBase + "-tmp"
 
-		err := os.Mkdir(tmpDir, 0755)
+		err = os.Mkdir(tmpDir, 0755)
 		if err != nil {
 			return fmt.Errorf("创建临时目录失败: %v", err)
 		}
@@ -1608,22 +1631,22 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 
 		applog.LogInfof(s.ctx, "解压ISO到临时目录: %s -> %s", isoPath, tmpDir)
 		if err := s.ExtractISO(isoPath, tmpDir); err != nil {
-			return fmt.Errorf("解压ISO失败: %v", err)
+			subEntries, _ := os.ReadDir(tmpDir)
+			fmt.Printf("解压ISO失败: %v, 解压后目录内容: %v\n", err, subEntries)
+			if len(subEntries) == 0 {
+				return fmt.Errorf("解压ISO失败: %v", err)
+			}
 		}
 
-		var foundExePaths []string
+		var foundExePathsLocal []string
 		err = filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 			if !info.IsDir() {
 				if strings.ToLower(filepath.Base(path)) == strings.ToLower(exeFileName) {
-					foundExePaths = append(foundExePaths, path)
-					// fmt.Println("已找到", filepath.Base(path), "--", exeFileName)
-				} else {
-					// fmt.Println("比较", filepath.Base(path), "--", exeFileName)
+					foundExePathsLocal = append(foundExePathsLocal, path)
 				}
-
 			}
 			return nil
 		})
@@ -1631,11 +1654,11 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 			return fmt.Errorf("搜索文件失败: %v", err)
 		}
 
-		if len(foundExePaths) != 1 {
-			return fmt.Errorf("在路径 %s 找到 %d 个匹配的执行文件 %s，需要找到恰好1个", tmpDir, len(foundExePaths), exeFileName)
+		if len(foundExePathsLocal) != 1 {
+			return fmt.Errorf("解压后在路径 %s 找到 %d 个匹配的执行文件 %s，需要找到恰好1个", tmpDir, len(foundExePathsLocal), exeFileName)
 		}
 
-		extractedExePath = foundExePaths[0]
+		extractedExePath = foundExePathsLocal[0]
 		sourcePath = filepath.Dir(extractedExePath)
 		ext := filepath.Ext(extractedExePath)
 		basePath := strings.TrimSuffix(extractedExePath, ext)
@@ -1754,6 +1777,58 @@ func (s *DownloadedFilesService) ExtractISO(isoPath, targetPath string) error {
 	cmd := exec.Command(sevenZipPath, args...)
 	_, err := cmd.CombinedOutput()
 	return err
+}
+
+// ListISOContents 列出 ISO/MDF 文件中的所有文件名，用于在解压前检查是否存在目标文件
+func (s *DownloadedFilesService) ListISOContents(isoPath string) ([]string, error) {
+	sevenZipPath := s.config.SevenZipPath
+	if sevenZipPath == "" {
+		sevenZipPath = "7z"
+	}
+
+	// 对于 .mdf 文件，同样需要创建硬链接以保留 Unicode 文件名
+	archivePath := isoPath
+	forceISO := false
+	if strings.ToLower(filepath.Ext(isoPath)) == ".mdf" {
+		linkPath := filepath.Join(filepath.Dir(isoPath), "."+filepath.Base(isoPath)+".kaleidobox.iso")
+		if err := os.Link(isoPath, linkPath); err == nil {
+			defer os.Remove(linkPath)
+			archivePath = linkPath
+		} else {
+			forceISO = true
+		}
+	}
+
+	args := []string{"l", "-slt"} // -slt 使用行输出格式，便于解析
+	if forceISO {
+		args = append(args, "-tiso")
+	}
+	args = append(args, archivePath)
+
+	cmd := exec.Command(sevenZipPath, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析 7z list -slt 输出
+	// -slt 格式:
+	// Path=folder/file.exe
+	// Size=123456
+	// ...
+	var files []string
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "Path=") {
+			filePath := strings.TrimPrefix(line, "Path=")
+			if filePath != "" && !strings.HasSuffix(filePath, "/") {
+				files = append(files, filePath)
+			}
+		}
+	}
+
+	return files, nil
 }
 
 func (s *DownloadedFilesService) OpenFolder(itemPath string) error {

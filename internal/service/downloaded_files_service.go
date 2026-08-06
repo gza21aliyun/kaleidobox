@@ -242,12 +242,15 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 				}
 			} else {
 				folder.Type = 0
-				folder.Status = 2
+				if folder.Status < 2 {
+					folder.Status = 2
+				}
+
 				// fmt.Printf("status 2 03,name: %s, \n", folder.Name)
 			}
 		}
 
-		if folder.Status >= 2 {
+		if folder.Status >= 2 && savedInfo == nil {
 			extractedGamePath, extractedPaths := s.getExtractedPaths(folder.Path, folder.BaseName, folder.Type)
 			// fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
 			folder.ExtractedGamePath = extractedGamePath
@@ -491,6 +494,10 @@ func (s *DownloadedFilesService) CreateDownloadedFile(itemPath, baseName string,
 		GameName:       gameName,
 		SaveStatus:     saveSatus,
 	}
+	if savedInfo != nil {
+		item.ExtractedGamePath = savedInfo.ExtractedGamePath
+		item.ExtractedPaths = savedInfo.ExtractedPaths
+	}
 
 	if isFolder {
 		innerItems, isoItems, size, crackPath, exeItems := s.getInnerItems(itemPath)
@@ -635,13 +642,36 @@ func (s *DownloadedFilesService) getExtractedPaths(itemPath, baseName string, fi
 	}
 	if fileType == 0 {
 		entries, err := os.ReadDir(itemPath)
+		exePath := ""
+		crackPath := ""
+		folders := []string{}
 		if err != nil {
 			return itemPath, nil
 		}
 		if len(entries) == 1 && entries[0].IsDir() {
-			return filepath.Join(itemPath, entries[0].Name()), nil
+			return filepath.Join(itemPath, entries[0].Name()), []string{}
 		}
-		return itemPath, nil
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				ext := strings.ToLower(filepath.Ext(entry.Name()))
+				if ext == ".exe" {
+					exePath = filepath.Join(itemPath, entry.Name())
+				}
+			} else {
+				if strings.Contains(strings.ToLower(entry.Name()), "crack") {
+					crackPath = filepath.Join(itemPath, entry.Name())
+				}
+				folders = append(folders, entry.Name())
+			}
+
+		}
+		if len(folders) > 1 && exePath == "" && crackPath != "" {
+			gameFolderName := s.JudgeGameName(folders)
+			if gameFolderName != "" {
+				return filepath.Join(itemPath, gameFolderName), []string{}
+			}
+		}
+		return itemPath, []string{}
 	}
 
 	// 对于文件夹，检查里面是否有解压后的子目录
@@ -969,7 +999,7 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 		filename := entry.Name()
 		filebase := strings.TrimSuffix(filename, filepath.Ext(filename))
 		// itemsMap[filebase] = filename
-		if (strings.Contains(filebase, "iso") || strings.Contains(filebase, "mdf") || len(entries) <= 2) && entry.IsDir() {
+		if (strings.Contains(filebase, "iso") || strings.Contains(filebase, "mdf") || strings.Contains(filebase, "限定版") || len(entries) <= 2) && entry.IsDir() {
 			subPath := filepath.Join(folderPath, filebase)
 			fmt.Println("subPath1: ", subPath)
 			subEntries, err := os.ReadDir(subPath)
@@ -1799,7 +1829,7 @@ func (s *DownloadedFilesService) ListISOContents(isoPath string) ([]string, erro
 		}
 	}
 
-	args := []string{"l", "-slt"} // -slt 使用行输出格式，便于解析
+	args := []string{"l", "-slt", "-sccUTF-8"} // -slt 行输出格式；-sccUTF-8 强制 UTF-8 输出避免非英文文件名乱码
 	if forceISO {
 		args = append(args, "-tiso")
 	}
@@ -1812,19 +1842,29 @@ func (s *DownloadedFilesService) ListISOContents(isoPath string) ([]string, erro
 	}
 
 	// 解析 7z list -slt 输出
-	// -slt 格式:
-	// Path=folder/file.exe
-	// Size=123456
+	// -slt 格式（注意等号两边有空格）:
+	// Path = folder/file.exe
+	// Size = 123456
 	// ...
 	var files []string
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "Path=") {
-			filePath := strings.TrimPrefix(line, "Path=")
-			if filePath != "" && !strings.HasSuffix(filePath, "/") {
-				files = append(files, filePath)
+		if strings.HasPrefix(line, "Path") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) != 2 {
+				continue
 			}
+			filePath := strings.TrimSpace(parts[1])
+			// 跳过根目录标记和无意义的空路径
+			if filePath == "" || filePath == "." {
+				continue
+			}
+			// 跳过目录条目（以 / 或 \ 结尾）
+			if strings.HasSuffix(filePath, "/") || strings.HasSuffix(filePath, "\\") {
+				continue
+			}
+			files = append(files, filePath)
 		}
 	}
 
@@ -2101,7 +2141,7 @@ func (s *DownloadedFilesService) JudgeGameName(filenames []string) string {
 		Score float64
 	}
 	gameNameScores := []GameNameScore{}
-	plusWords := []string{"パッケージ版", "mdf", "mds", "iso"}
+	plusWords := []string{"パッケージ版", "mdf", "mds", "iso", "初回限定版"}
 	minusWords := []string{"サウンドトラック", "wav", "mp3", "flac", "cue", "ボイス", "ドラマ", "アップデート", "update", "特典", "drama", "cd", "part", "00", "download", "klb", "crack", "認証"}
 	for _, filename := range filenames {
 		score := 1.0

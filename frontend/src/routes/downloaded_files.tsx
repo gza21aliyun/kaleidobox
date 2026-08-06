@@ -1594,7 +1594,7 @@ export default function DownloadedFiles() {
                             key={idx} className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-700 rounded"
                             title={"执行" + exe_path}
                             onClick={() => DirectRunExe(exe_path)}
-                            disabled={item.status > 2}
+                            disabled={item.status == 3}
                           >
                             {exe_path.split("\\").pop()}
                           </button>
@@ -1709,14 +1709,19 @@ export default function DownloadedFiles() {
             // setItems(prevItems => prevItems.map(i =>
             //   i.id === searchModalItem.id ? updatedItem : i
             // ));
-            LinkGame(updatedItem as unknown as service.DownloadedFile).catch(err => {
+            LinkGame(updatedItem as unknown as service.DownloadedFile).then(() => {
+              setSearchModalItem(null);
+              // setItems(items.map(i =>
+              //   i.id === searchModalItem.id ? updatedItem : i
+              // ));
+              loadItems();
+              toast.success(t('common.associateSuccess') || '关联成功');
+            }).catch(err => {
               toast.error("Failed to save downloaded file info:", err);
               console.error("Failed to save downloaded file info:", err);
             });
             // DeleteDownloadInfo(game.path)
-            setSearchModalItem(null);
-            loadItems();
-            toast.success(t('common.associateSuccess') || '关联成功');
+            
           }}
           onClose={() => setSearchModalItem(null)}
         />

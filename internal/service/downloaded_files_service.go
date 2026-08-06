@@ -983,7 +983,7 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 			for _, subEntry := range subEntries {
 				// subFilebase := strings.TrimSuffix(subEntry.Name(), filepath.Ext(subEntry.Name()))
 				ext := strings.ToLower(filepath.Ext(subEntry.Name()))
-				if imageExtensions[ext] {
+				if imageExtensions[ext] && !strings.Contains(strings.ToLower(subEntry.Name()), "audio") {
 					// itemsMap[subFilebase] = subEntry.Name()
 					fullpath := filepath.Join(subPath, subEntry.Name())
 					isoItems = append(isoItems, fullpath)
@@ -993,7 +993,7 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 
 		if !entry.IsDir() {
 			ext := strings.ToLower(filepath.Ext(filename))
-			if imageExtensions[ext] {
+			if imageExtensions[ext] && !strings.Contains(strings.ToLower(filename), "audio") {
 				fullpath := filepath.Join(folderPath, filename)
 				isoItems = append(isoItems, fullpath)
 			} else {
@@ -1595,8 +1595,11 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 		return copyDirectoryOverwrite(sourcePath, targetBasePath)
 	} else if len(downloadedFile.ISOItems) == 1 {
 		isoPath := downloadedFile.ISOItems[0]
+		isoExt := filepath.Ext(isoPath)
+		isoBase := strings.TrimSuffix(isoPath, isoExt)
+		tmpDir := isoBase + "-tmp"
 
-		tmpDir, err := os.MkdirTemp("", "lunabox-overwrite-*")
+		err := os.Mkdir(tmpDir, 0755)
 		if err != nil {
 			return fmt.Errorf("创建临时目录失败: %v", err)
 		}
@@ -1612,8 +1615,14 @@ func (s *DownloadedFilesService) OverwriteInstall(downloadedFile DownloadedFile,
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() && strings.ToLower(filepath.Base(path)) == strings.ToLower(exeFileName) {
-				foundExePaths = append(foundExePaths, path)
+			if !info.IsDir() {
+				if strings.ToLower(filepath.Base(path)) == strings.ToLower(exeFileName) {
+					foundExePaths = append(foundExePaths, path)
+					// fmt.Println("已找到", filepath.Base(path), "--", exeFileName)
+				} else {
+					// fmt.Println("比较", filepath.Base(path), "--", exeFileName)
+				}
+
 			}
 			return nil
 		})
@@ -1716,7 +1725,32 @@ func (s *DownloadedFilesService) ExtractISO(isoPath, targetPath string) error {
 	if sevenZipPath == "" {
 		sevenZipPath = "7z"
 	}
-	cmd := exec.Command(sevenZipPath, "x", isoPath, "-o"+targetPath, "-y")
+
+	// 对于 .mdf 文件，7z 不会按 ISO9660+Joliet 解析，导致 Joliet 扩展中的
+	// Unicode 文件名（如日文 "乱れ雪月華2.exe"）被替换为下划线 "_____2.EXE"。
+	// 在同目录创建 .iso 硬链接，让 7z 按 ISO 格式解析以保留原始文件名；
+	// 若硬链接失败（如同目录无写权限），则回退到 -tiso 强制 ISO 解析。
+	archivePath := isoPath
+	forceISO := false
+	if strings.ToLower(filepath.Ext(isoPath)) == ".mdf" {
+		linkPath := filepath.Join(filepath.Dir(isoPath), "."+filepath.Base(isoPath)+".kaleidobox.iso")
+		if err := os.Link(isoPath, linkPath); err == nil {
+			defer os.Remove(linkPath)
+			archivePath = linkPath
+			applog.LogInfof(s.ctx, "为 .mdf 创建 .iso 硬链接以保留 Unicode 文件名: %s", linkPath)
+		} else {
+			forceISO = true
+			applog.LogInfof(s.ctx, "创建 .iso 硬链接失败，改用 -tiso 强制 ISO 解析: %v", err)
+		}
+	}
+
+	args := []string{"x"}
+	if forceISO {
+		args = append(args, "-tiso")
+	}
+	args = append(args, archivePath, "-o"+targetPath, "-y")
+
+	cmd := exec.Command(sevenZipPath, args...)
 	_, err := cmd.CombinedOutput()
 	return err
 }
@@ -1944,6 +1978,7 @@ func copyDirectoryOverwrite(src, dst string) error {
 		defer dstFile.Close()
 
 		_, err = io.Copy(dstFile, srcFile)
+		fmt.Printf("Copied %s to %s\n", path, targetPath)
 		if err != nil {
 			return err
 		}

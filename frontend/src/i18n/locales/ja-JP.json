@@ -1707,7 +1707,9 @@
     "searchDownloadFailed": "ダウンロードフォルダの検索に失敗しました",
     "noDownloadLink": "利用可能なダウンロードリンクがありません",
     "searchDownloadFolder": "ダウンロードフォルダを検索",
-    "searchPlaceholder": "ゲーム名で検索"
+    "searchPlaceholder": "ゲーム名で検索",
+    "noBrandGames": "このブランドのゲームが見つかりません",
+    "loadBrandGamesFailed": "ブランドゲームの読み込みに失敗しました"
   },
   "btDownload": {
     "rssUrl": "RSS URL",

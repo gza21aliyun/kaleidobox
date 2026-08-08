@@ -7,6 +7,8 @@ import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
 import { FetchMonthlyReleases, ClearGetchuTempImages, FetchGetchuGameDetail } from "../../wailsjs/go/service/MonthlyReleaseService";
 import { SearchBT, DownloadToQBittorrent } from "../../wailsjs/go/service/BTDownloadService";
 import { ListDownloadedFiles } from "../../wailsjs/go/service/DownloadedFilesService";
+import { GetGamesByTag } from "../../wailsjs/go/service/GameService";
+import { IsBrandTag } from "../../wailsjs/go/service/TagService";
 import { utils, models, service } from "../../wailsjs/go/models";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
@@ -78,6 +80,9 @@ function MonthlyReleasesPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailGame, setDetailGame] = useState<utils.MonthlyReleaseGame | null>(null);
 
+  // 已存在的品牌标签集合（用于判断品牌是否可点击）
+  const [brandNames, setBrandNames] = useState<Set<string>>(new Set());
+
   const { config } = useAppStore();
 
   const loadData = useCallback(async () => {
@@ -98,6 +103,53 @@ function MonthlyReleasesPage() {
   useEffect(() => {
     loadData();
   }, [year, month, age]);
+
+  // 加载结果后，检查每个品牌是否为已存在的品牌标签
+  useEffect(() => {
+    if (!result?.groups) {
+      setBrandNames(new Set());
+      return;
+    }
+
+    const companies = new Set<string>();
+    result.groups.forEach((group) => {
+      group.games.forEach((game) => {
+        if (game.company && game.company.trim()) {
+          companies.add(game.company.trim());
+        }
+      });
+    });
+
+    if (companies.size === 0) {
+      setBrandNames(new Set());
+      return;
+    }
+
+    let cancelled = false;
+    const checkBrands = async () => {
+      const brands = new Set<string>();
+      await Promise.all(
+        Array.from(companies).map(async (name) => {
+          try {
+            const isBrand = await IsBrandTag(name);
+            if (isBrand) {
+              brands.add(name);
+            }
+          } catch (error) {
+            console.error("Failed to check brand tag:", name, error);
+          }
+        })
+      );
+      if (!cancelled) {
+        setBrandNames(brands);
+      }
+    };
+    checkBrands();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [result]);
 
   // 生成可选年份列表 (当前年-3 到 当前年+2)
   const yearOptions = Array.from({ length: 23 }, (_, i) => ({ value: (now.getFullYear() - 22 + i).toString(), label: (now.getFullYear() - 22 + i).toString() }));
@@ -433,6 +485,7 @@ function MonthlyReleasesPage() {
               <GameItem
                 key={game.getchu_id}
                 game={game}
+                brandNames={brandNames}
                 onBrowse={browseGame}
                 onSearch={openSearchModal}
                 onSearchLocal={openLocalSearchModal}
@@ -559,6 +612,7 @@ function MonthlyReleasesPage() {
 // 单个游戏卡片组件
 interface GameItemProps {
   game: utils.MonthlyReleaseGame;
+  brandNames: Set<string>;
   onBrowse: (game: utils.MonthlyReleaseGame) => void;
   onSearch: (game: utils.MonthlyReleaseGame) => void;
   onSearchLocal: (game: utils.MonthlyReleaseGame) => void;
@@ -566,7 +620,7 @@ interface GameItemProps {
   onViewDetail: (game: utils.MonthlyReleaseGame) => void;
 }
 
-function GameItem({ game, onBrowse, onSearch, onSearchLocal, onSearchDownload, onViewDetail }: GameItemProps) {
+function GameItem({ game, brandNames, onBrowse, onSearch, onSearchLocal, onSearchDownload, onViewDetail }: GameItemProps) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
@@ -581,6 +635,28 @@ function GameItem({ game, onBrowse, onSearch, onSearchLocal, onSearchDownload, o
   // 检查游戏是否已导入（通过 getchu_id 匹配）
   const importedGame = game.getchu_id ? games.find(g => g.getchu_id === game.getchu_id) : null;
   const isImported = !!importedGame;
+
+  // 点击品牌，跳转到该品牌的游戏列表
+  const handleCompanyClick = async (companyName: string) => {
+    try {
+      const gamesList = await GetGamesByTag(companyName);
+      const gameIds = gamesList.map((g) => g.id).filter((id): id is string => !!id);
+      if (gameIds.length > 0) {
+        navigate({
+          to: "/category_games",
+          search: {
+            selectedGameIds: gameIds.join(","),
+            title: companyName,
+          } as Record<string, string>,
+        });
+      } else {
+        toast.error(t("monthlyReleases.noBrandGames") || "未找到该品牌的游戏");
+      }
+    } catch (error) {
+      console.error("Failed to load games for company:", error);
+      toast.error(t("monthlyReleases.loadBrandGamesFailed") || "加载品牌游戏失败");
+    }
+  };
 
   return (
     <div
@@ -682,9 +758,22 @@ function GameItem({ game, onBrowse, onSearch, onSearchLocal, onSearchDownload, o
           {game.name}
         </p>
         {game.company && (
-          <p className="text-xs text-brand-500 dark:text-brand-400 truncate" title={game.company}>
-            {game.company}
-          </p>
+          brandNames.has(game.company) ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCompanyClick(game.company);
+              }}
+              className="text-xs text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 hover:underline transition-colors truncate block w-full text-left"
+              title={game.company}
+            >
+              {game.company}
+            </button>
+          ) : (
+            <p className="text-xs text-brand-500 dark:text-brand-400 truncate" title={game.company}>
+              {game.company}
+            </p>
+          )
         )}
       </div>
     </div>

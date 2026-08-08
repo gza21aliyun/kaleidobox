@@ -1748,7 +1748,9 @@
     "searchDownloadFailed": "搜索下载文件夹失败",
     "noDownloadLink": "没有可用的下载链接",
     "searchDownloadFolder": "搜索下载文件夹",
-    "searchPlaceholder": "输入游戏名称搜索"
+    "searchPlaceholder": "输入游戏名称搜索",
+    "noBrandGames": "未找到该品牌的游戏",
+    "loadBrandGamesFailed": "加载品牌游戏失败"
   },
   "btDownload": {
     "rssUrl": "RSS 地址",

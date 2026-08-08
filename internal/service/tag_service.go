@@ -135,6 +135,25 @@ func (s *TagService) AccumulateTag(tagName string) error {
 	return err
 }
 
+// IsBrandTag 检查指定名称的标签是否已存在且为品牌类型
+func (s *TagService) IsBrandTag(name string) (bool, error) {
+	if name == "" {
+		return false, nil
+	}
+	query := `
+		SELECT COUNT(*) FROM tags
+		WHERE name = ? AND category = ?
+	`
+	row := s.db.QueryRowContext(s.ctx, query, name, models.TagCategoryBrand)
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // UpdateTag 更新 Tag 记录
 func (s *TagService) UpdateTag(tag *models.Tag) error {
 	query := `

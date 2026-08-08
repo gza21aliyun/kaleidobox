@@ -1744,7 +1744,9 @@
     "searchDownloadFailed": "Failed to search download folder",
     "noDownloadLink": "No download link available",
     "searchDownloadFolder": "Search Download Folder",
-    "searchPlaceholder": "Search by game name"
+    "searchPlaceholder": "Search by game name",
+    "noBrandGames": "No games found for this brand",
+    "loadBrandGamesFailed": "Failed to load brand games"
   },
   "btDownload": {
     "rssUrl": "RSS URL",

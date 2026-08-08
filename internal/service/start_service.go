@@ -1085,7 +1085,7 @@ func (s *StartService) triggerMagpieScaling(gamePID uint32) {
 	}
 
 	applog.LogInfof(s.ctx, "Magpie trigger: looking for game window with PID %d", gamePID)
-	time.Sleep(8000 * time.Millisecond)
+	time.Sleep(9000 * time.Millisecond)
 
 	// 等待游戏窗口出现
 	var gameHWND uintptr = 0

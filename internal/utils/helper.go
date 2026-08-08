@@ -21,9 +21,9 @@ var (
 		"uninstall_x86", "uninst64", "uninst32", "uninst", "unins003", "unins002", "unins001", "unins000", "uinst", "bhvc", "unitycrashhandler32",
 		"vcredist_x86", "vcredist_x64", "vc_redist.x86", "updchk", "upgrade", "uninstx86", "uninstx64", "uninstcl", "uninstaller", "tracelog",
 		"unins", "setup", "config", "patch", "update", "crashpad", "ファイル破損チェックツール", "システム詳細設定", "エンジン設定", "maliecfg",
-		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet", "_uninst", "セーブデータ場所設定ツール", "システム設定",
-		"redistributable", "installer", "launcher_helper", "crashreporter", "ファイル破損チェック", "セーブデータフォルダを開く",
-		"updater", "uninstall", "删除", "卸载", "syscfg", "ihs", "configure", "セーブファイル設定", "セーブデータフォルダ・開く",
+		"vc_redist", "dxwebsetup", "directx", "vcredist", "dotnet", "_uninst", "セーブデータ場所設定ツール", "システム設定", "filechk",
+		"redistributable", "installer", "launcher_helper", "crashreporter", "ファイル破損チェック", "セーブデータフォルダを開く", "startuptool",
+		"updater", "uninstall", "删除", "卸载", "syscfg", "ihs", "configure", "セーブファイル設定", "セーブデータフォルダ・開く", "userid",
 	}
 )
 

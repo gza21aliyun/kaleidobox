@@ -96,6 +96,7 @@ var compressedExtensions = map[string]bool{
 var imageExtensions = map[string]bool{
 	".iso": true,
 	".mdf": true,
+	".cdi": true,
 	// ".img": true,
 	// ".bin": true,
 	// ".cue": true,
@@ -985,9 +986,17 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 	isoItems := []string{}
 	exeItems := []string{}
 	crackPath := ""
+	isoPath := ""
 	var size int64 = 0
 	if err != nil {
 		return items, isoItems, size, crackPath, exeItems
+	}
+	if len(entries) == 1 && entries[0].IsDir() || len(entries) == 2 && entries[1].Name() == "download.klb" && entries[0].IsDir() {
+		folderPath = filepath.Join(folderPath, entries[0].Name())
+		entries, err = os.ReadDir(folderPath)
+		if err != nil {
+			return items, isoItems, size, crackPath, exeItems
+		}
 	}
 
 	for i, entry := range entries {
@@ -997,9 +1006,10 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 		info, _ := entry.Info()
 		size += info.Size()
 		filename := entry.Name()
-		filebase := strings.TrimSuffix(filename, filepath.Ext(filename))
+		filebase := filename
+
 		// itemsMap[filebase] = filename
-		if (strings.Contains(filebase, "iso") || strings.Contains(filebase, "mdf") || strings.Contains(filebase, "限定版") || len(entries) <= 2) && entry.IsDir() {
+		if entry.IsDir() {
 			subPath := filepath.Join(folderPath, filebase)
 			fmt.Println("subPath1: ", subPath)
 			subEntries, err := os.ReadDir(subPath)
@@ -1014,12 +1024,17 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 			for _, subEntry := range subEntries {
 				// subFilebase := strings.TrimSuffix(subEntry.Name(), filepath.Ext(subEntry.Name()))
 				ext := strings.ToLower(filepath.Ext(subEntry.Name()))
-				if imageExtensions[ext] && !strings.Contains(strings.ToLower(subEntry.Name()), "audio") {
+				if imageExtensions[ext] && !strings.Contains(strings.ToLower(subEntry.Name()), "audio") && !strings.Contains(strings.ToLower(subEntry.Name()), "guide") {
 					// itemsMap[subFilebase] = subEntry.Name()
 					fullpath := filepath.Join(subPath, subEntry.Name())
 					isoItems = append(isoItems, fullpath)
+					if strings.Contains(filebase, "iso") || strings.Contains(filebase, "mdf") {
+						isoPath = fullpath
+					}
 				}
 			}
+		} else {
+			filebase = strings.TrimSuffix(filename, filepath.Ext(filename))
 		}
 
 		if !entry.IsDir() {
@@ -1070,6 +1085,8 @@ func (s *DownloadedFilesService) getInnerItems(folderPath string) ([]string, []s
 			}
 
 		}
+	}
+	if isoPath != "" && len(isoItems) > 1 {
 	}
 	for _, v := range itemsMap {
 		items = append(items, v)
@@ -1125,6 +1142,8 @@ func (s *DownloadedFilesService) ExtractItem(item DownloadedFile) error {
 		return fmt.Errorf("不支持的压缩格式: %s", ext)
 	}
 
+	fmt.Println("Extracting3:", itemPath)
+
 	downloadFolder := filepath.Dir(itemPath)
 	baseName := strings.TrimSuffix(filepath.Base(itemPath), ext)
 	targetFolder := filepath.Join(downloadFolder, baseName)
@@ -1132,12 +1151,9 @@ func (s *DownloadedFilesService) ExtractItem(item DownloadedFile) error {
 	if err := os.MkdirAll(targetFolder, 0755); err != nil {
 		return err
 	}
+	fmt.Println("Extracting4:", itemPath)
 
 	err = s.extractArchive(itemPath, targetFolder)
-	if err != nil {
-		return err
-	}
-
 	if err != nil {
 		return err
 	}
@@ -1145,13 +1161,14 @@ func (s *DownloadedFilesService) ExtractItem(item DownloadedFile) error {
 	// item.Path = targetFolder
 	item.FolderPath = targetFolder
 	item.Status = 2
-	// entries, err := os.ReadDir(targetFolder)
-	// for _, entry := range entries {
-	// 	if entry.IsDir() {
-	// 		continue
-	// 	}
-	// }
-	// item.ExtractedPaths = []string{targetFolder}
+	entries, err := os.ReadDir(targetFolder)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			err = s.ExtractArchivesInFolder(filepath.Join(targetFolder, entry.Name()))
+		}
+	}
+	item.ExtractedPaths = []string{targetFolder}
+	fmt.Printf("extract5 targetFolder: %s\n", targetFolder)
 	err = s.ExtractArchivesInFolder(targetFolder)
 	err = s.SaveDownloadInfo(item.FolderPath, item)
 	return err
@@ -1173,7 +1190,7 @@ func (s *DownloadedFilesService) ExtractArchivesInFolder(folderPath string) erro
 		if compressedExtensions[ext] {
 
 			excludedNames := []string{
-				"サウンドトラック", "soundtrack", "mp3", "wav", "flac", "cue",
+				"サウンドトラック", "soundtrack", "mp3", "wav", "flac", "cue", "guide",
 			}
 			shouldExclude := false
 			for _, name := range excludedNames {
@@ -1345,12 +1362,16 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 
 	var newMountedDrive string
 
-	if ext == ".mdf" {
+	if ext != ".iso" {
+		mdsPath := isoPath
 		// 检查是否存在对应的 .mds 文件
-		mdsPath := strings.TrimSuffix(isoPath, filepath.Ext(isoPath)) + ".mds"
-		if _, err := os.Stat(mdsPath); os.IsNotExist(err) {
-			return fmt.Errorf("未找到对应的.mds文件: %s", mdsPath)
+		if ext == ".mdf" {
+			mdsPath = strings.TrimSuffix(isoPath, filepath.Ext(isoPath)) + ".mds"
+			if _, err := os.Stat(mdsPath); os.IsNotExist(err) {
+				return fmt.Errorf("未找到对应的.mds文件: %s", mdsPath)
+			}
 		}
+
 		// 使用系统默认方式打开 .mds 文件（假设系统已安装虚拟光驱软件）
 		cmd := exec.Command("cmd", "/c", "start", "", mdsPath)
 		err := cmd.Start()
@@ -1806,6 +1827,10 @@ func (s *DownloadedFilesService) ExtractISO(isoPath, targetPath string) error {
 
 	cmd := exec.Command(sevenZipPath, args...)
 	_, err := cmd.CombinedOutput()
+	entries, err2 := os.ReadDir(targetPath)
+	if err2 == nil && len(entries) > 0 {
+		return nil
+	}
 	return err
 }
 

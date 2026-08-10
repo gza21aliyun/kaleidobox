@@ -9,6 +9,7 @@ import { GetWorksByStaffIdAndRole } from '../../../wailsjs/go/service/WorkServic
 import { getGamesForCategory, type CategoryType } from '../../utils/categoryGames';
 import { useAppStore } from '../../store';
 import { ImageCard } from './ImageCard';
+import toast from 'react-hot-toast';
 
 interface CategoryListCardProps {
   id: string;
@@ -61,94 +62,6 @@ export function CategoryListCard({
       .map(g => g.id);
   };
 
-  const handleViewDetails = () => {
-    if (isPathCategory) {
-      const pathGameIds = getPathGameIds();
-      if (pathGameIds.length > 0) {
-        navigate({ 
-          to: '/category_games',
-          search: {
-            selectedGameIds: pathGameIds.join(','),
-            title: dirPath || name,
-          } as Record<string, string>
-        });
-      }
-      return;
-    }
-    if (type === 'favorite') {
-      navigate({ to: `/favorites/${id}` });
-    } else if (type === 'brand') {
-      GetGamesByTag(name).then(games => {
-        const gameIds = games.map(g => g.id).filter((id): id is string => !!id);
-        if (gameIds.length > 0) {
-          navigate({
-            to: '/category_games',
-            search: {
-              selectedGameIds: gameIds.join(','),
-              title: name,
-            } as Record<string, string>
-          });
-        }
-      });
-      if (original && 'use_count' in original) {
-        original.use_count++;
-        UpdateTag(original as models.Tag)
-        updateTagInTags(original as models.Tag)
-      }
-    } else if (type === 'series') {
-      GetGamesByTag(name).then(games => {
-        const gameIds = games.map(g => g.id).filter((id): id is string => !!id);
-        if (gameIds.length > 0) {
-          navigate({
-            to: '/category_games',
-            search: {
-              selectedGameIds: gameIds.join(','),
-              title: name,
-            } as Record<string, string>
-          });
-        }
-      });
-      if (original && 'use_count' in original) {
-        original.use_count++;
-        UpdateTag(original as models.Tag)
-        updateTagInTags(original as models.Tag)
-      }
-    } else if (type === 'genre') {
-      const genreGames = storeGames.filter(g => {
-        const tags = g.tags?.split(',') || [];
-        return tags.includes(name);
-      }).map(g => g.id);
-      if (genreGames.length > 0) {
-        navigate({
-          to: '/category_games',
-          search: {
-            selectedGameIds: genreGames.join(','),
-            title: name,
-          } as Record<string, string>
-        });
-      }
-      if (original && 'use_count' in original) {
-        original.use_count++;
-        UpdateTag(original as models.Tag)
-        updateTagInTags(original as models.Tag)
-      }
-    } else if (type === 'chara_design' || type === 'sceneario') {
-      const staffModel = original as unknown as models.Staff;
-      const role = type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
-      GetWorksByStaffIdAndRole(staffModel.id, role).then(works => {
-        const workGameIds = works.map(w => w.game_id).filter((id): id is string => !!id);
-        if (workGameIds.length > 0) {
-          navigate({
-            to: '/category_games',
-            search: {
-              selectedGameIds: workGameIds.join(','),
-              title: name,
-            } as Record<string, string>
-          });
-        }
-      });
-    }
-  };
 
   const isStaffCategory = type === 'chara_design' || type === 'sceneario';
 
@@ -246,7 +159,107 @@ export function CategoryListCard({
   const previewGames = cachedIds && cachedIds.length > 0
     ? storeGames.filter(g => cachedIds.includes(g.id) && g.cover_url).slice(0, 3)
     : games.filter(game => game.cover_url).slice(0, 3);
-  const actualGameCount = cachedIds !== undefined ? cachedIds.length : games.length;
+  const actualGameIds = cachedIds !== undefined ? cachedIds : games.map(g => g.id);
+  const actualGameCount = actualGameIds.length;
+
+  
+  const handleViewDetails = () => {
+    if (isPathCategory) {
+      const pathGameIds = getPathGameIds();
+      if (pathGameIds.length > 0) {
+        navigate({ 
+          to: '/category_games',
+          search: {
+            selectedGameIds: pathGameIds.join(','),
+            title: dirPath || name,
+          } as Record<string, string>
+        });
+      }
+      return;
+    }
+    if (type === 'favorite') {
+      // navigate({ to: `/favorites/${id}` });
+      if (actualGameIds?.length ?? 0 > 0) {
+          navigate({
+            to: '/category_games',
+            search: {
+              selectedGameIds: actualGameIds.join(','),
+              title: name,
+            } as Record<string, string>
+          });
+        }
+    } else if (type === 'brand') {
+      GetGamesByTag(name).then(games => {
+        const gameIds = games.map(g => g.id).filter((id): id is string => !!id);
+        if (gameIds.length > 0) {
+          navigate({
+            to: '/category_games',
+            search: {
+              selectedGameIds: gameIds.join(','),
+              title: name,
+            } as Record<string, string>
+          });
+        }
+      });
+      if (original && 'use_count' in original) {
+        original.use_count++;
+        UpdateTag(original as models.Tag)
+        updateTagInTags(original as models.Tag)
+      }
+    } else if (type === 'series') {
+      GetGamesByTag(name).then(games => {
+        const gameIds = games.map(g => g.id).filter((id): id is string => !!id);
+        if (gameIds.length > 0) {
+          navigate({
+            to: '/category_games',
+            search: {
+              selectedGameIds: gameIds.join(','),
+              title: name,
+            } as Record<string, string>
+          });
+        }
+      });
+      if (original && 'use_count' in original) {
+        original.use_count++;
+        UpdateTag(original as models.Tag)
+        updateTagInTags(original as models.Tag)
+      }
+    } else if (type === 'genre') {
+      const genreGames = storeGames.filter(g => {
+        const tags = g.tags?.split(',') || [];
+        return tags.includes(name);
+      }).map(g => g.id);
+      if (genreGames.length > 0) {
+        navigate({
+          to: '/category_games',
+          search: {
+            selectedGameIds: genreGames.join(','),
+            title: name,
+          } as Record<string, string>
+        });
+      }
+      if (original && 'use_count' in original) {
+        original.use_count++;
+        UpdateTag(original as models.Tag)
+        updateTagInTags(original as models.Tag)
+      }
+    } else if (type === 'chara_design' || type === 'sceneario') {
+      const staffModel = original as unknown as models.Staff;
+      const role = type === 'chara_design' ? enums.StaffRole.CHARA_DESIGN : enums.StaffRole.SCENEARIO;
+      GetWorksByStaffIdAndRole(staffModel.id, role).then(works => {
+        const workGameIds = works.map(w => w.game_id).filter((id): id is string => !!id);
+        if (workGameIds.length > 0) {
+          navigate({
+            to: '/category_games',
+            search: {
+              selectedGameIds: workGameIds.join(','),
+              title: name,
+            } as Record<string, string>
+          });
+        }
+      });
+    }
+  };
 
   if (viewMode === "gallery") {
     return (

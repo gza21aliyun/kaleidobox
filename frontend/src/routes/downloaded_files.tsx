@@ -1423,6 +1423,7 @@ export default function DownloadedFiles() {
                               if (res.length == 0) {
                                 return
                               }
+                              res[0].search_name = item.game_name
                               setImportedGames(res)
                               setIsBatchUpdateOpen(true)
                             })

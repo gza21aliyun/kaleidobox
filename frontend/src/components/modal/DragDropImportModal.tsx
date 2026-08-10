@@ -33,6 +33,7 @@ interface LocalCandidate {
   executables: string[];
   selectedExe: string;
   searchName: string;
+  arguments: string;
   isSelected: boolean;
   isLnk: boolean;
   matchedGame: models.Game | null;
@@ -128,6 +129,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
         executables: c.executables || [],
         selectedExe: c.selected_exe,
         searchName: c.search_name,
+        arguments: c.arguments || "",
         isSelected: true,
         isLnk: isLnk,
         matchedGame: null,
@@ -294,6 +296,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
             folder_name: c.folderName,
             executables: c.executables,
             selected_exe: c.selectedExe,
+            arguments: c.arguments,
             search_name: c.searchName,
             is_selected: c.isSelected,
             match_status: c.matchStatus,

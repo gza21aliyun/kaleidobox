@@ -1162,7 +1162,11 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 	case enums.VNDB:
 		fmt.Println("Fetching metadata from VNDB")
 		vndbGetter := utils.NewVNDBInfoGetter()
-		game, e = vndbGetter.FetchMetadata(req.ID, s.config.VNDBAccessToken)
+		gameEntity, e = vndbGetter.FetchEntity(req, s.config.VNDBAccessToken)
+		if e != nil {
+			fmt.Printf("Fetching metadata from VNDB error: %v\n", e)
+		}
+		game = gameEntity.Game
 	case enums.Ymgal:
 		fmt.Println("Fetching metadata from Ymgal")
 		ymgalGetter := utils.NewYmgalInfoGetter(s.config.SearchCn)

@@ -983,6 +983,9 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 }
 
 func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
+	if gameEntity.Game.ID == "" {
+		return errors.New("game id is empty")
+	}
 	//game images
 	var err error = nil
 	for _, image := range strings.Split(gameEntity.Game.Images, ",") {
@@ -1001,11 +1004,13 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 			CreatedAt:   time.Now(),
 			GameId:      gameEntity.Game.ID,
 		}
+		// fmt.Printf("图库3：%v\n", newBackup)
 		if backup != nil {
 			err = s.UpdateImageBackup(&newBackup)
+			// fmt.Printf("图库3u：%v, err:%v\n", image, err)
 			continue
 		}
-		fmt.Printf("图库3：%s\n", image)
+		fmt.Printf("图库3c：%v\n", image)
 
 		err = s.CreateImageBackup(newBackup)
 	}
@@ -1042,6 +1047,8 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 	// 		err = s.CreateImageBackup(*staffImage)
 	// 	}
 	// }
+	imgs, err := s.FetchImages(gameEntity.Game.ID, 0, 2, false)
+	fmt.Printf("图库4：%v\n", imgs)
 	return err
 }
 

@@ -15,6 +15,7 @@ interface BetterSelectProps {
   disabled?: boolean;
   className?: string;
   name?: string;
+  title?: string;
 }
 
 export function BetterSelect({
@@ -24,6 +25,7 @@ export function BetterSelect({
   placeholder,
   disabled = false,
   className = "",
+  title,
 }: BetterSelectProps) {
   const { t } = useTranslation();
   const finalPlaceholder = placeholder || t('common.pleaseSelect');
@@ -32,7 +34,7 @@ export function BetterSelect({
 
   return (
     <Listbox value={value} onChange={onChange} disabled={disabled}>
-      <div className={`relative ${className}`}>
+      <div className={`relative ${className}`} title={title ? title : ""}>
         {/* Select Button */}
         <ListboxButton
           className="glass-card relative w-full px-3 py-2 pr-10

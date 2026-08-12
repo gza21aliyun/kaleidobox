@@ -349,6 +349,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       <span className="text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap"></span> {/* 标签移到左侧 */}
                       <BetterSelect
                         value={source}
+                        title="搜刮源"
                         onChange={(value) => {
                           if (source !== value as enums.SourceType) {
                               setSource(value as enums.SourceType)
@@ -372,8 +373,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
-                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否覆盖">
+                      <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate"
+                      
+                      >
                         {t('batchUpdate.overwrite')}
                       </label>
                       <BetterSwitch
@@ -385,7 +388,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否加载标签">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.tags')}
                       </label>
@@ -398,7 +401,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否加载制作人员">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.staff')}
                       </label>
@@ -410,8 +413,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                         }}
                       />
                     </div>
-
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否加载角色">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.characters')}
                       </label>
@@ -424,7 +426,8 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否加载画廊">
+
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.images')}
                       </label>
@@ -437,7 +440,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="否的话只会根据id重新获取数据，是的话会根据名字重新搜索">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.rematch')}
                       </label>
@@ -450,7 +453,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="会自动根据次要源补充数据，需要该源的ID，暂时只有批评空间和bangumi能同时获取其他源ID">
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.unionSearch')}
                       </label>

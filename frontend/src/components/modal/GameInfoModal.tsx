@@ -8,10 +8,11 @@ import { FetchImages } from "../../../wailsjs/go/service/ImageService";
 
 interface GameInfoModalProps {
   gameEntity: models.GameEntity | null;
+  isTemp?: boolean;
   onClose: () => void;
 }
 
-export function GameInfoModal({ gameEntity, onClose }: GameInfoModalProps) {
+export function GameInfoModal({ gameEntity, isTemp, onClose }: GameInfoModalProps) {
   const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
   const [images, setImages] = useState<string[]>([]);
@@ -80,7 +81,7 @@ export function GameInfoModal({ gameEntity, onClose }: GameInfoModalProps) {
                       url={coverURL}
                       alt={gameName}
                       className="w-full h-auto block"
-                      tempDownload={true}
+                      tempDownload={isTemp ?? true}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-brand-100 dark:bg-brand-700 rounded-lg">
@@ -123,7 +124,7 @@ export function GameInfoModal({ gameEntity, onClose }: GameInfoModalProps) {
                               url={charactor.charactor_image}
                               alt={charactor.charactor_name || "角色"}
                               className="w-full h-full object-cover rounded-lg"
-                              tempDownload={true}
+                              tempDownload={isTemp ?? true}
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
@@ -164,7 +165,7 @@ export function GameInfoModal({ gameEntity, onClose }: GameInfoModalProps) {
                     <ImageCard
                       key={index}
                       url={imgUrl}
-                      tempDownload={true}
+                      tempDownload={isTemp ?? true}
                       urls={images}
                       style={{ width: '100%', aspectRatio: '16/9' }}
                     />

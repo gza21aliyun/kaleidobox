@@ -389,6 +389,7 @@ export function GameCard({
       {showInfoModal && (
         <GameInfoModal
           gameEntity={gameEntity}
+          isTemp={false}
           onClose={() => setShowInfoModal(false)}
         />
       )}
@@ -555,6 +556,7 @@ export function GameCard({
       {showInfoModal && (
         <GameInfoModal
           gameEntity={gameEntity}
+          isTemp={false}
           onClose={() => setShowInfoModal(false)}
         />
       )}
@@ -687,6 +689,7 @@ export function GameCard({
     {showInfoModal && (
         <GameInfoModal
           gameEntity={gameEntity}
+          isTemp={false}
           onClose={() => setShowInfoModal(false)}
         />
       )}

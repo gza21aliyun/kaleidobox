@@ -1010,7 +1010,7 @@ func (s *ImportService) SearchVideoExePaths(games []models.Game) error {
 // 创建视频搜索任务函数
 func (s *ImportService) createSearchVideoTaskFunction() TaskFunction {
 	return func(ctx context.Context, data string, updateProgress func(completed int, total int,
-		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error {
+		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, resultGames []models.ResultGames, itemData interface{})) error {
 		// 定义结构来解组任务数据
 		var taskData struct {
 			Games []models.Game `json:"games"`
@@ -1020,8 +1020,9 @@ func (s *ImportService) createSearchVideoTaskFunction() TaskFunction {
 		if err := json.Unmarshal([]byte(data), &taskData); err != nil {
 			return fmt.Errorf("解析任务数据失败: %v", err)
 		}
+		resultGames := []models.ResultGames{}
 		updateProgress(0, len(taskData.Games), "开始搜索视频路径",
-			"", "", enums.Started, nil)
+			"", "", enums.Started, resultGames, nil)
 
 		// 实现视频搜索的核心逻辑
 		for index, game := range taskData.Games {
@@ -1033,28 +1034,28 @@ func (s *ImportService) createSearchVideoTaskFunction() TaskFunction {
 			}
 
 			updateProgress(index, len(taskData.Games), fmt.Sprintf("搜索游戏视频: %s", game.Name),
-				"", game.ID, enums.Initial, nil)
+				"", game.ID, enums.Initial, resultGames, nil)
 
 			if game.PvPath == "" {
 				err := SearchVideoExePath(&game)
 				if err == nil {
 					s.gameService.UpdateGame(game)
 					updateProgress(index, len(taskData.Games), fmt.Sprintf("找到视频: %s", game.Name),
-						"", game.ID, enums.Completed, game)
+						"", game.ID, enums.Completed, resultGames, game)
 				} else {
 					updateProgress(index, len(taskData.Games), fmt.Sprintf("未找到视频: %s", game.Name),
-						err.Error(), game.ID, enums.Error, nil)
+						err.Error(), game.ID, enums.Error, resultGames, nil)
 				}
 			} else {
 				updateProgress(index, len(taskData.Games), fmt.Sprintf("视频已存在: %s", game.Name),
-					"", game.ID, enums.Completed, game)
+					"", game.ID, enums.Completed, resultGames, game)
 			}
 
 			time.Sleep(time.Millisecond * 100)
 		}
 
 		// 标记完成
-		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏视频搜索完成", "", "", enums.Completed, nil)
+		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏视频搜索完成", "", "", enums.Completed, resultGames, nil)
 		return nil
 	}
 }

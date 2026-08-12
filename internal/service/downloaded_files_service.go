@@ -2252,9 +2252,9 @@ func (s *DownloadedFilesService) ExecuteBatchTask(items []DownloadedFile, showEx
 
 func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []DownloadedFile, showExtract, showInstall, showImport bool, directIsoInstall bool, installMethod string) TaskFunction {
 	return func(ctx context.Context, data string, updateProgress func(completed int, total int,
-		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error {
-
-		updateProgress(0, len(items), "开始批量处理下载文件", "", "", enums.Started, nil)
+		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, resultGames []models.ResultGames, itemData interface{})) error {
+		resultGames := []models.ResultGames{}
+		updateProgress(0, len(items), "开始批量处理下载文件", "", "", enums.Started, resultGames, nil)
 
 		for index := range items {
 			item := &items[index]
@@ -2265,11 +2265,11 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 			}
 
 			updateProgress(index, len(items), fmt.Sprintf("处理文件: %s", item.Name),
-				"", item.ID, enums.Initial, *item)
+				"", item.ID, enums.Initial, resultGames, *item)
 
 			if showExtract && item.Status == 1 {
 				updateProgress(index, len(items), fmt.Sprintf("解压中: %s", item.Name),
-					"", item.ID, enums.Started, *item)
+					"", item.ID, enums.Started, resultGames, *item)
 
 				var err error
 				if item.Type == 1 {
@@ -2280,7 +2280,7 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 
 				if err != nil {
 					updateProgress(index+1, len(items), fmt.Sprintf("解压失败: %s", item.Name),
-						err.Error(), item.ID, enums.Error, *item)
+						err.Error(), item.ID, enums.Error, resultGames, *item)
 					continue
 				}
 				fmt.Printf("prerefresh %s, status:%d, type:%d, isos:%d\n", item.Name, item.Status, item.Type, len(item.ISOItems))
@@ -2288,7 +2288,7 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 				refreshedItem, err := s.RefreshDownloadedFile(*item)
 				if err != nil {
 					updateProgress(index+1, len(items), fmt.Sprintf("刷新状态失败: %s", item.Name),
-						err.Error(), item.ID, enums.Error, *item)
+						err.Error(), item.ID, enums.Error, resultGames, *item)
 					continue
 				}
 				refreshedItem.Type = item.Type
@@ -2296,7 +2296,7 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 				*item = refreshedItem
 
 				updateProgress(index, len(items), fmt.Sprintf("解压完成: %s", item.Name),
-					"", item.ID, enums.Completed, *item)
+					"", item.ID, enums.Completed, resultGames, *item)
 			}
 
 			hasIso := len(item.ISOItems) > 0
@@ -2305,12 +2305,12 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 
 			if shouldInstall {
 				updateProgress(index, len(items), fmt.Sprintf("安装中: %s", item.Name),
-					"", item.ID, enums.Started, *item)
+					"", item.ID, enums.Started, resultGames, *item)
 
 				installedPath, err := s.InstallGame(*item, installMethod)
 				if err != nil {
 					updateProgress(index+1, len(items), fmt.Sprintf("安装失败: %s", item.Name),
-						err.Error(), item.ID, enums.Error, *item)
+						err.Error(), item.ID, enums.Error, resultGames, *item)
 					continue
 				}
 
@@ -2318,10 +2318,10 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 				item.Status = 3
 
 				updateProgress(index+1, len(items), fmt.Sprintf("安装完成: %s", item.Name),
-					"", item.ID, enums.Completed, *item)
+					"", item.ID, enums.Completed, resultGames, *item)
 			} else {
 				updateProgress(index+1, len(items), fmt.Sprintf("跳过安装: %s", item.Name),
-					"", item.ID, enums.Completed, *item)
+					"", item.ID, enums.Completed, resultGames, *item)
 			}
 		}
 
@@ -2335,7 +2335,7 @@ func (s *DownloadedFilesService) createBatchProcessTaskFunction(items []Download
 			}
 		}
 
-		updateProgress(len(items), len(items), "批量处理完成", "", "", enums.Completed, importItems)
+		updateProgress(len(items), len(items), "批量处理完成", "", "", enums.Completed, resultGames, importItems)
 		return nil
 	}
 }

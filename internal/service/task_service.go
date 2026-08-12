@@ -19,7 +19,7 @@ import (
 // TaskFunction 是任务执行函数的类型定义，接受上下文、任务数据和进度更新函数
 type TaskFunction func(ctx context.Context, data string,
 	updateProgress func(completed int, total int, workingOn string,
-		warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error
+		warning string, itemId string, itemEvent enums.TaskStatus, resultGames []models.ResultGames, itemData interface{})) error
 
 type TaskService struct {
 	ctx    context.Context
@@ -117,7 +117,7 @@ func (s *TaskService) runTask(task *models.Task, ctx context.Context) {
 
 	// 创建一个更新进度的函数
 	updateProgress := func(completed int, total int, workingOn string,
-		warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{}) {
+		warning string, itemId string, itemEvent enums.TaskStatus, resultGames []models.ResultGames, itemData interface{}) {
 		s.taskMutex.Lock()
 		defer s.taskMutex.Unlock()
 
@@ -129,10 +129,14 @@ func (s *TaskService) runTask(task *models.Task, ctx context.Context) {
 			// if warning != "" {
 			// 	s.activeTask.Warning = warning
 			// }
+			if len(resultGames) > 0 {
+				s.activeTask.Title = resultGames[0].Title
+			}
 			s.activeTask.Warning = warning
 			s.activeTask.WorkingOn = workingOn
 			s.activeTask.ItemId = itemId
 			s.activeTask.ItemStatus = itemEvent
+			s.activeTask.ResultGames = resultGames
 			s.activeTask.ItemData = itemData
 			s.notifyFrontend(s.activeTask)
 		}
@@ -362,12 +366,17 @@ func (s *TaskService) GetTaskNotice(task models.Task) models.TaskNotice {
 		Warning:     task.Warning,
 		Total:       task.Total,
 		Completed:   task.Completed,
+		Title:       task.Title,
+		ResultGames: task.ResultGames,
 		Description: task.Description,
 		WorkingOn:   task.WorkingOn,
 		Type:        task.Type,
 		ItemId:      task.ItemId,
 		ItemStatus:  task.ItemStatus,
 		ItemData:    task.ItemData,
+	}
+	if len(task.ResultGames) > 0 {
+		taskNotice.Title = task.ResultGames[0].Title
 	}
 	return taskNotice
 }

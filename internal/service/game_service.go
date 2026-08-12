@@ -1451,14 +1451,14 @@ func (s *GameService) ExecueteGamesUpdate(games []models.Game, req vo.MetadataRe
 	}
 	jsonData = string(jsonBytes)
 	s.createGameUpdateTaskFunction()(s.ctx, jsonData, func(completed int, total int, workingOn string,
-		warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{}) {
+		warning string, itemId string, itemEvent enums.TaskStatus, resultGames []models.ResultGames, itemData interface{}) {
 	})
 }
 
 // 创建游戏更新任务函数
 func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 	return func(ctx context.Context, data string, updateProgress func(completed int, total int,
-		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, itemData interface{})) error {
+		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, resultGames []models.ResultGames, itemData interface{})) error {
 		// 定义结构来解组任务数据
 		var taskData struct {
 			Games []models.Game      `json:"games"`
@@ -1469,8 +1469,14 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 		if err := json.Unmarshal([]byte(data), &taskData); err != nil {
 			return fmt.Errorf("解析任务数据失败: %v", err)
 		}
+		resultGames := []models.ResultGames{}
+		result := models.ResultGames{}
+		result.Description = "已更新游戏"
+		result.Status = 200
+		resultGames = append(resultGames, result)
+
 		updateProgress(0, len(taskData.Games), fmt.Sprintf("开始更新游戏: "),
-			"", "", enums.Started, nil)
+			"", "", enums.Started, resultGames, nil)
 
 		// 实现UpdateGamesBackground的核心逻辑
 		for index, ngame := range taskData.Games {
@@ -1482,7 +1488,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			}
 
 			updateProgress(index, len(taskData.Games), fmt.Sprintf("更新游戏: %s", ngame.Name),
-				"", ngame.ID, enums.Initial, nil)
+				"", ngame.ID, enums.Initial, resultGames, nil)
 
 			var id = ""
 
@@ -1580,13 +1586,13 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 
 				log.Printf("Failed to fetch metadata for game %s by ID: %s %v", ngame.Name, id, err)
 				updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
-					ngame.ID, enums.Error, nil)
+					ngame.ID, enums.Error, resultGames, nil)
 				continue
 			}
 			log.Printf("TaskFunc 31 fetch for game %s, id:%s", ngame.Name, updatedGame.SourceID)
 			if updatedGame.SourceID == "" {
 				updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
-					ngame.ID, enums.Error, nil)
+					ngame.ID, enums.Error, resultGames, nil)
 				continue
 			}
 			if updatedGame.Name == "" {
@@ -1601,14 +1607,16 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				log.Printf("Failed to update game %s: %v", updatedGame.Name, err)
 				continue
 			}
+			result.GameIds = append(result.GameIds, updatedGame.ID)
+			resultGames[0] = result
 			updateProgress(index, len(taskData.Games), "", fmt.Sprintf("complete for game %s by ID: %v", ngame.Name, err),
-				ngame.ID, enums.Completed, updatedGame)
+				ngame.ID, enums.Completed, resultGames, updatedGame)
 
 			time.Sleep(time.Millisecond * 1000)
 		}
 
 		// 标记完成
-		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏更新完成", "", "", enums.Completed, nil)
+		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏更新完成", "", "", enums.Completed, resultGames, nil)
 		return nil
 	}
 }

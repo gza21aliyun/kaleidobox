@@ -461,6 +461,20 @@ var (
 	procModule32Next  = kernel32.NewProc("Module32NextW")
 )
 
+func SearchProcessByName(processName string) *NewProcessInfo {
+
+	processList, err := GetRunningProcessesWithPPID()
+	if err != nil {
+		return nil
+	}
+	for _, process := range processList {
+		if process.Name == processName {
+			return &process
+		}
+	}
+	return nil
+}
+
 // GetRunningProcessesWithPPID 获取系统中正在运行的进程列表（包含完整路径）
 func GetRunningProcessesWithPPID() ([]NewProcessInfo, error) {
 	fmt.Println("GetRunningProcessesWithPPID")

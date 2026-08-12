@@ -168,6 +168,47 @@ func (s *StartService) StartGameWithOptions(gameID string, options LaunchOptions
 	return s.startGame(gameID, options)
 }
 
+// splitCommandLineArgs 按 Windows 命令行规则拆分参数字符串（兼容 CommandLineToArgvW 语义）。
+// 直接把 arguments 字符串作为单个 exec.Command 的参数时，游戏会收到一整串空格作为 argv[1]，
+// 而不会按空格/引号拆成多个参数。用此函数拆分后，逐个作为 exec.Command 的参数传入，
+// 能模拟双击快捷方式或在 cmd 里输入命令时的参数解析行为。
+func splitCommandLineArgs(args string) []string {
+	if args == "" {
+		return nil
+	}
+	var out []string
+	var cur strings.Builder
+	inQuote := false
+	for i := 0; i < len(args); i++ {
+		c := args[i]
+		switch c {
+		case '"':
+			// 处理转义的双引号：Windows 规则中 "" 也是一个双引号
+			if inQuote && i+1 < len(args) && args[i+1] == '"' {
+				cur.WriteByte('"')
+				i++
+			} else {
+				inQuote = !inQuote
+			}
+		case ' ', '\t':
+			if inQuote {
+				cur.WriteByte(c)
+			} else {
+				if cur.Len() > 0 {
+					out = append(out, cur.String())
+					cur.Reset()
+				}
+			}
+		default:
+			cur.WriteByte(c)
+		}
+	}
+	if cur.Len() > 0 {
+		out = append(out, cur.String())
+	}
+	return out
+}
+
 // startGame 内部启动方法，支持通过 options 覆盖配置
 func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, error) {
 	// 获取游戏路径和进程配置
@@ -233,15 +274,27 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		if arguments == "" {
 			cmd = exec.Command(s.config.LocaleEmulatorPath, path)
 		} else {
-			cmd = exec.Command(s.config.LocaleEmulatorPath, path, arguments)
+			// 将 arguments 按 Windows 命令行规则拆分成多个参数，
+			// 否则整个 arguments 字符串会被当作单个参数传给游戏
+			args := splitCommandLineArgs(arguments)
+			cmdArgs := append([]string{path}, args...)
+			cmd = exec.Command(s.config.LocaleEmulatorPath, cmdArgs...)
 		}
 
 	} else {
 		// 普通启动
 		if arguments == "" {
+			// 无参数：直接 CreateProcess，保持 PPID 链简单（Lunabox → 游戏）
 			cmd = exec.Command(path)
 		} else {
-			cmd = exec.Command(path, arguments)
+			// 有参数：用 cmd.exe /c 包裹，提供更完整的 Shell 环境
+			// 对 AlphaROMdiE 等 loader 类工具更稳定
+			// 注意：path 和 arguments 作为独立参数传给 exec.Command，
+			// Go 的 syscall.EscapeArg 会自动处理含空格路径的引号
+			args := splitCommandLineArgs(arguments)
+			cmdArgs := append([]string{"/c", path}, args...)
+			cmd = exec.Command("cmd.exe", cmdArgs...)
+			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		}
 	}
 
@@ -252,9 +305,10 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 	if s.config.DisplayName != "" {
 		_, err := s.GetDisplayByName(s.config.DisplayName)
 		if err == nil {
-			cmd.SysProcAttr = &syscall.SysProcAttr{
-				CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+			if cmd.SysProcAttr == nil {
+				cmd.SysProcAttr = &syscall.SysProcAttr{}
 			}
+			cmd.SysProcAttr.CreationFlags = syscall.CREATE_NEW_PROCESS_GROUP
 		}
 	}
 
@@ -264,13 +318,24 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 			applog.LogInfof(s.ctx, "game requires administrator privileges, attempting to start with elevation...")
 
 			// 使用 PowerShell Start-Process -Verb RunAs 来请求提升权限
+			// -ArgumentList 支持传入字符串数组，能正确处理参数中的引号和空格；
+			// 用 single-quote 包裹字符串常量避免双引号嵌套导致 PowerShell 解析错误
 			var startCmd *exec.Cmd
 			if arguments == "" {
-				startCmd = exec.Command("powershell", "-Command",
-					fmt.Sprintf(`Start-Process "%s" -Verb RunAs`, path))
+				startCmd = exec.Command("powershell", "-NoProfile", "-Command",
+					fmt.Sprintf(`Start-Process '%s' -Verb RunAs -WorkingDirectory '%s'`,
+						path, filepath.Dir(path)))
 			} else {
-				startCmd = exec.Command("powershell", "-Command",
-					fmt.Sprintf(`Start-Process "%s" -ArgumentList "%s" -Verb RunAs`, path, arguments))
+				args := splitCommandLineArgs(arguments)
+				// 把每个参数转成 PowerShell 单引号字符串，内部单引号用 '' 转义
+				var argListStrs []string
+				for _, a := range args {
+					argListStrs = append(argListStrs, "'"+strings.ReplaceAll(a, "'", "''")+"'")
+				}
+				argListArr := strings.Join(argListStrs, ",")
+				startCmd = exec.Command("powershell", "-NoProfile", "-Command",
+					fmt.Sprintf(`Start-Process '%s' -ArgumentList @(%s) -Verb RunAs -WorkingDirectory '%s'`,
+						path, argListArr, filepath.Dir(path)))
 			}
 
 			if err := startCmd.Run(); err != nil {
@@ -297,6 +362,17 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 
 	// 获取启动器的进程 ID
 	launcherPID := uint32(cmd.Process.Pid)
+	if arguments != "" && strings.ToLower(filepath.Ext(arguments)) == ".exe" {
+
+		process := utils.SearchProcessByName(arguments)
+		if process == nil {
+			time.Sleep(1000 * time.Millisecond)
+			process = utils.SearchProcessByName(arguments)
+		}
+		if process != nil {
+			launcherPID = process.PID
+		}
+	}
 
 	// 如果启用了 Magpie，预先启动 Magpie（不立即触发缩放）
 	if useMagpie && s.config.MagpiePath != "" {

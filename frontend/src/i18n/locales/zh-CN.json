@@ -1288,7 +1288,8 @@
       "resume": "恢复任务",
       "cancel": "取消任务",
       "delete": "删除任务",
-      "searchVideo": "为游戏搜索视频"
+      "searchVideo": "为游戏搜索视频",
+      "viewResult": "查看结果"
     },
     "status": {
       "completed": "完成",
@@ -1296,6 +1297,10 @@
       "canceled": "取消",
       "paused": "暂停",
       "started": "已开始"
+    },
+    "result": {
+      "title": "任务结果",
+      "empty": "无结果内容"
     }
   },
   "update": {

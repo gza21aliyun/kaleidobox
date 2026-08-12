@@ -1280,7 +1280,8 @@
       "resume": "タスクを再開",
       "cancel": "タスクをキャンセル",
       "delete": "タスクを削除",
-      "searchVideo": "ゲームの動画を検索"
+      "searchVideo": "ゲームの動画を検索",
+      "viewResult": "結果を表示"
     },
     "status": {
       "completed": "完了",
@@ -1288,6 +1289,10 @@
       "canceled": "キャンセル",
       "paused": "一時停止",
       "started": "開始済み"
+    },
+    "result": {
+      "title": "タスク結果",
+      "empty": "結果内容がありません"
     }
   },
   "batchUpdate": {

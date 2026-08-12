@@ -1,10 +1,12 @@
 import { models } from "../../wailsjs/go/models";
 import { createRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { PauseTask, CancelTask, ResumeTask } from "../../wailsjs/go/service/TaskService";
 import { SearchVideoExePaths } from "../../wailsjs/go/service/ImportService";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { useTranslation } from 'react-i18next';
+import { TaskResultModal } from "../components/modal/TaskResultModal";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -15,6 +17,7 @@ export const Route = createRoute({
 function TaskPage() {
   const { t } = useTranslation();
   const { tasks, setTasks } = useAppStore();
+  const [resultModalTask, setResultModalTask] = useState<models.TaskNotice | null>(null);
 
   const handlePauseTask = async (taskId: string) => {
     try {
@@ -125,7 +128,7 @@ function TaskPage() {
                       <div className="i-mdi-pause text-lg"></div>
                     </button>
                   )}
-                  
+
                   {(task.status === "暂停") && (
                     <button
                       onClick={() => handleResumeTask(task.id)}
@@ -135,7 +138,7 @@ function TaskPage() {
                       <div className="i-mdi-play text-lg"></div>
                     </button>
                   )}
-                  
+
                   {(task.status !== "完成" && task.status !== "错误" && task.status !== "取消") && (
                     <button
                       onClick={() => handleCancelTask(task.id)}
@@ -154,6 +157,15 @@ function TaskPage() {
                       <div className="i-mdi-delete text-lg"></div>
                     </button>
                   )}
+                  {task.result_games && task.result_games.length > 0 && (
+                    <button
+                      onClick={() => setResultModalTask(task)}
+                      className="p-2 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 dark:text-blue-400 transition-colors"
+                      title={t('task.actions.viewResult')}
+                    >
+                      <div className="i-mdi-clipboard-list-outline text-lg"></div>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -167,6 +179,12 @@ function TaskPage() {
           </div>
         </div>
       )}
+
+      <TaskResultModal
+        isOpen={resultModalTask !== null}
+        resultGames={resultModalTask?.result_games || []}
+        onClose={() => setResultModalTask(null)}
+      />
     </div>
   );
 }

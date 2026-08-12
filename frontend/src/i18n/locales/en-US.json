@@ -1284,7 +1284,8 @@
       "resume": "Resume task",
       "cancel": "Cancel task",
       "delete": "Delete task",
-      "searchVideo": "Search video for games"
+      "searchVideo": "Search video for games",
+      "viewResult": "View Results"
     },
     "status": {
       "completed": "Completed",
@@ -1292,6 +1293,10 @@
       "canceled": "Canceled",
       "paused": "Paused",
       "started": "Started"
+    },
+    "result": {
+      "title": "Task Results",
+      "empty": "No result content"
     }
   },
   "update": {

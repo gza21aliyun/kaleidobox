@@ -3,6 +3,7 @@ import { createRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { PauseTask, CancelTask, ResumeTask } from "../../wailsjs/go/service/TaskService";
 import { SearchVideoExePaths } from "../../wailsjs/go/service/ImportService";
+import { CheckGamesValidity, GetGames } from "../../wailsjs/go/service/GameService";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { useTranslation } from 'react-i18next';
@@ -56,17 +57,39 @@ function TaskPage() {
     }
   };
 
+  const handleCheckGamesValidity = async () => {
+    try {
+      const storeGames = useAppStore.getState().games;
+      let games = storeGames;
+      if (!games || games.length === 0) {
+        games = await GetGames();
+      }
+      await CheckGamesValidity(games || []);
+    } catch (error) {
+      console.error("Failed to check games validity:", error);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-8xl mx-auto p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('task.title')}</h1>
-        <button
-          onClick={handleSearchVideoPaths}
-          className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-          title={t('task.actions.searchVideo')}
-        >
-          {t('task.actions.searchVideo')}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSearchVideoPaths}
+            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            title={t('task.actions.searchVideo')}
+          >
+            {t('task.actions.searchVideo')}
+          </button>
+          <button
+            onClick={handleCheckGamesValidity}
+            className="px-4 py-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+            title={t('task.actions.checkValidity')}
+          >
+            {t('task.actions.checkValidity')}
+          </button>
+        </div>
       </div>
 
       {tasks.length > 0 ? (

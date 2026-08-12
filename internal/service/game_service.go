@@ -1471,9 +1471,15 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 		}
 		resultGames := []models.ResultGames{}
 		result := models.ResultGames{}
+		result.Title = "游戏元数据搜刮更新"
 		result.Description = "已更新游戏"
 		result.Status = 200
+		failed := models.ResultGames{}
+		failed.Description = "更新失败"
+		failed.Status = 400
+		result.GameIds = []string{}
 		resultGames = append(resultGames, result)
+		resultGames = append(resultGames, failed)
 
 		updateProgress(0, len(taskData.Games), fmt.Sprintf("开始更新游戏: "),
 			"", "", enums.Started, resultGames, nil)
@@ -1585,12 +1591,16 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			if err != nil {
 
 				log.Printf("Failed to fetch metadata for game %s by ID: %s %v", ngame.Name, id, err)
+				failed.GameIds = append(failed.GameIds, ngame.ID)
+				resultGames[1] = failed
 				updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
 					ngame.ID, enums.Error, resultGames, nil)
 				continue
 			}
 			log.Printf("TaskFunc 31 fetch for game %s, id:%s", ngame.Name, updatedGame.SourceID)
 			if updatedGame.SourceID == "" {
+				failed.GameIds = append(failed.GameIds, ngame.ID)
+				resultGames[1] = failed
 				updateProgress(index, len(taskData.Games), "", fmt.Sprintf("Failed to fetch metadata for game %s by ID: %v", ngame.Name, err),
 					ngame.ID, enums.Error, resultGames, nil)
 				continue
@@ -1617,6 +1627,98 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 
 		// 标记完成
 		updateProgress(len(taskData.Games), len(taskData.Games), "所有游戏更新完成", "", "", enums.Completed, resultGames, nil)
+		return nil
+	}
+}
+
+// CheckGamesValidity 检查所有已导入游戏的路径有效性（后台任务）
+func (s *GameService) CheckGamesValidity(games []models.Game) error {
+	var uuid = uuid.New().String()
+	s.taskService.RegisterTaskFunction(uuid, s.createCheckGameValidityTaskFunction())
+	taskData := map[string]interface{}{
+		"games": games,
+	}
+	// 传进来的 games 可能来自前端 store，可能为空；这里用 DB 数量作为 total 保证进度正确
+	total := len(games)
+	if total == 0 {
+		if dbGames, err := s.GetGames(); err == nil {
+			total = len(dbGames)
+		}
+	}
+	return s.taskService.StartTask("game_updates", uuid, 0, enums.CheckGameValidity, total, taskData)
+}
+
+// createCheckGameValidityTaskFunction 创建检查游戏路径有效性的任务函数
+func (s *GameService) createCheckGameValidityTaskFunction() TaskFunction {
+	return func(ctx context.Context, data string, updateProgress func(completed int, total int,
+		workingOn string, warning string, itemId string, itemEvent enums.TaskStatus, resultGames []models.ResultGames, itemData interface{})) error {
+		var taskData struct {
+			Games []models.Game `json:"games"`
+		}
+
+		if err := json.Unmarshal([]byte(data), &taskData); err != nil {
+			return fmt.Errorf("解析任务数据失败: %v", err)
+		}
+
+		// 前端传进来的 games 可能为空（store 还没加载），兜底从 DB 读取全部
+		games := taskData.Games
+		if len(games) == 0 {
+			dbGames, err := s.GetGames()
+			if err != nil {
+				return fmt.Errorf("读取游戏列表失败: %v", err)
+			}
+			games = dbGames
+		}
+
+		valid := models.ResultGames{}
+		valid.Title = "游戏有效性检查"
+		valid.Description = "路径有效的游戏"
+		valid.Status = 200
+		valid.GameIds = []string{}
+
+		invalid := models.ResultGames{}
+		invalid.Description = "路径无效的游戏"
+		invalid.Status = 400
+		invalid.GameIds = []string{}
+
+		resultGames := []models.ResultGames{valid, invalid}
+
+		total := len(games)
+		updateProgress(0, total, "开始检查游戏有效性", "", "", enums.Started, resultGames, nil)
+
+		for index, game := range games {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+
+			updateProgress(index, total, fmt.Sprintf("检查游戏: %s", game.Name),
+				"", game.ID, enums.Initial, resultGames, nil)
+
+			if strings.TrimSpace(game.Path) == "" {
+				invalid.GameIds = append(invalid.GameIds, game.ID)
+				resultGames[1] = invalid
+				updateProgress(index, total, fmt.Sprintf("路径为空: %s", game.Name),
+					fmt.Sprintf("游戏 %s 的路径为空", game.Name), game.ID, enums.Error, resultGames, nil)
+				continue
+			}
+
+			if _, err := os.Stat(game.Path); err != nil {
+				invalid.GameIds = append(invalid.GameIds, game.ID)
+				resultGames[1] = invalid
+				updateProgress(index, total, fmt.Sprintf("路径不存在: %s", game.Name),
+					fmt.Sprintf("游戏 %s 的路径不存在: %s", game.Name, game.Path), game.ID, enums.Error, resultGames, nil)
+				continue
+			}
+
+			valid.GameIds = append(valid.GameIds, game.ID)
+			resultGames[0] = valid
+			updateProgress(index, total, fmt.Sprintf("路径有效: %s", game.Name),
+				"", game.ID, enums.Completed, resultGames, game)
+		}
+
+		updateProgress(total, total, "所有游戏有效性检查完成", "", "", enums.Completed, resultGames, nil)
 		return nil
 	}
 }

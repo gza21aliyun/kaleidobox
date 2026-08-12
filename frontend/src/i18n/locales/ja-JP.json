@@ -1281,7 +1281,8 @@
       "cancel": "タスクをキャンセル",
       "delete": "タスクを削除",
       "searchVideo": "ゲームの動画を検索",
-      "viewResult": "結果を表示"
+      "viewResult": "結果を表示",
+      "checkValidity": "ゲームの有効性をチェック"
     },
     "status": {
       "completed": "完了",

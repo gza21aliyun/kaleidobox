@@ -1289,7 +1289,8 @@
       "cancel": "取消任务",
       "delete": "删除任务",
       "searchVideo": "为游戏搜索视频",
-      "viewResult": "查看结果"
+      "viewResult": "查看结果",
+      "checkValidity": "检查游戏有效性"
     },
     "status": {
       "completed": "完成",

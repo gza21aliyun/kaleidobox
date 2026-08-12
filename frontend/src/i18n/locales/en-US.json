@@ -1285,7 +1285,8 @@
       "cancel": "Cancel task",
       "delete": "Delete task",
       "searchVideo": "Search video for games",
-      "viewResult": "View Results"
+      "viewResult": "View Results",
+      "checkValidity": "Check Game Validity"
     },
     "status": {
       "completed": "Completed",

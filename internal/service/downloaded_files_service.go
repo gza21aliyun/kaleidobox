@@ -97,7 +97,7 @@ var imageExtensions = map[string]bool{
 	".iso": true,
 	".mdf": true,
 	".cdi": true,
-	// ".img": true,
+	".img": true,
 	// ".bin": true,
 	// ".cue": true,
 }
@@ -250,10 +250,10 @@ func (s *DownloadedFilesService) ListDownloadedFiles() ([]DownloadedFile, error)
 				// fmt.Printf("status 2 03,name: %s, \n", folder.Name)
 			}
 		}
-
-		if folder.Status >= 2 && savedInfo == nil {
+		fmt.Printf("extractedPath 05, status:%d, name:%s\n", folder.Status, folder.Name)
+		if folder.Status >= 2 && (savedInfo == nil || folder.ExtractedGamePath == "") {
 			extractedGamePath, extractedPaths := s.getExtractedPaths(folder.Path, folder.BaseName, folder.Type)
-			// fmt.Printf("extractedPath,name: %s, eGamePath: %s, ePaths: %d, path:%s\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path)
+			fmt.Printf("extractedPath 06,name: %s, eGamePath: %s, ePaths: %d, path:%s, oldPath:%s, oldStatus:%d\n", folder.Name, extractedGamePath, len(extractedPaths), folder.Path, folder.ExtractedGamePath, folder.Status)
 			folder.ExtractedGamePath = extractedGamePath
 			folder.ExtractedPaths = extractedPaths
 		}
@@ -1251,6 +1251,31 @@ func (s *DownloadedFilesService) ExtractArchivesInFolder(folderPath string) erro
 			isFirstPart := partNumber == 1
 
 			if !isFirstPart {
+				if partNumber == 2 {
+					subExt := filepath.Ext(baseWithoutExt)
+					// subPartBase := strings.TrimSuffix(baseWithoutExt, subExt)
+					fmt.Printf("ExtractArchivesInFolder 06 subPartBase: %s, subExt: %s\n", partBase, subExt)
+					if subExt == ".part02" {
+						fmt.Printf("ExtractArchivesInFolder 07 subPartBase: %s, subExt: %s\n", partBase, subExt)
+						subFilePath := filepath.Join(folderPath, partBase+".part01.exe")
+						_, err := os.Stat(subFilePath)
+						if err == nil {
+							fmt.Printf("ExtractArchivesInFolder 08 subFilePath: %s\n", subFilePath)
+							processedBases[partBase] = true
+							targetFolder := filepath.Join(folderPath, partBase)
+							if err := os.MkdirAll(targetFolder, 0755); err != nil {
+								applog.LogErrorf(s.ctx, "Failed to create folder %s: %v", targetFolder, err)
+								continue
+							}
+							if err := s.extractArchive(subFilePath, targetFolder); err != nil {
+								applog.LogErrorf(s.ctx, "Failed to extract %s: %v", subFilePath, err)
+								continue
+							}
+							continue
+						}
+					}
+
+				}
 				// 不是第一段，跳过
 				continue
 			}
@@ -1367,6 +1392,12 @@ func (s *DownloadedFilesService) MountISO(isoPath string) error {
 		// 检查是否存在对应的 .mds 文件
 		if ext == ".mdf" {
 			mdsPath = strings.TrimSuffix(isoPath, filepath.Ext(isoPath)) + ".mds"
+			if _, err := os.Stat(mdsPath); os.IsNotExist(err) {
+				return fmt.Errorf("未找到对应的.mds文件: %s", mdsPath)
+			}
+		}
+		if ext == ".img" {
+			mdsPath = strings.TrimSuffix(isoPath, filepath.Ext(isoPath)) + ".cue"
 			if _, err := os.Stat(mdsPath); os.IsNotExist(err) {
 				return fmt.Errorf("未找到对应的.mds文件: %s", mdsPath)
 			}

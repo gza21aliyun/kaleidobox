@@ -1211,7 +1211,10 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 	if req.IsOverwrite && req.ShouldFetchTags {
 		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 	}
-	if req.IsOverwrite && (req.ShouldFetchStaffs || req.ShouldFetchCharactors) {
+	if req.ShouldFetchStaffs || req.ShouldFetchCharactors {
+		if req.IsOverwrite {
+			s.workService.DeleteWorksForGame(game.ID)
+		}
 		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
 	}
 	s.imageService.SaveGameImages(gameEntity)

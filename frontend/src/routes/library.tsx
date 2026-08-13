@@ -157,6 +157,20 @@ function LibraryPage() {
         });
       }
       
+    } else if (sourceFilter === "duplicated") {
+      if (includedIds === null) {
+        const ids: string[] = [];
+        arrayToMap(games, (game) => game.source_type + game.source_id).forEach((value, key) => {
+          if (value.length > 1) {
+            for (const game of value) {
+              if (game.source_id && game.source_id !== "") {
+                ids.push(game.id);
+              }
+            }
+          }
+        });
+        setIncludedIds(ids);
+      }
     } else {
       setIncludedIds(null);
     }
@@ -237,6 +251,12 @@ function LibraryPage() {
           return true;
         }
         if (sourceFilter === "emptyGallery" && (includedIds && includedIds.includes(game.id))) {
+          return true;
+        }
+        if (sourceFilter === "vm" && game.vm_id && game.vm_id !== "") {
+          return true;
+        }
+        if (sourceFilter === "duplicated" && includedIds && includedIds.includes(game.id)) {
           return true;
         }
         return false;
@@ -466,6 +486,8 @@ function LibraryPage() {
     { label: t('sourceType.local'), value: enums.SourceType.LOCAL.toString() },
     { label: t('sourceType.emptyCover'), value: "emptyCover" },
     { label: t('sourceType.emptyGallery'), value: "emptyGallery" },
+    { label: "虚拟机", value: "vm" },
+    { label: "重复源", value: "duplicated" },
   ];
 
   const handleBatchStatusUpdate = async (newStatus: string) => {

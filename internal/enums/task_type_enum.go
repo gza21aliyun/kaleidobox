@@ -3,15 +3,16 @@ package enums
 type TaskType string
 
 const (
-	Games             TaskType = "游戏"
-	Charactors        TaskType = "角色"
-	Staffs            TaskType = "工作人员"
-	Images            TaskType = "图片"
-	Relations         TaskType = "关系"
-	VideoPaths        TaskType = "视频路径"
-	RefreshGames      TaskType = "刷新游戏"
-	DownloadFiles     TaskType = "下载文件处理"
-	CheckGameValidity TaskType = "检查游戏有效性"
+	Games                     TaskType = "游戏"
+	Charactors                TaskType = "角色"
+	Staffs                    TaskType = "工作人员"
+	Images                    TaskType = "图片"
+	Relations                 TaskType = "关系"
+	VideoPaths                TaskType = "视频路径"
+	RefreshGames              TaskType = "刷新游戏"
+	DownloadFiles             TaskType = "下载文件处理"
+	CheckGameValidity         TaskType = "检查游戏有效性"
+	CheckDirectoryImportState TaskType = "检测目录导入状态"
 )
 
 var AllTaskTypes = []struct {
@@ -27,4 +28,5 @@ var AllTaskTypes = []struct {
 	{RefreshGames, "REFRESH_GAMES"},
 	{DownloadFiles, "DOWNLOAD_FILES"},
 	{CheckGameValidity, "CHECK_GAME_VALIDITY"},
+	{CheckDirectoryImportState, "CHECK_DIRECTORY_IMPORT_STATE"},
 }

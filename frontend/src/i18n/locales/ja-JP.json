@@ -8,6 +8,7 @@
     "add": "追加",
     "create": "作成",
     "close": "閉じる",
+    "start": "開始",
     "loading": "読み込み中...",
     "success": "成功",
     "error": "エラー",
@@ -1282,7 +1283,15 @@
       "delete": "タスクを削除",
       "searchVideo": "ゲームの動画を検索",
       "viewResult": "結果を表示",
-      "checkValidity": "ゲームの有効性をチェック"
+      "checkValidity": "ゲームの有効性をチェック",
+      "checkDirImport": "ディレクトリインポート状態をチェック"
+    },
+    "dirImport": {
+      "title": "ディレクトリインポート状態チェック",
+      "dir": "チェックするディレクトリ",
+      "dirPlaceholder": "例 D:\\games",
+      "level": "レベル",
+      "levelHint": "0=ディレクトリ自体, 1=第1階層サブフォルダ, 2=第2階層…"
     },
     "status": {
       "completed": "完了",

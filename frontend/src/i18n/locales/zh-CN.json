@@ -8,6 +8,7 @@
     "add": "添加",
     "create": "创建",
     "close": "关闭",
+    "start": "开始",
     "loading": "加载中...",
     "success": "成功",
     "error": "错误",
@@ -1290,7 +1291,15 @@
       "delete": "删除任务",
       "searchVideo": "为游戏搜索视频",
       "viewResult": "查看结果",
-      "checkValidity": "检查游戏有效性"
+      "checkValidity": "检查游戏有效性",
+      "checkDirImport": "检测目录导入状态"
+    },
+    "dirImport": {
+      "title": "检测目录导入状态",
+      "dir": "要检测的目录",
+      "dirPlaceholder": "例如 D:\\games",
+      "level": "层级",
+      "levelHint": "0=目录本身, 1=第1层子目录, 2=第2层…"
     },
     "status": {
       "completed": "完成",

@@ -1,9 +1,10 @@
 import { models } from "../../wailsjs/go/models";
 import { createRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { PauseTask, CancelTask, ResumeTask } from "../../wailsjs/go/service/TaskService";
 import { SearchVideoExePaths } from "../../wailsjs/go/service/ImportService";
-import { CheckGamesValidity, GetGames } from "../../wailsjs/go/service/GameService";
+import { CheckDirectoryImportState, CheckGamesValidity, GetGames } from "../../wailsjs/go/service/GameService";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { useTranslation } from 'react-i18next';
@@ -19,6 +20,9 @@ function TaskPage() {
   const { t } = useTranslation();
   const { tasks, setTasks } = useAppStore();
   const [resultModalTask, setResultModalTask] = useState<models.TaskNotice | null>(null);
+  const [dirDialogOpen, setDirDialogOpen] = useState(false);
+  const [dirPath, setDirPath] = useState("");
+  const [dirLevel, setDirLevel] = useState("1");
 
   const handlePauseTask = async (taskId: string) => {
     try {
@@ -70,11 +74,23 @@ function TaskPage() {
     }
   };
 
+  const handleStartDirImportCheck = async () => {
+    try {
+      const path = dirPath.trim();
+      if (!path) return;
+      const level = Math.max(0, Math.floor(Number(dirLevel) || 0));
+      setDirDialogOpen(false);
+      await CheckDirectoryImportState(path, Number.isFinite(level) ? level : 0);
+    } catch (error) {
+      console.error("Failed to check directory import state:", error);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-8xl mx-auto p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold text-brand-900 dark:text-white">{t('task.title')}</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={handleSearchVideoPaths}
             className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
@@ -88,6 +104,13 @@ function TaskPage() {
             title={t('task.actions.checkValidity')}
           >
             {t('task.actions.checkValidity')}
+          </button>
+          <button
+            onClick={() => setDirDialogOpen(true)}
+            className="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+            title={t('task.actions.checkDirImport')}
+          >
+            {t('task.actions.checkDirImport')}
           </button>
         </div>
       </div>
@@ -208,6 +231,82 @@ function TaskPage() {
         resultGames={resultModalTask?.result_games || []}
         onClose={() => setResultModalTask(null)}
       />
+
+      {dirDialogOpen && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={() => setDirDialogOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-brand-800 border border-brand-200 dark:border-brand-700"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-bold text-brand-900 dark:text-white">{t('task.dirImport.title')}</h3>
+              <button
+                onClick={() => setDirDialogOpen(false)}
+                className="p-1 rounded-md text-brand-500 hover:bg-brand-100 dark:hover:bg-brand-700 transition-colors"
+              >
+                <div className="i-mdi-close text-xl" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
+                  {t('task.dirImport.dir')}
+                </label>
+                <input
+                  type="text"
+                  value={dirPath}
+                  onChange={e => setDirPath(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && dirPath.trim()) handleStartDirImportCheck();
+                  }}
+                  placeholder={t('task.dirImport.dirPlaceholder')}
+                  className="w-full px-3 py-2 rounded-md border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900 text-brand-900 dark:text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
+                  {t('task.dirImport.level')}
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={dirLevel}
+                    onChange={e => setDirLevel(e.target.value)}
+                    className="w-24 px-3 py-2 rounded-md border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900 text-brand-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-brand-400 dark:text-brand-500">
+                    {t('task.dirImport.levelHint')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setDirDialogOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 rounded-lg dark:text-brand-300 dark:hover:bg-brand-700 transition-colors"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={handleStartDirImportCheck}
+                disabled={!dirPath.trim()}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {t('common.start')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

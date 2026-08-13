@@ -8,6 +8,7 @@
     "add": "Add",
     "create": "Create",
     "close": "Close",
+    "start": "Start",
     "loading": "Loading...",
     "success": "Success",
     "error": "Error",
@@ -1286,7 +1287,15 @@
       "delete": "Delete task",
       "searchVideo": "Search video for games",
       "viewResult": "View Results",
-      "checkValidity": "Check Game Validity"
+      "checkValidity": "Check Game Validity",
+      "checkDirImport": "Check Directory Import State"
+    },
+    "dirImport": {
+      "title": "Check Directory Import State",
+      "dir": "Directory to check",
+      "dirPlaceholder": "e.g. D:\\games",
+      "level": "Level",
+      "levelHint": "0=dir itself, 1=1st-level subdirs, 2=2nd-level…"
     },
     "status": {
       "completed": "Completed",

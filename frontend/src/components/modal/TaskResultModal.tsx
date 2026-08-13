@@ -65,11 +65,16 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
   const getStatusBtn = (status: number) => statusConfig[status]?.btn
     || "bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-800/50";
 
+  const isPath = (id: string) => /[\\\/]/.test(id);
+
   const trimSearch = searchTerm.trim().toLowerCase();
   const filterIds = (ids: string[] | undefined) => {
     if (!ids || ids.length === 0) return [];
     if (!trimSearch) return ids;
     return ids.filter(id => {
+      if (isPath(id)) {
+        return id.toLowerCase().includes(trimSearch);
+      }
       const name = gamesMap[id]?.name || "";
       return name.toLowerCase().includes(trimSearch) || id.toLowerCase().includes(trimSearch);
     });
@@ -141,8 +146,18 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
                       <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 max-h-[300px] overflow-y-auto">
                           {visible.map(gameId => {
-                            const game = gamesMap[gameId];
-                            return (
+                            const isDir = isPath(gameId);
+                            const game = !isDir ? gamesMap[gameId] : undefined;
+                            return isDir ? (
+                              <div
+                                key={gameId}
+                                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md ${btnClass}`}
+                                title={gameId}
+                              >
+                                <div className="i-mdi-folder-outline text-base shrink-0" />
+                                <span className="truncate">{gameId}</span>
+                              </div>
+                            ) : (
                               <button
                                 key={gameId}
                                 onClick={() => handleGameClick(gameId)}

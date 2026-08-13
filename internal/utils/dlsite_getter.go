@@ -36,6 +36,9 @@ const apiUrl = `https://www.dlsite.com/%s/api/=/product.json?workno=%s&locale=ja
 
 const workUrl = "https://www.dlsite.com/%s/work/=/product_id/%s.html"
 
+const suggestUrl = "https://www.dlsite.com/suggest/?term=%s&site=adult-jp&time=%d&touch=0"
+const suggestTime = "1786632852756"
+
 // const workUrl = "https://74.86.226.234:443/%s/work/=/product_id/%s.html"
 
 var _ Getter = (*DlsiteInfoGetter)(nil)
@@ -319,6 +322,32 @@ type DlsiteDiscount struct {
 	Options         map[string]interface{} `json:"options"`
 }
 
+type DlsiteWorkSearchItem struct {
+	WorkName    string `json:"work_name"`
+	Workno      string `json:"workno"`
+	MakerName   string `json:"maker_name"`
+	MakerID     string `json:"maker_id"`
+	WorkType    string `json:"work_type"`
+	IntroS      string `json:"intro_s"`
+	AgeCategory int    `json:"age_category"`
+	IsAna       bool   `json:"is_ana"`
+}
+
+type DlsiteMakerSearchItem struct {
+	Workno        string `json:"workno"`
+	MakerName     string `json:"maker_name"`
+	MakerNameKana string `json:"maker_name_kana"`
+	MakerID       string `json:"maker_id"`
+	AgeCategory   int    `json:"age_category"`
+	IsAna         bool   `json:"is_ana"`
+}
+
+type DlsiteWorkSearchResult struct {
+	Work    []DlsiteWorkSearchItem  `json:"work"`
+	Maker   []DlsiteMakerSearchItem `json:"maker"`
+	Reqtime int64                   `json:"reqtime"`
+}
+
 type DlsiteImage struct {
 	Workno       string      `json:"workno"`
 	Type         string      `json:"type"`
@@ -467,21 +496,35 @@ func (b DlsiteInfoGetter) FetchMetadataByName(name string, totken string) (model
 }
 
 func (b DlsiteInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
-	game, err := b.FetchByNameImpl(name,
+	mainTitle, _, _ := getTitles(name)
+	game, err := b.FetchByNameImpl3(name,
 		func(request vo.MetadataRequest) (models.Game, error) {
 			fmt.Println("FetchMetadataByName 34")
 			gameEntity, err := b.FetchMetadataById2(request)
 			return gameEntity.Game, err
 		})
+	if game.SourceID == "" {
+		game, err = b.FetchByNameImpl3(mainTitle,
+			func(request vo.MetadataRequest) (models.Game, error) {
+				fmt.Println("FetchMetadataByName 34")
+				gameEntity, err := b.FetchMetadataById2(request)
+				return gameEntity.Game, err
+			})
+	}
 	return game, err
 }
 
 func (b DlsiteInfoGetter) FetchByNameImpl(searchName string, fn IdFunction) (models.Game, error) {
+	startTime := time.Now()
+	defer func() {
+		fmt.Printf("⏱ 搜刮游戏 [%s] 总耗时: %v\n", searchName, time.Since(startTime))
+	}()
+
 	// if !dmmIsEnabled {
 	// 	return models.Game{}, fmt.Errorf("DMM is not enabled")
 	// }
-	mainTitle, _, _ := getTitles(searchName)
-	var url string = fmt.Sprintf(searchBaseUrl, mainTitle)
+	// mainTitle, _, _ := getTitles(searchName)
+	var url string = fmt.Sprintf(searchBaseUrl, searchName)
 	var game = models.Game{}
 	// c := CreateCollector2("*dlsite.com")
 
@@ -1298,4 +1341,65 @@ func (b DlsiteInfoGetter) FetchReviews(id string, token string, page int) (model
 
 func (b DlsiteInfoGetter) FetchReviewDetail(review models.Review, gameId, token string) (models.Review, error) {
 	return models.Review{}, nil
+}
+
+// func (b DlsiteInfoGetter) FetchByNameImplFn3(searchName string, fn IdFunction) (models.Game, error) {
+// 	mainTitle, _, _ := getTitles(searchName)
+
+// 	return game, err
+// }
+
+func (b DlsiteInfoGetter) FetchByNameImpl3(searchName string, fn IdFunction) (models.Game, error) {
+	var url string = fmt.Sprintf(suggestUrl, searchName, time.Now().UnixMilli())
+	var game = models.Game{}
+	var err error = nil
+	var dlsiteResp DlsiteWorkSearchResult
+	if err := FetchWithChromeDPAndDecode(url, &dlsiteResp); err != nil {
+		fmt.Println("BangumiInfoGetter FetchMetadata 044 error: %v", err)
+		return game, err
+	}
+	// c := CreateCollector2("*dlsite.com")
+
+	var potentialGames []struct {
+		Title    string
+		Id       string
+		Review   string
+		CoverUrl string
+	}
+	if len(dlsiteResp.Work) == 0 {
+		return game, errors.New("没找到游戏")
+	}
+	for _, g := range dlsiteResp.Work {
+		if g.WorkType != "ADV" && g.WorkType != "RPG" && g.WorkType != "ACN" && g.WorkType != "SLN" {
+			continue
+		}
+		potentialGames = append(potentialGames, struct {
+			Title    string
+			Id       string
+			Review   string
+			CoverUrl string
+		}{
+			Title: g.WorkName,
+			Id:    g.Workno,
+		})
+	}
+
+	gameFound := searchNameByRegex(potentialGames, searchName, []string{"セット"}, func(t1 struct {
+		Title    string
+		Id       string
+		Review   string
+		CoverUrl string
+	}) string {
+		return t1.Review
+	})
+	if gameFound != nil {
+		game.Name = gameFound.Title
+		game.SourceID = gameFound.Id
+		game.SourceType = enums.Dlsite
+		game.DlsiteId = game.SourceID
+		// game.CoverURL = gameFound.CoverUrl
+	}
+	game, err = fn(GetReqEntity(&game))
+
+	return game, err
 }

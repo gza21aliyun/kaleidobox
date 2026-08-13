@@ -5,18 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/chromedp/chromedp"
 )
 
-func FetchHtmlWithChromeDP(url string) (string, error) {
-	fmt.Printf("🚀 使用 chromedp 获取 HTML: %s\n", url)
-
-	// 创建 chromedp 上下文
+// browserOpts 构建浏览器启动参数：优先 Chrome，否则 Edge。
+func browserOpts() []chromedp.ExecAllocatorOption {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", true), // 无头模式（不显示界面）
+		// 注意：不能用 --headless=new。实测在本机 Edge 上 --headless=new 会导致
+		// "chrome failed to start"（new headless 走 GPU 合成，与 --disable-gpu 冲突）。
+		// 旧版 --headless 在本机 Edge 上可正常无头启动并加载页面。
+		chromedp.Flag("headless", true),
 		chromedp.Flag("disable-gpu", true),
 		chromedp.Flag("no-sandbox", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
@@ -25,29 +29,68 @@ func FetchHtmlWithChromeDP(url string) (string, error) {
 		chromedp.UserAgent(`Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36`),
 	)
 
-	// 如果检测到系统没有 Chrome，尝试使用 Edge
-	if true {
-		fmt.Println("未检测到 Chrome，尝试使用 Edge...")
-		opts = append(opts,
-			chromedp.ExecPath(findEdgePath()),
-		)
+	if chromePath := findChromePath(); chromePath != "" {
+		fmt.Println("✅ 找到 Chrome:", chromePath)
+		opts = append(opts, chromedp.ExecPath(chromePath))
+	} else if edgePath := findEdgePath(); edgePath != "" {
+		fmt.Println("未检测到 Chrome，尝试使用 Edge:", edgePath)
+		opts = append(opts, chromedp.ExecPath(edgePath))
+	} else {
+		fmt.Println("⚠️  未找到 Chrome 或 Edge，将使用系统默认 Chrome 路径")
 	}
+	return opts
+}
 
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	defer cancel()
+// killProcessTree 强制终止浏览器主进程及其全部子进程。
+//
+// Windows 上 chromedp 的 cancel 只对主进程调用 TerminateProcess，
+// 浏览器衍生的子进程（renderer / GPU / network service / utility / crashpad 等）
+// 会变成孤儿进程永不被回收，批量搜刮时会堆积大量 msedge.exe。
+// 这里用 taskkill /F /T /PID 杀掉整棵进程树来兜底。
+func killProcessTree(cmd *exec.Cmd) {
+	if runtime.GOOS != "windows" {
+		return
+	}
+	if cmd == nil || cmd.Process == nil {
+		return
+	}
+	// /F 强制终止；/T 终止指定进程及其全部子进程
+	_ = exec.Command("taskkill", "/F", "/T", "/PID", strconv.Itoa(cmd.Process.Pid)).Run()
+}
 
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
+// runInBrowser 启动一个独立浏览器执行 actions，完成后彻底清理整个浏览器进程树。
+//
+// 采用单次 chromedp.Run 同时启动浏览器并执行动作（与最初能在 Edge 上正常拿到
+// HTML 的写法一致）。通过 ModifyCmdFunc 捕获浏览器进程，清理时用 killProcessTree
+// 杀掉整棵进程树，避免 Windows 上只杀主进程导致子进程变孤儿（堆积 msedge.exe）。
+func runInBrowser(timeout time.Duration, actions ...chromedp.Action) error {
+	var browserCmd *exec.Cmd
+	opts := append(browserOpts(), chromedp.ModifyCmdFunc(func(cmd *exec.Cmd) {
+		browserCmd = cmd
+	}))
 
-	// 设置超时（DLsite 可能需要较长时间加载）
-	ctx, cancel = context.WithTimeout(ctx, 45*time.Second)
-	defer cancel()
+	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(), opts...)
+	ctx, cancelCtx := chromedp.NewContext(allocCtx)
+
+	// 清理顺序（LIFO 执行）：先杀进程树（此时主进程仍存活，taskkill /T 能命中全部
+	// 子进程），再取消超时上下文、chromedp 上下文、allocator。
+	defer cancelAlloc()
+	defer cancelCtx()
+	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
+	defer cancelTimeout()
+	defer killProcessTree(browserCmd)
+
+	return chromedp.Run(ctx, actions...)
+}
+
+// FetchHtmlWithChromeDP 启动浏览器获取页面 HTML。
+func FetchHtmlWithChromeDP(url string) (string, error) {
+	fmt.Printf("🚀 使用 chromedp 获取 HTML: %s\n", url)
 
 	var html string
 	var statusCode int64
 
-	// 执行任务
-	err := chromedp.Run(ctx,
+	err := runInBrowser(45*time.Second,
 		// 导航到页面
 		chromedp.Navigate(url),
 
@@ -65,11 +108,31 @@ func FetchHtmlWithChromeDP(url string) (string, error) {
 	)
 
 	if err != nil {
+		fmt.Printf("❌ chromedp 获取 HTML 失败：%v\n", err)
 		return "", fmt.Errorf("chromedp 执行失败：%v", err)
 	}
 
 	fmt.Printf("✅ 成功获取 HTML，长度：%d 字符，状态码：%d\n", len(html), statusCode)
 	return html, nil
+}
+
+// findChromePath 查找 Google Chrome 的路径
+func findChromePath() string {
+	// Windows 常见路径
+	paths := []string{
+		`C:\Program Files\Google\Chrome\Application\chrome.exe`,
+		`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
+		`%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe`,
+	}
+
+	for _, path := range paths {
+		expanded := os.ExpandEnv(path)
+		if _, err := os.Stat(expanded); err == nil {
+			return expanded
+		}
+	}
+
+	return ""
 }
 
 // findEdgePath 查找 Microsoft Edge 的路径
@@ -91,47 +154,13 @@ func findEdgePath() string {
 	return ""
 }
 
-// func FetchWithChromeDPAndDecode(url string, entity any) error {
-// 	jsonStr, err := FetchHtmlWithChromeDP(url)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	json.NewDecoder(resp.Body).Decode(&entity)
-// 	return nil
-
-// }
-
+// FetchWithChromeDPAndDecode 启动浏览器获取 JSON 并解码到 entity。
 func FetchWithChromeDPAndDecode(url string, entity any) error {
 	fmt.Printf("🌐 使用 chromedp 获取 JSON: %s\n", url)
 
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", true),
-		chromedp.Flag("disable-gpu", true),
-		chromedp.Flag("no-sandbox", true),
-		chromedp.Flag("disable-dev-shm-usage", true),
-		chromedp.UserAgent(`Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36`),
-	)
-
-	// 尝试使用 Edge
-	if edgePath := findEdgePath(); edgePath != "" {
-		fmt.Println("✅ 找到 Edge:", edgePath)
-		opts = append(opts, chromedp.ExecPath(edgePath))
-	}
-
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	defer cancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	// 设置超时
-	ctx, cancel = context.WithTimeout(ctx, 45*time.Second)
-	defer cancel()
-
 	var jsonResponse string
 
-	// 执行任务
-	err := chromedp.Run(ctx,
+	err := runInBrowser(45*time.Second,
 		// 导航到 URL（浏览器会处理 TLS 握手）
 		chromedp.Navigate(url),
 
@@ -146,6 +175,7 @@ func FetchWithChromeDPAndDecode(url string, entity any) error {
 	)
 
 	if err != nil {
+		fmt.Printf("❌ chromedp 获取 JSON 失败：%v\n", err)
 		return fmt.Errorf("chromedp 执行失败：%v", err)
 	}
 
@@ -157,13 +187,6 @@ func FetchWithChromeDPAndDecode(url string, entity any) error {
 	}
 
 	fmt.Printf("✅ 成功获取 JSON，长度：%d 字符\n", len(jsonResponse))
-	// fmt.Println(jsonResponse)
-
-	// 调试：保存 JSON 到文件
-	// debugFile := fmt.Sprintf("chromedp_debug_%s.json", time.Now().Format("20060102_150405"))
-	// if err := os.WriteFile(debugFile, []byte(jsonResponse), 0644); err == nil {
-	// 	fmt.Printf("   调试文件已保存：%s\n", debugFile)
-	// }
 
 	// 解码 JSON 到实体
 	if err := json.Unmarshal([]byte(jsonResponse), entity); err != nil {

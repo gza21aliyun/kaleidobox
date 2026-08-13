@@ -497,6 +497,7 @@ func (b DlsiteInfoGetter) FetchByNameImpl(searchName string, fn IdFunction) (mod
 
 	// document, err := goquery.NewDocumentFromReader(bytes.NewReader(rawData))
 	hml, err := FetchHtmlWithChromeDP(url)
+	fmt.Println("FetchByNameImpl 06 " + hml)
 	document, err := goquery.NewDocumentFromReader(strings.NewReader(hml))
 	document.Find("ul#search_result_img_box li > dl").Each(func(i int, e *goquery.Selection) {
 		// e.Find("")
@@ -663,15 +664,16 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 	}
 	date, err := time.Parse("2006-01-02 15:04:05", dlsiteData.RegistDate)
 	game = models.Game{
-		ID:        request.DbGameId,
-		SourceID:  dlsiteData.Workno,
-		Name:      dlsiteData.WorkName,
-		DlsiteId:  dlsiteData.Workno,
-		ReleaseAt: date,
-		CoverURL:  dlsiteData.ImageMain.URL,
-		Company:   dlsiteData.MakerName,
-		Summary:   dlsiteData.IntroS,
-		Images:    JoinString(dlsiteData.ImageSamples, ",", func(img DlsiteImageSample) string { return img.URL }),
+		ID:         request.DbGameId,
+		SourceID:   dlsiteData.Workno,
+		SourceType: enums.Dlsite,
+		Name:       dlsiteData.WorkName,
+		DlsiteId:   dlsiteData.Workno,
+		ReleaseAt:  date,
+		CoverURL:   dlsiteData.ImageMain.URL,
+		Company:    dlsiteData.MakerName,
+		Summary:    dlsiteData.IntroS,
+		Images:     JoinString(dlsiteData.ImageSamples, ",", func(img DlsiteImageSample) string { return img.URL }),
 	}
 	// game.Summary =
 	tagList := []models.Tag{}

@@ -494,16 +494,6 @@ func (s *VMService) triggerMagpieScalingForVM() {
 		applog.LogWarningf(s.ctx, "激活 VMware 窗口失败: %v", err)
 	}
 
-	// 等待窗口真正获得焦点
-	applog.LogInfof(s.ctx, "等待窗口获得焦点...")
-	time.Sleep(3 * time.Second)
-
-	// 发送缩放快捷键
-	applog.InfoLogSaveAppLog("发送 Magpie 缩放快捷键: %s", s.config.MagpieHotkey)
-	utils.SendHotkey("ctrl+alt")
-	time.Sleep(500 * time.Millisecond)
-	utils.SendHotkey(s.config.MagpieHotkey)
-
 	// 等待快捷键生效
 	time.Sleep(500 * time.Millisecond)
 	applog.InfoLogSaveAppLog("Magpie trigger: scaling hotkey sent successfully")
@@ -549,6 +539,21 @@ func (s *VMService) activateVMwareWindow() error {
 		return fmt.Errorf("未找到 VMware 窗口")
 	}
 
+	currentFG, _, _ := procGetForegroundWindow.Call()
+	var currentFGThreadId uintptr
+	if currentFG != 0 {
+		currentFGThreadId, _, _ = procGetWindowThreadProcessId.Call(currentFG, 0)
+	}
+	gameThreadId, _, _ := procGetWindowThreadProcessId.Call(targetHWND, 0)
+
+	// 附加线程输入以允许 SetForegroundWindow
+	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
+		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 1)
+	}
+
+	procAllowSetForeground.Call(0xFFFFFFFF)
+	procBringWindowToTop.Call(targetHWND)
+
 	// 设置为前台窗口
 	ret, _, err := procSetForegroundWindow.Call(targetHWND)
 	if ret == 0 {
@@ -556,6 +561,19 @@ func (s *VMService) activateVMwareWindow() error {
 	}
 
 	applog.LogInfof(s.ctx, "VMware 窗口已激活")
+
+	// 等待窗口真正获得焦点
+	applog.LogInfof(s.ctx, "等待窗口获得焦点...")
+	time.Sleep(3 * time.Second)
+
+	// 发送缩放快捷键
+	applog.InfoLogSaveAppLog("发送 Magpie 缩放快捷键: %s", s.config.MagpieHotkey)
+	utils.SendHotkey("ctrl+alt")
+	time.Sleep(500 * time.Millisecond)
+	utils.SendHotkey(s.config.MagpieHotkey)
+	if currentFGThreadId != 0 && gameThreadId != 0 && currentFGThreadId != gameThreadId {
+		procAttachThreadInput.Call(currentFGThreadId, gameThreadId, 1)
+	}
 	return nil
 }
 

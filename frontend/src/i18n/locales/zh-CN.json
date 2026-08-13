@@ -1301,7 +1301,10 @@
     },
     "result": {
       "title": "任务结果",
-      "empty": "无结果内容"
+      "empty": "无结果内容",
+      "searchPlaceholder": "搜索游戏名…",
+      "loadMore": "加载更多（已显示 {{shown}} / {{total}}）",
+      "noMatch": "无匹配游戏"
     }
   },
   "update": {

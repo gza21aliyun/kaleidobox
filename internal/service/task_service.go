@@ -279,6 +279,8 @@ func (s *TaskService) StartTask(name string, id string, delay int, taskType enum
 		Data:        data, // 存储任务数据
 	}
 
+	s.notifyFrontend(task)
+
 	// 将任务加入队列
 	select {
 	case s.taskQueue <- task:

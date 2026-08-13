@@ -326,7 +326,7 @@ function GameDetailPage() {
       <div className="flex flex-col items-center justify-center h-full space-y-4 text-brand-500">
         <div className="i-mdi-gamepad-variant-outline text-6xl" />
         <p className="text-xl">{t('game.errors.gameNotFound')}</p>
-        <button onClick={() => navigate({ to: "/library" })} className="text-neutral-600 hover:underline">{t('game.buttons.returnToLibrary')}</button>
+        <button onClick={() => window.history.back()} className="text-neutral-600 hover:underline">{t('common.back')}</button>
       </div>
     );
   }

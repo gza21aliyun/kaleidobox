@@ -1297,7 +1297,10 @@
     },
     "result": {
       "title": "Task Results",
-      "empty": "No result content"
+      "empty": "No result content",
+      "searchPlaceholder": "Search game name…",
+      "loadMore": "Load more (shown {{shown}} / {{total}})",
+      "noMatch": "No matching games"
     }
   },
   "update": {

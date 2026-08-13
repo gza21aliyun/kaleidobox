@@ -11,10 +11,14 @@ interface TaskResultModalProps {
   onClose: () => void;
 }
 
+const PAGE_SIZE = 100;
+
 export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [gamesMap, setGamesMap] = useState<Record<string, models.Game>>({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [limit, setLimit] = useState(PAGE_SIZE);
 
   useEffect(() => {
     if (!isOpen || !resultGames || resultGames.length === 0) return;
@@ -34,6 +38,11 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
         console.error("Failed to load games:", err);
       });
   }, [isOpen, resultGames]);
+
+  // 搜索词变化时重置分页
+  useEffect(() => {
+    setLimit(PAGE_SIZE);
+  }, [searchTerm]);
 
   if (!isOpen) return null;
 
@@ -56,16 +65,27 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
   const getStatusBtn = (status: number) => statusConfig[status]?.btn
     || "bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-800/50";
 
+  const trimSearch = searchTerm.trim().toLowerCase();
+  const filterIds = (ids: string[] | undefined) => {
+    if (!ids || ids.length === 0) return [];
+    if (!trimSearch) return ids;
+    return ids.filter(id => {
+      const name = gamesMap[id]?.name || "";
+      return name.toLowerCase().includes(trimSearch) || id.toLowerCase().includes(trimSearch);
+    });
+  };
+
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-brand-800 border border-brand-200 dark:border-brand-700"
+        className="w-full max-w-3xl max-h-[85vh] flex flex-col rounded-xl bg-white shadow-xl dark:bg-brand-800 border border-brand-200 dark:border-brand-700"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
+        {/* 头部（固定） */}
+        <div className="flex items-center justify-between p-6 pb-3 shrink-0">
           <h3 className="text-xl font-bold text-brand-900 dark:text-white">{t('task.result.title')}</h3>
           <button
             onClick={onClose}
@@ -75,45 +95,89 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
           </button>
         </div>
 
-        {(!resultGames || resultGames.length === 0) ? (
-          <p className="text-brand-500 dark:text-brand-400 text-sm">{t('task.result.empty')}</p>
-        ) : (
-          <div className="space-y-4">
-            {resultGames.map((rg, idx) => {
-              const btnClass = getStatusBtn(rg.status);
-              return (
-                <div key={idx} className="rounded-lg p-4 border border-brand-200 dark:border-brand-700">
-                  {rg.title && (
-                    <h4 className="font-semibold text-brand-900 dark:text-white mb-1">{rg.title}</h4>
-                  )}
-                  {rg.description && (
-                    <p className="text-sm text-brand-600 dark:text-brand-400 mb-2 whitespace-pre-wrap">{rg.description}</p>
-                  )}
-                  {rg.game_ids && rg.game_ids.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {rg.game_ids.map(gameId => {
-                        const game = gamesMap[gameId];
-                        return (
-                          <button
-                            key={gameId}
-                            onClick={() => handleGameClick(gameId)}
-                            className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${btnClass}`}
-                            title={game?.name || gameId}
-                          >
-                            <div className="i-mdi-gamepad-variant-outline text-base" />
-                            <span className="max-w-[200px] truncate">{game?.name || gameId}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        {/* 搜索框（固定） */}
+        <div className="px-6 pb-3 shrink-0">
+          <div className="relative">
+            <div className="i-mdi-magnify absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder={t('task.result.searchPlaceholder')}
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900 text-brand-900 dark:text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
-        )}
+        </div>
 
-        <div className="flex justify-end mt-6">
+        {/* 内容区（滚动） */}
+        <div className="flex-1 overflow-y-auto px-6 pb-3">
+          {(!resultGames || resultGames.length === 0) ? (
+            <p className="text-brand-500 dark:text-brand-400 text-sm">{t('task.result.empty')}</p>
+          ) : (
+            <div className="space-y-4">
+              {resultGames.map((rg, idx) => {
+                const btnClass = getStatusBtn(rg.status);
+                const filtered = filterIds(rg.game_ids);
+                const visible = filtered.slice(0, limit);
+                const hasMore = filtered.length > visible.length;
+
+                return (
+                  <div key={idx} className="rounded-lg p-4 border border-brand-200 dark:border-brand-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        {rg.title && (
+                          <h4 className="font-semibold text-brand-900 dark:text-white">{rg.title}</h4>
+                        )}
+                        {rg.description && (
+                          <p className="text-sm text-brand-600 dark:text-brand-400">{rg.description}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-brand-400 dark:text-brand-500 shrink-0 ml-2">
+                        {filtered.length}{trimSearch ? ` / ${rg.game_ids?.length || 0}` : ""}
+                      </span>
+                    </div>
+
+                    {visible.length > 0 ? (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 max-h-[300px] overflow-y-auto">
+                          {visible.map(gameId => {
+                            const game = gamesMap[gameId];
+                            return (
+                              <button
+                                key={gameId}
+                                onClick={() => handleGameClick(gameId)}
+                                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${btnClass}`}
+                                title={game?.name || gameId}
+                              >
+                                <div className="i-mdi-gamepad-variant-outline text-base shrink-0" />
+                                <span className="truncate">{game?.name || gameId}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {hasMore && (
+                          <button
+                            onClick={() => setLimit(l => l + PAGE_SIZE)}
+                            className="mt-2 w-full py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          >
+                            {t('task.result.loadMore', { shown: visible.length, total: filtered.length })}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-xs text-brand-400 dark:text-brand-500 mt-1">
+                        {trimSearch ? t('task.result.noMatch') : t('task.result.empty')}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 底部（固定） */}
+        <div className="flex justify-end p-6 pt-3 shrink-0 border-t border-brand-100 dark:border-brand-700">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 rounded-lg dark:text-brand-300 dark:hover:bg-brand-700 transition-colors"

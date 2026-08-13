@@ -1293,7 +1293,10 @@
     },
     "result": {
       "title": "タスク結果",
-      "empty": "結果内容がありません"
+      "empty": "結果内容がありません",
+      "searchPlaceholder": "ゲーム名を検索…",
+      "loadMore": "もっと読み込む（{{shown}} / {{total}} を表示中）",
+      "noMatch": "該当するゲームはありません"
     }
   },
   "batchUpdate": {

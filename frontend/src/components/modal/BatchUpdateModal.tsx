@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
 import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from "../../../wailsjs/runtime";
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from "@tanstack/react-router";
 
 import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FillGame } from "../../../wailsjs/go/service/GameService";
 import {
@@ -23,6 +24,7 @@ interface BatchUpdateModalProps {
 
 export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: BatchUpdateModalProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 //   const [step, setStep] = useState<Step>("select");
 //   const [libraryPath, setLibraryPath] = useState("");
   const [candidates, setCandidates] = useState<models.Game[]>(games);
@@ -640,35 +642,44 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                                 })()}
                               </td>
                               <td className="px-3 py-2 text-center">
-                                {
-                                    itemIdMatching == candidate.id ? (
-                                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                            <div className="i-mdi-sync mr-1 animate-spin" />
-                                            {t('batchUpdate.updating')}
-                                        </span>
-                                    ) : failedIds.includes(candidate.id) ? (
-                                        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-1 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                            <div className="i-mdi-alert-circle mr-1" />
-                                            {t('batchUpdate.error')}
-                                        </span>
-                                    ) : updatedIds.includes(candidate.id) ? (
-                                        <span className="inline-flex items-center rounded-full bg-success-100 px-2 py-1 text-xs text-success-700 dark:bg-success-900/30 dark:text-success-400">
-                                            <div className="i-mdi-check-circle mr-1" />
-                                            {t('batchUpdate.updated')}
-                                        </span>
-                                    ) : !isMatched(candidate, source) ? ( 
-                                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                                            <div className="i-mdi-alert-circle mr-1" />
-                                            {t('batchUpdate.notFound')}
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-900/30 dark:text-gray-400">
-                                            <div className="i-mdi-clock-outline mr-1" />
-                                            {t('batchUpdate.matched')}
-                                        </span>
-                                    )
-                                }
-
+                                {(() => {
+                                    let color: string;
+                                    let icon: string;
+                                    let label: string;
+                                    if (itemIdMatching == candidate.id) {
+                                        color = "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+                                        icon = "i-mdi-sync mr-1 animate-spin";
+                                        label = t('batchUpdate.updating');
+                                    } else if (failedIds.includes(candidate.id)) {
+                                        color = "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+                                        icon = "i-mdi-alert-circle mr-1";
+                                        label = t('batchUpdate.error');
+                                    } else if (updatedIds.includes(candidate.id)) {
+                                        color = "bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400";
+                                        icon = "i-mdi-check-circle mr-1";
+                                        label = t('batchUpdate.updated');
+                                    } else if (!isMatched(candidate, source)) {
+                                        color = "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+                                        icon = "i-mdi-alert-circle mr-1";
+                                        label = t('batchUpdate.notFound');
+                                    } else {
+                                        color = "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
+                                        icon = "i-mdi-clock-outline mr-1";
+                                        label = t('batchUpdate.matched');
+                                    }
+                                    return (
+                                        <button
+                                            onClick={() => {
+                                                navigate({ to: '/game/$gameId', params: { gameId: candidate.id } });
+                                                resetAndClose();
+                                            }}
+                                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs ${color}`}
+                                        >
+                                            <div className={icon} />
+                                            {label}
+                                        </button>
+                                    );
+                                })()}
                               </td>
                               <td className="px-3 py-2 text-center">
                                 <button

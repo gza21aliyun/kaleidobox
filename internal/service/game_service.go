@@ -1812,7 +1812,7 @@ func isDirEmpty(path string) bool {
 	if err != nil {
 		return false
 	}
-	return len(entries) == 0 || !entries[0].IsDir()
+	return len(entries) == 0 || (!entries[0].IsDir() && len(entries) == 1)
 }
 
 func (s *GameService) createCheckDirectoryImportStateTaskFunction() TaskFunction {

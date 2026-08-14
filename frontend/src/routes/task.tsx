@@ -1,5 +1,4 @@
-import { models } from "../../wailsjs/go/models";
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { PauseTask, CancelTask, ResumeTask } from "../../wailsjs/go/service/TaskService";
@@ -9,7 +8,6 @@ import { SelectLibraryDirector5 } from "../../wailsjs/go/service/ImportService";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { useTranslation } from 'react-i18next';
-import { TaskResultModal } from "../components/modal/TaskResultModal";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -20,7 +18,7 @@ export const Route = createRoute({
 function TaskPage() {
   const { t } = useTranslation();
   const { tasks, setTasks } = useAppStore();
-  const [resultModalTask, setResultModalTask] = useState<models.TaskNotice | null>(null);
+  const navigate = useNavigate();
   const [dirDialogOpen, setDirDialogOpen] = useState(false);
   const [dirPath, setDirPath] = useState("");
   const [dirLevel, setDirLevel] = useState("1");
@@ -206,7 +204,7 @@ function TaskPage() {
                   )}
                   {task.result_games && task.result_games.length > 0 && (
                     <button
-                      onClick={() => setResultModalTask(task)}
+                      onClick={() => navigate({ to: '/task_result/$taskId', params: { taskId: task.id } })}
                       className="p-2 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 dark:text-blue-400 transition-colors"
                       title={t('task.actions.viewResult')}
                     >
@@ -226,13 +224,6 @@ function TaskPage() {
           </div>
         </div>
       )}
-
-      <TaskResultModal
-        isOpen={resultModalTask !== null}
-        resultGames={resultModalTask?.result_games || []}
-        title={resultModalTask?.title || ''}
-        onClose={() => setResultModalTask(null)}
-      />
 
       {dirDialogOpen && createPortal(
         <div

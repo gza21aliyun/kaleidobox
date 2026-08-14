@@ -1315,7 +1315,9 @@
       "searchLocal": "Search local",
       "deleteFolder": "Delete folder",
       "deleteSuccess": "Folder deleted",
-      "deleteFailed": "Failed to delete folder"
+      "deleteFailed": "Failed to delete folder",
+      "notFound": "Task not found",
+      "backToTask": "Back to task list"
     }
   },
   "update": {

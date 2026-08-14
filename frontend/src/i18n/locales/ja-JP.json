@@ -1311,7 +1311,9 @@
       "searchLocal": "ローカル検索",
       "deleteFolder": "フォルダを削除",
       "deleteSuccess": "フォルダを削除しました",
-      "deleteFailed": "フォルダの削除に失敗しました"
+      "deleteFailed": "フォルダの削除に失敗しました",
+      "notFound": "タスクが見つかりません",
+      "backToTask": "タスクリストに戻る"
     }
   },
   "batchUpdate": {

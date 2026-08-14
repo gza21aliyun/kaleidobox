@@ -21,6 +21,7 @@ import { Route as charactorListRoute } from "./routes/charactor_list";
 import { Route as TagListRoute } from "./routes/tag_list";
 import { Route as joystickRoute } from "./routes/joystick";
 import { Route as taskRoute } from "./routes/task";
+import { Route as taskResultRoute } from "./routes/task_result_page";
 import { Route as brandsRoute } from "./routes/brands";
 import { Route as brandGamesRoute } from "./routes/brand_games";
 import { Route as seriesListRoute } from "./routes/series_list";
@@ -33,8 +34,8 @@ import { Route as downloadedFilesRoute } from "./routes/downloaded_files";
 
 import { useAppStore } from "./store";
 
-const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, favoritesListRoute, 
-  favoritesRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute, taskRoute, 
+const routeTree = rootRoute.addChildren([indexRoute, libraryRoute, gameRoute, statsRoute, favoritesListRoute,
+  favoritesRoute, settingsRoute, staffRoute, charactorRoute, charactorListRoute, TagListRoute, joystickRoute, taskRoute, taskResultRoute,
   brandsRoute, brandGamesRoute, seriesListRoute, seriesGamesRoute, vmRoute, categoryListRoute, categoryGamesRoute, monthlyReleasesRoute, downloadedFilesRoute]);
 
 const router = createRouter({ routeTree });

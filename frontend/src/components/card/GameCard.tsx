@@ -107,6 +107,7 @@ export function GameCard({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { gameStats } = useAppStore();
+  const [visible, setVisible] = useState(false);
 
   const [galleryImages, setGalleryImages] = useState<models.ImageBackup[]>([]);
   const [isGalleryLoading, setIsGalleryLoading] = useState(false);
@@ -190,7 +191,7 @@ export function GameCard({
   };
 
   useEffect(() => {
-    if (viewMode !== "gallery") return;
+    // if (viewMode !== "gallery") return;
 
     // 立即同步检测：初始挂载时上千个游戏同步过滤排序会阻塞主线程，
     // IntersectionObserver 对已可见元素的初始回调可能不触发。
@@ -199,7 +200,9 @@ export function GameCard({
     if (cardRef.current && !hasLoadedGallery.current) {
       const rect = cardRef.current.getBoundingClientRect();
       const isVisible = rect.bottom > -200 && rect.top < window.innerHeight + 200;
+      setVisible(isVisible);
       if (isVisible) {
+        if (viewMode !== "gallery") return;
         hasLoadedGallery.current = true;
         loadGalleryImages();
         return;
@@ -209,8 +212,13 @@ export function GameCard({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasLoadedGallery.current) {
-          hasLoadedGallery.current = true;
-          loadGalleryImages();
+          setVisible(true);
+
+          if (viewMode == "gallery") {
+            hasLoadedGallery.current = true;
+            loadGalleryImages();
+          }
+          
           observer.disconnect();
         }
       },
@@ -225,9 +233,12 @@ export function GameCard({
       if (cardRef.current && !hasLoadedGallery.current) {
         const rect = cardRef.current.getBoundingClientRect();
         const isVisible = rect.bottom > -200 && rect.top < window.innerHeight + 200;
+        setVisible(isVisible);
         if (isVisible) {
-          hasLoadedGallery.current = true;
-          loadGalleryImages();
+          if (viewMode == "gallery") {
+            hasLoadedGallery.current = true;
+            loadGalleryImages();
+          }
           observer.disconnect();
         }
       }
@@ -265,9 +276,11 @@ export function GameCard({
   
 
   if (viewMode === "list") {
+    if (!visible) return (<div ref={cardRef}></div>);
     return (
       <>
         <div
+          ref={cardRef}
           className={`glass-card group relative flex w-full items-center gap-4 overflow-hidden rounded-xl border border-brand-100 bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""}`}
           onClick={selectionMode ? handleToggleSelect : undefined}
         >
@@ -398,6 +411,7 @@ export function GameCard({
   }
 
   if (viewMode === "gallery") {
+    if (!visible) return (<div ref={cardRef}></div>);
     return (
       <>
         <div
@@ -563,10 +577,12 @@ export function GameCard({
       </>
     );
   }
+  if (!visible) return (<div ref={cardRef}></div>);
 
   return (
     <>
       <div
+        ref={cardRef}
         className={`glass-card group relative flex w-full flex-col overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800 ${selectionMode ? "cursor-pointer" : ""} ${selectionMode && selected ? "ring-2 ring-neutral-500 dark:ring-neutral-400" : ""} ${viewMode === "large" ? "aspect-[8/11]" : ""}`}
         onClick={selectionMode ? handleToggleSelect : undefined}
       >

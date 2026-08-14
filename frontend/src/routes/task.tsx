@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { PauseTask, CancelTask, ResumeTask } from "../../wailsjs/go/service/TaskService";
 import { SearchVideoExePaths } from "../../wailsjs/go/service/ImportService";
 import { CheckDirectoryImportState, CheckGamesValidity, GetGames } from "../../wailsjs/go/service/GameService";
+import { SelectLibraryDirector5 } from "../../wailsjs/go/service/ImportService";
 import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { useTranslation } from 'react-i18next';
@@ -256,16 +257,33 @@ function TaskPage() {
                 <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-1">
                   {t('task.dirImport.dir')}
                 </label>
-                <input
-                  type="text"
-                  value={dirPath}
-                  onChange={e => setDirPath(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && dirPath.trim()) handleStartDirImportCheck();
-                  }}
-                  placeholder={t('task.dirImport.dirPlaceholder')}
-                  className="w-full px-3 py-2 rounded-md border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900 text-brand-900 dark:text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={dirPath}
+                    onChange={e => setDirPath(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && dirPath.trim()) handleStartDirImportCheck();
+                    }}
+                    placeholder={t('task.dirImport.dirPlaceholder')}
+                    className="flex-1 px-3 py-2 rounded-md border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900 text-brand-900 dark:text-white placeholder-brand-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const selected = await SelectLibraryDirector5(t('task.dirImport.dir'));
+                        if (selected) setDirPath(selected);
+                      } catch (err) {
+                        console.error("Failed to select directory:", err);
+                      }
+                    }}
+                    className="shrink-0 px-3 py-2 rounded-md bg-brand-100 hover:bg-brand-200 text-brand-800 dark:bg-brand-700 dark:hover:bg-brand-600 dark:text-brand-200 transition-colors flex items-center gap-1"
+                  >
+                    <div className="i-mdi-folder-outline" />
+                    {t('task.dirImport.browse')}
+                  </button>
+                </div>
               </div>
 
               <div>

@@ -3,12 +3,12 @@ package enums
 type TaskType string
 
 const (
-	Games                     TaskType = "游戏"
+	Games                     TaskType = "游戏搜刮更新"
 	Charactors                TaskType = "角色"
 	Staffs                    TaskType = "工作人员"
 	Images                    TaskType = "图片"
 	Relations                 TaskType = "关系"
-	VideoPaths                TaskType = "视频路径"
+	VideoPaths                TaskType = "视频路径搜索"
 	RefreshGames              TaskType = "刷新游戏"
 	DownloadFiles             TaskType = "下载文件处理"
 	CheckGameValidity         TaskType = "检查游戏有效性"

@@ -46,9 +46,12 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
 
   if (!isOpen) return null;
 
-  const handleGameClick = (gameId: string) => {
+  const handleGameClick = (gameId: string, visible: string[]) => {
     onClose();
-    navigate({ to: `/game/${gameId}` });
+    navigate({
+       to: `/game/${gameId}`,
+       search: { visible }
+       });
   };
 
   const statusConfig: Record<number, { btn: string }> = {
@@ -160,7 +163,7 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
                             ) : (
                               <button
                                 key={gameId}
-                                onClick={() => handleGameClick(gameId)}
+                                onClick={() => handleGameClick(gameId, visible)}
                                 className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${btnClass}`}
                                 title={game?.name || gameId}
                               >

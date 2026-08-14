@@ -1294,6 +1294,7 @@
       "title": "Check Directory Import State",
       "dir": "Directory to check",
       "dirPlaceholder": "e.g. D:\\games",
+      "browse": "Browse",
       "level": "Level",
       "levelHint": "0=dir itself, 1=1st-level subdirs, 2=2nd-level…"
     },

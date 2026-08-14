@@ -674,6 +674,11 @@ func (s *ImportService) SelectLibraryDirectory2(isLnk bool) (string, error) {
 	} else {
 		title = "选择快捷方式目录"
 	}
+	return s.SelectLibraryDirectory3(title)
+
+}
+
+func (s *ImportService) SelectLibraryDirectory3(title string) (string, error) {
 
 	psScript := fmt.Sprintf(`
 		Add-Type -AssemblyName System.Windows.Forms
@@ -711,6 +716,20 @@ func (s *ImportService) SelectLibraryDirectory2(isLnk bool) (string, error) {
 	}
 
 	return selection, nil
+}
+
+func (s *ImportService) SelectLibraryDirector4(title string) (string, error) {
+	options := runtime.OpenDialogOptions{}
+	options.Title = title
+	selection, err := runtime.OpenDirectoryDialog(s.ctx, options)
+	return selection, err
+}
+
+func (s *ImportService) SelectLibraryDirector5(title string) (string, error) {
+	if s.config.NewFolderChooser {
+		return s.SelectLibraryDirector4(title)
+	}
+	return s.SelectLibraryDirectory3(title)
 }
 
 // ScanLibraryDirectory 扫描游戏库目录，返回候选游戏列表

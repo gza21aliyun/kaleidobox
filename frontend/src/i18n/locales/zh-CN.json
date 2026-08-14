@@ -1298,6 +1298,7 @@
       "title": "检测目录导入状态",
       "dir": "要检测的目录",
       "dirPlaceholder": "例如 D:\\games",
+      "browse": "浏览",
       "level": "层级",
       "levelHint": "0=目录本身, 1=第1层子目录, 2=第2层…"
     },

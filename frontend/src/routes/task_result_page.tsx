@@ -14,7 +14,7 @@ export const Route = createRoute({
   component: TaskResultPage,
 });
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 50;
 
 function TaskResultPage() {
   const { t } = useTranslation();

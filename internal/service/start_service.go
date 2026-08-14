@@ -138,31 +138,36 @@ func (s *StartService) StartGameWithTracking(gameID string) (bool, error) {
 	}
 
 	if game.VmId != "" {
-		startTime := time.Now()
 		success, err := s.vmService.StartGameInsideVm(gameID, s.config.MagpieEnabled || game.UseMagpie)
 		if err == nil {
-			sessionID, _ := s.sessionService.CreatePendingSession(gameID, startTime)
-			//暂时不详细跟踪时间，当其每次玩1分钟。用于记录次数
-			endTime := startTime.Add(time.Minute)
-			session := models.PlaySession{
-				ID:        sessionID,
-				GameID:    gameID,
-				StartTime: startTime,
-				EndTime:   endTime,
-				Duration:  60,
-			}
-			err = s.sessionService.UpdatePlaySession(session)
-			stats, err := s.statsService.GetSingleGameStats(session.GameID)
-			if err == nil {
-				applog.InfoLogSaveAppLog("stats_update %v\n", stats)
-				runtime.EventsEmit(s.ctx, "data_updates", stats)
-			}
+			err = s.RecordGameSession(gameID)
 		}
 
 		return success, err
 	}
 
 	return s.startGame(gameID, LaunchOptions{})
+}
+
+func (s *StartService) RecordGameSession(gameID string) error {
+	startTime := time.Now()
+	sessionID, _ := s.sessionService.CreatePendingSession(gameID, startTime)
+	//暂时不详细跟踪时间，当其每次玩1分钟。用于记录次数
+	endTime := startTime.Add(time.Minute)
+	session := models.PlaySession{
+		ID:        sessionID,
+		GameID:    gameID,
+		StartTime: startTime,
+		EndTime:   endTime,
+		Duration:  60,
+	}
+	err := s.sessionService.UpdatePlaySession(session)
+	stats, err := s.statsService.GetSingleGameStats(session.GameID)
+	if err == nil {
+		applog.InfoLogSaveAppLog("stats_update %v\n", stats)
+		runtime.EventsEmit(s.ctx, "data_updates", stats)
+	}
+	return err
 }
 
 // StartGameWithOptions 使用指定选项启动游戏
@@ -257,8 +262,9 @@ func (s *StartService) StartHttpServerThenOpenPageByBrowser(filePath string) err
 	// 构造 URL 并在浏览器中打开
 	httpURL := fmt.Sprintf("http://127.0.0.1:%d/%s", port, url.PathEscape(fileName))
 	applog.LogInfof(s.ctx, "Opening browser with URL: %s", httpURL)
+	err = utils.OpenBrowser(httpURL)
 
-	return utils.OpenBrowser(httpURL)
+	return err
 }
 
 // detectHTMLCharset 从 HTML 文件头部检测字符编码声明。
@@ -317,7 +323,9 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 	if ext == ".htm" || ext == ".html" {
 		// 启动 HTTP 服务器并打开浏览器
 		err = s.StartHttpServerThenOpenPageByBrowser(path)
-		if err != nil {
+		if err == nil {
+			err = s.RecordGameSession(gameID)
+		} else {
 			applog.LogErrorf(s.ctx, "failed to start http server: %v", err)
 			return false, fmt.Errorf("failed to start http server: %w", err)
 		}

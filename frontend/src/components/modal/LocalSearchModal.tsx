@@ -35,7 +35,7 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
 
   useEffect(() => {
     if (!gamesLoading && games.length > 0) {
-      setFilteredGames(games);
+      setFilteredGames([]);
     }
   }, [gamesLoading, games]);
 
@@ -43,13 +43,13 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
     if (searchQuery?.trim()) {
       searchGames(searchQuery);
     } else {
-      setFilteredGames(games);
+      setFilteredGames([]);
     }
   }, [searchQuery, games]);
 
   const searchGames = (query: string) => {
     if (!query?.trim()) {
-      setFilteredGames(games);
+      setFilteredGames([]);
       return;
     }
 
@@ -107,9 +107,10 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
     //  });
   };
 
-  const handleGameDetails = async (game: models.Game) => {
+  const handleGameDetails = async (game: models.Game, filteredGameIdsStr: string[]) => {
     navigate({ 
       to: `/game/${game.id}`,
+      search: { filteredGameIdsStr },
      });
   };
 
@@ -215,7 +216,7 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
                     </button>
 
                     <button
-                        onClick={()=>{handleGameDetails(game)}}
+                        onClick={()=>{handleGameDetails(game, filteredGames.map((g) => g.id))}}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-blue-500/80 active:scale-95"
                         title="打开游戏"
                       >

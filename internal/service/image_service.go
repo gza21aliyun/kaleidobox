@@ -984,14 +984,26 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 
 }
 
-func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
+func (s *ImageService) SaveGameImages(gameEntity models.GameEntity, isOverride bool) error {
 	fmt.Printf("图库0 SaveGameImages 01 gameEntity: %v\n", gameEntity)
 	if gameEntity.Game.ID == "" {
 		return errors.New("game id is empty")
 	}
 	fmt.Printf("图库1 SaveGameImages 02 gameEntity: %v\n", gameEntity)
-	//game images
 	var err error = nil
+	if isOverride {
+		imgs, _ := s.FetchImages(gameEntity.Game.ID, 0, 2, false)
+		for _, img := range imgs {
+			err = s.DeleteImageBackup(img.Url)
+			if img.LocalPath != "" {
+				if _, err := os.Stat(img.LocalPath); !os.IsNotExist(err) {
+					os.Remove(img.LocalPath)
+				}
+			}
+		}
+	}
+	//game images
+
 	for _, image := range strings.Split(gameEntity.Game.Images, ",") {
 		fmt.Printf("图库2：%s\n", image)
 		backup, _ := s.GetImageBackupByUrl(image, false)

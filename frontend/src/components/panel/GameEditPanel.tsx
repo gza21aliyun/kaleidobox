@@ -321,14 +321,14 @@ export function GameEditPanel({
               onChange={value => onSourceChange(value, game.source_id || "")}
               options={[
                 { value: "", label: t('gameEdit.none') },
-                { value: "local", label: t('sourceType.local') },
-                { value: "bangumi", label: t('sourceType.bangumi') },
-                { value: "vndb", label: t('sourceType.vndb') },
-                { value: "ymgal", label: t('sourceType.ymgal') },
-                { value: "dmm", label: t('sourceType.dmm') },
-                { value: "eroscape", label: t('sourceType.eroscape') },
-                { value: "dlsite", label: t('sourceType.dlsite') },
-                { value: "getchu", label: t('sourceType.getchu') },
+                { value: enums.SourceType.LOCAL, label: t('sourceType.local') },
+                { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
+                { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
+                { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
+                { value: enums.SourceType.DMM, label: t('sourceType.dmm') },
+                { value: enums.SourceType.EROSCAPE, label: t('sourceType.eroscape') },
+                { value: enums.SourceType.DLSITE, label: t('sourceType.dlsite') },
+                { value: enums.SourceType.GETCHU, label: t('sourceType.getchu') },
               ]}
             />
           </div>

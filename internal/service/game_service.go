@@ -1218,7 +1218,9 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		}
 		s.workService.CreateOrUpdateListWorkStaffCharactor(utils.MapToArray(gameEntity.WorksMap))
 	}
-	s.imageService.SaveGameImages(gameEntity)
+	if req.ShouldFetchImages {
+		s.imageService.SaveGameImages(gameEntity, req.IsOverwrite)
+	}
 	return game, e
 }
 
@@ -1501,13 +1503,14 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				"", ngame.ID, enums.Initial, resultGames, nil)
 
 			var id = ""
+			log.Printf("TaskFunc 00 source: %v\n, game source type: %s, req source: %s\n", ngame, string(ngame.SourceType), string(taskData.Req.Source))
 
-			if taskData.Req.Source == ngame.SourceType {
+			if taskData.Req.Source == ngame.SourceType && strings.TrimSpace(ngame.SourceID) != "" {
 				id = ngame.SourceID
-				// log.Printf("TaskFunc 01 id found 11 for game %s, id: %s", ngame.Name, id)
+				log.Printf("TaskFunc 01 id found 11 for game %s, id: %s", ngame.Name, id)
 			} else if taskData.Req.Source == enums.Eroscape && strings.TrimSpace(ngame.EroscapeId) != "" {
 				id = ngame.EroscapeId
-				// log.Printf("TaskFunc 02 id found 12 for game %s, id: %s", ngame.Name, id)
+				log.Printf("TaskFunc 02 id found 12 for game %s, id: %s", ngame.Name, id)
 			} else if taskData.Req.Source == enums.Ymgal && strings.TrimSpace(ngame.YmgalId) != "" {
 				id = ngame.YmgalId
 				// log.Printf("TaskFunc 03 id found 13 for game %s, id: %s", ngame.Name, id)
@@ -1544,7 +1547,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				fmt.Println("发售日5：", updatedGame.ReleaseAt)
 
 			} else {
-				log.Printf("TaskFunc 13 fetch metadata 03 for game %s", ngame.Name)
+				log.Printf("TaskFunc 13 fetch metadata 03 for game %s, id: %s", ngame.Name, id)
 				// 通过名称获取元数据
 				if taskData.Req.Source == enums.Bangumi {
 					// log.Printf("TaskFunc 21 fetch for game %s", ngame.Name)

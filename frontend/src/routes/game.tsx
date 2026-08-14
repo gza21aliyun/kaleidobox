@@ -588,7 +588,7 @@ function GameDetailPage() {
   }
 
   const getVndbUrl = () => {
-    return `https://vndb.io/game/${game.source_id}`
+    return `https://vndb.org/${game.source_id}`
   }
 
   

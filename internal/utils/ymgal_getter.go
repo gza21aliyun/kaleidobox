@@ -275,6 +275,7 @@ func (y YmgalInfoGetter) FetchEntity(request vo.MetadataRequest, token string) (
 	}
 	org, err := y.FetchOrganization(strconv.FormatInt(ymgalResp.Data.Game.DeveloperID, 10), accessToken)
 	game, err := y.convertToModel(ymgalResp.Data.Game)
+	game.ID = request.DbGameId
 	game.Company = org
 	game.Tags = org
 	tagMap := gameEntity.Tags
@@ -533,6 +534,10 @@ func (y YmgalInfoGetter) convertToModel(g *ymgalGame) (models.Game, error) {
 	if name == "" {
 		name = g.Name
 	}
+	releaseAt, err := time.Parse("2006-01-02", g.ReleaseDate)
+	if err != nil {
+		fmt.Printf("failed to parse release date: %v, releaseDate: %s\n", err, g.ReleaseDate)
+	}
 
 	game := models.Game{
 		Name:       name,
@@ -542,7 +547,9 @@ func (y YmgalInfoGetter) convertToModel(g *ymgalGame) (models.Game, error) {
 		SourceType: enums.Ymgal,
 		SourceID:   strconv.FormatInt(g.Gid, 10),
 		YmgalId:    strconv.FormatInt(g.Gid, 10),
-		CachedAt:   time.Now(),
+		ReleaseAt:  releaseAt,
+		// CachedAt:   time.Now(),
+		CachedAt: time.Now(),
 	}
 	return game, nil
 }

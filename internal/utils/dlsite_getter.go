@@ -1370,7 +1370,7 @@ func (b DlsiteInfoGetter) FetchByNameImpl3(searchName string, fn IdFunction) (mo
 		return game, errors.New("没找到游戏")
 	}
 	for _, g := range dlsiteResp.Work {
-		if g.WorkType != "ADV" && g.WorkType != "RPG" && g.WorkType != "ACN" && g.WorkType != "SLN" {
+		if g.WorkType != "ADV" && g.WorkType != "RPG" && g.WorkType != "ACN" && g.WorkType != "SLN" && g.WorkType != "MOV" {
 			continue
 		}
 		potentialGames = append(potentialGames, struct {
@@ -1382,6 +1382,9 @@ func (b DlsiteInfoGetter) FetchByNameImpl3(searchName string, fn IdFunction) (mo
 			Title: g.WorkName,
 			Id:    g.Workno,
 		})
+	}
+	if len(potentialGames) == 0 {
+		return game, errors.New("没找到游戏")
 	}
 
 	gameFound := searchNameByRegex(potentialGames, searchName, []string{"セット"}, func(t1 struct {

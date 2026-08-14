@@ -314,6 +314,7 @@ func FetchWithChromeDPAndDecode(url string, entity any) error {
 	}
 
 	fmt.Printf("✅ JSON 长度: %d\n", len(jsonResponse))
+	fmt.Printf("✅ JSON 内容: %s\n", jsonResponse)
 
 	if err := json.Unmarshal([]byte(jsonResponse), entity); err != nil {
 		return fmt.Errorf("JSON 解码失败：%v", err)

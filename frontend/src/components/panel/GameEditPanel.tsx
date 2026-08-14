@@ -1,4 +1,4 @@
-import type { models } from "../../../wailsjs/go/models";
+import { enums, models } from "../../../wailsjs/go/models";
 import { toast } from "react-hot-toast";
 import { OpenLocalPath, SearchSave, SelectFile } from "../../../wailsjs/go/service/GameService";
 import { BetterButton } from "../ui/BetterButton";
@@ -55,6 +55,30 @@ export function GameEditPanel({
       console.error("Failed to search save directory:", error);
       toast.error("搜索保存目录失败"+error);
     });
+  }
+
+  const onSourceChange = (sourceType: string, sourceId: string) => {
+    var dmmId = game.dmm_id;
+    var eroscapeId = game.eroscape_id;
+    var bangumiId = game.bangumi_id;
+    var dlsiteId = game.dlsite_id;
+    var ymgalId = game.ymgal_id;
+    var getchuId = game.getchu_id;
+    if (sourceType === enums.SourceType.DMM) {
+      dmmId = sourceId;
+    } else if (sourceType === enums.SourceType.EROSCAPE) {
+      eroscapeId = sourceId;
+    } else if (sourceType === enums.SourceType.BANGUMI) {
+      bangumiId = sourceId;
+    } else if (sourceType === enums.SourceType.DLSITE) {
+      dlsiteId = sourceId;
+    } else if (sourceType === enums.SourceType.YMGAL) {
+      ymgalId = sourceId;
+    } else if (sourceType === enums.SourceType.GETCHU) {
+      getchuId = sourceId;
+    }
+    
+    onGameChange({ ...game, source_type: sourceType, source_id: sourceId, dmm_id: dmmId, eroscape_id: eroscapeId, bangumi_id: bangumiId, dlsite_id: dlsiteId, ymgal_id: ymgalId, getchu_id: getchuId } as models.Game);
   }
 
   const vmOptions = [
@@ -294,7 +318,7 @@ export function GameEditPanel({
             </label>
             <BetterSelect
               value={game.source_type || ""}
-              onChange={value => onGameChange({ ...game, source_type: value } as models.Game)}
+              onChange={value => onSourceChange(value, game.source_id || "")}
               options={[
                 { value: "", label: t('gameEdit.none') },
                 { value: "local", label: t('sourceType.local') },
@@ -315,7 +339,7 @@ export function GameEditPanel({
             <input
               type="text"
               value={game.source_id || ""}
-              onChange={e => onGameChange({ ...game, source_id: e.target.value } as models.Game)}
+              onChange={e => onSourceChange(game.source_type || "", e.target.value)}
               placeholder={t('gameEdit.sourceIdPlaceholder')}
               className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md bg-white dark:bg-brand-700 text-brand-900 dark:text-white focus:ring-2 focus:ring-neutral-500 outline-none"
             />

@@ -321,7 +321,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   const updatedCount = updatedIds.length;
   const emptyFoundCount = candidates.filter(c => isEmptyMatched(c)).length;
   const notFoundCount = candidates.filter(c => !isMatched(c, source)).length;
-  const pendingCount = candidates.filter(c => selectedIds.includes(c.id) && !updatedIds.includes(c.id)).length;
+  const pendingCount = candidates.filter(c => selectedIds.includes(c.id) && !updatedIds.includes(c.id) && !failedIds.includes(c.id)).length;
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">

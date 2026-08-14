@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from 'react-i18next';
 import { models } from "../../../wailsjs/go/models";
-import { GetGamesByIdsStr, OpenLocalPath } from "../../../wailsjs/go/service/GameService";
+import { GetGamesByIdsStr, OpenLocalPath, DeleteFolder } from "../../../wailsjs/go/service/GameService";
+import { LocalSearchModal } from "./LocalSearchModal";
+import toast from "react-hot-toast";
 
 interface TaskResultModalProps {
   isOpen: boolean;
@@ -20,6 +22,8 @@ export function TaskResultModal({ isOpen, resultGames, title, onClose }: TaskRes
   const [gamesMap, setGamesMap] = useState<Record<string, models.Game>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [limit, setLimit] = useState(PAGE_SIZE);
+  const [searchDirPath, setSearchDirPath] = useState<string | null>(null);
+  const [deletedPaths, setDeletedPaths] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isOpen || !resultGames || resultGames.length === 0) return;
@@ -152,20 +156,54 @@ export function TaskResultModal({ isOpen, resultGames, title, onClose }: TaskRes
                           {visible.map(gameId => {
                             const isDir = isPath(gameId);
                             const game = !isDir ? gamesMap[gameId] : undefined;
+                            const isDeleted = isDir && deletedPaths.has(gameId);
                             return isDir ? (
-                              <button
+                              <div
                                 key={gameId}
-                                type="button"
-                                onClick={async () => {
-                                  try { await OpenLocalPath(gameId); }
-                                  catch (err) { console.error("OpenLocalPath failed:", err); }
-                                }}
-                                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${btnClass}`}
+                                className={`flex items-center gap-1 px-2 py-1.5 text-sm rounded-md ${isDeleted ? 'opacity-40 line-through' : ''} ${btnClass}`}
                                 title={gameId}
                               >
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try { await OpenLocalPath(gameId); }
+                                      catch (err) { console.error("OpenLocalPath failed:", err); }
+                                    }}
+                                    className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                                    title={t('task.result.openFolder')}
+                                  >
+                                    <div className="i-mdi-folder-open-outline text-base" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSearchDirPath(gameId)}
+                                    className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                                    title={t('task.result.searchLocal')}
+                                  >
+                                    <div className="i-mdi-magnify text-base" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        await DeleteFolder(gameId);
+                                        setDeletedPaths(prev => new Set(prev).add(gameId));
+                                        toast.success(t('task.result.deleteSuccess'));
+                                      } catch (err) {
+                                        console.error("DeleteFolder failed:", err);
+                                        toast.error(t('task.result.deleteFailed'));
+                                      }
+                                    }}
+                                    className="p-1 rounded hover:bg-red-500/20 transition-colors"
+                                    title={t('task.result.deleteFolder')}
+                                  >
+                                    <div className="i-mdi-delete-outline text-base" />
+                                  </button>
+                                </div>
                                 <div className="i-mdi-folder-outline text-base shrink-0" />
                                 <span className="truncate">{gameId}</span>
-                              </button>
+                              </div>
                             ) : (
                               <button
                                 key={gameId}
@@ -210,6 +248,13 @@ export function TaskResultModal({ isOpen, resultGames, title, onClose }: TaskRes
           </button>
         </div>
       </div>
+      {searchDirPath && (
+        <LocalSearchModal
+          itemName={searchDirPath.split(/[\\/]/).pop() || searchDirPath}
+          onOpenInfo={() => {}}
+          onClose={() => setSearchDirPath(null)}
+        />
+      )}
     </div>,
     document.body,
   );

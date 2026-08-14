@@ -1335,6 +1335,26 @@ func (s *GameService) OpenLocalPath(path string) error {
 	return nil
 }
 
+// DeleteFolder 删除指定文件夹
+func (s *GameService) DeleteFolder(path string) error {
+	cleanPath := filepath.Clean(path)
+	if cleanPath == "" || cleanPath == "." || cleanPath == "/" || cleanPath == "\\" {
+		return fmt.Errorf("无效的路径")
+	}
+	info, err := os.Stat(cleanPath)
+	if err != nil {
+		return fmt.Errorf("路径不存在: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("路径不是文件夹: %s", cleanPath)
+	}
+	if err := os.RemoveAll(cleanPath); err != nil {
+		applog.LogErrorf(s.ctx, "DeleteFolder failed for path %s: %v", cleanPath, err)
+		return fmt.Errorf("删除文件夹失败: %w", err)
+	}
+	return nil
+}
+
 // UpdateGameProcessName 更新游戏的进程名
 // 当用户选择了实际的游戏进程时调用
 func (s *GameService) UpdateGameProcessName(gameID string, processName string) error {
@@ -1688,7 +1708,7 @@ func (s *GameService) createCheckGameValidityTaskFunction() TaskFunction {
 		invalid.Status = 400
 		invalid.GameIds = []string{}
 
-		resultGames := []models.ResultGames{valid, invalid}
+		resultGames := []models.ResultGames{invalid, valid}
 
 		total := len(games)
 		updateProgress(0, total, "开始检查游戏有效性", "", "", enums.Started, resultGames, nil)
@@ -1705,7 +1725,7 @@ func (s *GameService) createCheckGameValidityTaskFunction() TaskFunction {
 
 			if strings.TrimSpace(game.Path) == "" {
 				invalid.GameIds = append(invalid.GameIds, game.ID)
-				resultGames[1] = invalid
+				resultGames[0] = invalid
 				updateProgress(index, total, fmt.Sprintf("路径为空: %s", game.Name),
 					fmt.Sprintf("游戏 %s 的路径为空", game.Name), game.ID, enums.Error, resultGames, nil)
 				continue
@@ -1713,14 +1733,14 @@ func (s *GameService) createCheckGameValidityTaskFunction() TaskFunction {
 
 			if _, err := os.Stat(game.Path); err != nil {
 				invalid.GameIds = append(invalid.GameIds, game.ID)
-				resultGames[1] = invalid
+				resultGames[0] = invalid
 				updateProgress(index, total, fmt.Sprintf("路径不存在: %s", game.Name),
 					fmt.Sprintf("游戏 %s 的路径不存在: %s", game.Name, game.Path), game.ID, enums.Error, resultGames, nil)
 				continue
 			}
 
 			valid.GameIds = append(valid.GameIds, game.ID)
-			resultGames[0] = valid
+			resultGames[1] = valid
 			updateProgress(index, total, fmt.Sprintf("路径有效: %s", game.Name),
 				"", game.ID, enums.Completed, resultGames, game)
 		}
@@ -1792,7 +1812,7 @@ func isDirEmpty(path string) bool {
 	if err != nil {
 		return false
 	}
-	return len(entries) == 0
+	return len(entries) == 0 || !entries[0].IsDir()
 }
 
 func (s *GameService) createCheckDirectoryImportStateTaskFunction() TaskFunction {
@@ -1832,7 +1852,7 @@ func (s *GameService) createCheckDirectoryImportStateTaskFunction() TaskFunction
 		notImported.Status = 400
 		notImported.GameIds = []string{}
 
-		resultGames := []models.ResultGames{emptyDirs, imported, notImported}
+		resultGames := []models.ResultGames{emptyDirs, notImported, imported}
 
 		updateProgress(0, 0, fmt.Sprintf("扫描目录层级 %d: %s", taskData.Level, taskData.RootDir),
 			"", "", enums.Started, resultGames, nil)
@@ -1900,12 +1920,12 @@ func (s *GameService) createCheckDirectoryImportStateTaskFunction() TaskFunction
 			}
 
 			if found {
-				resultGames[1] = imported
+				resultGames[2] = imported
 				updateProgress(index, total, fmt.Sprintf("已导入: %s", cleanDir),
 					"", cleanDir, enums.Completed, resultGames, nil)
 			} else {
 				notImported.GameIds = append(notImported.GameIds, cleanDir)
-				resultGames[2] = notImported
+				resultGames[1] = notImported
 				updateProgress(index, total, fmt.Sprintf("没导入: %s", cleanDir),
 					"", cleanDir, enums.Error, resultGames, nil)
 			}

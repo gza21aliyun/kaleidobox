@@ -1306,7 +1306,12 @@
       "empty": "結果内容がありません",
       "searchPlaceholder": "ゲーム名を検索…",
       "loadMore": "もっと読み込む（{{shown}} / {{total}} を表示中）",
-      "noMatch": "該当するゲームはありません"
+      "noMatch": "該当するゲームはありません",
+      "openFolder": "フォルダを開く",
+      "searchLocal": "ローカル検索",
+      "deleteFolder": "フォルダを削除",
+      "deleteSuccess": "フォルダを削除しました",
+      "deleteFailed": "フォルダの削除に失敗しました"
     }
   },
   "batchUpdate": {

@@ -1310,7 +1310,12 @@
       "empty": "No result content",
       "searchPlaceholder": "Search game name…",
       "loadMore": "Load more (shown {{shown}} / {{total}})",
-      "noMatch": "No matching games"
+      "noMatch": "No matching games",
+      "openFolder": "Open folder",
+      "searchLocal": "Search local",
+      "deleteFolder": "Delete folder",
+      "deleteSuccess": "Folder deleted",
+      "deleteFailed": "Failed to delete folder"
     }
   },
   "update": {

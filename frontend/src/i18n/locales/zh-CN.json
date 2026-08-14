@@ -1314,7 +1314,12 @@
       "empty": "无结果内容",
       "searchPlaceholder": "搜索游戏名…",
       "loadMore": "加载更多（已显示 {{shown}} / {{total}}）",
-      "noMatch": "无匹配游戏"
+      "noMatch": "无匹配游戏",
+      "openFolder": "打开文件夹",
+      "searchLocal": "搜索本地",
+      "deleteFolder": "删除文件夹",
+      "deleteSuccess": "文件夹已删除",
+      "deleteFailed": "删除文件夹失败"
     }
   },
   "update": {

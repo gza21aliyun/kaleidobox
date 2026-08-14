@@ -230,6 +230,7 @@ function TaskPage() {
       <TaskResultModal
         isOpen={resultModalTask !== null}
         resultGames={resultModalTask?.result_games || []}
+        title={resultModalTask?.title || ''}
         onClose={() => setResultModalTask(null)}
       />
 

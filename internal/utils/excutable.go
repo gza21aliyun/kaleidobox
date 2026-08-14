@@ -10,7 +10,7 @@ import (
 
 // FindExecutables 在指定目录下查找可执行文件
 // 注意：不包含 .lnk 快捷方式，因为无法直接启动
-func FindExecutables(folderPath string, excludeKeywords []string, level int) []string {
+func FindExecutables(folderPath string, excludeKeywords []string, level int, containsHtml bool) []string {
 	fmt.Printf("FindExecutables folderPath: %s\n", folderPath)
 	var executables []string
 
@@ -25,10 +25,10 @@ func FindExecutables(folderPath string, excludeKeywords []string, level int) []s
 		lowerName := strings.ToLower(name)
 		if entry.IsDir() {
 			if lowerName == "setupdata" {
-				subExes := FindExecutables(filepath.Join(folderPath, name), excludeKeywords, level)
+				subExes := FindExecutables(filepath.Join(folderPath, name), excludeKeywords, level, containsHtml)
 				executables = append(executables, subExes...)
 			} else if level > 1 {
-				subExes := FindExecutables(filepath.Join(folderPath, name), excludeKeywords, level-1)
+				subExes := FindExecutables(filepath.Join(folderPath, name), excludeKeywords, level-1, containsHtml)
 				executables = append(executables, subExes...)
 			}
 			continue
@@ -36,7 +36,7 @@ func FindExecutables(folderPath string, excludeKeywords []string, level int) []s
 
 		// 检查是否是可执行文件（不包含 .lnk 快捷方式）
 		if !strings.HasSuffix(lowerName, ".exe") &&
-			!strings.HasSuffix(lowerName, ".bat") {
+			!strings.HasSuffix(lowerName, ".bat") && (!containsHtml || name != "index.html" && name != "index.htm") {
 			continue
 		}
 

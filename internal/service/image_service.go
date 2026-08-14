@@ -238,11 +238,13 @@ func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.Image
 		&imageBackup.CreatedAt,
 	)
 	if err != nil {
+		// fmt.Printf("GetImageBackupByUrl 02 err: %v\n", err)
 		if err == sql.ErrNoRows {
 			return nil, nil // 未找到记录
 		}
 		return nil, err
 	}
+	fmt.Printf("GetImageBackupByUrl 03 imageBackup: %v\n", imageBackup)
 	if s.config.AutoDownloadImages && down {
 		newList, err := s.DownloadImageBackups([]models.ImageBackup{imageBackup})
 		fmt.Printf("GetImageBackupByUrl 04 url: %s\n", url)
@@ -983,9 +985,11 @@ func (s *ImageService) TakeScreenshotOfFocusedWindow(gameId string) {
 }
 
 func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
+	fmt.Printf("图库0 SaveGameImages 01 gameEntity: %v\n", gameEntity)
 	if gameEntity.Game.ID == "" {
 		return errors.New("game id is empty")
 	}
+	fmt.Printf("图库1 SaveGameImages 02 gameEntity: %v\n", gameEntity)
 	//game images
 	var err error = nil
 	for _, image := range strings.Split(gameEntity.Game.Images, ",") {
@@ -1032,6 +1036,9 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity) error {
 		err = s.CreateImageBackup(newCover)
 	} else {
 		err = s.UpdateImageBackup(&newCover)
+	}
+	if err != nil {
+		fmt.Printf("图库3d SaveGameImages  cover err: %v\n", err)
 	}
 	//works
 	// for _, work := range utils.MapToArray(gameEntity.WorksMap) {

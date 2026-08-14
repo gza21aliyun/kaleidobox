@@ -3,17 +3,18 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from 'react-i18next';
 import { models } from "../../../wailsjs/go/models";
-import { GetGamesByIdsStr } from "../../../wailsjs/go/service/GameService";
+import { GetGamesByIdsStr, OpenLocalPath } from "../../../wailsjs/go/service/GameService";
 
 interface TaskResultModalProps {
   isOpen: boolean;
   resultGames: models.ResultGames[];
+  title: string;
   onClose: () => void;
 }
 
 const PAGE_SIZE = 100;
 
-export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModalProps) {
+export function TaskResultModal({ isOpen, resultGames, title, onClose }: TaskResultModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [gamesMap, setGamesMap] = useState<Record<string, models.Game>>({});
@@ -46,11 +47,11 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
 
   if (!isOpen) return null;
 
-  const handleGameClick = (gameId: string, visible: string[]) => {
+  const handleGameClick = (gameId: string, filteredGameIdsStr: string[]) => {
     onClose();
     navigate({
        to: `/game/${gameId}`,
-       search: { visible }
+       search: { filteredGameIdsStr }
        });
   };
 
@@ -94,7 +95,7 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
       >
         {/* 头部（固定） */}
         <div className="flex items-center justify-between p-6 pb-3 shrink-0">
-          <h3 className="text-xl font-bold text-brand-900 dark:text-white">{t('task.result.title')}</h3>
+          <h3 className="text-xl font-bold text-brand-900 dark:text-white">{t('task.result.title')}:{title}</h3>
           <button
             onClick={onClose}
             className="p-1 rounded-md text-brand-500 hover:bg-brand-100 dark:hover:bg-brand-700 transition-colors"
@@ -133,9 +134,9 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
                   <div key={idx} className="rounded-lg p-4 border border-brand-200 dark:border-brand-700">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        {rg.title && (
+                        {/* {rg.title && (
                           <h4 className="font-semibold text-brand-900 dark:text-white">{rg.title}</h4>
-                        )}
+                        )} */}
                         {rg.description && (
                           <p className="text-sm text-brand-600 dark:text-brand-400">{rg.description}</p>
                         )}
@@ -152,14 +153,19 @@ export function TaskResultModal({ isOpen, resultGames, onClose }: TaskResultModa
                             const isDir = isPath(gameId);
                             const game = !isDir ? gamesMap[gameId] : undefined;
                             return isDir ? (
-                              <div
+                              <button
                                 key={gameId}
-                                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md ${btnClass}`}
+                                type="button"
+                                onClick={async () => {
+                                  try { await OpenLocalPath(gameId); }
+                                  catch (err) { console.error("OpenLocalPath failed:", err); }
+                                }}
+                                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${btnClass}`}
                                 title={gameId}
                               >
                                 <div className="i-mdi-folder-outline text-base shrink-0" />
                                 <span className="truncate">{gameId}</span>
-                              </div>
+                              </button>
                             ) : (
                               <button
                                 key={gameId}

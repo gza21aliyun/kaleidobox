@@ -11,6 +11,9 @@ import (
 	"lunabox/internal/models"
 	"lunabox/internal/service/timer"
 	"lunabox/internal/utils"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -209,6 +212,98 @@ func splitCommandLineArgs(args string) []string {
 	return out
 }
 
+func (s *StartService) StartHttpServerThenOpenPageByBrowser(filePath string) error {
+	// filePath 是 HTML 文件的完整路径，获取其所在目录作为服务器根目录
+	fileDir := filepath.Dir(filePath)
+	fileName := filepath.Base(filePath)
+
+	// 在 127.0.0.1 上查找一个可用的端口
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return fmt.Errorf("failed to find free port: %w", err)
+	}
+	port := listener.Addr().(*net.TCPAddr).Port
+	listener.Close()
+
+	// 创建文件服务器，服务该目录下的所有文件
+	// 注意：http.FileServer 内部会调用 http.DetectContentType 对 HTML 文件
+	// 统一返回 "text/html; charset=utf-8"，浏览器以该 HTTP 头为准，会忽略 HTML
+	// 内 <meta charset> 声明的实际编码（如 Shift-JIS、GBK），导致乱码。
+	// 这里通过自定义 handler 读取文件头部检测真实 charset 并覆盖 Content-Type。
+	mux := http.NewServeMux()
+	fileServer := http.FileServer(http.Dir(fileDir))
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ext := strings.ToLower(filepath.Ext(r.URL.Path))
+		if ext == ".html" || ext == ".htm" {
+			fullPath := filepath.Join(fileDir, filepath.FromSlash(r.URL.Path))
+			if charset := detectHTMLCharset(fullPath); charset != "" {
+				w.Header().Set("Content-Type", "text/html; charset="+charset)
+			}
+		}
+		fileServer.ServeHTTP(w, r)
+	}))
+
+	// 后台启动 HTTP 服务器
+	go func() {
+		applog.LogInfof(s.ctx, "Starting HTTP server for directory: %s on port %d", fileDir, port)
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", port), mux); err != nil {
+			applog.LogErrorf(s.ctx, "HTTP server stopped: %v", err)
+		}
+	}()
+
+	// 等待服务器启动
+	time.Sleep(300 * time.Millisecond)
+
+	// 构造 URL 并在浏览器中打开
+	httpURL := fmt.Sprintf("http://127.0.0.1:%d/%s", port, url.PathEscape(fileName))
+	applog.LogInfof(s.ctx, "Opening browser with URL: %s", httpURL)
+
+	return utils.OpenBrowser(httpURL)
+}
+
+// detectHTMLCharset 从 HTML 文件头部检测字符编码声明。
+// 仅读取前 4KB 用于匹配 <meta charset="xxx"> 或
+// <meta http-equiv="Content-Type" content="text/html; charset=xxx">，
+// 因为 HTML 标签名和属性名都是 ASCII，在 Shift-JIS/GBK 等非 ASCII 编码的
+// 文件中也能可靠匹配。
+func detectHTMLCharset(filePath string) string {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	buf := make([]byte, 4096)
+	n, _ := f.Read(buf)
+	if n == 0 {
+		return ""
+	}
+	content := strings.ToLower(string(buf[:n]))
+
+	idx := strings.Index(content, "charset=")
+	if idx < 0 {
+		return ""
+	}
+	start := idx + len("charset=")
+	if start >= len(content) {
+		return ""
+	}
+	// 跳过引号或空格
+	for start < len(content) && (content[start] == '"' || content[start] == '\'' || content[start] == ' ') {
+		start++
+	}
+	end := start
+	for end < len(content) {
+		c := content[end]
+		if c == '"' || c == '\'' || c == ' ' || c == '>' || c == ';' ||
+			c == '\n' || c == '\r' || c == '\t' {
+			break
+		}
+		end++
+	}
+	return content[start:end]
+}
+
 // startGame 内部启动方法，支持通过 options 覆盖配置
 func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, error) {
 	// 获取游戏路径和进程配置
@@ -217,6 +312,16 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 	if err != nil {
 		applog.LogErrorf(s.ctx, "failed to get game path: %v", err)
 		return false, fmt.Errorf("failed to get game path: %w", err)
+	}
+	ext := filepath.Ext(path)
+	if ext == ".htm" || ext == ".html" {
+		// 启动 HTTP 服务器并打开浏览器
+		err = s.StartHttpServerThenOpenPageByBrowser(path)
+		if err != nil {
+			applog.LogErrorf(s.ctx, "failed to start http server: %v", err)
+			return false, fmt.Errorf("failed to start http server: %w", err)
+		}
+		return true, nil
 	}
 
 	// 检测是否为 Steam 协议链接(可能在 path 或 arguments 中)

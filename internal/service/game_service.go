@@ -1736,7 +1736,7 @@ func (s *GameService) CheckDirectoryImportState(rootDir string, level int) error
 		"rootDir": rootDir,
 		"level":   level,
 	}
-	return s.taskService.StartTask("directory_import_state", uuid, 0, enums.CheckDirectoryImportState, 0, taskData)
+	return s.taskService.StartTask("game_updates", uuid, 0, enums.CheckDirectoryImportState, 0, taskData)
 }
 
 // collectDirsAtLevel 收集 rootDir 下恰好第 targetLevel 层的所有目录
@@ -1803,6 +1803,8 @@ func (s *GameService) createCheckDirectoryImportStateTaskFunction() TaskFunction
 		if err := json.Unmarshal([]byte(data), &taskData); err != nil {
 			return fmt.Errorf("解析任务数据失败: %v", err)
 		}
+
+		fmt.Printf("[CheckDirImport] rootDir=%s, level=%d\n", taskData.RootDir, taskData.Level)
 
 		if strings.TrimSpace(taskData.RootDir) == "" {
 			return fmt.Errorf("目录路径为空")

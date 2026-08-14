@@ -786,7 +786,7 @@ func (s *ImportService) scanDirectoryRecursive(
 	}
 
 	// 扫描当前目录下的可执行文件
-	executables := utils.FindExecutables(currentPath, excludeKeywords, 1)
+	executables := utils.FindExecutables(currentPath, excludeKeywords, 1, true)
 
 	// 如果当前目录包含可执行文件，将其作为候选游戏
 	if len(executables) > 0 {
@@ -1217,14 +1217,15 @@ func (s *ImportService) ProcessDroppedPaths(paths []string) ([]vo.BatchImportCan
 		} else {
 			// 处理可执行文件
 			lowerName := strings.ToLower(path)
-			if !strings.HasSuffix(lowerName, ".exe") && !strings.HasSuffix(lowerName, ".bat") {
+			fileName := filepath.Base(path)
+			if !strings.HasSuffix(lowerName, ".exe") && !strings.HasSuffix(lowerName, ".bat") && fileName != "index.html" && fileName != "index.htm" {
 				applog.LogInfof(s.ctx, "ProcessDroppedPaths: skipping non-executable file %s", path)
 				continue
 			}
 
 			// 检查是否应该排除
 			excluded := false
-			fileName := filepath.Base(path)
+
 			lowerFileName := strings.ToLower(fileName)
 			for _, keyword := range utils.ExcludeExeKeywords {
 				if strings.Contains(lowerFileName, keyword) {

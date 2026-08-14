@@ -587,6 +587,10 @@ function GameDetailPage() {
     return workUrl
   }
 
+  const getVndbUrl = () => {
+    return `https://vndb.io/game/${game.source_id}`
+  }
+
   
 
   return (
@@ -765,7 +769,7 @@ function GameDetailPage() {
             )}
             {game.ymgal_id && (
               <button
-                onClick={() => OpenBrowser(`https://www.ymgal.games/co/${game.ymgal_id}`)}
+                onClick={() => OpenBrowser(`https://www.ymgal.games/ga${game.ymgal_id}`)}
                 className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
               >
                 {t('game.buttons.ymgal')}
@@ -801,6 +805,14 @@ function GameDetailPage() {
                 className="px-4 py-2 bg-success-500 text-white rounded hover:bg-success-600 transition-colors"
               >
                 {t('game.buttons.dlsite')}
+              </button>
+            )}
+            {game.source_id && game.source_type === "vndb" && (
+              <button
+                onClick={() => OpenBrowser(getVndbUrl())}
+                className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+              >
+                VNDb
               </button>
             )}
           </div>

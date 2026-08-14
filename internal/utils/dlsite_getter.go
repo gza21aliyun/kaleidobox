@@ -45,112 +45,112 @@ var _ Getter = (*DlsiteInfoGetter)(nil)
 var _ Reviewer = (*DlsiteInfoGetter)(nil)
 
 type DlsiteWorkResponse struct {
-	AgeCategory       int           `json:"age_category"`
-	AgeCategoryString string        `json:"age_category_string"`
-	Anime             string        `json:"anime"`
-	AutoPlay          string        `json:"auto_play"`
-	Bgm               string        `json:"bgm"`
-	BgmMode           string        `json:"bgm_mode"`
-	BooksID           interface{}   `json:"books_id"`
-	BrandID           string        `json:"brand_id"`
-	CircleID          interface{}   `json:"circle_id"`
-	Coupling          []interface{} `json:"coupling"`
-	CPU               string        `json:"cpu"`
-	DefaultPoint      int           `json:"default_point"`
-	DirectedBy        interface{}   `json:"directed_by"`
-	DirectX           string        `json:"directx"`
+	AgeCategory       int    `json:"age_category"`
+	AgeCategoryString string `json:"age_category_string"`
+	Anime             string `json:"anime"`
+	AutoPlay          string `json:"auto_play"`
+	Bgm               string `json:"bgm"`
+	BgmMode           string `json:"bgm_mode"`
+	// BooksID           interface{}   `json:"books_id"`
+	BrandID string `json:"brand_id"`
+	// CircleID          interface{}   `json:"circle_id"`
+	// Coupling          []interface{} `json:"coupling"`
+	CPU          string `json:"cpu"`
+	DefaultPoint int    `json:"default_point"`
+	// DirectedBy        interface{}   `json:"directed_by"`
+	DirectX string `json:"directx"`
 	// Discount                  *DlsiteDiscount        `json:"discount"`
-	DistFlag               int               `json:"dist_flag"`
-	DlFormat               int               `json:"dl_format"`
-	Etc                    interface{}       `json:"etc"`
-	FileDate               interface{}       `json:"file_date"`
-	FileSize               interface{}       `json:"file_size"`
-	FileType               string            `json:"file_type"`
-	FileTypeString         string            `json:"file_type_string"`
-	FileTypeSpecial        interface{}       `json:"file_type_special"`
-	GalleryMode            string            `json:"gallery_mode"`
-	HDD                    interface{}       `json:"hdd"`
-	HSceneMode             string            `json:"h_scene_mode"`
-	Intro                  interface{}       `json:"intro"`
-	IntroMasked            interface{}       `json:"intro_masked"`
-	IntroS                 string            `json:"intro_s"`
-	IntroSMasked           string            `json:"intro_s_masked"`
-	LabelID                interface{}       `json:"label_id"`
-	LabelName              interface{}       `json:"label_name"`
-	Machine                string            `json:"machine"`
-	MachineStringList      map[string]string `json:"machine_string_list"`
-	Memory                 string            `json:"memory"`
-	MessageSkip            string            `json:"message_skip"`
-	MiniResolution         string            `json:"mini_resolution"`
-	ModifyFlg              interface{}       `json:"modify_flg"`
-	MusicBy                string            `json:"music_by"`
-	OnSale                 int               `json:"on_sale"`
-	Options                string            `json:"options"`
-	OriginalIllust         string            `json:"original_illust"`
-	Other                  interface{}       `json:"other"`
-	OthersBy               interface{}       `json:"others_by"`
-	Pages                  interface{}       `json:"pages"`
-	PageNumber             interface{}       `json:"page_number"`
-	ProductPoint           interface{}       `json:"product_point"`
-	ProductPointEndDate    interface{}       `json:"product_point_end_date"`
-	Point                  int               `json:"point"`
-	Price                  int               `json:"price"`
-	PriceWithoutTax        int               `json:"price_without_tax"`
-	PriceEn                float64           `json:"price_en"`
-	PriceEur               float64           `json:"price_eur"`
-	ProductionWorkno       interface{}       `json:"production_workno"`
-	PublisherWorkno        interface{}       `json:"publisher_workno"`
-	RegistDate             string            `json:"regist_date"`
-	RegularPrice           interface{}       `json:"regular_price"`
-	ScenarioBy             string            `json:"scenario_by"`
-	ScreenMode             string            `json:"screen_mode"`
-	SeriesID               interface{}       `json:"series_id"`
-	SeriesName             interface{}       `json:"series_name"`
-	SeriesNameMasked       interface{}       `json:"series_name_masked"`
-	SexCategory            int               `json:"sex_category"`
-	SofrinAppNo            interface{}       `json:"sofrin_app_no"`
-	VocalTrack             string            `json:"vocal_track"`
-	Voice                  string            `json:"voice"`
-	VoiceBy                string            `json:"voice_by"`
-	VRAM                   interface{}       `json:"vram"`
-	Workno                 string            `json:"workno"`
-	WorkName               string            `json:"work_name"`
-	WorkNameMasked         string            `json:"work_name_masked"`
-	WorkNameKana           string            `json:"work_name_kana"`
-	WorkType               string            `json:"work_type"`
-	WorkTypeString         string            `json:"work_type_string"`
-	WorkTypeSpecial        string            `json:"work_type_special"`
-	WorkTypeSpecialMasked  string            `json:"work_type_special_masked"`
-	WorkAttributes         string            `json:"work_attributes"`
-	ProductID              string            `json:"product_id"`
-	BaseProductID          string            `json:"base_product_id"`
-	MakerID                string            `json:"maker_id"`
-	MakerName              string            `json:"maker_name"`
-	MakerNameEn            string            `json:"maker_name_en"`
-	AltName                string            `json:"alt_name"`
-	AltNameMasked          string            `json:"alt_name_masked"`
-	ProductName            string            `json:"product_name"`
-	SiteID                 string            `json:"site_id"`
-	SiteIDTouch            string            `json:"site_id_touch"`
-	IsAna                  bool              `json:"is_ana"`
-	WorkCategory           string            `json:"work_category"`
-	Platform               []string          `json:"platform"`
-	IsPCWork               bool              `json:"is_pc_work"`
-	IsSmartphoneWork       bool              `json:"is_smartphone_work"`
-	IsAndroidOnlyWork      bool              `json:"is_android_only_work"`
-	IsIOSOnlyWork          bool              `json:"is_ios_only_work"`
-	IsAndroidOrIOSOnlyWork bool              `json:"is_android_or_ios_only_work"`
-	IsDLPlayboxOnlyWork    bool              `json:"is_dlplaybox_only_work"`
-	IsAlmightWork          bool              `json:"is_almight_work"`
-	IsDLSitePlayWork       bool              `json:"is_dlsiteplay_work"`
-	IsDLSitePlayOnlyWork   bool              `json:"is_dlsiteplay_only_work"`
-	WorkParts              []interface{}     `json:"work_parts"`
-	Introductions          interface{}       `json:"introductions"`
-	IntroductionsMasked    interface{}       `json:"introductions_masked"`
-	SalesPrice             interface{}       `json:"sales_price"`
-	ImageMain              *DlsiteImage      `json:"image_main"`
-	ImageThum              *DlsiteImage      `json:"image_thum"`
-	ImageThumMini          *DlsiteImage      `json:"image_thum_mini"`
+	DistFlag int `json:"dist_flag"`
+	DlFormat int `json:"dl_format"`
+	// Etc                    interface{}       `json:"etc"`
+	// FileDate               interface{}       `json:"file_date"`
+	// FileSize               interface{}       `json:"file_size"`
+	FileType       string `json:"file_type"`
+	FileTypeString string `json:"file_type_string"`
+	// FileTypeSpecial        interface{}       `json:"file_type_special"`
+	GalleryMode string `json:"gallery_mode"`
+	// HDD                    interface{}       `json:"hdd"`
+	HSceneMode string `json:"h_scene_mode"`
+	// Intro                  interface{}       `json:"intro"`
+	// IntroMasked            interface{}       `json:"intro_masked"`
+	IntroS       string `json:"intro_s"`
+	IntroSMasked string `json:"intro_s_masked"`
+	// LabelID                interface{}       `json:"label_id"`
+	// LabelName              interface{}       `json:"label_name"`
+	Machine           string            `json:"machine"`
+	MachineStringList map[string]string `json:"machine_string_list"`
+	Memory            string            `json:"memory"`
+	MessageSkip       string            `json:"message_skip"`
+	MiniResolution    string            `json:"mini_resolution"`
+	// ModifyFlg              interface{}       `json:"modify_flg"`
+	MusicBy        string `json:"music_by"`
+	OnSale         int    `json:"on_sale"`
+	Options        string `json:"options"`
+	OriginalIllust string `json:"original_illust"`
+	// Other                  interface{}       `json:"other"`
+	// OthersBy               interface{}       `json:"others_by"`
+	// Pages                  interface{}       `json:"pages"`
+	// PageNumber             interface{}       `json:"page_number"`
+	// ProductPoint           interface{}       `json:"product_point"`
+	// ProductPointEndDate    interface{}       `json:"product_point_end_date"`
+	Point           int     `json:"point"`
+	Price           int     `json:"price"`
+	PriceWithoutTax int     `json:"price_without_tax"`
+	PriceEn         float64 `json:"price_en"`
+	PriceEur        float64 `json:"price_eur"`
+	// ProductionWorkno       interface{}       `json:"production_workno"`
+	// PublisherWorkno        interface{}       `json:"publisher_workno"`
+	RegistDate string `json:"regist_date"`
+	// RegularPrice           interface{}       `json:"regular_price"`
+	ScenarioBy string `json:"scenario_by"`
+	ScreenMode string `json:"screen_mode"`
+	// SeriesID               interface{}       `json:"series_id"`
+	// SeriesName             interface{}       `json:"series_name"`
+	// SeriesNameMasked       interface{}       `json:"series_name_masked"`
+	SexCategory int `json:"sex_category"`
+	// SofrinAppNo            interface{}       `json:"sofrin_app_no"`
+	VocalTrack string `json:"vocal_track"`
+	Voice      string `json:"voice"`
+	VoiceBy    string `json:"voice_by"`
+	// VRAM                   interface{}       `json:"vram"`
+	Workno                 string   `json:"workno"`
+	WorkName               string   `json:"work_name"`
+	WorkNameMasked         string   `json:"work_name_masked"`
+	WorkNameKana           string   `json:"work_name_kana"`
+	WorkType               string   `json:"work_type"`
+	WorkTypeString         string   `json:"work_type_string"`
+	WorkTypeSpecial        string   `json:"work_type_special"`
+	WorkTypeSpecialMasked  string   `json:"work_type_special_masked"`
+	WorkAttributes         string   `json:"work_attributes"`
+	ProductID              string   `json:"product_id"`
+	BaseProductID          string   `json:"base_product_id"`
+	MakerID                string   `json:"maker_id"`
+	MakerName              string   `json:"maker_name"`
+	MakerNameEn            string   `json:"maker_name_en"`
+	AltName                string   `json:"alt_name"`
+	AltNameMasked          string   `json:"alt_name_masked"`
+	ProductName            string   `json:"product_name"`
+	SiteID                 string   `json:"site_id"`
+	SiteIDTouch            string   `json:"site_id_touch"`
+	IsAna                  bool     `json:"is_ana"`
+	WorkCategory           string   `json:"work_category"`
+	Platform               []string `json:"platform"`
+	IsPCWork               bool     `json:"is_pc_work"`
+	IsSmartphoneWork       bool     `json:"is_smartphone_work"`
+	IsAndroidOnlyWork      bool     `json:"is_android_only_work"`
+	IsIOSOnlyWork          bool     `json:"is_ios_only_work"`
+	IsAndroidOrIOSOnlyWork bool     `json:"is_android_or_ios_only_work"`
+	IsDLPlayboxOnlyWork    bool     `json:"is_dlplaybox_only_work"`
+	IsAlmightWork          bool     `json:"is_almight_work"`
+	IsDLSitePlayWork       bool     `json:"is_dlsiteplay_work"`
+	IsDLSitePlayOnlyWork   bool     `json:"is_dlsiteplay_only_work"`
+	// WorkParts              []interface{}     `json:"work_parts"`
+	// Introductions          interface{}       `json:"introductions"`
+	// IntroductionsMasked    interface{}       `json:"introductions_masked"`
+	// SalesPrice             interface{}       `json:"sales_price"`
+	ImageMain     *DlsiteImage `json:"image_main"`
+	ImageThum     *DlsiteImage `json:"image_thum"`
+	ImageThumMini *DlsiteImage `json:"image_thum_mini"`
 	// ImageThumTouch         *DlsiteImage        `json:"image_thum_touch"`
 	ImageThumMiniTouch []DlsiteImageTouch  `json:"image_thum_mini_touch"`
 	ImageMini          *DlsiteImage        `json:"image_mini"`
@@ -158,35 +158,35 @@ type DlsiteWorkResponse struct {
 	ImageThumb         string              `json:"image_thumb"`
 	ImageThumbTouch    string              `json:"image_thumb_touch"`
 	// Contents                  []DlsiteContent        `json:"contents"`
-	ContentsTouch         interface{} `json:"contents_touch"`
-	IsSplitContent        bool        `json:"is_split_content"`
-	ContentCount          int         `json:"content_count"`
-	ContentCountTouch     int         `json:"content_count_touch"`
-	ContentsFileSize      int64       `json:"contents_file_size"`
-	ContentsFileSizeTouch int         `json:"contents_file_size_touch"`
+	// ContentsTouch         interface{} `json:"contents_touch"`
+	IsSplitContent        bool  `json:"is_split_content"`
+	ContentCount          int   `json:"content_count"`
+	ContentCountTouch     int   `json:"content_count_touch"`
+	ContentsFileSize      int64 `json:"contents_file_size"`
+	ContentsFileSizeTouch int   `json:"contents_file_size_touch"`
 	// Trials                bool        `json:"trials"`
 	// TrialsTouch           bool        `json:"trials_touch"`
 	// Movies                    []DlsiteMovie          `json:"movies"`
-	EpubSample              []interface{} `json:"epub_sample"`
-	SampleType              string        `json:"sample_type"`
-	IsViewableSample        bool          `json:"is_viewable_sample"`
-	CampaignID              int           `json:"campaign_id"`
-	OfficialPrice           int           `json:"official_price"`
-	OfficialPriceWithoutTax int           `json:"official_price_without_tax"`
-	OfficialPriceUsd        float64       `json:"official_price_usd"`
-	OfficialPriceEur        float64       `json:"official_price_eur"`
-	DiscountRate            int           `json:"discount_rate"`
-	IsDiscountWork          bool          `json:"is_discount_work"`
-	DiscountAccessKey       string        `json:"discount_access_key"`
-	DiscountLayout          interface{}   `json:"discount_layout"`
-	CampaignStartDate       string        `json:"campaign_start_date"`
-	CampaignEndDate         string        `json:"campaign_end_date"`
-	IsShowCampaignEndDate   bool          `json:"is_show_campaign_end_date"`
-	Chobits                 bool          `json:"chobits"`
+	// EpubSample              []interface{} `json:"epub_sample"`
+	SampleType              string  `json:"sample_type"`
+	IsViewableSample        bool    `json:"is_viewable_sample"`
+	CampaignID              int     `json:"campaign_id"`
+	OfficialPrice           int     `json:"official_price"`
+	OfficialPriceWithoutTax int     `json:"official_price_without_tax"`
+	OfficialPriceUsd        float64 `json:"official_price_usd"`
+	OfficialPriceEur        float64 `json:"official_price_eur"`
+	DiscountRate            int     `json:"discount_rate"`
+	IsDiscountWork          bool    `json:"is_discount_work"`
+	DiscountAccessKey       string  `json:"discount_access_key"`
+	// DiscountLayout          interface{}   `json:"discount_layout"`
+	CampaignStartDate     string `json:"campaign_start_date"`
+	CampaignEndDate       string `json:"campaign_end_date"`
+	IsShowCampaignEndDate bool   `json:"is_show_campaign_end_date"`
+	Chobits               bool   `json:"chobits"`
 	// WorkOptions               map[string]interface{} `json:"work_options"`
-	Gift         []interface{} `json:"gift"`
-	WorkRentals  []interface{} `json:"work_rentals"`
-	IsRentalWork bool          `json:"is_rental_work"`
+	// Gift         []interface{} `json:"gift"`
+	// WorkRentals  []interface{} `json:"work_rentals"`
+	IsRentalWork bool `json:"is_rental_work"`
 	// TranslationInfo           DlsiteTranslationInfo  `json:"translation_info"`
 	DisplayOrder    int            `json:"display_order"`
 	IsOauthWork     bool           `json:"is_oauth_work"`
@@ -204,79 +204,79 @@ type DlsiteWorkResponse struct {
 	RankDay         int            `json:"rank_day"`
 	RankDayDate     string         `json:"rank_day_date"`
 	IsPackChild     bool           `json:"is_pack_child"`
-	WorkPackParent  []interface{}  `json:"work_pack_parent"`
-	IsPackParent    bool           `json:"is_pack_parent"`
+	// WorkPackParent  []interface{}  `json:"work_pack_parent"`
+	IsPackParent bool `json:"is_pack_parent"`
 	// WorkPackChildren          []interface{}  `json:"work_pack_children"`
-	PackType                  interface{}   `json:"pack_type"`
-	IsVoicePack               bool          `json:"is_voice_pack"`
-	VoicePackParent           []interface{} `json:"voice_pack_parent"`
-	VoicePackChild            []interface{} `json:"voice_pack_child"`
-	Free                      bool          `json:"free"`
-	FreeOnly                  bool          `json:"free_only"`
-	FreeEndDate               bool          `json:"free_end_date"`
-	HasFreeDownload           bool          `json:"has_free_download"`
-	LimitedFreeTerms          []interface{} `json:"limited_free_terms"`
-	LimitedFreeWork           []interface{} `json:"limited_free_work"`
-	Creaters                  interface{}   `json:"creaters"`
-	TitleID                   interface{}   `json:"title_id"`
-	TitleName                 interface{}   `json:"title_name"`
-	TitleNameMasked           interface{}   `json:"title_name_masked"`
-	TitleVolumn               interface{}   `json:"title_volumn"`
-	TitleWorkLabeling         interface{}   `json:"title_work_labeling"`
-	TitleWorkDisplayOrder     interface{}   `json:"title_work_display_order"`
-	TitleWorkCount            interface{}   `json:"title_work_count"`
-	IsTitleCompleted          bool          `json:"is_title_completed"`
-	TitleLatestWorkno         interface{}   `json:"title_latest_workno"`
-	TitlePriceLow             interface{}   `json:"title_price_low"`
-	TitlePriceHigh            interface{}   `json:"title_price_high"`
-	IsTitlePointup            interface{}   `json:"is_title_pointup"`
-	TitlePointRate            interface{}   `json:"title_point_rate"`
-	IsTitleDiscount           interface{}   `json:"is_title_discount"`
-	IsTitleReserve            interface{}   `json:"is_title_reserve"`
-	ReserveWork               interface{}   `json:"reserve_work"`
-	IsReserveWork             bool          `json:"is_reserve_work"`
-	IsReservable              bool          `json:"is_reservable"`
-	IsDownloadableReserveWork bool          `json:"is_downloadable_reserve_work"`
-	BonusWorkno               bool          `json:"bonus_workno"`
-	BonusWork                 interface{}   `json:"bonus_work"`
-	IsBonusWork               bool          `json:"is_bonus_work"`
-	IsDownloadableBonusWork   bool          `json:"is_downloadable_bonus_work"`
-	ParentReserveWorkno       bool          `json:"parent_reserve_workno"`
-	BookType                  interface{}   `json:"book_type"`
-	IsBL                      bool          `json:"is_bl"`
-	IsTL                      bool          `json:"is_tl"`
-	IsDramaWork               bool          `json:"is_drama_work"`
-	IsDisplayNotice           bool          `json:"is_display_notice"`
-	TouchStyle1               []string      `json:"touch_style1"`
-	IsBulkbuy                 bool          `json:"is_bulkbuy"`
-	BulkbuyKey                interface{}   `json:"bulkbuy_key"`
-	BulkbuyTitle              interface{}   `json:"bulkbuy_title"`
-	BulkbuyPerItems           int           `json:"bulkbuy_per_items"`
-	BulkbuyStart              interface{}   `json:"bulkbuy_start"`
-	BulkbuyEnd                interface{}   `json:"bulkbuy_end"`
-	BulkbuyPrice              int           `json:"bulkbuy_price"`
-	BulkbuyPriceTax           int           `json:"bulkbuy_price_tax"`
-	BulkbuyPriceWithoutTax    int           `json:"bulkbuy_price_without_tax"`
-	BulkbuyDiscountRate       int           `json:"bulkbuy_discount_rate"`
-	BulkbuyPointRate          int           `json:"bulkbuy_point_rate"`
-	BulkbuyPoint              int           `json:"bulkbuy_point"`
-	Genres                    []DlsiteGenre `json:"genres"`
-	GenresReplaced            []DlsiteGenre `json:"genres_replaced"`
+	// PackType                  interface{}   `json:"pack_type"`
+	IsVoicePack bool `json:"is_voice_pack"`
+	// VoicePackParent           []interface{} `json:"voice_pack_parent"`
+	// VoicePackChild            []interface{} `json:"voice_pack_child"`
+	Free            bool `json:"free"`
+	FreeOnly        bool `json:"free_only"`
+	FreeEndDate     bool `json:"free_end_date"`
+	HasFreeDownload bool `json:"has_free_download"`
+	// LimitedFreeTerms          []interface{} `json:"limited_free_terms"`
+	// LimitedFreeWork           []interface{} `json:"limited_free_work"`
+	Creaters interface{} `json:"creaters"`
+	// TitleID                   interface{}   `json:"title_id"`
+	// TitleName                 interface{}   `json:"title_name"`
+	// TitleNameMasked           interface{}   `json:"title_name_masked"`
+	// TitleVolumn               interface{}   `json:"title_volumn"`
+	// TitleWorkLabeling         interface{}   `json:"title_work_labeling"`
+	// TitleWorkDisplayOrder     interface{}   `json:"title_work_display_order"`
+	// TitleWorkCount            interface{}   `json:"title_work_count"`
+	IsTitleCompleted bool `json:"is_title_completed"`
+	// TitleLatestWorkno         interface{}   `json:"title_latest_workno"`
+	// TitlePriceLow             interface{}   `json:"title_price_low"`
+	// TitlePriceHigh            interface{}   `json:"title_price_high"`
+	// IsTitlePointup            interface{}   `json:"is_title_pointup"`
+	// TitlePointRate            interface{}   `json:"title_point_rate"`
+	// IsTitleDiscount           interface{}   `json:"is_title_discount"`
+	// IsTitleReserve            interface{}   `json:"is_title_reserve"`
+	// ReserveWork               interface{}   `json:"reserve_work"`
+	IsReserveWork             bool `json:"is_reserve_work"`
+	IsReservable              bool `json:"is_reservable"`
+	IsDownloadableReserveWork bool `json:"is_downloadable_reserve_work"`
+	// BonusWorkno               bool          `json:"bonus_workno"`
+	BonusWork               interface{} `json:"bonus_work"`
+	IsBonusWork             bool        `json:"is_bonus_work"`
+	IsDownloadableBonusWork bool        `json:"is_downloadable_bonus_work"`
+	ParentReserveWorkno     bool        `json:"parent_reserve_workno"`
+	BookType                interface{} `json:"book_type"`
+	IsBL                    bool        `json:"is_bl"`
+	IsTL                    bool        `json:"is_tl"`
+	IsDramaWork             bool        `json:"is_drama_work"`
+	IsDisplayNotice         bool        `json:"is_display_notice"`
+	TouchStyle1             []string    `json:"touch_style1"`
+	IsBulkbuy               bool        `json:"is_bulkbuy"`
+	// BulkbuyKey              interface{}   `json:"bulkbuy_key"`
+	// BulkbuyTitle            interface{}   `json:"bulkbuy_title"`
+	BulkbuyPerItems int `json:"bulkbuy_per_items"`
+	// BulkbuyStart            interface{}   `json:"bulkbuy_start"`
+	// BulkbuyEnd              interface{}   `json:"bulkbuy_end"`
+	BulkbuyPrice           int           `json:"bulkbuy_price"`
+	BulkbuyPriceTax        int           `json:"bulkbuy_price_tax"`
+	BulkbuyPriceWithoutTax int           `json:"bulkbuy_price_without_tax"`
+	BulkbuyDiscountRate    int           `json:"bulkbuy_discount_rate"`
+	BulkbuyPointRate       int           `json:"bulkbuy_point_rate"`
+	BulkbuyPoint           int           `json:"bulkbuy_point"`
+	Genres                 []DlsiteGenre `json:"genres"`
+	GenresReplaced         []DlsiteGenre `json:"genres_replaced"`
 	// CustomGenres                      []DlsiteCustomGenre    `json:"custom_genres"`
-	Editions          []interface{}       `json:"editions"`
-	LanguageEditions  []interface{}       `json:"language_editions"`
-	DisplayOptions    []interface{}       `json:"display_options"`
-	WorkBrowseSetting DlsiteBrowseSetting `json:"work_browse_setting"`
-	IsLimitWork       bool                `json:"is_limit_work"`
-	IsLimitSales      bool                `json:"is_limit_sales"`
-	IsLimitInStock    bool                `json:"is_limit_in_stock"`
-	LimitSaleID       interface{}         `json:"limit_sale_id"`
-	LimitStartDate    interface{}         `json:"limit_start_date"`
-	LimitEndDate      interface{}         `json:"limit_end_date"`
-	LimitDlCount      int                 `json:"limit_dl_count"`
-	LimitSoldDlCount  int                 `json:"limit_sold_dl_count"`
-	LimitDisplayType  interface{}         `json:"limit_display_type"`
-	IsTimesaleWork    bool                `json:"is_timesale_work"`
+	// Editions          []interface{}       `json:"editions"`
+	// LanguageEditions  []interface{}       `json:"language_editions"`
+	// DisplayOptions    []interface{}       `json:"display_options"`
+	// WorkBrowseSetting DlsiteBrowseSetting `json:"work_browse_setting"`
+	IsLimitWork    bool `json:"is_limit_work"`
+	IsLimitSales   bool `json:"is_limit_sales"`
+	IsLimitInStock bool `json:"is_limit_in_stock"`
+	// LimitSaleID       interface{}         `json:"limit_sale_id"`
+	// LimitStartDate    interface{}         `json:"limit_start_date"`
+	// LimitEndDate      interface{}         `json:"limit_end_date"`
+	// LimitDlCount      int                 `json:"limit_dl_count"`
+	LimitSoldDlCount int `json:"limit_sold_dl_count"`
+	// LimitDisplayType  interface{}         `json:"limit_display_type"`
+	IsTimesaleWork bool `json:"is_timesale_work"`
 	// TimesaleDlCount                   int                    `json:"timesale_dl_count"`
 	// TimesaleLimitDlCount              interface{}            `json:"timesale_limit_dl_count"`
 	// TimesaleStock                     int                    `json:"timesale_stock"`
@@ -290,36 +290,36 @@ type DlsiteWorkResponse struct {
 	// LocaleOfficialPriceStr            map[string]string      `json:"locale_official_price_str"`
 	// CurrencyPrice                     map[string]float64     `json:"currency_price"`
 	// CurrencyOfficialPrice             map[string]float64     `json:"currency_official_price"`
-	GivenCouponsByBuying              []interface{} `json:"given_coupons_by_buying"`
-	SpecifiedVolumeSets               []interface{} `json:"specified_volume_sets"`
-	SpecifiedVolumeSetMaxDiscountRate interface{}   `json:"specified_volume_set_max_discount_rate"`
-	HasSpecifiedVolumeSet             bool          `json:"has_specified_volume_set"`
-	Rating                            interface{}   `json:"rating"`
-	IsGarumaniGeneral                 bool          `json:"is_garumani_general"`
-	IsGarumaniGeneralComipoMirror     bool          `json:"is_garumani_general_comipo_mirror"`
-	ProductDir                        string        `json:"product_dir"`
+	// GivenCouponsByBuying              []interface{} `json:"given_coupons_by_buying"`
+	// SpecifiedVolumeSets               []interface{} `json:"specified_volume_sets"`
+	// SpecifiedVolumeSetMaxDiscountRate interface{}   `json:"specified_volume_set_max_discount_rate"`
+	// HasSpecifiedVolumeSet             bool          `json:"has_specified_volume_set"`
+	// Rating                            interface{}   `json:"rating"`
+	// IsGarumaniGeneral                 bool          `json:"is_garumani_general"`
+	// IsGarumaniGeneralComipoMirror     bool          `json:"is_garumani_general_comipo_mirror"`
+	// ProductDir                        string        `json:"product_dir"`
 }
 
 type DlsiteDiscount struct {
-	ID              string                 `json:"id"`
-	Workno          string                 `json:"workno"`
-	Status          string                 `json:"status"`
-	CampaignID      int                    `json:"campaign_id"`
-	StartDate       int64                  `json:"start_date"`
-	EndDate         int64                  `json:"end_date"`
-	CampaignPrice   int                    `json:"campaign_price"`
-	DiscountRate    int                    `json:"discount_rate"`
-	RestorePrice    int                    `json:"restore_price"`
-	ShowEndDateDays string                 `json:"show_end_date_days"`
-	LimitDlCount    interface{}            `json:"limit_dl_count"`
-	DelFlg          string                 `json:"del_flg"`
-	UpdateDate      string                 `json:"update_date"`
-	UpdateID        string                 `json:"update_id"`
-	InsertDate      string                 `json:"insert_date"`
-	InsertID        string                 `json:"insert_id"`
-	AccessKey       string                 `json:"access_key"`
-	Title           string                 `json:"title"`
-	Options         map[string]interface{} `json:"options"`
+	ID              string `json:"id"`
+	Workno          string `json:"workno"`
+	Status          string `json:"status"`
+	CampaignID      int    `json:"campaign_id"`
+	StartDate       int64  `json:"start_date"`
+	EndDate         int64  `json:"end_date"`
+	CampaignPrice   int    `json:"campaign_price"`
+	DiscountRate    int    `json:"discount_rate"`
+	RestorePrice    int    `json:"restore_price"`
+	ShowEndDateDays string `json:"show_end_date_days"`
+	// LimitDlCount    interface{}            `json:"limit_dl_count"`
+	DelFlg     string                 `json:"del_flg"`
+	UpdateDate string                 `json:"update_date"`
+	UpdateID   string                 `json:"update_id"`
+	InsertDate string                 `json:"insert_date"`
+	InsertID   string                 `json:"insert_id"`
+	AccessKey  string                 `json:"access_key"`
+	Title      string                 `json:"title"`
+	Options    map[string]interface{} `json:"options"`
 }
 
 type DlsiteWorkSearchItem struct {
@@ -427,18 +427,18 @@ type DlsiteMovie struct {
 }
 
 type DlsiteTranslationInfo struct {
-	IsTranslationAgree             bool          `json:"is_translation_agree"`
-	IsVolunteer                    bool          `json:"is_volunteer"`
-	IsOriginal                     bool          `json:"is_original"`
-	IsParent                       bool          `json:"is_parent"`
-	IsChild                        bool          `json:"is_child"`
-	IsTranslationBonusChild        bool          `json:"is_translation_bonus_child"`
-	OriginalWorkno                 interface{}   `json:"original_workno"`
-	ParentWorkno                   interface{}   `json:"parent_workno"`
-	ChildWorknos                   []interface{} `json:"child_worknos"`
-	Lang                           interface{}   `json:"lang"`
-	TranslationBonusLangs          []interface{} `json:"translation_bonus_langs"`
-	TranslationStatusForTranslator []interface{} `json:"translation_status_for_translator"`
+	IsTranslationAgree      bool        `json:"is_translation_agree"`
+	IsVolunteer             bool        `json:"is_volunteer"`
+	IsOriginal              bool        `json:"is_original"`
+	IsParent                bool        `json:"is_parent"`
+	IsChild                 bool        `json:"is_child"`
+	IsTranslationBonusChild bool        `json:"is_translation_bonus_child"`
+	OriginalWorkno          interface{} `json:"original_workno"`
+	ParentWorkno            interface{} `json:"parent_workno"`
+	// ChildWorknos                   []interface{} `json:"child_worknos"`
+	Lang interface{} `json:"lang"`
+	// TranslationBonusLangs          []interface{} `json:"translation_bonus_langs"`
+	// TranslationStatusForTranslator []interface{} `json:"translation_status_for_translator"`
 }
 
 type DlsiteCreator struct {

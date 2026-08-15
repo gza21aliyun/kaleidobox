@@ -78,8 +78,12 @@ func (s *TagService) CreateOrUpdateTag(newTag models.Tag) error {
 		}
 		return err
 	} else {
-		if !newTag.BlockModify {
-			newTag.Category = cate
+		// if !newTag.BlockModify {
+		// 	newTag.Category = cate
+		// }
+		if tag.BlockModify {
+			tag.UseCount = newTag.UseCount
+			return s.UpdateTag(tag)
 		}
 		return s.UpdateTag(&newTag)
 	}

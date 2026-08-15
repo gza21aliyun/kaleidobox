@@ -46,7 +46,7 @@ function GameDetailPage() {
   const [ currentGameId, setCurrentGameId ] = useState(gameId);
   const search = useSearch({ strict: false }) as GameSearchParams; // 获取查询参数
   const filteredGameIds = search.filteredGameIdsStr || [];
-  const {config, updateGameInGames} = useAppStore();
+  const {config, updateGameInGames, games} = useAppStore();
   const setGames = useAppStore(state => state.setGames);
   const [game, setGame] = useState<models.Game | null>(null);
   
@@ -184,6 +184,15 @@ function GameDetailPage() {
 
     return () => clearTimeout(timer);
   }, [game]);
+
+  useEffect(() => {
+    if (game && games && games.length > 0) {
+      const foundGame = games.find(g => g.id === game.id);
+      if (foundGame) {
+        setGame(foundGame);
+      }
+    }
+  }, [games]);
 
   const currentIndex = filteredGameIds.indexOf(currentGameId);
 

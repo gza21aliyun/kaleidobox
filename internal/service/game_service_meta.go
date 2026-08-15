@@ -341,6 +341,17 @@ func (s *GameService) UpdateGameFromRemote(gameID string) error {
 	return nil
 }
 
+func (s *GameService) UpdateGameByReq(req vo.MetadataRequest, oldGame models.Game) (models.Game, error) {
+	req.DbGameId = oldGame.ID
+	game, err := s.FetchMetadata(req)
+	if err != nil {
+		return models.Game{}, fmt.Errorf("failed to fetch metadata from remote: %w", err)
+	}
+	s.FillGame(&oldGame, &game, req)
+	err = s.UpdateGame(game)
+	return game, err
+}
+
 func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWebVO, error) {
 	var games []vo.GameMetadataFromWebVO
 	var wg sync.WaitGroup
@@ -431,15 +442,13 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	return games, nil
 }
 
-func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error) {
-	var game = models.Game{}
+func (s *GameService) FetchMetadataNotSave(req vo.MetadataRequest) (models.GameEntity, error) {
+	var gameEntity models.GameEntity
 	var e error
 
-	if game, e = fetchFromLocal(req.ID); e == nil {
-		return game, nil
-	}
-
-	var gameEntity models.GameEntity = models.GameEntity{}
+	// if game, e = fetchFromLocal(req.ID); e == nil {
+	// 	return gameEntity, nil
+	// }
 	fmt.Printf("Request: source=%s id=%s staffs=%t chars=%t overwrite=%t images=%t\n",
 		req.Source, req.ID, req.ShouldFetchStaffs, req.ShouldFetchCharactors, req.IsOverwrite, req.ShouldFetchImages)
 
@@ -457,16 +466,13 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 		if e != nil {
 			fmt.Printf("Fetching metadata from VNDB error: %v\n", e)
 		}
-		game = gameEntity.Game
 	case enums.Ymgal:
 		fmt.Println("Fetching metadata from Ymgal")
 		ymgalGetter := utils.NewYmgalInfoGetter(s.config.SearchCn)
 		gameEntity, e = ymgalGetter.FetchEntity(req, "")
-		game = gameEntity.Game
 	case enums.Eroscape:
 		fmt.Println("Fetching metadata from Eroscape")
 		escGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-		game.EroscapeId = req.ID
 		gameEntity, e = escGetter.FetchMetadataById(req)
 		gameEntity, e = escGetter.FetchCharactors(req, gameEntity)
 		gameEntity, e = escGetter.FetchImages(req, gameEntity)
@@ -482,23 +488,32 @@ func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error)
 	case enums.Dmm:
 		fmt.Println("Fetching metadata from DMM")
 		dmmGetter := utils.NewDmmInfoGetter()
-		game.DmmId = req.ID
+		// game.DmmId = req.ID
 		gameEntity, e = dmmGetter.FetchMetadataById(req)
 
 	case enums.Dlsite:
 		fmt.Println("Fetching metadata from dlsite")
 		dlsiteGetter := utils.NewDlsiteInfoGetter()
-		game.DlsiteId = req.ID
+		// game.DlsiteId = req.ID
 		gameEntity, e = dlsiteGetter.FetchMetadataById2(req)
 
 	case enums.Getchu:
 		fmt.Println("Fetching metadata from getchu")
 		getchuGetter := utils.NewGetchuInfoGetter()
-		game.GetchuId = req.ID
+		// game.GetchuId = req.ID
 		gameEntity, e = getchuGetter.FetchMetadataById(req)
 	}
 	s.UnionFetch(&gameEntity, req)
-	game = gameEntity.Game
+	return gameEntity, e
+}
+
+func (s *GameService) FetchMetadata(req vo.MetadataRequest) (models.Game, error) {
+	gameEntity, e := s.FetchMetadataNotSave(req)
+
+	game := gameEntity.Game
+	if e != nil {
+		return game, e
+	}
 	if req.IsOverwrite && req.ShouldFetchTags {
 		s.tagService.CreateOrUpdateTagMapArray(gameEntity.Tags)
 	}

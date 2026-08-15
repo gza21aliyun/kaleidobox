@@ -238,7 +238,7 @@ func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.Image
 		&imageBackup.CreatedAt,
 	)
 	if err != nil {
-		// fmt.Printf("GetImageBackupByUrl 02 err: %v\n", err)
+		fmt.Printf("GetImageBackupByUrl 02 err: %v\n", err)
 		if err == sql.ErrNoRows {
 			return nil, nil // 未找到记录
 		}
@@ -336,6 +336,24 @@ func (s *ImageService) FetchImages(id string, subjectType int, imageType int, do
 		WHERE subject_id = ? AND subject_type = ? AND image_type = ?
 	`
 	rs, err := s.FetchImageBackups(query, id, subjectType, imageType, download)
+	// applog.LogInfof(s.ctx, "FetchImages count:%d\n", len(rs))
+	return rs, err
+}
+
+func (s *ImageService) FetchSubjectImages(id string, subjectType int) ([]models.ImageBackup, error) {
+	_, err := s.CountImageBackups()
+	// applog.LogInfof(s.ctx, "FetchImages start, count:%d, err:%v\n", count, err)
+	// query := fmt.Sprintf(`
+	// 	SELECT url, local_path, subject_id, subject_type, image_type
+	// 	FROM image_backups
+	// 	WHERE subject_id = %s AND subject_type = %d AND image_type = %d
+	// `, id, subjectType, imageType)
+	query := `
+		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
+		FROM image_backups
+		WHERE subject_id = ? AND subject_type = ?
+	`
+	rs, err := s.FetchImageBackups(query, id, subjectType, -1, false)
 	// applog.LogInfof(s.ctx, "FetchImages count:%d\n", len(rs))
 	return rs, err
 }
@@ -452,6 +470,8 @@ func (s *ImageService) FetchImageBackups(query string, id string, subjectType in
 	var rows *sql.Rows
 	if id == "" {
 		rows, err = s.db.QueryContext(s.ctx, query)
+	} else if imageType < 0 {
+		rows, err = s.db.QueryContext(s.ctx, query, id, subjectType)
 	} else {
 		rows, err = s.db.QueryContext(s.ctx, query, id, subjectType, imageType)
 	}
@@ -992,8 +1012,14 @@ func (s *ImageService) SaveGameImages(gameEntity models.GameEntity, isOverride b
 	fmt.Printf("图库1 SaveGameImages 02 gameEntity: %v\n", gameEntity)
 	var err error = nil
 	if isOverride {
-		imgs, _ := s.FetchImages(gameEntity.Game.ID, 0, 2, false)
+
+		var imgs []models.ImageBackup
+		imgs, _ = s.FetchSubjectImages(gameEntity.Game.ID, 0)
+		// imgs, _ = s.FetchImages(gameEntity.Game.ID, 0, 2, false)
 		for _, img := range imgs {
+			if img.ImageType == 3 {
+				continue
+			}
 			err = s.DeleteImageBackup(img.Url)
 			if img.LocalPath != "" {
 				if _, err := os.Stat(img.LocalPath); !os.IsNotExist(err) {

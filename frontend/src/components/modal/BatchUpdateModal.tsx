@@ -7,12 +7,13 @@ import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from 
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
 
-import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FillGame } from "../../../wailsjs/go/service/GameService";
+import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq } from "../../../wailsjs/go/service/GameService";
 import {
   CancelTask
 } from "../../../wailsjs/go/service/TaskService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
+import { useAppStore } from "../../store";
 
 interface BatchUpdateModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ interface BatchUpdateModalProps {
 export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: BatchUpdateModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { updateGameInGames, fetchGames } = useAppStore();
 //   const [step, setStep] = useState<Step>("select");
 //   const [libraryPath, setLibraryPath] = useState("");
   const [candidates, setCandidates] = useState<models.Game[]>(games);
@@ -48,8 +50,9 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   const [manualSelectIndex, setManualSelectIndex] = useState<number | null>(null);
   const [manualMatches, setManualMatches] = useState<vo.GameMetadataFromWebVO[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchMsg, setSearchMsg] = useState(t('batchUpdate.searching'));
   const [manualId, setManualId] = useState("");
-  const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
+  // const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
   const taskId = useRef("");
   const [shouldOverwrite, setIsOverWrite]  = useState(true);
   const [shouldLoadStaffs, setShouldLoadStaffs] = useState(true);
@@ -182,7 +185,9 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
     }
     
   };
-  const handleUpdate = () => {
+
+  const createReq = () => {
+    
     const uuid = crypto.randomUUID();
     const req = new vo.MetadataRequest({
       id: uuid,
@@ -195,8 +200,24 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
       should_match_again: shouldMatchAgain,
       should_union_fetch: shouldUnionFetch,
     });
+    return req;
+  };
+
+  const metaOptions = [
+    { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
+    { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
+    { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
+    { value: enums.SourceType.DMM, label: t('sourceType.dmm') },
+    { value: enums.SourceType.EROSCAPE, label: t('sourceType.eroscape') },
+    { value: enums.SourceType.DLSITE, label: t('sourceType.dlsite') },
+    { value: enums.SourceType.GETCHU, label: t('sourceType.getchu') },
+  ];
+
+
+  const handleUpdate = () => {
+    const req = createReq();
     console.log("req:", req)
-    UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), req, uuid)
+    UpdateGamesBackground(candidates.filter(c => selectedIds.includes(c.id)), req, req.id)
     toast.success(t('batchUpdate.startUpdateSuccess'))
     onUpdateComplete();
     
@@ -227,7 +248,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
     if (found.length === 0) {
       setIsSearching(true);
       try {
-        const results = await FetchMetadataByName(candidates[index].name);
+        const results = await FetchMetadataByName(candidates[index].search_name);
         setManualMatches(results || []);
       }
       catch (error) {
@@ -240,38 +261,30 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   };
 
   const selectManualMatch = (game: models.Game, source: enums.SourceType) => {
-    if (manualSelectIndex !== null) {
-      const updated = [...candidates];
-      const oldGame = updated[manualSelectIndex];
-      if (source === enums.SourceType.DMM) {
-        oldGame.dmm_id = game.dmm_id
-      }
-      if (source === enums.SourceType.EROSCAPE) {
-        oldGame.eroscape_id = game.eroscape_id
-      }
-      if (source === enums.SourceType.BANGUMI) {
-        oldGame.bangumi_id = game.bangumi_id
-      }
-      if (source === enums.SourceType.YMGAL) {
-        oldGame.ymgal_id = game.ymgal_id
-      }
-      if (source === enums.SourceType.DLSITE) {
-        oldGame.dlsite_id = game.dlsite_id
-      }
-      if (source === enums.SourceType.GETCHU) {
-        oldGame.getchu_id = game.getchu_id
-      }
-      oldGame.images = game.images
-      oldGame.tags = game.tags
-      oldGame.release_at = game.release_at
-      oldGame.process_name = game.process_name
-      oldGame.summary = game.summary
-      oldGame.name = game.name
-      oldGame.search_name = game.search_name
+    const req = createReq();
+    req.id = game.source_id;
+    req.source = source;
+    const updated = [...candidates];
+    const index = manualSelectIndex ?? -1;
+    if (index == -1) return;
+    const oldGame = updated[index];    
+    req.db_game_id = oldGame.id;
+    setIsSearching(true);
+    setSearchMsg(t('batchUpdate.updating'));
+    UpdateGameByReq(req, oldGame).then((updatedGame) => {
+      updated[index] = updatedGame;
+      updateGameInGames(updatedGame);
       setCandidates(updated);
-    }
-    setShowManualSelect(false);
-    setManualSelectIndex(null);
+      setUpdatedIds([...updatedIds, updatedGame.id]);
+      setShowManualSelect(false);
+      setManualSelectIndex(null);    
+      // fetchGames().then(() => {});
+    }).catch((error) => {
+      toast.error("更新失败:"+error);
+      console.error("Failed to update game:", error);
+      setIsSearching(false);
+      setSearchMsg(t('batchUpdate.searching'));
+    });
   };
 
 
@@ -283,12 +296,13 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
     
     try {
       const request = new vo.MetadataRequest({
-        source: manualSource,
+        source: source,
         id: manualId,
       });
-      const game = await FetchMetadata(request);
+      const gameEntity = await FetchMetadataNotSave(request);
+      const game = gameEntity.game;
       if (game && game.name) {
-        selectManualMatch(game, manualSource);
+        selectManualMatch(game, source);
       }
       else {
         toast.error("未找到游戏");
@@ -362,15 +376,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                           }
                           
                         }}
-                        options={[
-                          { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
-                          { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
-                          { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
-                          { value: enums.SourceType.DMM, label: t('sourceType.dmm') },
-                          { value: enums.SourceType.EROSCAPE, label: t('sourceType.eroscape') },
-                          { value: enums.SourceType.DLSITE, label: t('sourceType.dlsite') },
-                          { value: enums.SourceType.GETCHU, label: t('sourceType.getchu') },
-                        ]}
+                        options={metaOptions}
                         className="min-w-[120px] w-[150px]"
                       />
                     </div>
@@ -637,6 +643,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                                     if (candidate.source_type !== enums.SourceType.YMGAL && candidate.ymgal_id && candidate.ymgal_id !== "") {
                                         text += "," + t('sourceType.ymgal') + ":" + candidate.ymgal_id;
                                     }
+                                    if (candidate.source_type !== enums.SourceType.DLSITE && candidate.dlsite_id && candidate.dlsite_id !== "") {
+                                        text += "," + t('sourceType.dlsite') + ":" + candidate.dlsite_id;
+                                    }
+                                    if (candidate.source_type !== enums.SourceType.GETCHU && candidate.getchu_id && candidate.getchu_id !== "") {
+                                        text += "," + t('sourceType.getchu') + ":" + candidate.getchu_id;
+                                    }
 
                                     return text;
                                 })()}
@@ -744,7 +756,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
               <h3 className="text-lg font-bold text-brand-900 dark:text-white">
                 {t('batchUpdate.manualSelect')}:
                 {" "}
-                {candidates[manualSelectIndex].name}
+                {candidates[manualSelectIndex].search_name}
               </h3>
               <button
                 onClick={() => setShowManualSelect(false)}
@@ -756,7 +768,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
               {isSearching ? (
                 <div className="py-8 text-center">
                   <div className="i-mdi-loading animate-spin text-3xl mx-auto mb-2 text-neutral-500" />
-                  <p className="text-brand-400">{t('batchUpdate.searching')}</p>
+                  <p className="text-brand-400">{searchMsg}</p>
                 </div>
               ) : (
                 <>
@@ -796,13 +808,9 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                     <p className="text-sm text-brand-500 mb-3">{t('batchUpdate.searchById')}:</p>
                     <div className="flex gap-2">
                       <BetterSelect
-                        value={manualSource}
-                        onChange={value => setManualSource(value as enums.SourceType)}
-                        options={[
-                          { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
-                          { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
-                          { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
-                        ]}
+                        value={source}
+                        onChange={value => setSource(value as enums.SourceType)}
+                        options={metaOptions}
                         className="w-32"
                       />
                       <input

@@ -94,6 +94,7 @@ type vndbQueryResult struct {
 	Developers  []vndbDeveloper `json:"developers"`
 	Tags        []vndbTag       `json:"tags"`
 	Screenshots []vndbImage     `json:"screenshots"`
+	Platforms   []string        `json:"platforms"`
 	Staff       []vndbStaff     `json:"staff"`
 	VA          []vndbVA        `json:"va"`
 }
@@ -136,7 +137,7 @@ func (V VNDBInfoGetter) queryVNDB(filters []interface{}, mtReq vo.MetadataReques
 
 	reqBody := vndbRequest{
 		Filters: filters,
-		Fields:  "id, title, aliases, titles.lang, titles.title, titles.latin, titles.official, titles.main, image.url, image.sexual, screenshots.url, staff.id, staff.name, staff.original, staff.role, staff.gender, va.character.id, va.character.name, va.character.original, va.character.gender, va.character.description, va.character.height, va.character.bust, va.character.waist, va.character.hips, va.character.image.url, va.staff.id, va.staff.name, va.staff.original, description, rating, released, developers.name, tags.name, tags.rating, tags.spoiler, tags.lie",
+		Fields:  "id, title, aliases, titles.lang, titles.title, titles.latin, titles.official, titles.main, platforms, image.url, image.sexual, screenshots.url, staff.id, staff.name, staff.original, staff.role, staff.gender, va.character.id, va.character.name, va.character.original, va.character.gender, va.character.description, va.character.height, va.character.bust, va.character.waist, va.character.hips, va.character.image.url, va.staff.id, va.staff.name, va.staff.original, description, rating, released, developers.name, tags.name, tags.rating, tags.spoiler, tags.lie",
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -176,6 +177,8 @@ func (V VNDBInfoGetter) queryVNDB(filters []interface{}, mtReq vo.MetadataReques
 	}
 
 	result := vndbResp.Results[0]
+	var tags []string
+	var tagList []models.Tag
 
 	var company string
 	if len(result.Developers) > 0 {
@@ -184,19 +187,35 @@ func (V VNDBInfoGetter) queryVNDB(filters []interface{}, mtReq vo.MetadataReques
 			devs = append(devs, d.Name)
 		}
 		company = strings.Join(devs, ", ")
+		tags = append(tags, company)
+		tagList = append(tagList, models.Tag{
+			Name:        company,
+			Category:    models.TagCategoryBrand,
+			BlockModify: true,
+		})
+	}
+	if len(result.Platforms) > 0 {
+		for _, p := range result.Platforms {
+			tags = append(tags, p)
+			tagList = append(tagList, models.Tag{
+				Name:        p,
+				Category:    models.TagCategoryPlatform,
+				BlockModify: true,
+			})
+		}
 	}
 
 	var coverURL string
 	if result.Image.URL != "" {
 		coverURL = result.Image.URL
 	}
-	var tags []string
-	var tagList []models.Tag
+
 	for _, t := range result.Tags {
 		tags = append(tags, t.Name)
 		tagList = append(tagList, models.Tag{
 			Name:      t.Name,
 			IsSpoiler: t.Spoiler > 0,
+			Category:  models.TagCategoryOther,
 		})
 	}
 	gameEntity.Tags = ArrayToMap(tagList, func(t1 models.Tag) string { return t1.Category })

@@ -273,13 +273,12 @@ func (y YmgalInfoGetter) FetchEntity(request vo.MetadataRequest, token string) (
 	if ymgalResp.Data == nil || ymgalResp.Data.Game == nil {
 		return gameEntity, fmt.Errorf("ymgal API returned no game data, body: %s", string(bodyBytes))
 	}
+	tagMap := make(map[string][]models.Tag)
 	org, err := y.FetchOrganization(strconv.FormatInt(ymgalResp.Data.Game.DeveloperID, 10), accessToken)
 	game, err := y.convertToModel(ymgalResp.Data.Game)
 	game.ID = request.DbGameId
 	game.Company = org
-	game.Tags = org
-	tagMap := gameEntity.Tags
-	tagMap = make(map[string][]models.Tag)
+
 	tagMap[models.TagCategoryBrand] = []models.Tag{
 		models.Tag{
 			Category:    models.TagCategoryBrand,
@@ -287,6 +286,15 @@ func (y YmgalInfoGetter) FetchEntity(request vo.MetadataRequest, token string) (
 			BlockModify: true,
 		},
 	}
+	tagMap[models.TagCategoryGenre] = []models.Tag{
+		models.Tag{
+			Category:    models.TagCategoryGenre,
+			Name:        ymgalResp.Data.Game.Type,
+			BlockModify: true,
+		},
+	}
+
+	game.Tags = org + "," + ymgalResp.Data.Game.Type
 	gameEntity.Tags = tagMap
 	works := gameEntity.WorksMap
 	works = make(map[enums.StaffRole][]models.Work)

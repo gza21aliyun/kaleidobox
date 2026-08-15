@@ -1216,7 +1216,11 @@ func isValidJapaneseText2(text string) bool {
 }
 
 func isValidJapaneseText(text string) bool {
-	if len(text) < 10 {
+	return IsValidJapaneseText3(text, 10)
+}
+
+func IsValidJapaneseText3(text string, min int) bool {
+	if len(text) < min {
 		return false
 	}
 

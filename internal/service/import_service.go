@@ -1254,6 +1254,13 @@ func (s *ImportService) ProcessDroppedPaths(paths []string) ([]vo.BatchImportCan
 				searchName = exeName
 			}
 
+			if utils.IsValidJapaneseText3(folderName, 5) && !utils.IsValidJapaneseText3(exeName, 5) {
+				searchName = folderName
+			}
+			if !utils.IsValidJapaneseText3(folderName, 5) && utils.IsValidJapaneseText3(exeName, 5) {
+				searchName = exeName
+			}
+
 			candidate := vo.BatchImportCandidate{
 				FolderPath:  folderPath,
 				FolderName:  folderName,

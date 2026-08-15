@@ -163,7 +163,7 @@ function RootLayout() {
 
   const handleImportComplete = (importedGames: models.Game[], isOpenUpdate: boolean) => {
     fetchGames();
-    if (isOpenUpdate) {
+    if (isOpenUpdate && importedGames && importedGames.length > 0) {
       setImportedGamesForUpdate(importedGames);
       setIsBatchUpdateOpen(true);
     }
@@ -267,7 +267,7 @@ function RootLayout() {
         onUpdateComplete={() => {
           setIsBatchUpdateOpen(false);
         }}
-        games={importedGamesForUpdate}
+        games={importedGamesForUpdate || []}
       />
     </div>
   );

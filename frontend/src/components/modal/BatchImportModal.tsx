@@ -139,7 +139,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
         }
         catch (error) {
           console.error("Failed to scan directory:", error);
-          toast.error("扫描目录失败");
+          toast.error("扫描目录失败:" + error);
           setStep("select");
         }
         finally {

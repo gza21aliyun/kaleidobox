@@ -1001,7 +1001,7 @@ function LibraryPage() {
         onClose={() => setIsBatchImportOpen(false)}
         onImportComplete={(importedGames, isOpenUpdate) => {           
           loadGames().then(() => { 
-            if (isOpenUpdate) {
+            if (isOpenUpdate && importedGames && importedGames.length > 0) {
               setSelectedGameIds(importedGames.map((g) => g.id))
               setIsBatchUpdateOpen(true);
             }
@@ -1027,7 +1027,7 @@ function LibraryPage() {
           setBatchMode(false);
           // loadGames().then((res)=>{});
         }}
-        games={filterSelected}
+        games={filterSelected || []}
       />
 
       <AddTagModal

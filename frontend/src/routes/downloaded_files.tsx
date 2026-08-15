@@ -1780,7 +1780,7 @@ export default function DownloadedFiles() {
               onUpdateComplete={() => {
                 setImportedGames([])
               }}
-              games={importedGames}
+              games={importedGames || []}
             />
 
       {/* 运行游戏选择弹窗 */}

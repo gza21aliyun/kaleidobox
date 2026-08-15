@@ -13,7 +13,7 @@ import { GameInfoModal } from "./GameInfoModal";
 
 interface LocalSearchModalProps {
   itemName: string;
-  onOpenInfo: (game: models.GameEntity) => void;
+  onOpenInfo?: (game: models.GameEntity) => void;
   onChoose?: (game: models.Game) => void;
   type?: number;
   status?: number;
@@ -100,6 +100,7 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
   });
 
   const handleViewDetails = async (game: models.Game) => {
+    if (!onOpenInfo) return;
     const ge = await GetGameEntityByID(game.id);
     onOpenInfo(ge);
     // navigate({ 
@@ -207,16 +208,19 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
                   viewMode="small"
                   searchQuery={searchQuery}
                   buttons={<>
-                    <button
-                      onClick={()=>handleViewDetails(game)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
-                      title={t('common.viewDetails')}
-                    >
-                      <div className="i-mdi-information-variant text-lg" />
-                    </button>
+                    {onOpenInfo && (
+                      <button
+                        onClick={()=>handleViewDetails(game)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-white/30 active:scale-95"
+                        title={t('common.viewDetails')}
+                      >
+                        <div className="i-mdi-information-variant text-lg" />
+                      </button>
+                      
+                    )}
 
                     <button
-                        onClick={()=>{handleGameDetails(game, filteredGames.map((g) => g.id))}}
+                        onClick={()=>{handleGameDetails(game, sortedGames.map((g) => g.id))}}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-blue-500/80 active:scale-95"
                         title="打开游戏"
                       >

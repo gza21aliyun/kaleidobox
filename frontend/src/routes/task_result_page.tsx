@@ -365,7 +365,6 @@ function TaskResultPage() {
       {searchDirPath && (
         <LocalSearchModal
           itemName={searchDirPath.split(/[\\/]/).pop() || searchDirPath}
-          onOpenInfo={() => {}}
           onClose={() => setSearchDirPath(null)}
         />
       )}

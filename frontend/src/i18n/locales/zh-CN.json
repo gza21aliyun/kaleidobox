@@ -843,11 +843,12 @@
     "CUSTOM": "自定义"
   },
   "deviceType": {
-    "KEYBOARD": "键盘",
-    "DUALSENSE": "PlayStation 5 DualSense",
-    "DUALSHOCK4": "PlayStation 4 DualShock 4",
-    "JOYCON": "Nintendo Switch Joy-Con",
-    "XINPUT": "Xbox 控制器及兼容设备"
+    "keyboard": "键盘",
+    "dualsense": "PlayStation 5 DualSense",
+    "dualshock4": "PlayStation 4 DualShock 4",
+    "joyconPair": "Nintendo Switch PRO",
+    "xinput": "XInput",
+    "touch": "触摸屏"
   },
   "modifierKey": {
     "CTRL": "Ctrl",
@@ -1126,7 +1127,7 @@
     "executableDescription": "KaleidoBox 使用此可执行文件启动游戏。这里是您一开始选择的可执行文件路径",
     "actualGameProcess": "实际游戏进程",
     "selectProcessFile": "选择进程文件",
-    "processNameDescription": "指定实际游戏的进程名称（包含 .exe 后缀）。\n兼容多个游戏同一exe名的情况",
+    "processNameDescription": "指定实际游戏的进程名称（包含 .exe 后缀）。\n兼容多个游戏同一exe名的情况。键位映射、截图、游玩经历、magpie放大都需要此值才能工作",
     "launchTools": "启动增强工具",
     "localeTool": "转区工具",
     "localeEmulatorDescription": "使用日文环境模拟启动游戏，解决乱码和区域限制问题。",

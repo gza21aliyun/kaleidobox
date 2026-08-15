@@ -841,11 +841,12 @@
     "CUSTOM": "カスタム"
   },
   "deviceType": {
-    "KEYBOARD": "キーボード",
-    "DUALSENSE": "PlayStation 5 DualSense",
-    "DUALSHOCK4": "PlayStation 4 DualShock 4",
-    "JOYCON": "Nintendo Switch Joy-Con",
-    "XINPUT": "Xbox コントローラーおよび互換デバイス"
+    "keyboard": "キーボード",
+    "dualsense": "PlayStation 5 DualSense",
+    "dualshock4": "PlayStation 4 DualShock 4",
+    "joyconPair": "Nintendo Switch Joy-Con",
+    "xinput": "Xbox コントローラーおよび互換デバイス",
+    "touch": "タッチスクリーン"
   },
   "modifierKey": {
     "CTRL": "Ctrl",
@@ -1121,7 +1122,7 @@
     "executableDescription": "KaleidoBox はこの実行可能ファイルを使用してゲームを起動します。ここに最初に選択した実行可能ファイルのパスが表示されます。",
     "actualGameProcess": "実際のゲームプロセス",
     "selectProcessFile": "プロセスファイルを選択",
-    "processNameDescription": "実際のゲームのプロセス名を指定します（.exe 拡張子を含む）。\n複数のゲームで同じ exe 名を使用する場合に対応しています。",
+    "processNameDescription": "実際のゲームのプロセス名を指定します（.exe 拡張子を含む）。\n複数のゲームで同じ exe 名を使用する場合に対応しています。キーマッピング、スクリーンショット、プレイ履歴、Magpie 拡大機能はすべてこの値が必要です。",
     "launchTools": "起動拡張ツール",
     "localeTool": "ロケールツール",
     "localeEmulatorDescription": "日本語環境をエミュレートしてゲームを起動し、文字化けや地域制限の問題を解決します。",

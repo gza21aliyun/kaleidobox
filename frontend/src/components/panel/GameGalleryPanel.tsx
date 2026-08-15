@@ -223,7 +223,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
               ))}
             </div>
           ) : (
-            <div className="text-brand-600 dark:text-brand-400 text-sm italic">
+            <div className="text-brand-600 dark:text-brand-400 text-sm italic" title="要等待游戏的游戏实际进程被赋值才能用">
               {screenshotHotkey 
                 ? t('gameGallery.useHotkey', { 
                     hotkey: screenshotHotkey.device_type === enums.DeviceType.KEYBOARD && screenshotHotkey.modifiers

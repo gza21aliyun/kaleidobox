@@ -843,11 +843,12 @@
     "CUSTOM": "Custom"
   },
   "deviceType": {
-    "KEYBOARD": "Keyboard",
-    "DUALSENSE": "PlayStation 5 DualSense",
-    "DUALSHOCK4": "PlayStation 4 DualShock 4",
-    "JOYCON": "Nintendo Switch Joy-Con",
-    "XINPUT": "Xbox controller and compatible devices"
+    "keyboard": "Keyboard",
+    "dualsense": "PlayStation 5 DualSense",
+    "dualshock4": "PlayStation 4 DualShock 4",
+    "joyconPair": "Nintendo Switch Joy-Con",
+    "xinput": "XInput",
+    "touch": "Touchscreen"
   },
   "modifierKey": {
     "CTRL": "Ctrl",
@@ -1123,7 +1124,7 @@
     "executableDescription": "KaleidoBox uses this executable to launch the game. This is the executable path you initially selected",
     "actualGameProcess": "Actual game process",
     "selectProcessFile": "Select process file",
-    "processNameDescription": "Specify the actual game process name (including .exe suffix).\nCompatible with multiple games with the same exe name",
+    "processNameDescription": "Specify the actual game process name (including .exe suffix).\nCompatible with multiple games with the same exe name. Key mapping, screenshots, play history, and Magpie upscaling all require this value to work.",
     "launchTools": "Launch enhancement tools",
     "localeTool": "Locale tool",
     "localeEmulatorDescription": "Use Japanese environment emulation to launch games, solving garbled text and region restriction issues.",

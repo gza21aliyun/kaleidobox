@@ -147,6 +147,12 @@ func collectDirsAtLevel(rootDir string, targetLevel int) ([]string, error) {
 		}
 		depth := len(strings.Split(rel, string(os.PathSeparator)))
 		if depth == targetLevel {
+			subEntries, _ := os.ReadDir(path)
+			if len(subEntries) == 1 && subEntries[0].IsDir() {
+				subPath := filepath.Join(path, subEntries[0].Name())
+				dirs = append(dirs, subPath)
+				return filepath.SkipDir
+			}
 			dirs = append(dirs, path)
 			// 不再向下遍历
 			return filepath.SkipDir

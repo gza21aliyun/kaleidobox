@@ -20,7 +20,7 @@ function TaskResultPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { taskId } = Route.useParams();
-  const { tasks } = useAppStore();
+  const { tasks, games, fetchGames } = useAppStore();
   const [task, setTask] = useState<models.TaskNotice | undefined>(undefined);
 
   // 从 store 中实时获取任务（store 更新时自动重渲染）
@@ -40,6 +40,12 @@ function TaskResultPage() {
   const pendingTaskRef = useRef<models.TaskNotice | undefined>(undefined);
   const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!games || games.length === 0) {
+      fetchGames();
+    }
+  }, [games]);
 
   useEffect(() => {
     // 首次进入：立刻同步写入，避免显示"任务不存在"（后续更新才走节流）
@@ -185,6 +191,8 @@ function TaskResultPage() {
     });
   }, [resultGames, trimSearch, gamesMap]);
 
+  
+
   if (!task) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -324,6 +332,10 @@ function TaskResultPage() {
                                   <div className="i-mdi-delete-outline text-base" />
                                 </button>
                               </div>
+                              {
+                                <FoundIcon path={gameId} />
+                              }
+
                               {/* <div className="i-mdi-folder-outline text-base shrink-0" /> */}
                               <span className="truncate">{gameId}</span>
                             </div>
@@ -370,4 +382,34 @@ function TaskResultPage() {
       )}
     </div>
   );
+}
+
+interface FoundIconProps {
+  path: string;
+}
+
+function FoundIcon({ path }: FoundIconProps) {
+  const { games } = useAppStore();
+
+  const foundGamesLength = (p: string) => {
+    const name = p.split(/[\\/]/).pop() || "";
+    if (name.length === 0) return null;
+    const gs = (games || []).filter(g => g.name.includes(name));
+    if (gs.length === 0) return null;
+
+    return gs[0];
+  }
+
+  const resultFoundGamesLength = useMemo(() => {
+    return foundGamesLength(path);
+  }, [path, games]);
+
+  
+  if (resultFoundGamesLength) {
+    return (
+      <div className="i-mdi-folder-outline text-base shrink-0" title={resultFoundGamesLength.path} />
+    );
+  } else {
+    return null;
+  }
 }

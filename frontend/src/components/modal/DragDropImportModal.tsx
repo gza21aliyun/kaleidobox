@@ -266,7 +266,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
       });
 
     BatchImportGamesSearch(importCandidates, isSearchFolder).then((res) => {
-      onImportComplete(res.games, true);
+      
       if (res.games && res.games.length > 0 && selectedCategoryVo?.id) {
         AddGamesToCategories(res.games.map(g => g.id), [selectedCategoryVo.id])
           .then(() => {
@@ -279,7 +279,16 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
             triggerCategoriesRefresh();
           });
       }
-      resetAndClose();
+      if (res.games && res.games.length > 0) {
+        onImportComplete(res.games, true);
+        resetAndClose();
+      } else {
+        setImportResult(res);
+        setStep("result");
+        if (res.success > 0) {
+          onImportComplete(res.games, false);
+        }
+      }
     });
   };
 

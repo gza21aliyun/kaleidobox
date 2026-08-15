@@ -1365,78 +1365,13 @@ func (s *ImportService) BatchImportGamesFolderLnk(dir string) ([]vo.BatchImportC
 
 func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate, error) {
 
-	// 关键修复：将 lnk 文件复制到临时目录并重命名，避免文件名中的特殊字符影响解析
-	tempDir := os.TempDir()
-	tempFileName := fmt.Sprintf("lnk_parse_%s.lnk", uuid.New().String())
-	tempLinkPath := filepath.Join(tempDir, tempFileName)
-
-	// 复制 lnk 文件到临时目录
-	sourceFile, err := os.Open(linkPath)
+	// 使用原生 IShellLinkW (Unicode) COM 接口解析 lnk 文件。
+	// 相比 PowerShell WScript.Shell 走控制台输出的方式，这里直接调用 Windows 的宽字符接口，
+	// 可以完整保留诸如 〜 (U+301C WAVE DASH)、全角特殊符号等 CP932/Shift-JIS 不包含的 Unicode 字符，
+	// 同时不再需要把 lnk 复制到临时目录（原 workaround 是规避 PowerShell 对特殊文件名的解析失败）。
+	shortcutInfo, err := utils.ResolveLnkPath(linkPath)
 	if err != nil {
-		return vo.BatchImportCandidate{}, fmt.Errorf("failed to open source lnk file: %w", err)
-	}
-	defer sourceFile.Close()
-
-	destFile, err := os.Create(tempLinkPath)
-	if err != nil {
-		return vo.BatchImportCandidate{}, fmt.Errorf("failed to create temp lnk file: %w", err)
-	}
-	defer destFile.Close()
-
-	_, err = io.Copy(destFile, sourceFile)
-	if err != nil {
-		os.Remove(tempLinkPath) // 清理失败创建的临时文件
-		return vo.BatchImportCandidate{}, fmt.Errorf("failed to copy lnk file: %w", err)
-	}
-
-	// 确保临时文件在执行前被正确关闭
-	destFile.Close()
-
-	// 使用 defer 确保临时文件最终被删除
-	defer os.Remove(tempLinkPath)
-
-	fmt.Printf("Debug: Original lnk path: %s\n", linkPath)
-	fmt.Printf("Debug: Temp lnk path: %s\n", tempLinkPath)
-
-	// 使用 PowerShell 解析 lnk 文件（改进版本：无窗口且正确编码）
-	psCommand := `
-		$shell = New-Object -ComObject WScript.Shell
-		$shortcut = $shell.CreateShortcut("` + tempLinkPath + `")
-		
-		# 分别获取目标路径和参数
-		$targetPath = $shortcut.TargetPath
-		$arguments = $shortcut.Arguments
-		$workingDirectory = $shortcut.WorkingDirectory
-		$windowStyle = $shortcut.WindowStyle
-		
-		# 创建JSON格式输出，便于解析
-		$result = @{
-			TargetPath = $targetPath
-			Arguments = $arguments
-			WorkingDirectory = $workingDirectory
-			WindowStyle = $windowStyle
-		}
-		
-		# 转换为JSON并输出
-		[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-		ConvertTo-Json $result -Compress
-	`
-
-	output, err := utils.ExecutePowerShellHidden(psCommand)
-	if err != nil {
-		return vo.BatchImportCandidate{}, fmt.Errorf("failed to execute powershell command: %w", err)
-	}
-
-	// 解析JSON输出
-	var shortcutInfo struct {
-		TargetPath       string `json:"TargetPath"`
-		Arguments        string `json:"Arguments"`
-		WorkingDirectory string `json:"WorkingDirectory"`
-		WindowStyle      int    `json:"WindowStyle"`
-	}
-
-	if err := json.Unmarshal(output, &shortcutInfo); err != nil {
-		return vo.BatchImportCandidate{}, fmt.Errorf("failed to parse shortcut info: %w", err)
+		return vo.BatchImportCandidate{}, fmt.Errorf("failed to resolve lnk file: %w", err)
 	}
 
 	// 构建完整命令行
@@ -1445,19 +1380,16 @@ func (s *ImportService) ImportGamesLnk(linkPath string) (vo.BatchImportCandidate
 		fullCommand += " " + shortcutInfo.Arguments
 	}
 
-	// 清理输出中的BOM标记并去除空白
-	// targetPath := utils.RemoveBOMAndTrim(output)
 	targetPath := shortcutInfo.TargetPath
 	if targetPath == "" {
-		return vo.BatchImportCandidate{}, fmt.Errorf("could not resolve target path, \n%v\n", shortcutInfo)
+		return vo.BatchImportCandidate{}, fmt.Errorf("could not resolve target path, \n%+v\n", shortcutInfo)
 	}
 
 	// 获取文件夹路径和名称
 	folderPath := filepath.Dir(targetPath)
 	folderName := filepath.Base(folderPath)
 
-	// 获取可执行文件名
-	// fileName := filepath.Base(targetPath)
+	// 获取搜索名（使用 lnk 原始文件名，避开解析器返回路径的潜在乱码影响）
 	linkName := filepath.Base(linkPath)
 
 	// 创建 BatchImportCandidate 对象

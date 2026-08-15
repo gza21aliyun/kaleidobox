@@ -1,5 +1,5 @@
 import { createRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import { models } from "../../wailsjs/go/models";
 import { GetGamesByIdsStr, OpenLocalPath, DeleteFolder } from "../../wailsjs/go/service/GameService";
@@ -21,9 +21,10 @@ function TaskResultPage() {
   const navigate = useNavigate();
   const { taskId } = Route.useParams();
   const { tasks } = useAppStore();
+  const [task, setTask] = useState<models.TaskNotice | undefined>(undefined);
 
   // 从 store 中实时获取任务（store 更新时自动重渲染）
-  const task = tasks.find(t => t.id === taskId);
+  const taskInStore = tasks.find(t => t.id === taskId);
 
   const resultGames = task?.result_games || [];
   const title = task?.title || '';
@@ -34,24 +35,110 @@ function TaskResultPage() {
   const [searchDirPath, setSearchDirPath] = useState<string | null>(null);
   const [deletedPaths, setDeletedPaths] = useState<Set<string>>(new Set());
 
+  // 节流刷新：store 更新很快（如5000个路径任务）时避免每帧重渲染
+  const THROTTLE_MS = 250;
+  const pendingTaskRef = useRef<models.TaskNotice | undefined>(undefined);
+  const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initializedRef = useRef(false);
+
   useEffect(() => {
-    if (!resultGames || resultGames.length === 0) return;
+    // 首次进入：立刻同步写入，避免显示"任务不存在"（后续更新才走节流）
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      setTask(taskInStore);
+      // 首次也清一下 pending/timer 状态
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+        throttleTimerRef.current = null;
+      }
+      pendingTaskRef.current = undefined;
+      return; // 首次不走 timer，也不要返回 cleanup 清下一次的 timer
+    }
 
-    const allIds = Array.from(new Set(resultGames.flatMap(rg => rg.game_ids || [])));
-    if (allIds.length === 0) return;
+    // 任务完成/错误/取消：直接刷新（不再节流），避免用户看不到最终结果
+    const isTerminal = taskInStore &&
+      (taskInStore.status === "完成" || taskInStore.status === "错误" || taskInStore.status === "取消");
 
-    GetGamesByIdsStr(allIds.join(','))
-      .then(games => {
-        const map: Record<string, models.Game> = {};
-        (games || []).forEach(g => {
-          if (g.id) map[g.id] = g;
+    if (isTerminal) {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+        throttleTimerRef.current = null;
+      }
+      pendingTaskRef.current = undefined;
+      setTask(taskInStore);
+      return;
+    }
+
+    pendingTaskRef.current = taskInStore;
+
+    if (throttleTimerRef.current) return; // 已有 timer 等待，排队
+
+    throttleTimerRef.current = setTimeout(() => {
+      throttleTimerRef.current = null;
+      if (pendingTaskRef.current !== undefined) {
+        setTask(pendingTaskRef.current);
+        pendingTaskRef.current = undefined;
+      }
+    }, THROTTLE_MS);
+
+    // 注意：这里不能返回 cleanup 清 timer，否则 effect 重执行时（store 每次更新）
+    // 都会把刚启的 1000ms timer 清掉，导致运行中任务永远等不到 fire → setTask 永远不执行
+    // → 一直显示"任务不存在"。组件卸载清理放到独立的空依赖 effect 中。
+  }, [taskInStore]);
+
+  // 组件卸载：统一清理 timer
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+        throttleTimerRef.current = null;
+      }
+      if (gamesReqTimerRef.current) {
+        clearTimeout(gamesReqTimerRef.current);
+        gamesReqTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 对大量路径的过滤 & id 扁平化做 useMemo，避免每次 render 重跑
+  const flattenResultIds = useMemo(
+    () => (resultGames?.length ? Array.from(new Set(resultGames.flatMap(rg => rg.game_ids || []))) : []),
+    [resultGames],
+  );
+
+  // 游戏名查询：防抖 + 基于扁平化 ids，避免 5000+ 路径每次刷新都重查
+  const gamesReqTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (flattenResultIds.length === 0) return;
+
+    // 过滤掉路径（只需要查游戏ID的名字），避免传几千条路径给后端
+    const gameIds = flattenResultIds.filter(id => !/[\\\/]/.test(id));
+    if (gameIds.length === 0) return;
+
+    if (gamesReqTimerRef.current) clearTimeout(gamesReqTimerRef.current);
+    gamesReqTimerRef.current = setTimeout(() => {
+      gamesReqTimerRef.current = null;
+      GetGamesByIdsStr(gameIds.join(','))
+        .then(games => {
+          const map: Record<string, models.Game> = {};
+          (games || []).forEach(g => {
+            if (g.id) map[g.id] = g;
+          });
+          setGamesMap(map);
+        })
+        .catch(err => {
+          console.error("Failed to load games:", err);
         });
-        setGamesMap(map);
-      })
-      .catch(err => {
-        console.error("Failed to load games:", err);
-      });
-  }, [resultGames]);
+    }, 150);
+
+    return () => {
+      if (gamesReqTimerRef.current) {
+        clearTimeout(gamesReqTimerRef.current);
+        gamesReqTimerRef.current = null;
+      }
+    };
+  }, [flattenResultIds]);
 
   // 搜索词变化时重置分页
   useEffect(() => {
@@ -82,17 +169,21 @@ function TaskResultPage() {
   const isPath = (id: string) => /[\\\/]/.test(id);
 
   const trimSearch = searchTerm.trim().toLowerCase();
-  const filterIds = (ids: string[] | undefined) => {
-    if (!ids || ids.length === 0) return [];
-    if (!trimSearch) return ids;
-    return ids.filter(id => {
-      if (isPath(id)) {
-        return id.toLowerCase().includes(trimSearch);
-      }
-      const name = gamesMap[id]?.name || "";
-      return name.toLowerCase().includes(trimSearch) || id.toLowerCase().includes(trimSearch);
+
+  // 预计算每个 resultGroup 的 filtered 列表：依赖变了才重算，避免每帧遍历 5000+ × 3 组
+  const filteredByGroup = useMemo(() => {
+    return (resultGames || []).map(rg => {
+      const ids = rg.game_ids || [];
+      if (!trimSearch) return ids;
+      return ids.filter(id => {
+        if (isPath(id)) {
+          return id.toLowerCase().includes(trimSearch);
+        }
+        const name = gamesMap[id]?.name || "";
+        return name.toLowerCase().includes(trimSearch) || id.toLowerCase().includes(trimSearch);
+      });
     });
-  };
+  }, [resultGames, trimSearch, gamesMap]);
 
   if (!task) {
     return (
@@ -165,7 +256,7 @@ function TaskResultPage() {
           <div className="space-y-4">
             {resultGames.map((rg, idx) => {
               const btnClass = getStatusBtn(rg.status);
-              const filtered = filterIds(rg.game_ids);
+              const filtered = filteredByGroup[idx] || [];
               const visible = filtered.slice(0, limit);
               const hasMore = filtered.length > visible.length;
 

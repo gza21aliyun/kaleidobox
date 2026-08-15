@@ -1218,15 +1218,14 @@ func (s *ImportService) ProcessDroppedPaths(paths []string) ([]vo.BatchImportCan
 			// 处理可执行文件
 			lowerName := strings.ToLower(path)
 			fileName := filepath.Base(path)
-			if !strings.HasSuffix(lowerName, ".exe") && !strings.HasSuffix(lowerName, ".bat") && fileName != "index.html" && fileName != "index.htm" {
+			lowerFileName := strings.ToLower(fileName)
+			if !strings.HasSuffix(lowerName, ".exe") && !strings.HasSuffix(lowerName, ".bat") && lowerFileName != "index.html" && lowerFileName != "index.htm" {
 				applog.LogInfof(s.ctx, "ProcessDroppedPaths: skipping non-executable file %s", path)
 				continue
 			}
 
 			// 检查是否应该排除
 			excluded := false
-
-			lowerFileName := strings.ToLower(fileName)
 			for _, keyword := range utils.ExcludeExeKeywords {
 				if strings.Contains(lowerFileName, keyword) {
 					excluded = true

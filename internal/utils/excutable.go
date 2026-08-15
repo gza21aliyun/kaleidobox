@@ -36,7 +36,7 @@ func FindExecutables(folderPath string, excludeKeywords []string, level int, con
 
 		// 检查是否是可执行文件（不包含 .lnk 快捷方式）
 		if !strings.HasSuffix(lowerName, ".exe") &&
-			!strings.HasSuffix(lowerName, ".bat") && (!containsHtml || name != "index.html" && name != "index.htm") {
+			!strings.HasSuffix(lowerName, ".bat") && (!containsHtml || lowerName != "index.html" && lowerName != "index.htm") {
 			continue
 		}
 

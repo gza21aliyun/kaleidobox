@@ -239,7 +239,8 @@ func (s *StartService) StartHttpServerThenOpenPageByBrowser(filePath string) err
 	fileServer := http.FileServer(http.Dir(fileDir))
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ext := strings.ToLower(filepath.Ext(r.URL.Path))
-		if ext == ".html" || ext == ".htm" {
+		lowerExt := strings.ToLower(ext)
+		if lowerExt == ".html" || lowerExt == ".htm" {
 			fullPath := filepath.Join(fileDir, filepath.FromSlash(r.URL.Path))
 			if charset := detectHTMLCharset(fullPath); charset != "" {
 				w.Header().Set("Content-Type", "text/html; charset="+charset)
@@ -320,7 +321,9 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		return false, fmt.Errorf("failed to get game path: %w", err)
 	}
 	ext := filepath.Ext(path)
-	if ext == ".htm" || ext == ".html" {
+	lowerExt := strings.ToLower(ext)
+
+	if lowerExt == ".htm" || lowerExt == ".html" {
 		// 启动 HTTP 服务器并打开浏览器
 		err = s.StartHttpServerThenOpenPageByBrowser(path)
 		if err == nil {

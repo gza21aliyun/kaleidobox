@@ -428,7 +428,9 @@
       "saveGroupFailed": "保存分组失败",
       "tagAddedToGroup": "标签 \"{{tagName}}\" 已添加到分组 \"{{targetGroup}}\"",
       "dragAddTagFailed": "拖拽添加标签失败",
-      "addTagToGroupFailed": "添加标签到分组失败"
+      "addTagToGroupFailed": "添加标签到分组失败",
+      "tagDeleteSuccess": "标签删除成功",
+      "tagDeleteFailed": "删除标签失败"
     },
     "messages": {
       "noMatchingTags": "未找到匹配的标签",
@@ -444,8 +446,12 @@
       "noGroups": "暂无分组",
       "clickToCreate": "点击上方按钮创建"
     },
+    "actions": {
+      "deleteTag": "删除标签"
+    },
     "modals": {
-      "deleteGroupMessage": "确定要删除分组 \"{{name}}\" 吗？这将取消该分组下所有标签的分组关联。"
+      "deleteGroupMessage": "确定要删除分组 \"{{name}}\" 吗？这将取消该分组下所有标签的分组关联。",
+      "deleteTagMessage": "确定要删除标签 \"{{name}}\" 吗？此操作会同时从所有游戏中移除该标签。"
     }
   },
   "staff": {

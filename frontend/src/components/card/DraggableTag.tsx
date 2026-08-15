@@ -9,7 +9,7 @@ interface DragItem {
 }
 
 // 可拖拽的标签组件
-export function DraggableTag({ tag }: { tag: models.Tag }) {
+export function DraggableTag({ tag, onDelete }: { tag: models.Tag; onDelete?: (tagName: string) => void }) {
   const { t } = useTranslation();
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'tag',
@@ -25,7 +25,7 @@ export function DraggableTag({ tag }: { tag: models.Tag }) {
       className={`
         inline-flex items-center px-3 py-1 rounded-full text-sm font-medium cursor-move
         ${tag.is_h
-          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 border border-red-200 dark:border-red-800' 
+          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 border border-red-200 dark:border-red-800'
           : tag.is_spoiler
           ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800'
           : 'bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-200 border border-brand-200 dark:border-brand-700'
@@ -50,6 +50,18 @@ export function DraggableTag({ tag }: { tag: models.Tag }) {
         <div className="ml-1 text-xs" title={t('tag.tags.blockModify')}>
           <div className="i-mdi-lock-outline"></div>
         </div>
+      )}
+      {!tag.block_modify && onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(tag.name);
+          }}
+          className="ml-1 text-xs opacity-50 hover:opacity-100 hover:text-red-600 dark:hover:text-red-400 transition-opacity"
+          title={t('tagList.actions.deleteTag')}
+        >
+          <div className="i-mdi-close-circle-outline"></div>
+        </button>
       )}
       <div className="ml-1 text-xs opacity-70">
         <div className="i-mdi-drag-horizontal"></div>

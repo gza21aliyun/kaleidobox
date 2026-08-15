@@ -428,7 +428,9 @@
       "saveGroupFailed": "Failed to save group",
       "tagAddedToGroup": "Tag \"{{tagName}}\" has been added to group \"{{targetGroup}}\"",
       "dragAddTagFailed": "Failed to add tag by drag",
-      "addTagToGroupFailed": "Failed to add tag to group"
+      "addTagToGroupFailed": "Failed to add tag to group",
+      "tagDeleteSuccess": "Tag deleted successfully",
+      "tagDeleteFailed": "Failed to delete tag"
     },
     "messages": {
       "noMatchingTags": "No matching tags found",
@@ -444,8 +446,12 @@
       "noGroups": "No groups",
       "clickToCreate": "Click the button above to create"
     },
+    "actions": {
+      "deleteTag": "Delete tag"
+    },
     "modals": {
-      "deleteGroupMessage": "Are you sure you want to delete group \"{{name}}\"? This will remove all tag-group associations for tags in this group."
+      "deleteGroupMessage": "Are you sure you want to delete group \"{{name}}\"? This will remove all tag-group associations for tags in this group.",
+      "deleteTagMessage": "Are you sure you want to delete tag \"{{name}}\"? This will also remove the tag from all games."
     }
   },
   "staff": {

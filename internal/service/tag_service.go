@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"lunabox/internal/appconf"
 	"lunabox/internal/models"
+	"lunabox/internal/utils"
 	"strings"
 )
 
@@ -173,10 +174,51 @@ func (s *TagService) UpdateTag(tag *models.Tag) error {
 	return err
 }
 
-// DeleteTag 删除 Tag 记录
+// DeleteTag 删除 Tag 记录，同时从所有 games 的 tags 字段中移除该标签
 func (s *TagService) DeleteTag(name string) error {
-	query := `DELETE FROM tags WHERE name = ?`
-	_, err := s.db.ExecContext(s.ctx, query, name)
+	if name == "" {
+		return nil
+	}
+	// 1. 查询所有包含该标签的游戏
+	query := `
+		SELECT id, tags FROM games
+		WHERE array_contains(string_split(tags, ','), ?)
+	`
+	rows, err := s.db.QueryContext(s.ctx, query, name)
+	if err != nil {
+		return err
+	}
+
+	type gameTagUpdate struct {
+		id   string
+		tags string
+	}
+	var updates []gameTagUpdate
+	for rows.Next() {
+		var id, tags string
+		if err := rows.Scan(&id, &tags); err != nil {
+			rows.Close()
+			return err
+		}
+		newTags := utils.RemoveString(tags, name)
+		updates = append(updates, gameTagUpdate{id: id, tags: newTags})
+	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return err
+	}
+
+	// 2. 更新每个游戏的 tags 字段
+	updateQuery := `UPDATE games SET tags = ? WHERE id = ?`
+	for _, u := range updates {
+		if _, err := s.db.ExecContext(s.ctx, updateQuery, u.tags, u.id); err != nil {
+			return err
+		}
+	}
+
+	// 3. 从 tags 表中删除该标签
+	delQuery := `DELETE FROM tags WHERE name = ?`
+	_, err = s.db.ExecContext(s.ctx, delQuery, name)
 	return err
 }
 

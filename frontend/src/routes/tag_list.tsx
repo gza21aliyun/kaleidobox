@@ -3,7 +3,7 @@ import { TagGroupModal } from "../components/modal/TagGroupModal";
 import { DraggableTag, DroppableGroup } from "../components/card/DraggableTag";
 import { createRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ListTags, DeleteTagGroup, UpdateTagsGroup, ListGroups } from "../../wailsjs/go/service/TagService";
+import { ListTags, DeleteTagGroup, UpdateTagsGroup, ListGroups, DeleteTag } from "../../wailsjs/go/service/TagService";
 import { Route as rootRoute } from "./__root";
 import { toast } from "react-hot-toast";
 import { DndProvider } from 'react-dnd';
@@ -175,6 +175,35 @@ function TagListPage() {
     }
     };
 
+  const handleDeleteTag = async (tagName: string) => {
+    if (!confirm(t('tagList.modals.deleteTagMessage', { name: tagName }))) {
+      return;
+    }
+
+    try {
+      await DeleteTag(tagName);
+
+      // 局部更新状态，从列表中移除该标签
+      setTags(prevTags => prevTags.filter(tag => tag.name !== tagName));
+
+      // 从 store 的 tagsLoaded 中移除该标签
+      const tagsMap = useAppStore.getState().tagsLoaded;
+      if (tagsMap) {
+        const newMap = new Map(tagsMap);
+        newMap.forEach((tagList, category) => {
+          const filtered = tagList.filter(t => t.name !== tagName);
+          newMap.set(category, filtered);
+        });
+        useAppStore.setState({ tagsLoaded: newMap });
+      }
+
+      toast.success(t('tagList.toasts.tagDeleteSuccess'));
+    } catch (error) {
+      console.error(t('tagList.toasts.tagDeleteFailed') + ':', error);
+      toast.error(t('tagList.toasts.tagDeleteFailed'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -281,7 +310,7 @@ function TagListPage() {
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {categoryTags.map((tag) => (
-                          <DraggableTag key={tag.name} tag={tag} />
+                          <DraggableTag key={tag.name} tag={tag} onDelete={handleDeleteTag} />
                         ))}
                       </div>
                     </div>

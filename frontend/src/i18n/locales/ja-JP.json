@@ -426,7 +426,9 @@
       "saveGroupFailed": "グループの保存に失敗しました",
       "tagAddedToGroup": "タグ \"{{tagName}}\" をグループ \"{{targetGroup}}\" に追加しました",
       "dragAddTagFailed": "ドラッグによるタグの追加に失敗しました",
-      "addTagToGroupFailed": "タグをグループに追加するのに失敗しました"
+      "addTagToGroupFailed": "タグをグループに追加するのに失敗しました",
+      "tagDeleteSuccess": "タグの削除に成功しました",
+      "tagDeleteFailed": "タグの削除に失敗しました"
     },
     "messages": {
       "noMatchingTags": "一致するタグが見つかりません",
@@ -442,8 +444,12 @@
       "noGroups": "グループがありません",
       "clickToCreate": "上のボタンをクリックして作成してください"
     },
+    "actions": {
+      "deleteTag": "タグを削除"
+    },
     "modals": {
-      "deleteGroupMessage": "グループ \"{{name}}\" を削除しますか？これにより、このグループに属するすべてのタグのグループ関連付けが解除されます。"
+      "deleteGroupMessage": "グループ \"{{name}}\" を削除しますか？これにより、このグループに属するすべてのタグのグループ関連付けが解除されます。",
+      "deleteTagMessage": "タグ \"{{name}}\" を削除しますか？すべてのゲームからもこのタグが削除されます。"
     }
   },
   "staff": {

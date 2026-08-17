@@ -150,17 +150,18 @@ function LibraryPage() {
   }, [tagsIntersectionMode]);
 
   const filteredGames = useMemo(() => {
+    const ids: string[] = [];
     if (sourceFilter === "emptyGallery") {
       if (includedIds === null) {
         FetchEmptyGalleryGames().then((res) => { 
-          setIncludedIds(res);
+          if (res && res.length > 0) {
+            setIncludedIds(res);
+          }
         });
       }
       
     } else if (sourceFilter === "duplicated") {
-      if (includedIds === null) {
-        const ids: string[] = [];
-        arrayToMap(games, (game) => game.source_type + game.source_id).forEach((value, key) => {
+      arrayToMap((games || []), (game) => game.source_type + game.source_id).forEach((value, key) => {
           if (value.length > 1) {
             for (const game of value) {
               if (game.source_id && game.source_id !== "") {
@@ -169,8 +170,6 @@ function LibraryPage() {
             }
           }
         });
-        setIncludedIds(ids);
-      }
     } else {
       setIncludedIds(null);
     }
@@ -256,7 +255,7 @@ function LibraryPage() {
         if (sourceFilter === "vm" && game.vm_id && game.vm_id !== "") {
           return true;
         }
-        if (sourceFilter === "duplicated" && includedIds && includedIds.includes(game.id)) {
+        if (sourceFilter === "duplicated" && ids && ids.length > 0 && ids.includes(game.id)) {
           return true;
         }
         return false;

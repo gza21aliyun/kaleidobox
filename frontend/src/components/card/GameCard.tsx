@@ -304,6 +304,7 @@ export function GameCard({
             <ImageCard
               url={game.cover_url}
               alt={game.name}
+              gameId={game.id}
               lazyLoad={true}
               referrerPolicy="no-referrer"
               className="absolute inset-0 w-full h-full object-cover object-center"
@@ -441,6 +442,7 @@ export function GameCard({
                   <ImageCard
                     url={game.cover_url}
                     alt={game.name}
+                    gameId={game.id}
                     lazyLoad={true}
                     referrerPolicy="no-referrer"
                     className="absolute inset-0 w-full h-full object-cover object-center"
@@ -552,6 +554,7 @@ export function GameCard({
                   key={image.url}
                   url={image.url}
                   alt={`Gallery ${index + 1}`}
+                  gameId={game.id}
                   lazyLoad={true}
                   urls={galleryImages.map((i)=>i.url)}
                   referrerPolicy="no-referrer"
@@ -608,6 +611,7 @@ export function GameCard({
               <ImageCard
                 url={game.cover_url}
                 alt={game.name}
+                gameId={game.id}
                 lazyLoad={true}
                 referrerPolicy="no-referrer"
                 className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"

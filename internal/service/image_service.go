@@ -239,7 +239,7 @@ func (s *ImageService) GetImageBackupByUrl(url string, down bool) (*models.Image
 	)
 	if err != nil {
 		fmt.Printf("GetImageBackupByUrl 02 err: %v\n", err)
-		if err == sql.ErrNoRows {
+		if err == sql.ErrNoRows || imageBackup.Url == "" {
 			return nil, nil // 未找到记录
 		}
 		return nil, err

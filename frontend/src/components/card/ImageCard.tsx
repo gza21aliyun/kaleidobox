@@ -1,5 +1,5 @@
 import { models } from "../../../wailsjs/go/models";
-import { GetImageBackupByUrl, FetchGetchuImages, ScaleImageWithMagpie } from "../../../wailsjs/go/service/ImageService";
+import { GetImageBackupByUrl, FetchGetchuImages, ScaleImageWithMagpie, CreateOrUpdateImageBackup } from "../../../wailsjs/go/service/ImageService";
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useAppStore } from "../../store";
@@ -323,6 +323,7 @@ interface ImageCardProps {
   onDelete?: (selected: models.ImageBackup) => void;
   tempDownload?: boolean; // 为true时下载到临时文件夹，不保存到数据库
   urls?: string[];
+  gameId?: string;
 }
 export function ImageCard({
     url,
@@ -339,6 +340,7 @@ export function ImageCard({
     onDelete,
     tempDownload = false,
     urls = [url],
+    gameId,
 }: ImageCardProps) {
     // const [cUrl, setCUrl] = useState(url);
     const [imageBackup, setImageBackup] = useState<models.ImageBackup | null>(null);
@@ -425,7 +427,7 @@ export function ImageCard({
         
         const fetchImage = async () => {
             try {
-                const ib = await FetchImageData(url, tempDownload, index);
+                const ib = await FetchImageData(url, tempDownload, index, gameId);
                 if (ib && mounted) {
                     setImageBackup(ib);
                 }
@@ -454,13 +456,13 @@ export function ImageCard({
             if(currentIndex < urls.length - 1){
                 const nUrl = urls[currentIndex + 1];
                 setIndex(currentIndex + 1);
-                return await FetchImageData(nUrl, tempDownload, currentIndex + 1);
+                return await FetchImageData(nUrl, tempDownload, currentIndex + 1, gameId);
             }
         }else{
             if(currentIndex > 0){
                 const nUrl = urls[currentIndex - 1];
                 setIndex(currentIndex - 1);
-                return await FetchImageData(nUrl, tempDownload, currentIndex - 1);
+                return await FetchImageData(nUrl, tempDownload, currentIndex - 1, gameId);
             }
         }
         return null;
@@ -521,7 +523,7 @@ export function ImageCard({
     return renderContent();
 }
 
-export async function FetchImageData(url: string, isTemp: boolean, index?: number): Promise<models.ImageBackup | null> { 
+export async function FetchImageData(url: string, isTemp: boolean, index?: number, gameId?: string): Promise<models.ImageBackup | null> { 
     if (isTemp) {
         // 下载到临时文件夹，不保存到数据库
         const localPaths = await FetchGetchuImages([url]);
@@ -542,11 +544,31 @@ export async function FetchImageData(url: string, isTemp: boolean, index?: numbe
             }
         }
     } else {
-        const res = await GetImageBackupByUrl(url, true);
-        if (res) {
-            (res as any).index = index ?? 0;
+        var res: models.ImageBackup | null = null;
+        try {
+            res = await GetImageBackupByUrl(url, true);
+            if (res) {
+                (res as any).index = index ?? 0;
+            }
+            return res;
+        } catch (error) {
+            console.error("FetchImageData error:", error);
         }
-        return res;
+        if (!res && gameId) {
+            await CreateOrUpdateImageBackup({
+                url: url,
+                subject_id: gameId,
+                subject_type: 0,
+                image_type: 2,
+                game_id: gameId,
+                created_at: new Date(),
+            } as unknown as models.ImageBackup);
+            res = await GetImageBackupByUrl(url, true);
+            if (res) {
+                (res as any).index = index ?? 0;
+            }
+            return res;
+        }
     }
     return null;
 }

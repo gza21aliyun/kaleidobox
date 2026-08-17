@@ -1328,7 +1328,8 @@
       "deleteSuccess": "文件夹已删除",
       "deleteFailed": "删除文件夹失败",
       "notFound": "任务不存在",
-      "backToTask": "返回任务列表"
+      "backToTask": "返回任务列表",
+      "importSelected": "导入"
     }
   },
   "update": {

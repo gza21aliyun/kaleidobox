@@ -20,7 +20,7 @@ function TaskResultPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { taskId } = Route.useParams();
-  const { tasks, games, fetchGames } = useAppStore();
+  const { tasks, games, fetchGames, setDroppedPaths, setShowDragDropModal } = useAppStore();
   const [task, setTask] = useState<models.TaskNotice | undefined>(undefined);
 
   // 从 store 中实时获取任务（store 更新时自动重渲染）
@@ -276,9 +276,28 @@ function TaskResultPage() {
                         <p className="text-sm text-brand-600 dark:text-brand-400">{rg.description}</p>
                       )}
                     </div>
-                    <span className="text-xs text-brand-400 dark:text-brand-500 shrink-0 ml-2">
-                      {filtered.length}{trimSearch ? ` / ${rg.game_ids?.length || 0}` : ""}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {rg.status !== 200 && filtered.some(id => isPath(id)) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const paths = filtered.filter(id => isPath(id));
+                            if (paths.length > 0) {
+                              setDroppedPaths(paths);
+                              setShowDragDropModal(true);
+                            }
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-primary-500 hover:bg-primary-600 text-white dark:bg-primary-600 dark:hover:bg-primary-500 transition-colors"
+                          title={t('task.result.importSelected')}
+                        >
+                          <div className="i-mdi-import text-sm" />
+                          <span>{t('task.result.importSelected')}</span>
+                        </button>
+                      )}
+                      <span className="text-xs text-brand-400 dark:text-brand-500">
+                        {filtered.length}{trimSearch ? ` / ${rg.game_ids?.length || 0}` : ""}
+                      </span>
+                    </div>
                   </div>
 
                   {visible.length > 0 ? (
@@ -392,9 +411,15 @@ function FoundIcon({ path }: FoundIconProps) {
   const { games } = useAppStore();
 
   const foundGamesLength = (p: string) => {
-    const name = p.split(/[\\/]/).pop() || "";
-    if (name.length === 0) return null;
-    const gs = (games || []).filter(g => g.name.includes(name));
+    const query = p.split(/[\\/]/).pop() || "";
+    if (query.length === 0) return null;
+
+    const gs = (games || []).filter((game: models.Game) => {
+      const name = game?.name?.toLowerCase() || "";
+      const searchName = game?.search_name?.toLowerCase() || "";
+      const lowerQuery = query?.toLowerCase() || "";
+      return name.includes(lowerQuery) || searchName.includes(lowerQuery);
+    });
     if (gs.length === 0) return null;
 
     return gs[0];

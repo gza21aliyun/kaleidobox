@@ -1320,7 +1320,8 @@
       "deleteSuccess": "フォルダを削除しました",
       "deleteFailed": "フォルダの削除に失敗しました",
       "notFound": "タスクが見つかりません",
-      "backToTask": "タスクリストに戻る"
+      "backToTask": "タスクリストに戻る",
+      "importSelected": "インポート"
     }
   },
   "batchUpdate": {

@@ -9,10 +9,10 @@ import { useAppStore } from "../store";
 import { models } from "../../wailsjs/go/models";
 
 function RootLayout() {
-  const { config, fetchGames } = useAppStore();
+  const { config, fetchGames, setDroppedPaths, setShowDragDropModal, droppedPaths, showDragDropModal } = useAppStore();
   const [isDragOver, setIsDragOver] = useState(false);
-  const [showDragDropModal, setShowDragDropModal] = useState(false);
-  const [droppedPaths, setDroppedPaths] = useState<string[]>([]);
+  // const [showDragDropModal, setShowDragDropModal] = useState(false);
+  // const [droppedPaths, setDroppedPaths] = useState<string[]>([]);
   const [isLnk, setIsLnk] = useState(false);
   const [currentDropArea, setCurrentDropArea] = useState<'regular' | 'lnk' | null>(null);
   const currentDropAreaRef = useRef<'regular' | 'lnk' | null>(null);

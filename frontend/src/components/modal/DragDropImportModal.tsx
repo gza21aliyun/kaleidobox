@@ -573,9 +573,12 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                             <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-32">
                               {t('import.modals.dragDrop.matchStatus')}
                             </th>
-                            <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-20">
-                              {t('import.modals.dragDrop.action')}
-                            </th>
+                            {!(config?.hide_old_matching_btns ?? true) && (
+                              <th className="px-3 py-2 text-center text-sm font-medium text-brand-600 dark:text-brand-300 w-20">
+                                {t('import.modals.dragDrop.action')}
+                              </th>
+                            )}
+                            
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-100 dark:divide-brand-700">
@@ -628,7 +631,7 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                                       </select>
                                     )
                                   : (
-                                      <span className="text-sm text-brand-500 dark:text-brand-400">
+                                      <span className="text-sm text-brand-500 dark:text-brand-400" title={candidate.selectedExe}>
                                         {candidate.selectedExe.split(/[/\\]/).pop()}
                                       </span>
                                     )}
@@ -659,16 +662,19 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                                   </span>
                                 )}
                               </td>
-                              <td className="px-3 py-2 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => openManualSelect(index)}
-                                  className="text-primary-500 hover:text-primary-700 text-sm"
-                                  title={t('import.modals.dragDrop.manualSelection')}
-                                >
-                                  <div className="i-mdi-pencil text-lg" />
-                                </button>
-                              </td>
+                              {!(config?.hide_old_matching_btns ?? true) && (
+                                <td className="px-3 py-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => openManualSelect(index)}
+                                    className="text-primary-500 hover:text-primary-700 text-sm"
+                                    title={t('import.modals.dragDrop.manualSelection')}
+                                  >
+                                    <div className="i-mdi-pencil text-lg" />
+                                  </button>
+                                </td>
+                              )}
+                              
                             </tr>
                           ))}
                         </tbody>

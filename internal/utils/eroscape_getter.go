@@ -102,40 +102,33 @@ func (b EroscapeInfoGetter) FetchMetadataByName(name string, totken string) (mod
 func (b EroscapeInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
 	applog.InfoLogSaveAppLog("FetchMetadataByNameFunc 00\n")
 	// mainTitle, num := getTitles(name)
-	game, err := b.FetchMetadataByNameFunc(name, 0,
-		func(request vo.MetadataRequest) (models.Game, error) {
-			// fmt.Printf("FetchMetadataByNameFunc 01")
-			gameEntity, err := b.FetchMetadataById(request)
-
-			return gameEntity.Game, err
-		})
+	game, err := b.FetchMetadataByNameFunc(name, 0, b.FetchMetadataGameById)
 	if game.SourceID == "" {
-		game, err = b.FetchMetadataByNameFunc(name, 1,
-			func(request vo.MetadataRequest) (models.Game, error) {
-				// fmt.Printf("FetchMetadataByNameFunc 01")
-				gameEntity, err := b.FetchMetadataById(request)
-
-				return gameEntity.Game, err
-			})
+		game, err = b.FetchMetadataByNameFunc(name, 1, b.FetchMetadataGameById)
 		// fmt.Printf("FetchMetadataByNameFunc Error fetching metadata:%v\n", err)
 	}
 	if game.SourceID == "" {
-		game, err = b.FetchMetadataByNameFunc(name, 2,
-			func(request vo.MetadataRequest) (models.Game, error) {
-				// fmt.Printf("FetchMetadataByNameFunc 01")
-				gameEntity, err := b.FetchMetadataById(request)
-
-				return gameEntity.Game, err
-			})
+		game, err = b.FetchMetadataByNameFunc(name, 2, b.FetchMetadataGameById)
 	}
 	if game.SourceID == "" {
-		game, err = b.FetchMetadataByNameFunc(name, 3,
-			func(request vo.MetadataRequest) (models.Game, error) {
-				// fmt.Printf("FetchMetadataByNameFunc 01")
-				gameEntity, err := b.FetchMetadataById(request)
+		game, err = b.FetchMetadataByNameFunc(name, 3, b.FetchMetadataGameById)
+	}
+	return game, err
+}
 
-				return gameEntity.Game, err
-			})
+func (b EroscapeInfoGetter) FetchMetadataByNameQuick(name string) (models.Game, error) {
+	applog.InfoLogSaveAppLog("FetchMetadataByNameFunc 00\n")
+	// mainTitle, num := getTitles(name)
+	game, err := b.FetchMetadataByNameFunc(name, 0, nil)
+	if game.SourceID == "" {
+		game, err = b.FetchMetadataByNameFunc(name, 1, nil)
+		// fmt.Printf("FetchMetadataByNameFunc Error fetching metadata:%v\n", err)
+	}
+	if game.SourceID == "" {
+		game, err = b.FetchMetadataByNameFunc(name, 2, nil)
+	}
+	if game.SourceID == "" {
+		game, err = b.FetchMetadataByNameFunc(name, 3, nil)
 	}
 	return game, err
 }
@@ -209,6 +202,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn Id
 		Title string
 		// Link   string
 		GameId string
+		Cover  string
 	}
 
 	// 处理搜索结果页面中的游戏条目
@@ -233,10 +227,12 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn Id
 				Title string
 				// Link   string
 				GameId string
+				Cover  string
 			}{
 				Title: strings.TrimSuffix(title, "OHP"),
 				// Link:   e.Request.AbsoluteURL(link),
 				GameId: gameId,
+				Cover:  e.ChildAttr("td img", "src"),
 			})
 		}
 
@@ -248,6 +244,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn Id
 		gameFound := searchNameByRegex(potentialGames, name, []string{"セット", "PSV", "PS4", "PSP", "Android"}, func(t1 struct {
 			Title  string
 			GameId string
+			Cover  string
 		}) string {
 			return t1.Title
 		})
@@ -256,6 +253,8 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn Id
 			game.SourceID = gameFound.GameId
 			game.SourceType = enums.Eroscape
 			game.EroscapeId = gameFound.GameId
+			game.CoverURL = gameFound.Cover
+			fmt.Println("meta 61 eroscape cover:", gameFound.Cover)
 		}
 
 		// sort.Slice(potentialGames, func(i, j int) bool {
@@ -296,6 +295,10 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn Id
 		err = errors.New("id is empty")
 		return game, err
 	}
+	if fn == nil {
+		return game, nil
+	}
+
 	game, _ = fn(GetReqEntity(&game))
 
 	return game, nil
@@ -488,6 +491,12 @@ func (b EroscapeInfoGetter) FetchCharactors(request vo.MetadataRequest, gameEnti
 
 func (b EroscapeInfoGetter) FetchMetadata(id string, token string) (models.Game, error) {
 	gameEntity, err := b.FetchMetadataById(vo.MetadataRequest{ID: id})
+	return gameEntity.Game, err
+}
+
+func (b EroscapeInfoGetter) FetchMetadataGameById(
+	request vo.MetadataRequest) (models.Game, error) {
+	gameEntity, err := b.FetchMetadataById(request)
 	return gameEntity.Game, err
 }
 

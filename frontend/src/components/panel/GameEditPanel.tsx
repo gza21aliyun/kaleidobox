@@ -380,6 +380,7 @@ export function GameEditPanel({
         isOpen={isBatchUpdateOpen}
         onClose={() => setIsBatchUpdateOpen(false)}
         onUpdateComplete={() => {onLoadGame?.();}}
+        sourceIndicated={game.source_type}
         games={[game]}
       />
       </div>

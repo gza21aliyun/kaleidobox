@@ -122,6 +122,14 @@ func (b DmmInfoGetter) FetchMetadataByName2(name string) (models.Game, error) {
 	return game, err
 }
 
+func (b DmmInfoGetter) FetchMetadataByNameQuick(name string) (models.Game, error) {
+	game, err := b.FetchByNameImpl(name, false, nil)
+	if game.SourceID != "" {
+		game, err = b.FetchByNameImpl(name, true, nil)
+	}
+	return game, err
+}
+
 func (b DmmInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction) (models.Game, error) {
 	var url string = "https://dlsoft.dmm.co.jp/search/?service=pcgame&searchstr="
 	mainTitle, _, _ := getTitles(name)
@@ -179,7 +187,8 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction) (m
 			game.Name = gameFound.Title
 			game.SourceID = id
 			game.SourceType = enums.Dmm
-			game.EroscapeId = id
+			game.DmmId = id
+			game.CoverURL = gameFound.CoverUrl
 		}
 		// for _, gameFound := range potentialGames {
 		// 	// 应用过滤条件
@@ -218,6 +227,9 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction) (m
 
 	// 等待收集完成
 	c.Wait()
+	if fn == nil {
+		return game, err
+	}
 	game, err = fn(GetReqEntity(&game))
 
 	return game, err

@@ -195,7 +195,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				} else if taskData.Req.Source == enums.Eroscape {
 					// log.Printf("TaskFunc 24 fetch for game %s", ngame.Name)
 					escGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
-					updatedGame, err = escGetter.FetchMetadataByName2(ngame.SearchName)
+					updatedGame, err = escGetter.FetchMetadataByNameQuick(ngame.SearchName)
 					// updatedGame = esc
 				} else if taskData.Req.Source == enums.Dmm {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
@@ -430,6 +430,96 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 		defer wg.Done()
 		eroscapeGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
 		eroscape, _ := eroscapeGetter.FetchMetadataByName2(name)
+		if eroscape != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Eroscape, Game: eroscape})
+			mu.Unlock()
+		}
+	}()
+
+	wg.Wait()
+
+	return games, nil
+}
+
+func (s *GameService) FetchMetadataByNameQuick(name string) ([]vo.GameMetadataFromWebVO, error) {
+	var games []vo.GameMetadataFromWebVO
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	// 这里暂不处理任何错误，直接尝试从多个来源并发获取数据，空就是网络问题或未找到，不管它
+	wg.Add(7)
+
+	go func() {
+		defer wg.Done()
+		bgmGetter := utils.NewBangumiInfoGetter(s.config.SearchCn)
+		bgm, _ := bgmGetter.FetchMetadataByName(name, s.config.BangumiAccessToken)
+		if bgm != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Bangumi, Game: bgm})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		vndbGetter := utils.NewVNDBInfoGetter()
+		vndb, _ := vndbGetter.FetchMetadataByName(name, s.config.VNDBAccessToken)
+		if vndb != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.VNDB, Game: vndb})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		ymgalGetter := utils.NewYmgalInfoGetter(s.config.SearchCn)
+		ymgal, _ := ymgalGetter.FetchMetadataByName(name, "")
+		if ymgal != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Ymgal, Game: ymgal})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		dmmGetter := utils.NewDmmInfoGetter()
+		dmm, _ := dmmGetter.FetchMetadataByNameQuick(name)
+		if dmm != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dmm, Game: dmm})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		dlsiteGetter := utils.NewDlsiteInfoGetter()
+		dlsite, _ := dlsiteGetter.FetchMetadataByNameQuick(name)
+		if dlsite != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Dlsite, Game: dlsite})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		getchuGetter := utils.NewGetchuInfoGetter()
+		getchu, _ := getchuGetter.FetchMetadataByNameQuick(name)
+		if getchu != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Getchu, Game: getchu})
+			mu.Unlock()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		eroscapeGetter := utils.NewEroscapeInfoGetter(s.config.EroscapeUseMirror)
+		eroscape, _ := eroscapeGetter.FetchMetadataByNameQuick(name)
 		if eroscape != (models.Game{}) {
 			mu.Lock()
 			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Eroscape, Game: eroscape})

@@ -16,6 +16,7 @@ import {
 } from "../../../wailsjs/go/service/ImportService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
+import { ImageCard } from "../card/ImageCard";
 
 interface DragDropImportModalProps {
   isOpen: boolean;
@@ -895,7 +896,8 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                             <div className="aspect-[3/4] w-full overflow-hidden rounded-md bg-brand-200 dark:bg-brand-700">
                               {match.Game!.cover_url
                                 ? (
-                                    <img src={match.Game!.cover_url} alt={match.Game!.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" draggable="false" onDragStart={e => e.preventDefault()} />
+                                    <ImageCard url={match.Game!.cover_url} alt={match.Game!.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" 
+                                      draggable={false} onDragStart={e => e.preventDefault()} />
                                   )
                                 : (
                                     <div className="flex h-full items-center justify-center text-brand-400">

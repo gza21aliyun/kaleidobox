@@ -7,23 +7,25 @@ import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from 
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
 
-import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq } from "../../../wailsjs/go/service/GameService";
+import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq, FetchMetadataByNameQuick } from "../../../wailsjs/go/service/GameService";
 import {
   CancelTask
 } from "../../../wailsjs/go/service/TaskService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useAppStore } from "../../store";
+import { ImageCard } from "../card/ImageCard";
 
 interface BatchUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdateComplete: () => void;
   games: models.Game[];
+  sourceIndicated?: enums.SourceType;
 }
 
 
-export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: BatchUpdateModalProps) {
+export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sourceIndicated }: BatchUpdateModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { updateGameInGames, fetchGames } = useAppStore();
@@ -37,7 +39,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
   const [updatedIds, setUpdatedIds] = useState<string[]>([]);
   const [matchedIds, setMatchedIds] = useState<string[]>([]);
   const [failedIds, setFailedIds] = useState<string[]>([]);
-  const [source, setSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
+  const [source, setSource] = useState<enums.SourceType>(sourceIndicated || enums.SourceType.BANGUMI);
 //   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 //   const [manualData, setManualData] = useState<GameFetchedData[]>([]);
   const [manualData, setManualData] = useState<vo.GameMetadataFromWebVO[]>([]);
@@ -248,7 +250,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
     if (found.length === 0) {
       setIsSearching(true);
       try {
-        const results = await FetchMetadataByName(candidates[index].search_name);
+        const results = await FetchMetadataByNameQuick(candidates[index].search_name);
         setManualMatches(results || []);
       }
       catch (error) {
@@ -783,7 +785,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games }: B
                         <div className="aspect-[3/4] w-full overflow-hidden rounded-md bg-brand-200 dark:bg-brand-700">
                           {match.Game!.cover_url
                             ? (
-                                <img src={match.Game!.cover_url} alt={match.Game!.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                <ImageCard url={match.Game!.cover_url} alt={match.Game!.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" tempDownload={true} />
                               )
                             : (
                                 <div className="flex h-full items-center justify-center text-brand-400">

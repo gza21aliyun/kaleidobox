@@ -23,6 +23,8 @@ type GetchuInfoGetter struct {
 
 var _ Getter = (*GetchuInfoGetter)(nil)
 
+const getchuCoverUrl = "https://www.getchu.com/brandnew/%s/rc%spackage.jpg"
+
 func (b GetchuInfoGetter) FetchMetadataByName(name string, totken string) (models.Game, error) {
 	return b.FetchMetadataByName2(name)
 }
@@ -45,6 +47,14 @@ func (b GetchuInfoGetter) FetchMetadataByName2(name string) (models.Game, error)
 	return game, err
 }
 
+func (b GetchuInfoGetter) FetchMetadataByNameQuick(name string) (models.Game, error) {
+	game, err := b.FetchByNameImpl(name, false, nil)
+	if game.SourceID == "" {
+		game, err = b.FetchByNameImpl(name, true, nil)
+	}
+	return game, err
+}
+
 func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction) (models.Game, error) {
 	var gUrl string = "https://www.getchu.com/php/search.phtml?genre=pc_soft&search_keyword="
 	mainTitle, _, _ := getTitles(name)
@@ -62,6 +72,7 @@ func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction)
 	var potentialGames []struct {
 		Title string
 		Link  string
+		Cover string
 	}
 	fmt.Println("FetchByNameImpl: " + gUrl)
 
@@ -81,9 +92,11 @@ func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction)
 			potentialGames = append(potentialGames, struct {
 				Title string
 				Link  string
+				Cover string
 			}{
 				Title: title,
 				Link:  e.Request.AbsoluteURL(link),
+				Cover: e.DOM.Find("div.package_block img").AttrOr("src", ""),
 			})
 		}
 
@@ -95,6 +108,7 @@ func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction)
 		gameFound := searchNameByRegex(potentialGames, name, []string{"セット"}, func(t1 struct {
 			Title string
 			Link  string
+			Cover string
 		}) string {
 			return t1.Title
 		})
@@ -105,7 +119,10 @@ func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction)
 			game.Name = gameFound.Title
 			game.SourceID = id
 			game.SourceType = enums.Getchu
-			game.EroscapeId = id
+			game.GetchuId = id
+			game.CoverURL = fmt.Sprintf(getchuCoverUrl, id, id)
+
+			fmt.Println("meta 61 getchu cover:", game.CoverURL)
 		}
 
 	})
@@ -123,6 +140,9 @@ func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction)
 
 	// 等待收集完成
 	c.Wait()
+	if fn == nil {
+		return game, err
+	}
 	game, err = fn(GetReqEntity(&game))
 
 	return game, err

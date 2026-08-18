@@ -10,8 +10,10 @@ import (
 	"lunabox/internal/enums"
 	"lunabox/internal/models"
 	"lunabox/internal/vo"
+	"math"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -37,6 +39,7 @@ const apiUrl = `https://www.dlsite.com/%s/api/=/product.json?workno=%s&locale=ja
 const workUrl = "https://www.dlsite.com/%s/work/=/product_id/%s.html"
 
 const suggestUrl = "https://www.dlsite.com/suggest/?term=%s&site=adult-jp&time=%d&touch=0"
+const coverUrl = "https://img.dlsite.jp/modpub/images2/work/%s/%s/%s_img_main.webp"
 const suggestTime = "1786632852756"
 
 // const workUrl = "https://74.86.226.234:443/%s/work/=/product_id/%s.html"
@@ -510,6 +513,15 @@ func (b DlsiteInfoGetter) FetchMetadataByName2(name string) (models.Game, error)
 				gameEntity, err := b.FetchMetadataById2(request)
 				return gameEntity.Game, err
 			})
+	}
+	return game, err
+}
+
+func (b DlsiteInfoGetter) FetchMetadataByNameQuick(name string) (models.Game, error) {
+	mainTitle, _, _ := getTitles(name)
+	game, err := b.FetchByNameImpl3(name, nil)
+	if game.SourceID == "" {
+		game, err = b.FetchByNameImpl3(mainTitle, nil)
 	}
 	return game, err
 }
@@ -1377,14 +1389,25 @@ func (b DlsiteInfoGetter) FetchByNameImpl3(searchName string, fn IdFunction) (mo
 		if g.WorkType != "ADV" && g.WorkType != "RPG" && g.WorkType != "ACN" && g.WorkType != "SLN" && g.WorkType != "MOV" {
 			continue
 		}
+		firstTwo := g.Workno[:2]
+		numberLength := len(g.Workno) - 2
+		numericPart, _ := strconv.ParseFloat(g.Workno[2:], 64)
+		folderNumber := int(math.Ceil(numericPart*0.001)) * 1000
+		folderStr := fmt.Sprintf(firstTwo+"%0"+strconv.Itoa(numberLength)+"d", folderNumber)
+		category := "doujin"
+		if firstTwo == "VJ" {
+			category = "professional"
+		}
+		cover := fmt.Sprintf(coverUrl, category, folderStr, g.Workno)
 		potentialGames = append(potentialGames, struct {
 			Title    string
 			Id       string
 			Review   string
 			CoverUrl string
 		}{
-			Title: g.WorkName,
-			Id:    g.Workno,
+			Title:    g.WorkName,
+			Id:       g.Workno,
+			CoverUrl: cover,
 		})
 	}
 	if len(potentialGames) == 0 {
@@ -1404,7 +1427,12 @@ func (b DlsiteInfoGetter) FetchByNameImpl3(searchName string, fn IdFunction) (mo
 		game.SourceID = gameFound.Id
 		game.SourceType = enums.Dlsite
 		game.DlsiteId = game.SourceID
-		// game.CoverURL = gameFound.CoverUrl
+		game.CoverURL = gameFound.CoverUrl
+
+		fmt.Println("meta 61 dlsite cover:", gameFound.CoverUrl)
+	}
+	if fn == nil {
+		return game, err
 	}
 	game, err = fn(GetReqEntity(&game))
 

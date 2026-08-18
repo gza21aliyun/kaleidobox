@@ -235,14 +235,26 @@ func (s *StartService) StartHttpServerThenOpenPageByBrowser(filePath string) err
 	// 统一返回 "text/html; charset=utf-8"，浏览器以该 HTTP 头为准，会忽略 HTML
 	// 内 <meta charset> 声明的实际编码（如 Shift-JIS、GBK），导致乱码。
 	// 这里通过自定义 handler 读取文件头部检测真实 charset 并覆盖 Content-Type。
+	//
+	// 关键陷阱：当请求 URL 以 /index.html 结尾时，http.FileServer 会发送 301
+	// 重定向到 ./（去掉 index.html），浏览器跟随重定向后发起对目录 / 的请求。
+	// 此时 r.URL.Path 为 "/"，扩展名为空，若不特殊处理就会跳过 charset 检测，
+	// FileServer 内部 serveContent 会用 mime.TypeByExtension(".html") 设回
+	// "text/html; charset=utf-8"，导致乱码。因此对目录请求要主动探测 index.html。
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir(fileDir))
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ext := strings.ToLower(filepath.Ext(r.URL.Path))
-		lowerExt := strings.ToLower(ext)
-		if lowerExt == ".html" || lowerExt == ".htm" {
-			fullPath := filepath.Join(fileDir, filepath.FromSlash(r.URL.Path))
-			if charset := detectHTMLCharset(fullPath); charset != "" {
+		urlPath := r.URL.Path
+		// 计算出 FileServer 实际会服务的文件路径
+		relPath := filepath.FromSlash(urlPath)
+		if strings.HasSuffix(urlPath, "/") || urlPath == "" {
+			// 目录请求：FileServer 会找该目录下的 index.html
+			relPath = filepath.Join(relPath, "index.html")
+		}
+		detectPath := filepath.Join(fileDir, relPath)
+		ext := strings.ToLower(filepath.Ext(detectPath))
+		if ext == ".html" || ext == ".htm" {
+			if charset := detectHTMLCharset(detectPath); charset != "" {
 				w.Header().Set("Content-Type", "text/html; charset="+charset)
 			}
 		}

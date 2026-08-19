@@ -1219,7 +1219,7 @@ func (s *ImportService) ProcessDroppedPaths(paths []string) ([]vo.BatchImportCan
 			lowerName := strings.ToLower(path)
 			fileName := filepath.Base(path)
 			lowerFileName := strings.ToLower(fileName)
-			if !strings.HasSuffix(lowerName, ".exe") && !strings.HasSuffix(lowerName, ".bat") && lowerFileName != "index.html" && lowerFileName != "index.htm" {
+			if !strings.HasSuffix(lowerName, ".exe") && !strings.HasSuffix(lowerName, ".bat") && !strings.HasSuffix(lowerName, ".htm") && !strings.HasSuffix(lowerName, ".html") {
 				applog.LogInfof(s.ctx, "ProcessDroppedPaths: skipping non-executable file %s", path)
 				continue
 			}

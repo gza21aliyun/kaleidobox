@@ -137,7 +137,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
 
   const isMatched = (c: models.Game, source: enums.SourceType) => {
         // if (updatedIds.includes(c.id)) return true;
-        if (c.source_type === source) {
+        if (c.source_type === source && c.source_id && c.source_id.length > 0) {
             return true;
         }
         if (source === enums.SourceType.BANGUMI && c.bangumi_id && c.bangumi_id.length > 0) {
@@ -152,7 +152,49 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
         if (source === enums.SourceType.YMGAL && c.ymgal_id && c.ymgal_id.length > 0) {
             return true;
         }
+        if (source === enums.SourceType.DLSITE && c.dlsite_id && c.dlsite_id.length > 0) {
+            return true;
+        }
+        if (source === enums.SourceType.GETCHU && c.getchu_id && c.getchu_id.length > 0) {
+            return true;
+        }
         return false;
+    }
+
+  const onlyMatched = (c: models.Game, source: enums.SourceType) => {
+        // if (updatedIds.includes(c.id)) return true;
+        if (c.source_type !== source || !c.source_id || c.source_id.length === 0) {
+            return false;
+        }
+        if (source === enums.SourceType.VNDB && (c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || c.eroscape_id && c.eroscape_id.length > 0 || 
+          c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
+            return false;
+        }
+        if (source === enums.SourceType.BANGUMI && (!c.bangumi_id || c.bangumi_id.length === 0 || c.dmm_id && c.dmm_id.length > 0 || c.eroscape_id && c.eroscape_id.length > 0 || 
+          c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
+            return false;
+        }
+        if (source === enums.SourceType.DMM && (!c.dmm_id || c.dmm_id.length === 0 || c.eroscape_id && c.eroscape_id.length > 0 || c.bangumi_id && c.bangumi_id.length > 0 || 
+          c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
+            return false;
+        }
+        if (source === enums.SourceType.EROSCAPE && (!c.eroscape_id || c.eroscape_id.length === 0 || c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || 
+          c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
+            return false;
+        }
+        if (source === enums.SourceType.YMGAL && (!c.ymgal_id || c.ymgal_id.length === 0 || c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || 
+          c.eroscape_id && c.eroscape_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
+            return false;
+        }
+        if (source === enums.SourceType.DLSITE && (!c.dlsite_id || c.dlsite_id.length === 0 || c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || 
+          c.eroscape_id && c.eroscape_id.length > 0 || c.ymgal_id && c.ymgal_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
+            return false;
+        }
+        if (source === enums.SourceType.GETCHU && (!c.getchu_id || c.getchu_id.length === 0 || c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || 
+          c.eroscape_id && c.eroscape_id.length > 0 || c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0)) {
+            return false;
+        }
+        return true;
     }
 
   const isEmptyMatched = (c: models.Game) => {
@@ -340,6 +382,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
   const emptyFoundCount = candidates.filter(c => isEmptyMatched(c)).length;
   const notFoundCount = candidates.filter(c => !isMatched(c, source)).length;
   const pendingCount = candidates.filter(c => selectedIds.includes(c.id) && !updatedIds.includes(c.id) && !failedIds.includes(c.id)).length;
+  const onlyMatchedCount = candidates.filter(c => onlyMatched(c, source)).length;
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -500,10 +543,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
               <div className="flex gap-4">
                 <div 
                   onClick={() => {
-                      setSelectedIds(candidates.map(c => c.id))
+                      setSelectedIds(candidates.filter(c => isMatched(c, source)).map(c => c.id))
                     }}
                   className="flex-1 rounded-lg bg-neutral-50 dark:bg-neutral-900/20 p-4 text-center cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-900/30 transition-colors duration-200"
-                  title="点击选取全部游戏">
+                  title="选取已匹配指定源的游戏">
                   <div className="text-3xl font-bold text-neutral-600 dark:text-neutral-400">
                     {candidates.length}
                   </div>
@@ -530,7 +573,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       setSelectedIds(candidates.filter(c => !isMatched(c, source)).map(c => c.id))
                     }}
                     className="flex-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors duration-200"
-                    title="选取未匹配">
+                    title="选取未匹配指定源的游戏">
                       <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                         {notFoundCount}
                       </div>
@@ -551,6 +594,21 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       </div>
                       <div className="text-sm text-orange-700 dark:text-orange-300">
                         {t('sourceType.local')}
+                      </div>
+                  </div>
+                )}
+                {onlyMatchedCount > 0 && (
+                  <div
+                    onClick={() => {
+                      setSelectedIds(candidates.filter(c => onlyMatched(c, source)).map(c => c.id))
+                    }}
+                    className="flex-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 p-4 text-center cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors duration-200"
+                    title="选取仅匹配指定源的游戏">
+                      <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                        {onlyMatchedCount}
+                      </div>
+                      <div className="text-sm text-orange-700 dark:text-orange-300">
+                        仅匹配
                       </div>
                   </div>
                 )}
@@ -687,6 +745,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                                                 navigate({ to: '/game/$gameId', params: { gameId: candidate.id } });
                                                 resetAndClose();
                                             }}
+                                            title="打开游戏详情"
                                             className={`inline-flex items-center rounded-full px-2 py-1 text-xs ${color}`}
                                         >
                                             <div className={icon} />
@@ -782,10 +841,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                         onClick={() => selectManualMatch(match.Game!, match.Source)}
                         className="w-36 cursor-pointer rounded-lg border border-brand-200 p-2 transition hover:border-neutral-500 hover:shadow-md dark:border-brand-700"
                       >
-                        <div className="aspect-[3/4] w-full overflow-hidden rounded-md bg-brand-200 dark:bg-brand-700">
+                        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-md bg-brand-200 dark:bg-brand-700">
                           {match.Game!.cover_url
                             ? (
-                                <ImageCard url={match.Game!.cover_url} alt={match.Game!.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" tempDownload={true} />
+                                <ImageCard url={match.Game!.cover_url} alt={match.Game!.name} className="absolute inset-0 h-full w-full object-cover object-center" referrerPolicy="no-referrer" tempDownload={true} />
                               )
                             : (
                                 <div className="flex h-full items-center justify-center text-brand-400">

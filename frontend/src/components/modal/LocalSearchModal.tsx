@@ -10,6 +10,7 @@ import { models } from "../../../wailsjs/go/models";
 import toast from "react-hot-toast";
 import { CustomizedGameCard } from "../card/CustomizedGameCard";
 import { GameInfoModal } from "./GameInfoModal";
+import { StartGameWithTracking } from "../../../wailsjs/go/service/StartService";
 
 interface LocalSearchModalProps {
   itemName: string;
@@ -18,9 +19,10 @@ interface LocalSearchModalProps {
   type?: number;
   status?: number;
   onClose: () => void;
+  hasRunGame?: boolean;
 }
 
-export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type, status }: LocalSearchModalProps) {
+export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type, status, hasRunGame }: LocalSearchModalProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(itemName);
   const { games, fetchGames, gamesLoading } = useAppStore();
@@ -114,6 +116,25 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
       search: { filteredGameIdsStr },
      });
   };
+
+  const handleStartGame = async (game: models.Game) => {
+    
+      if (game.id) {
+        try {
+          const started = await StartGameWithTracking(game.id);
+          if (started) {
+            toast.success(t('game.toasts.gameLaunchSuccess', { name: game.name }));
+          }
+          else {
+            toast.error(t('game.toasts.gameLaunchFailed', { name: game.name }));
+          }
+        }
+        catch (error) {
+          console.error("Failed to start game:", error);
+          toast.error(t('game.toasts.gameLaunchFailedCheckLog', { name: game.name }));
+        }
+      }
+    };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -217,6 +238,16 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
                         <div className="i-mdi-information-variant text-lg" />
                       </button>
                       
+                    )}
+
+                    {hasRunGame && (
+                      <button
+                        onClick={() => handleStartGame(game)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-green-500/80 active:scale-95"
+                        title="启动游戏"
+                      >
+                        <div className="i-mdi-play text-lg" />
+                      </button>
                     )}
 
                     <button

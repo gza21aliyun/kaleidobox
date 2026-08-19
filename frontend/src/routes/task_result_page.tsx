@@ -396,6 +396,7 @@ function TaskResultPage() {
       {searchDirPath && (
         <LocalSearchModal
           itemName={searchDirPath.split(/[\\/]/).pop() || searchDirPath}
+          hasRunGame={true}
           onClose={() => setSearchDirPath(null)}
         />
       )}

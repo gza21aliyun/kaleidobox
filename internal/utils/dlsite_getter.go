@@ -80,11 +80,11 @@ type DlsiteWorkResponse struct {
 	IntroSMasked string `json:"intro_s_masked"`
 	// LabelID                interface{}       `json:"label_id"`
 	// LabelName              interface{}       `json:"label_name"`
-	Machine           string            `json:"machine"`
-	MachineStringList map[string]string `json:"machine_string_list"`
-	Memory            string            `json:"memory"`
-	MessageSkip       string            `json:"message_skip"`
-	MiniResolution    string            `json:"mini_resolution"`
+	Machine string `json:"machine"`
+	// MachineStringList map[string]string `json:"machine_string_list"`
+	Memory         string `json:"memory"`
+	MessageSkip    string `json:"message_skip"`
+	MiniResolution string `json:"mini_resolution"`
 	// ModifyFlg              interface{}       `json:"modify_flg"`
 	MusicBy        string `json:"music_by"`
 	OnSale         int    `json:"on_sale"`
@@ -841,6 +841,7 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 			SourceType:    enums.Dlsite,
 		})
 	}
+	game.Tags = JoinString(tagList, ",", func(t1 models.Tag) string { return t1.Name })
 	gameEntity.Game = game
 	gameEntity.WorksMap = worksMap
 	gameEntity.Tags = ArrayToMap(tagList, func(t1 models.Tag) string { return t1.Category })

@@ -258,6 +258,9 @@ function LibraryPage() {
         if (sourceFilter === "duplicated" && ids && ids.length > 0 && ids.includes(game.id)) {
           return true;
         }
+        if (sourceFilter === "html" && game.path.toLowerCase().includes(".htm")) {
+          return true;
+        }
         return false;
       }
       return true;
@@ -487,6 +490,7 @@ function LibraryPage() {
     { label: t('sourceType.emptyGallery'), value: "emptyGallery" },
     { label: "虚拟机", value: "vm" },
     { label: "重复源", value: "duplicated" },
+    { label: "Html", value: "html" },
   ];
 
   const handleBatchStatusUpdate = async (newStatus: string) => {

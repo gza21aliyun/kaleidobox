@@ -203,6 +203,7 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	s.config.GameInstallFolder = newConfig.GameInstallFolder
 	s.config.SevenZipPath = newConfig.SevenZipPath // 7-Zip路径
 	s.config.HideOldMatchingBtns = newConfig.HideOldMatchingBtns
+	s.config.DeleteConfirm = newConfig.DeleteConfirm
 	applog.SetLogAll(s.config.LogAll)
 
 	return nil

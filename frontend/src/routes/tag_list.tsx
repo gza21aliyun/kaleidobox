@@ -19,6 +19,7 @@ export const Route = createRoute({
 });
 
 function TagListPage() {
+  const { config, updateTagInTags, tagsLoaded } = useAppStore();
   const { t } = useTranslation();
   const [tags, setTags] = useState<models.Tag[]>([]);
   const [groups, setGroups] = useState<string[]>([]);
@@ -121,7 +122,7 @@ function TagListPage() {
     }
   };
 
-  const { updateTagInTags } = useAppStore();
+  
 
   const handleSaveGroup = async (groupName: string, selectedTags: string[]) => {
     try {
@@ -176,7 +177,7 @@ function TagListPage() {
     };
 
   const handleDeleteTag = async (tagName: string) => {
-    if (!confirm(t('tagList.modals.deleteTagMessage', { name: tagName }))) {
+    if (config?.delete_confirm && !confirm(t('tagList.modals.deleteTagMessage', { name: tagName }))) {
       return;
     }
 
@@ -187,7 +188,7 @@ function TagListPage() {
       setTags(prevTags => prevTags.filter(tag => tag.name !== tagName));
 
       // 从 store 的 tagsLoaded 中移除该标签
-      const tagsMap = useAppStore.getState().tagsLoaded;
+      const tagsMap = tagsLoaded;
       if (tagsMap) {
         const newMap = new Map(tagsMap);
         newMap.forEach((tagList, category) => {

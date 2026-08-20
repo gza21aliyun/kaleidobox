@@ -75,10 +75,7 @@ export function GameInfoPanel({
                 });
             };
 
-        const handleDeleteTag = (tag: models.Tag) => {
-                setTagToDelete(tag);
-                setShowDeleteConfirm(true);
-            };
+        
 
         const confirmDeleteTag = async () => {
                 if (tagToDelete) {
@@ -103,6 +100,17 @@ export function GameInfoPanel({
                         console.error("Error deleting tag:", error);
                     }
                 }
+            };
+
+        const handleDeleteTag = (tag: models.Tag) => {
+                setTagToDelete(tag);
+                if (config?.delete_confirm) {
+                    
+                    setShowDeleteConfirm(true);
+                } else {
+                    confirmDeleteTag();
+                }
+                
             };
 
         const cancelDeleteTag = () => {

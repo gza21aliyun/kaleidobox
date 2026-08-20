@@ -118,6 +118,7 @@ type AppConfig struct {
 	// 7-Zip 路径
 	SevenZipPath        string `json:"seven_zip_path,omitempty"` // 7-Zip 可执行文件路径
 	HideOldMatchingBtns bool   `json:"hide_old_matching_btns"`
+	DeleteConfirm       bool   `json:"delete_confirm"`
 }
 
 // getConfigPath 获取配置文件路径
@@ -213,6 +214,7 @@ func LoadConfig() (*AppConfig, error) {
 		QBPassword:          "",
 		QBDownloadFolder:    "",
 		HideOldMatchingBtns: true,
+		DeleteConfirm:       true,
 	}
 
 	// 获取配置文件路径

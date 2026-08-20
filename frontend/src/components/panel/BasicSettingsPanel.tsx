@@ -221,6 +221,17 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
         />
       </div>
 
+      <div className="flex items-center justify-between p-2">
+        <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
+          删除操作确认是否真要删除
+        </label>
+        <BetterSwitch
+          id="delete_confirm"
+          checked={formData.delete_confirm || true}
+          onCheckedChange={checked => onChange({ ...formData, delete_confirm: checked } as appconf.AppConfig)}
+        />
+      </div>
+
       <div className="space-y-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("basic.displayName")}</label>
         <BetterSelect

@@ -273,6 +273,16 @@ func (s *TagService) UpdateTagsGroup(tagNames []string, groupName string) error 
 	if len(tagNames) == 0 {
 		return nil
 	}
+	// tagsToRemoveGroup := []string{}
+	removingQuery := fmt.Sprintf(`
+		UPDATE tags 
+		SET group_name = '' 
+		WHERE group_name = ?
+	`)
+	_, err := s.db.ExecContext(s.ctx, removingQuery, groupName)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// 构建占位符
 	placeholders := make([]string, len(tagNames))
@@ -290,7 +300,7 @@ func (s *TagService) UpdateTagsGroup(tagNames []string, groupName string) error 
 		WHERE name IN (%s)
 	`, strings.Join(placeholders, ","))
 
-	_, err := s.db.ExecContext(s.ctx, query, args...)
+	_, err = s.db.ExecContext(s.ctx, query, args...)
 	return err
 }
 

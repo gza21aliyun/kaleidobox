@@ -1,6 +1,7 @@
 import { models } from "../../../wailsjs/go/models";
 import { useTranslation } from 'react-i18next';
 import { useDrag, useDrop } from 'react-dnd';
+import { useNavigate } from "@tanstack/react-router";
 
 // 拖拽类型定义
 interface DragItem {
@@ -11,6 +12,7 @@ interface DragItem {
 // 可拖拽的标签组件
 export function DraggableTag({ tag, onDelete }: { tag: models.Tag; onDelete?: (tagName: string) => void }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'tag',
     item: { type: 'tag', tagName: tag.name },
@@ -36,6 +38,16 @@ export function DraggableTag({ tag, onDelete }: { tag: models.Tag; onDelete?: (t
       `}
     >
       {tag.name}
+      <button className="ml-1 text-xs" title="搜索游戏" 
+        onClick={() => {
+          navigate({ 
+            to: '/library', 
+            search: { tags: tag.name } 
+            });
+        }}
+        >
+          <div className="i-mdi-search"></div>
+      </button>
       {tag.is_h && (
         <div className="ml-1 text-xs" title={t('tag.tags.adultContent')}>
           <div className="i-mdi-alert-circle-outline"></div>
@@ -51,7 +63,7 @@ export function DraggableTag({ tag, onDelete }: { tag: models.Tag; onDelete?: (t
           <div className="i-mdi-lock-outline"></div>
         </div>
       )}
-      {!tag.block_modify && onDelete && (
+      {!tag.block_modify && onDelete  && (
         <button
           onClick={(e) => {
             e.stopPropagation();

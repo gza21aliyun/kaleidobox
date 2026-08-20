@@ -52,6 +52,10 @@ type AppState = {
   // 收藏夹刷新计数器
   categoriesRefreshKey: number;
   triggerCategoriesRefresh: () => void;
+  droppedPaths: string[];
+  setDroppedPaths: (paths: string[]) => void;
+  showDragDropModal: boolean;
+  setShowDragDropModal: (show: boolean) => void;
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -260,6 +264,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ gameStats: new Map(statsMap) });
     // set({ gameStats: statsMap });
   },
+  droppedPaths: [],
+  setShowDragDropModal: (show: boolean) => set({ showDragDropModal: show }),
+  setDroppedPaths: (paths: string[]) => set({ droppedPaths: paths }),
+  showDragDropModal: false,
+  
 }));
 
 // 全局事件监听器，确保在任何页面都能接收到游戏更新和任务更新

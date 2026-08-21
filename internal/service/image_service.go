@@ -322,6 +322,32 @@ func (s *ImageService) DeleteImageBackup(url string) error {
 	return nil
 }
 
+// DeleteImageBackupsBySubject 删除指定 subject 的所有 image_backups 记录及本地文件
+func (s *ImageService) DeleteImageBackupsBySubject(subjectId string, subjectType int) error {
+	query := `SELECT url FROM image_backups WHERE subject_id = ? AND subject_type = ?`
+	rows, err := s.db.QueryContext(s.ctx, query, subjectId, subjectType)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var urls []string
+	for rows.Next() {
+		var url string
+		if err := rows.Scan(&url); err != nil {
+			return err
+		}
+		urls = append(urls, url)
+	}
+
+	for _, url := range urls {
+		if err := s.DeleteImageBackup(url); err != nil {
+			applog.LogWarningf(s.ctx, "删除图片备份失败 url:%s, err:%v", url, err)
+		}
+	}
+	return nil
+}
+
 func (s *ImageService) FetchImages(id string, subjectType int, imageType int, download bool) ([]models.ImageBackup, error) {
 	_, err := s.CountImageBackups()
 	// applog.LogInfof(s.ctx, "FetchImages start, count:%d, err:%v\n", count, err)
@@ -549,6 +575,78 @@ func (s *ImageService) CountImageBackups() (int, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+// PickLocalImage 弹出系统文件选择对话框，将选中的本地图片复制到应用的 images 目录，
+// 并注册到 image_backups 表。路径格式: {dataDir}/images/{folderId}/{uuid}.{ext}
+// folderId 优先使用 gameId，为空则使用 subjectId。
+func (s *ImageService) PickLocalImage(subjectId string, subjectType int, imageType int, gameId string) (string, error) {
+	selection, err := runtime.OpenFileDialog(s.ctx, runtime.OpenDialogOptions{
+		Title: "选择图片",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "图片文件",
+				Pattern:     "*.png;*.jpg;*.jpeg;*.gif;*.webp;*.bmp",
+			},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if selection == "" {
+		return "", nil // 用户取消
+	}
+
+	dataDir, err := utils.GetDataDir()
+	if err != nil {
+		return "", err
+	}
+
+	// 路径: {dataDir}/images/{folderId}/{uuid}.{ext}
+	folderId := gameId
+	if folderId == "" {
+		folderId = subjectId
+	}
+	destDir := filepath.Join(dataDir, "images", folderId)
+	if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
+		return "", err
+	}
+
+	ext := filepath.Ext(selection)
+	if ext == "" {
+		ext = ".png"
+	}
+	destFileName := fmt.Sprintf("%s%s", uuid.New().String(), ext)
+	destPath := filepath.Join(destDir, destFileName)
+
+	srcFile, err := os.Open(selection)
+	if err != nil {
+		return "", err
+	}
+	defer srcFile.Close()
+
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return "", err
+	}
+	defer destFile.Close()
+
+	if _, err := io.Copy(destFile, srcFile); err != nil {
+		return "", err
+	}
+
+	// 注册到 image_backups，所有字段按现有约定填充
+	_ = s.CreateOrUpdateImageBackup(models.ImageBackup{
+		Url:         destPath,
+		LocalPath:   destPath,
+		SubjectId:   subjectId,
+		SubjectType: subjectType,
+		ImageType:   imageType,
+		GameId:      gameId,
+		CreatedAt:   time.Now(),
+	})
+
+	return destPath, nil
 }
 
 // GetImageBackupsByUrls 批量根据 URLs 查询 ImageBackup 记录

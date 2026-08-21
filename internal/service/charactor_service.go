@@ -318,3 +318,56 @@ func (s *CharactorService) CountCharactors() (int, error) {
 	}
 	return count, nil
 }
+
+// SearchCharactors 根据关键字模糊搜索角色（按名称或别名匹配），限制返回数量避免内存爆炸
+func (s *CharactorService) SearchCharactors(keyword string, limit int) ([]models.Charactor, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	query := `
+		SELECT id, name, other_names, image_path, images, source_charactor_id, source_type,
+		game_ids, summary, gender, measurements, height, sort
+		FROM charactors
+	`
+	var rows *sql.Rows
+	var err error
+	if keyword == "" {
+		query += ` ORDER BY sort DESC LIMIT ?`
+		rows, err = s.db.QueryContext(s.ctx, query, limit)
+	} else {
+		query += ` WHERE name LIKE ? OR other_names LIKE ? ORDER BY sort DESC LIMIT ?`
+		like := "%" + keyword + "%"
+		rows, err = s.db.QueryContext(s.ctx, query, like, like, limit)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var charactors []models.Charactor
+	for rows.Next() {
+		var charactor models.Charactor
+		var sourceType string
+		err := rows.Scan(
+			&charactor.Id,
+			&charactor.Name,
+			&charactor.OtherNames,
+			&charactor.ImagePath,
+			&charactor.Images,
+			&charactor.SourceCharactorId,
+			&sourceType,
+			&charactor.GameIds,
+			&charactor.Summary,
+			&charactor.Gender,
+			&charactor.Measurements,
+			&charactor.Height,
+			&charactor.Sort,
+		)
+		if err != nil {
+			return nil, err
+		}
+		charactor.SourceType = enums.SourceType(sourceType)
+		charactors = append(charactors, charactor)
+	}
+	return charactors, nil
+}

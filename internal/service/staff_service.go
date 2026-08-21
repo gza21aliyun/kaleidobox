@@ -321,3 +321,52 @@ func (s *StaffService) GetStaffsByRole(role enums.StaffRole) ([]*models.Staff, e
 
 	return staffs, nil
 }
+
+// SearchStaffs 根据关键字模糊搜索人员（按名称或别名匹配），限制返回数量避免内存爆炸
+func (s *StaffService) SearchStaffs(keyword string, limit int) ([]models.Staff, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	query := `
+		SELECT id, name, other_names, roles, source_staff_id, source_type, game_ids, summary, gender, image
+		FROM staffs
+	`
+	var rows *sql.Rows
+	var err error
+	if keyword == "" {
+		query += ` ORDER BY id DESC LIMIT ?`
+		rows, err = s.db.QueryContext(s.ctx, query, limit)
+	} else {
+		query += ` WHERE name LIKE ? OR other_names LIKE ? ORDER BY id DESC LIMIT ?`
+		like := "%" + keyword + "%"
+		rows, err = s.db.QueryContext(s.ctx, query, like, like, limit)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var staffs []models.Staff
+	for rows.Next() {
+		var staff models.Staff
+		var sourceType string
+		err := rows.Scan(
+			&staff.Id,
+			&staff.Name,
+			&staff.OtherNames,
+			&staff.Roles,
+			&staff.SourceStaffId,
+			&sourceType,
+			&staff.GameIds,
+			&staff.Summary,
+			&staff.Gender,
+			&staff.Image,
+		)
+		if err != nil {
+			return nil, err
+		}
+		staff.SourceType = enums.SourceType(sourceType)
+		staffs = append(staffs, staff)
+	}
+	return staffs, nil
+}

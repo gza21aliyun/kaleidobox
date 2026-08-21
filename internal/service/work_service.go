@@ -528,6 +528,66 @@ func (s *WorkService) UpdateWork(work models.Work) error {
 	return err
 }
 
+// DeleteWork 删除单个 Work 记录，并从关联角色/人员的 game_ids 中移除该游戏，
+// 同时删除该 work 及其被级联删除的角色/人员对应的图片备份和本地文件
+func (s *WorkService) DeleteWork(work models.Work) error {
+	query := `DELETE FROM works WHERE id = ?`
+	_, err := s.db.ExecContext(s.ctx, query, work.Id)
+	if err != nil {
+		applog.ErrorLogSaveAppLog("删除工作失败 id:%s, err: %v", work.Id, err)
+		return err
+	}
+
+	// 删除该 work 自身的图片备份（作品主图、截图等）
+	if work.Id != "" {
+		if err := s.imageService.DeleteImageBackupsBySubject(work.Id, 3); err != nil {
+			applog.ErrorLogSaveAppLog("删除工作图片失败 id:%s, err: %v", work.Id, err)
+		}
+	}
+
+	// 从关联角色的 game_ids 中移除该游戏
+	if work.CharactorId != "" {
+		charactor, err := s.charactorService.GetCharactorById(work.CharactorId)
+		if err == nil && charactor.Id != "" {
+			charactor.GameIds = utils.RemoveString(charactor.GameIds, work.GameId)
+			if charactor.GameIds == "" {
+				// 角色已无关联游戏，删除角色前先删除其图片
+				if err := s.imageService.DeleteImageBackupsBySubject(charactor.Id, 1); err != nil {
+					applog.ErrorLogSaveAppLog("删除角色图片失败 id:%s, err: %v", charactor.Id, err)
+				}
+				err = s.charactorService.DeleteCharactor(charactor.Id)
+			} else {
+				err = s.charactorService.UpdateCharactor(charactor)
+			}
+			if err != nil {
+				applog.ErrorLogSaveAppLog("删除工作后更新角色 game_ids 失败 id:%s, err: %v", charactor.Id, err)
+			}
+		}
+	}
+
+	// 从关联人员的 game_ids 中移除该游戏
+	if work.StaffId != "" {
+		staff, err := s.staffService.GetStaffById(work.StaffId)
+		if err == nil && staff.Id != "" {
+			staff.GameIds = utils.RemoveString(staff.GameIds, work.GameId)
+			if staff.GameIds == "" {
+				// 人员已无关联游戏，删除人员前先删除其图片
+				if err := s.imageService.DeleteImageBackupsBySubject(staff.Id, 2); err != nil {
+					applog.ErrorLogSaveAppLog("删除人员图片失败 id:%s, err: %v", staff.Id, err)
+				}
+				err = s.staffService.DeleteStaff(staff.Id)
+			} else {
+				err = s.staffService.UpdateStaff(staff)
+			}
+			if err != nil {
+				applog.ErrorLogSaveAppLog("删除工作后更新人员 game_ids 失败 id:%s, err: %v", staff.Id, err)
+			}
+		}
+	}
+
+	return nil
+}
+
 // ListWorks 查询所有 Work 记录
 func (s *WorkService) ListWorks() ([]*models.Work, error) {
 	query := `

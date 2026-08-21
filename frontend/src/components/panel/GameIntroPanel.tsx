@@ -11,6 +11,7 @@ import { GameCard } from "../card/GameCard";
 import { ImageBackupCard, ImageCard } from "../card/ImageCard";
 import { arrayFind, arrayMapString, joinString } from "../utils/Utility";
 import { useAppStore } from "../../store";
+import { EditWorkModal } from "../modal/EditWorkModal";
 
 interface GameEditFormProps {
   game: models.Game;
@@ -64,7 +65,8 @@ export function GameIntroPanel({
         const [worksMap, setWorksMap] = useState<Map<enums.StaffRole, models.Work[]>>(new Map())
         const textareaRef = useRef<HTMLTextAreaElement>(null);
         const [relatedGames, setRelatedGames] = useState<models.Game[]>([])
-        const [brandGames, setBrandGames] = useState<models.Game[]>([])        
+        const [brandGames, setBrandGames] = useState<models.Game[]>([])
+        const [editingWork, setEditingWork] = useState<models.Work | null>(null)
         const { updateGameInGames } = useAppStore()
 
         // 检查URL参数中是否有选中的游戏
@@ -157,8 +159,20 @@ export function GameIntroPanel({
         }, [game?.summary || ""]); // 当summary变化时重新计算高度
 
 
-        
-        return ( 
+        // 刷新角色/制作人员 works 数据（编辑后调用）
+        const refreshWorks = () => {
+            GetWorksByGameId(game.id).then((res) => {
+                var array: models.Work[] = res || [];
+                var m = new Map<enums.StaffRole, models.Work[]>();
+                for (let i = 0; i < array.length; i++) {
+                    const existingItems = m.get(array[i].role) || [];
+                    m.set(array[i].role, [...existingItems, array[i]]);
+                }
+                setWorksMap(m);
+            });
+        };
+
+        return (
             <div> 
 
                 <div className="mt-4">
@@ -239,6 +253,15 @@ export function GameIntroPanel({
                                                         </button>
                                                     </div>
                                                 )}
+
+                                                <button
+                                                    onClick={() => setEditingWork(charactor)}
+                                                    className="ml-2 inline-flex items-center gap-1 text-sm text-brand-500 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-200 px-2 py-1 rounded hover:bg-brand-100 dark:hover:bg-brand-700/50 transition-colors"
+                                                    title={t('common.edit')}
+                                                >
+                                                    <div className="i-mdi-pencil text-base" />
+                                                    <span>{t('common.edit')}</span>
+                                                </button>
                                             </div>
                                             
                                             {/* 角色简介 */}
@@ -329,11 +352,14 @@ export function GameIntroPanel({
 
 
 
-                
+                {editingWork && (
+                    <EditWorkModal
+                        work={editingWork}
+                        onClose={() => setEditingWork(null)}
+                        onSuccess={refreshWorks}
+                    />
+                )}
 
-
-
-                
             </div>
         );
 }

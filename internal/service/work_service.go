@@ -534,14 +534,14 @@ func (s *WorkService) DeleteWork(work models.Work) error {
 	query := `DELETE FROM works WHERE id = ?`
 	_, err := s.db.ExecContext(s.ctx, query, work.Id)
 	if err != nil {
-		applog.ErrorLogSaveAppLog("删除工作失败 id:%s, err: %v", work.Id, err)
+		applog.ErrorLogSaveAppLog("删除工作失败 id:%s", err, work.Id)
 		return err
 	}
 
 	// 删除该 work 自身的图片备份（作品主图、截图等）
 	if work.Id != "" {
 		if err := s.imageService.DeleteImageBackupsBySubject(work.Id, 3); err != nil {
-			applog.ErrorLogSaveAppLog("删除工作图片失败 id:%s, err: %v", work.Id, err)
+			applog.ErrorLogSaveAppLog("删除工作图片失败 id:%s", err, work.Id)
 		}
 	}
 
@@ -553,14 +553,14 @@ func (s *WorkService) DeleteWork(work models.Work) error {
 			if charactor.GameIds == "" {
 				// 角色已无关联游戏，删除角色前先删除其图片
 				if err := s.imageService.DeleteImageBackupsBySubject(charactor.Id, 1); err != nil {
-					applog.ErrorLogSaveAppLog("删除角色图片失败 id:%s, err: %v", charactor.Id, err)
+					applog.ErrorLogSaveAppLog("删除角色图片失败 id:%s", err, charactor.Id)
 				}
 				err = s.charactorService.DeleteCharactor(charactor.Id)
 			} else {
 				err = s.charactorService.UpdateCharactor(charactor)
 			}
 			if err != nil {
-				applog.ErrorLogSaveAppLog("删除工作后更新角色 game_ids 失败 id:%s, err: %v", charactor.Id, err)
+				applog.ErrorLogSaveAppLog("删除工作后更新角色 game_ids 失败 id:%s", err, charactor.Id)
 			}
 		}
 	}
@@ -573,14 +573,14 @@ func (s *WorkService) DeleteWork(work models.Work) error {
 			if staff.GameIds == "" {
 				// 人员已无关联游戏，删除人员前先删除其图片
 				if err := s.imageService.DeleteImageBackupsBySubject(staff.Id, 2); err != nil {
-					applog.ErrorLogSaveAppLog("删除人员图片失败 id:%s, err: %v", staff.Id, err)
+					applog.ErrorLogSaveAppLog("删除人员图片失败 id:%s", err, staff.Id)
 				}
 				err = s.staffService.DeleteStaff(staff.Id)
 			} else {
 				err = s.staffService.UpdateStaff(staff)
 			}
 			if err != nil {
-				applog.ErrorLogSaveAppLog("删除工作后更新人员 game_ids 失败 id:%s, err: %v", staff.Id, err)
+				applog.ErrorLogSaveAppLog("删除工作后更新人员 game_ids 失败 id:%s", err, staff.Id)
 			}
 		}
 	}

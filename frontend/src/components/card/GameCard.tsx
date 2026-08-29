@@ -106,7 +106,7 @@ export function GameCard({
 }: GameCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { gameStats } = useAppStore();
+  const { gameStats, screenshotRefreshGameId, setScreenshotRefreshGameId } = useAppStore();
   const [visible, setVisible] = useState(false);
 
   const [galleryImages, setGalleryImages] = useState<models.ImageBackup[]>([]);
@@ -249,6 +249,13 @@ export function GameCard({
       observer.disconnect();
     };
   }, [viewMode]);
+
+  useEffect(() => {
+    if (screenshotRefreshGameId && screenshotRefreshGameId === game.id && viewMode === "gallery" && visible) {
+      loadGalleryImages();
+      setScreenshotRefreshGameId("");
+    }
+  }, [screenshotRefreshGameId]);
 
   const loadGalleryImages = async () => {
     if (!game.id) return;

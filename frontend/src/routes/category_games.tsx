@@ -25,7 +25,7 @@ function CategoryGamesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const search = Route.useSearch() as Record<string, unknown>;
-  const { gameStats, loadStats } = useAppStore();
+  const { gameStats, loadStats, screenshotRefreshGameId } = useAppStore();
   const [games, setGames] = useState<models.Game[]>([]);
   const [loading, setLoading] = useState(true);
   const mainContainerRef = useRef<HTMLDivElement>(null);

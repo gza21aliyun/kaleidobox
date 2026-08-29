@@ -56,6 +56,8 @@ type AppState = {
   setDroppedPaths: (paths: string[]) => void;
   showDragDropModal: boolean;
   setShowDragDropModal: (show: boolean) => void;
+  screenshotRefreshGameId: string;
+  setScreenshotRefreshGameId: (gameId: string) => void;
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -268,6 +270,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setShowDragDropModal: (show: boolean) => set({ showDragDropModal: show }),
   setDroppedPaths: (paths: string[]) => set({ droppedPaths: paths }),
   showDragDropModal: false,
+  screenshotRefreshGameId: "",
+  setScreenshotRefreshGameId: (gameId: string) => set({ screenshotRefreshGameId: gameId }),
   
 }));
 
@@ -296,6 +300,8 @@ const unlistenTaskUpdate = EventsOn("game_updates", (data: any) => {
     const newGames: models.Game[] = task.item_data as models.Game[];
     useAppStore.getState().updateGamesInGames(newGames)
   }
+
+  
   
   // 处理任务列表更新
   const currentTasks = useAppStore.getState().tasks;
@@ -322,6 +328,12 @@ const unlistenDataUpdate = EventsOn("data_updates", (data: any) => {
   }
 });
 
+// 订阅截图保存事件
+const unsubscribeScreenshot = EventsOn("screenshot:saved", (savedGameId: string) => {
+  
+  useAppStore.getState().setScreenshotRefreshGameId(savedGameId);
+});
+
 // 在应用退出时取消事件监听
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
@@ -329,6 +341,10 @@ if (typeof window !== 'undefined') {
       unlistenTaskUpdate();
     }
     if (unlistenDataUpdate) {
-      unlistenDataUpdate();    }
+      unlistenDataUpdate();  
+    }
+    if (unsubscribeScreenshot) {
+      unsubscribeScreenshot();
+    }
   });
 }

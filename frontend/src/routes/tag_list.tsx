@@ -29,6 +29,7 @@ function TagListPage() {
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [groupModalMode, setGroupModalMode] = useState<'create' | 'edit'>('create');
   const [editingGroupName, setEditingGroupName] = useState<string | undefined>(undefined);
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
 
   useEffect(() => {
@@ -86,6 +87,18 @@ function TagListPage() {
     acc[group].push(tag);
     return acc;
   }, {} as Record<string, models.Tag[]>);
+
+  const toggleCategoryCollapse = (category: string) => {
+    setCollapsedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
 
   const handleCreateGroup = () => {
     setGroupModalMode('create');
@@ -146,7 +159,7 @@ function TagListPage() {
 
   const handleTagDrop = async (tagName: string, targetGroup: string) => {
     try {
-        await UpdateTagsGroup([tagName], targetGroup);
+        await UpdateTagsGroup([...(groupedTags.get("") || []).map((t)=>t.group), tagName], targetGroup);
         
         // 局部更新状态而不是重新加载所有数据
         setTags(prevTags => 
@@ -303,19 +316,31 @@ function TagListPage() {
               
               <div className="flex-1 overflow-y-auto pr-2">
                 <div className="space-y-6">
-                  {tagMapForEach(groupedTags, (category, categoryTags) => (
+                  {tagMapForEach(groupedTags, (category, categoryTags) => {
+                    const isCollapsed = collapsedCategories.has(category);
+                    return (
                     <div key={category} className="bg-white dark:bg-brand-800/30 rounded-lg p-4 border border-brand-200 dark:border-brand-700">
                       <h3 className="text-lg font-semibold text-brand-900 dark:text-white mb-3 flex items-center">
+                        <button
+                          onClick={() => toggleCategoryCollapse(category)}
+                          className="flex items-center mr-2 text-brand-500 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
+                          title={isCollapsed ? t('tagList.actions.expand') : t('tagList.actions.collapse')}
+                        >
+                          <div className={isCollapsed ? "i-mdi-chevron-right text-lg" : "i-mdi-chevron-down text-lg"}></div>
+                        </button>
                         <div className="i-mdi-folder mr-2 text-brand-600 dark:text-brand-400"></div>
                         {category} ({categoryTags.length})
                       </h3>
+                      {!isCollapsed && (
                       <div className="flex flex-wrap gap-2">
                         {categoryTags.map((tag) => (
                           <DraggableTag key={tag.name} tag={tag} onDelete={handleDeleteTag} />
                         ))}
                       </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

@@ -449,7 +449,9 @@
       "clickToCreate": "Click the button above to create"
     },
     "actions": {
-      "deleteTag": "Delete tag"
+      "deleteTag": "Delete tag",
+      "collapse": "Collapse",
+      "expand": "Expand"
     },
     "modals": {
       "deleteGroupMessage": "Are you sure you want to delete group \"{{name}}\"? This will remove all tag-group associations for tags in this group.",

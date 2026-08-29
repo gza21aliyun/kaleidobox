@@ -445,7 +445,9 @@
       "clickToCreate": "上のボタンをクリックして作成してください"
     },
     "actions": {
-      "deleteTag": "タグを削除"
+      "deleteTag": "タグを削除",
+      "collapse": "折りたたむ",
+      "expand": "展開"
     },
     "modals": {
       "deleteGroupMessage": "グループ \"{{name}}\" を削除しますか？これにより、このグループに属するすべてのタグのグループ関連付けが解除されます。",

@@ -449,7 +449,9 @@
       "clickToCreate": "点击上方按钮创建"
     },
     "actions": {
-      "deleteTag": "删除标签"
+      "deleteTag": "删除标签",
+      "collapse": "折叠",
+      "expand": "展开"
     },
     "modals": {
       "deleteGroupMessage": "确定要删除分组 \"{{name}}\" 吗？这将取消该分组下所有标签的分组关联。",

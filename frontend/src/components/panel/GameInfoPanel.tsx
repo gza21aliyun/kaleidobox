@@ -77,10 +77,10 @@ export function GameInfoPanel({
 
         
 
-        const confirmDeleteTag = async () => {
-                if (tagToDelete) {
+        const confirmDeleteTag = async (tag: models.Tag) => {
+                if (tag) {
                     try {
-                        const newGame = await DeleteTagForGame(game, tagToDelete.name);
+                        const newGame = await DeleteTagForGame(game, tag.name);
                         updateGame(newGame);
                         updateGameInGames(newGame);
                         // 刷新标签列表
@@ -103,12 +103,12 @@ export function GameInfoPanel({
             };
 
         const handleDeleteTag = (tag: models.Tag) => {
-                setTagToDelete(tag);
+                
                 if (config?.delete_confirm) {
-                    
+                    setTagToDelete(tag);
                     setShowDeleteConfirm(true);
                 } else {
-                    confirmDeleteTag();
+                    confirmDeleteTag(tag);
                 }
                 
             };
@@ -155,38 +155,7 @@ export function GameInfoPanel({
         return ( 
             <div> 
                 {/* 在这里插入worksMap展示内容 */}
-                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-3 text-brand-900 dark:text-white">{t('gameInfo.staffInfo')}</h3>
-                    {worksMap && worksMap.size > 0 ? (
-                        <div className="space-y-4">
-                            {workMapForEach(worksMap,t,(role, works) => (
-                                <div key={role} className="border-l-4 border-brand-500 pl-4">
-                                    <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
-                                        {role.toString() || role.replace(/([A-Z])/g, ' $1').trim()}
-                                    </h4>
-                                    {works && works.length > 0 ? (
-                                        <ul className="mt-2 flex flex-wrap gap-2">
-                                            {works.map((work: models.Work, index: number) => (
-                                                <li key={index} 
-                                                onClick={() => handleStaffClick(work)}
-                                                className="text-sm text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/50 px-2 py-1 rounded">
-                                                    {work.role === enums.StaffRole.CV 
-                                                        ? `${work.staff_name || ''} (${work.charactor_name || t('gameInfo.unknownCharacter')})`
-                                                        : work.staff_name || t('gameInfo.staff', { index: index + 1 })
-                                                    }
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="text-sm text-brand-500 dark:text-brand-400 italic mt-1">{t('gameInfo.noData')}</p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-brand-600 dark:text-brand-400 text-sm">{t('gameInfo.noStaffInfo')}</p>
-                    )}
-                </div>
+                
 
 
 
@@ -243,6 +212,39 @@ export function GameInfoPanel({
                     </div>
                 </div>
 
+                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-3 text-brand-900 dark:text-white">{t('gameInfo.staffInfo')}</h3>
+                    {worksMap && worksMap.size > 0 ? (
+                        <div className="space-y-4">
+                            {workMapForEach(worksMap,t,(role, works) => (
+                                <div key={role} className="border-l-4 border-brand-500 pl-4">
+                                    <h4 className="font-medium text-brand-800 dark:text-brand-200 capitalize">
+                                        {role.toString() || role.replace(/([A-Z])/g, ' $1').trim()}
+                                    </h4>
+                                    {works && works.length > 0 ? (
+                                        <ul className="mt-2 flex flex-wrap gap-2">
+                                            {works.map((work: models.Work, index: number) => (
+                                                <li key={index} 
+                                                onClick={() => handleStaffClick(work)}
+                                                className="text-sm text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/50 px-2 py-1 rounded">
+                                                    {work.role === enums.StaffRole.CV 
+                                                        ? `${work.staff_name || ''} (${work.charactor_name || t('gameInfo.unknownCharacter')})`
+                                                        : work.staff_name || t('gameInfo.staff', { index: index + 1 })
+                                                    }
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-sm text-brand-500 dark:text-brand-400 italic mt-1">{t('gameInfo.noData')}</p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-brand-600 dark:text-brand-400 text-sm">{t('gameInfo.noStaffInfo')}</p>
+                    )}
+                </div>
+
 
 
                 {/* 删除标签确认弹窗 */}
@@ -268,7 +270,7 @@ export function GameInfoPanel({
                                         {t('gameInfo.cancel')}
                                     </button>
                                     <button
-                                        onClick={confirmDeleteTag}
+                                        onClick={() => confirmDeleteTag(tagToDelete)}
                                         className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
                                         {t('gameInfo.delete')}

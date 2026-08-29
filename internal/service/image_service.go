@@ -360,6 +360,7 @@ func (s *ImageService) FetchImages(id string, subjectType int, imageType int, do
 		SELECT url, local_path, subject_id, subject_type, image_type, game_id, created_at
 		FROM image_backups
 		WHERE subject_id = ? AND subject_type = ? AND image_type = ?
+		ORDER BY created_at DESC
 	`
 	rs, err := s.FetchImageBackups(query, id, subjectType, imageType, download)
 	// applog.LogInfof(s.ctx, "FetchImages count:%d\n", len(rs))

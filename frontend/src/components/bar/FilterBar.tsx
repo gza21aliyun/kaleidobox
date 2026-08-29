@@ -540,6 +540,7 @@ export function FilterBar({
                     {tagsFilter && onTagsFilterChange && onTagsIntersectionModeChange && (
                       <button
                         onClick={() => onTagsIntersectionModeChange(!tagsIntersectionMode)}
+                        title="切换交集模式或合集模式"
                         className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
                           tagsIntersectionMode
                             ? 'bg-brand-100 dark:bg-brand-800'

@@ -75,7 +75,7 @@ function TagListPage() {
     (tag.group && tag.group.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // 按类别分组标签
+  // 按类别分标签
   const groupedTags = arrayToMap(tags, tag => tag.category);
 
   // 按分组组织标签
@@ -159,7 +159,7 @@ function TagListPage() {
 
   const handleTagDrop = async (tagName: string, targetGroup: string) => {
     try {
-        await UpdateTagsGroup([...(groupedTags.get("") || []).map((t)=>t.group), tagName], targetGroup);
+        await UpdateTagsGroup([...(tagsByGroup[targetGroup] || []).map((t)=>t.name), tagName], targetGroup);
         
         // 局部更新状态而不是重新加载所有数据
         setTags(prevTags => 

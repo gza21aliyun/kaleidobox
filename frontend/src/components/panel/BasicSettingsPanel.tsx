@@ -223,7 +223,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          删除操作不需确认
+          删除操作需要确认
         </label>
         <BetterSwitch
           id="delete_confirm"

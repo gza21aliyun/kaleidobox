@@ -1892,7 +1892,8 @@
     "selectEmptyHint": "Select empty matches",
     "selectOnlyMatchedHint": "Select games matched only to the specified source",
     "onlyMatched": "Only matched",
-    "openDetail": "Open game details"
+    "openDetail": "Open game details",
+    "editSources": "Edit Game Sources"
   },
   "batchImport": {
     "title": "Batch import games",

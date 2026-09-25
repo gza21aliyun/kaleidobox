@@ -1444,7 +1444,8 @@
     "selectEmptyHint": "空マッチを選択",
     "selectOnlyMatchedHint": "指定ソースのみにマッチしたゲームを選択",
     "onlyMatched": "マッチのみ",
-    "openDetail": "ゲーム詳細を開く"
+    "openDetail": "ゲーム詳細を開く",
+    "editSources": "ゲームソースを編集"
   },
   "batchImport": {
     "title": "ゲームの一括インポート",

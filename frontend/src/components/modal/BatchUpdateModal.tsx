@@ -6,8 +6,8 @@ import { enums, vo } from "../../../wailsjs/go/models";
 import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from "../../../wailsjs/runtime";
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
-import { getSourceId, hasSource } from "../../utils/sourceList";
-import { EXTERNAL_SOURCES, EXTERNAL_SOURCE_VALUES, METADATA_SOURCES } from "../../utils/sourceTypes";
+import { getSourceId, hasSource, setSourceId } from "../../utils/sourceList";
+import { EXTERNAL_SOURCE_VALUES, METADATA_SOURCES } from "../../utils/sourceTypes";
 
 import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq, FetchMetadataByNameQuick } from "../../../wailsjs/go/service/GameService";
 import {
@@ -56,6 +56,9 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
   const [isSearching, setIsSearching] = useState(false);
   const [searchMsg, setSearchMsg] = useState(t('batchUpdate.searching'));
   const [manualId, setManualId] = useState("");
+  // 源列表编辑弹窗状态
+  const [showSourceEdit, setShowSourceEdit] = useState(false);
+  const [sourceEditIndex, setSourceEditIndex] = useState<number | null>(null);
   // const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
   const taskId = useRef("");
   const [shouldOverwrite, setIsOverWrite]  = useState(true);
@@ -216,6 +219,16 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
   const updateSearchName = (index: number, name: string) => {
     const updated = [...candidates];
     updated[index].search_name = name;
+    setCandidates(updated);
+  };
+
+  // 编辑指定候选游戏的某个来源 ID（写回统一的 source_list）
+  const updateSourceId = (index: number, sourceType: enums.SourceType, id: string) => {
+    const updated = [...candidates];
+    updated[index] = {
+      ...updated[index],
+      source_list: setSourceId(updated[index].source_list, sourceType, id),
+    } as models.Game;
     setCandidates(updated);
   };
 
@@ -623,22 +636,28 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                                 />
                               </td>
                               <td className="px-3 py-2">
-                                {(() => {
-                                    var text: string = "";
-                                    if (candidate.source_id != "") { 
-                                      text += candidate.source_type + ":" + candidate.source_id;
-                                    }
-                                    for (const { value: st, labelKey: key } of EXTERNAL_SOURCES) {
-                                      if (candidate.source_type !== st) {
+                                <button
+                                  type="button"
+                                  onClick={() => { setSourceEditIndex(index); setShowSourceEdit(true); }}
+                                  title={t('batchUpdate.editSources')}
+                                  className="inline-flex w-full items-center gap-1 text-left text-sm text-brand-900 hover:text-neutral-500 dark:text-white"
+                                >
+                                  <span className="truncate">
+                                    {(() => {
+                                      const parts: string[] = [];
+                                      for (const { value: st, labelKey: key } of METADATA_SOURCES) {
                                         const sid = getSourceId(candidate.source_list, st);
-                                        if (sid && sid !== "") {
-                                          text += "," + t(key) + ":" + sid;
-                                        }
+                                        if (sid) parts.push(`${t(key)}:${sid}`);
                                       }
-                                    }
-
-                                    return text;
-                                })()}
+                                      // 兼容遗留主源：若未体现在 source_list 中则补充显示
+                                      if (candidate.source_id && !candidate.source_list?.includes(`:${candidate.source_id}`)) {
+                                        parts.unshift(`${candidate.source_type}:${candidate.source_id}`);
+                                      }
+                                      return parts.length ? parts.join(", ") : t('common.none');
+                                    })()}
+                                  </span>
+                                  <div className="i-mdi-pencil shrink-0 text-xs opacity-60" />
+                                </button>
                               </td>
                               <td className="px-3 py-2 text-center">
                                 {(() => {
@@ -825,6 +844,54 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
           </div>
         </div>
       )}
+
+      {/* Source List Edit Modal */}
+      {showSourceEdit && sourceEditIndex !== null && candidates[sourceEditIndex] && (() => {
+        const candidate = candidates[sourceEditIndex];
+        return (
+          <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/50">
+            <div className="flex max-h-[80vh] w-full max-w-md flex-col rounded-xl bg-white shadow-2xl dark:bg-brand-800">
+              <div className="flex items-center justify-between border-b border-brand-200 p-4 dark:border-brand-700">
+                <h3 className="truncate text-lg font-bold text-brand-900 dark:text-white">
+                  {t('batchUpdate.editSources')}
+                  {" "}
+                  {candidate.search_name}
+                </h3>
+                <button
+                  onClick={() => setShowSourceEdit(false)}
+                  className="i-mdi-close text-xl text-brand-500 hover:text-brand-700"
+                />
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                {METADATA_SOURCES.map((o) => (
+                  <div key={o.value} className="flex items-center gap-3">
+                    <span className="w-24 shrink-0 text-sm font-medium text-brand-700 dark:text-brand-300">
+                      {t(o.labelKey)}
+                    </span>
+                    <input
+                      type="text"
+                      value={getSourceId(candidate.source_list, o.value)}
+                      onChange={(e) => updateSourceId(sourceEditIndex, o.value, e.target.value)}
+                      placeholder={t('gameEdit.sourceIdPlaceholder')}
+                      className="flex-1 rounded border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm text-brand-900 focus:border-neutral-500 focus:outline-none dark:border-brand-600 dark:bg-brand-700 dark:text-white"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end border-t border-brand-200 p-4 dark:border-brand-700">
+                <button
+                  onClick={() => setShowSourceEdit(false)}
+                  className="rounded-lg px-5 py-2 text-sm font-medium text-white bg-neutral-600 hover:bg-neutral-700"
+                >
+                  {t('common.close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>,
     document.body,
   );

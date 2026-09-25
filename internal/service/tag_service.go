@@ -85,6 +85,9 @@ func (s *TagService) CreateOrUpdateTag(newTag models.Tag) error {
 			tag.UseCount = newTag.UseCount
 			return s.UpdateTag(tag)
 		}
+		if tag.Group != "" && newTag.Group == "" {
+			newTag.Group = tag.Group
+		}
 		return s.UpdateTag(&newTag)
 	}
 	return err

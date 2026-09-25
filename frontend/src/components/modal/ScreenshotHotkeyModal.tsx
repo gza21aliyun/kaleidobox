@@ -35,11 +35,11 @@ export function ScreenshotHotkeyModal({
 
   // 支持的设备类型
   const deviceTypes = [
-    { type: enums.DeviceType.KEYBOARD, name: t('deviceType.KEYBOARD'), icon: "i-mdi-keyboard" },
-    { type: enums.DeviceType.DUALSENSE, name: t('deviceType.DUALSENSE'), icon: "i-mdi-controller-playstation" },
-    { type: enums.DeviceType.DUALSHOCK4, name: t('deviceType.DUALSHOCK4'), icon: "i-mdi-controller-playstation" },
-    { type: enums.DeviceType.JOYCON, name: t('deviceType.JOYCON'), icon: "i-mdi-controller-nintendo" },
-    { type: enums.DeviceType.XINPUT, name: t('deviceType.XINPUT'), icon: "i-mdi-controller-xbox" }
+    { type: enums.DeviceType.KEYBOARD, name: t('deviceType.keyboard'), icon: "i-mdi-keyboard" },
+    { type: enums.DeviceType.DUALSENSE, name: t('deviceType.dualsense'), icon: "i-mdi-controller-playstation" },
+    { type: enums.DeviceType.DUALSHOCK4, name: t('deviceType.dualshock4'), icon: "i-mdi-controller-playstation" },
+    { type: enums.DeviceType.JOYCON, name: t('deviceType.joyconPair'), icon: "i-mdi-controller-nintendo" },
+    { type: enums.DeviceType.XINPUT, name: t('deviceType.xinput'), icon: "i-mdi-controller-xbox" }
   ];
 
   // 修饰键选项（仅键盘支持）
@@ -118,7 +118,7 @@ export function ScreenshotHotkeyModal({
       }
       const hotkey = models.Hotkey.createFrom({
         key_code: key,
-        description: "截图快捷键",
+        description: t('screenshotHotkey.desc'),
         name: displayKey,
         game_id: "golbal",
         deviceTypes: selectedDeviceType
@@ -193,7 +193,7 @@ export function ScreenshotHotkeyModal({
       await onSave(hotkey);
       onClose();
     } catch (err) {
-      setError("保存失败: " + (err as Error).message);
+      setError(t('game.toasts.saveFailed') + ": " + (err as Error).message);
     }
   };
 

@@ -244,7 +244,7 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
                       <button
                         onClick={() => handleStartGame(game)}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-green-500/80 active:scale-95"
-                        title="启动游戏"
+                        title={t('localSearch.launchGame')}
                       >
                         <div className="i-mdi-play text-lg" />
                       </button>
@@ -253,7 +253,7 @@ export function LocalSearchModal({ itemName, onOpenInfo, onChoose, onClose, type
                     <button
                         onClick={()=>{handleGameDetails(game, sortedGames.map((g) => g.id))}}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-blue-500/80 active:scale-95"
-                        title="打开游戏"
+                        title={t('localSearch.openGame')}
                       >
                       <div className="i-mdi-play text-lg" />
                     </button>

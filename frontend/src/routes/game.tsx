@@ -705,7 +705,7 @@ function GameDetailPage() {
                 className="flex items-center gap-1.5 rounded-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition-all duration-300 px-4 py-1.5 text-sm font-medium"
               >
                 <div className="i-mdi-video-search text-lg" />
-                搜索视频
+                {t('game.searchVideo')}
               </button>
 
 

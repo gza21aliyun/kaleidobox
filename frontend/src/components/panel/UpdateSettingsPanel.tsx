@@ -43,7 +43,7 @@ export function UpdateSettingsPanel({ formData, onChange }: UpdateSettingsPanelP
       }
     }
     catch (err) {
-      setError(err instanceof Error ? err.message : "检查更新失败");
+      setError(err instanceof Error ? err.message : t('updateSettings.checkFailed'));
     }
     finally {
       setIsChecking(false);
@@ -59,7 +59,7 @@ export function UpdateSettingsPanel({ formData, onChange }: UpdateSettingsPanelP
       setShowDialog(false);
     }
     catch (err) {
-      const msg = `修改失败：${err}`;
+      const msg = t('updateSettings.modifyFailed', { err: `${err}` });
       toast.error(msg);
     }
   };

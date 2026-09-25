@@ -38,7 +38,7 @@ export function DraggableTag({ tag, onDelete }: { tag: models.Tag; onDelete?: (t
       `}
     >
       {tag.name}
-      <button className="ml-1 text-xs" title="搜索游戏" 
+      <button className="ml-1 text-xs" title={t('search.game')} 
         onClick={() => {
           navigate({ 
             to: '/library', 

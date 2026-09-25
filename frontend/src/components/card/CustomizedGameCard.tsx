@@ -32,6 +32,7 @@ function HighlightText({ text, query }: { text: string; query: string }) {
 
 // ── 懒加载游戏统计信息组件 ──────────────────────────────────────────────────────
 function LazyGameStats({ game_id, stats }: { game_id: string, stats: vo.GameDetailStats | undefined }) {
+  const { t } = useTranslation();
   // const [isVisible, setIsVisible] = useState(false);
   // const containerRef = useRef<HTMLDivElement>(null);
 
@@ -62,14 +63,11 @@ function LazyGameStats({ game_id, stats }: { game_id: string, stats: vo.GameDeta
     return (
       <div className="absolute right-1 bottom-16 z-10 flex flex-col rounded-md bg-black/30 px-2 py-1 text-xs text-white/90 backdrop-blur-sm shadow-lg"> 
         <div className="flex items-center whitespace-nowrap">
-          玩过{formatDurationSimple(stats.total_play_time)}
+          {t('game.playedFor', { duration: formatDurationSimple(stats.total_play_time) })}
         </div>
         {stats.end_date && (
           <div className="mt-0.5 flex items-center whitespace-nowrap border-t border-white/20 pt-0.5">
-            {
-            endDate
-            // stats.end_date
-            }玩过
+            {t('game.playedOn', { date: endDate })}
           </div>
         )}
       </div>

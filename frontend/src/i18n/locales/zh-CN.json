@@ -78,7 +78,11 @@
       "allStatus": "全部状态"
     },
     "refresh": "刷新",
-    "noGalleryImages": "无画廊图片"
+    "noGalleryImages": "无画廊图片",
+    "complete": "完成",
+    "saving": "保存中...",
+    "character": "角色",
+    "search": "搜索"
   },
   "topbar": {
     "minimize": "最小化",
@@ -242,6 +246,11 @@
     "charts": {
       "playTimeTrend": "游玩时长趋势",
       "frequentlyPlayedTrend": "常玩游戏趋势"
+    },
+    "period": {
+      "week": "本周",
+      "month": "本月",
+      "all": "全部"
     }
   },
   "categories": {
@@ -278,7 +287,10 @@
   "category": {
     "modals": {
       "createCategory": "创建分类",
-      "editCategory": "编辑分类"
+      "editCategory": "编辑分类",
+      "addToCategory": {
+        "title": "添加到收藏夹"
+      }
     },
     "placeholders": {
       "categoryName": "请输入分类名称"
@@ -299,7 +311,8 @@
       "noGamesFound": "未找到匹配的游戏",
       "noGamesInCategory": "这个收藏夹还没有游戏",
       "noGamesToAdd": "没有可添加的游戏",
-      "systemCategoryCannotBatchDelete": "系统收藏夹不能批量删除"
+      "systemCategoryCannotBatchDelete": "系统收藏夹不能批量删除",
+      "noCategories": "暂无收藏夹"
     },
     "labels": {
       "system": "系统",
@@ -313,7 +326,8 @@
     },
     "descriptions": {
       "addGameToCategory": "从此游戏库中选择游戏添加到收藏夹"
-    }
+    },
+    "clickTimes": "(点击{{count}}次)"
   },
   "game": {
     "status": {
@@ -351,7 +365,9 @@
       "remoteUpdateFailed": "从远程更新失败",
       "gameLaunchSuccess": "{{name}}启动成功",
       "gameLaunchFailed": "{{name}}启动失败（未能启动）",
-      "gameLaunchFailedCheckLog": "{{name}} 启动失败，查询日志获得帮助"
+      "gameLaunchFailedCheckLog": "{{name}} 启动失败，查询日志获得帮助",
+      "loadFailed": "加载游戏失败",
+      "videoUpdated": "视频已更新"
     },
     "buttons": {
       "addToCollection": "添加到收藏",
@@ -407,7 +423,10 @@
     },
     "errors": {
       "gameNotFound": "未找到该游戏"
-    }
+    },
+    "searchVideo": "搜索视频",
+    "playedFor": "玩了 {{duration}}",
+    "playedOn": "上次游玩：{{date}}"
   },
   "tagList": {
     "title": "标签列表",
@@ -529,7 +548,10 @@
     },
     "buttons": {
       "back": "返回"
-    }
+    },
+    "images": "角色图片",
+    "height": "身高",
+    "measurements": "三围"
   },
   "brandList": {
     "title": "品牌",
@@ -690,7 +712,9 @@
     "newFolderChooser": "新式文件、文件夹选择器（美观但WIN11不能选网络映射盘）",
     "displayName": "显示器",
     "defaultDisplay": "默认",
-    "primaryDisplay": "主显示器"
+    "primaryDisplay": "主显示器",
+    "hideOldMatchingBtns": "隐藏旧版匹配按钮",
+    "deleteRequiresConfirm": "删除操作需要确认"
   },
   "dbBackup": {
     "databaseBackup": "数据库备份",
@@ -769,7 +793,8 @@
       "version": "版本",
       "buildMode": "构建模式",
       "builtAt": "构建时间"
-    }
+    },
+    "vmSettings": "虚拟机设置"
   },
   "sidebar": {
     "task": "任务",
@@ -811,7 +836,9 @@
     "getchu": "Getchu",
     "noFilter": "不过滤匹配",
     "emptyCover": "无封面",
-    "emptyGallery": "无画廊"
+    "emptyGallery": "无画廊",
+    "vm": "虚拟机",
+    "duplicated": "重复"
   },
   "staffRole": {
     "STAFF": "工作人员",
@@ -1044,7 +1071,10 @@
     "noVmSelected": "请先选择虚拟机",
     "openVmPathSuccess": "已在虚拟机中打开路径",
     "openVmPathError": "在虚拟机中打开路径失败",
-    "openInVm": "在虚拟机中打开"
+    "openInVm": "在虚拟机中打开",
+    "saveDirFoundSuccess": "已找到存档目录",
+    "saveDirSearchFailed": "搜索存档目录失败",
+    "videoFile": "视频文件"
   },
   "gameGallery": {
     "screenshots": "截图",
@@ -1062,7 +1092,8 @@
     "deleteSuccess": "删除成功",
     "deleteFailed": "删除失败：{{error}}",
     "saveHotkeyFailed": "保存快捷键失败：{{error}}",
-    "cannotDeleteCover": "当前封面图不能删除，请先更换封面图"
+    "cannotDeleteCover": "当前封面图不能删除，请先更换封面图",
+    "waitProcessAssign": "等待处理分配"
   },
   "gameInfo": {
     "staffInfo": "制作人员",
@@ -1130,7 +1161,8 @@
     "measurements": "三围",
     "height": "身高",
     "sort": "排序",
-    "deleteConfirm": "确定要删除此角色设定吗？"
+    "deleteConfirm": "确定要删除此角色设定吗？",
+    "sameBrandGames": "同品牌游戏"
   },
   "characterSelect": {
     "title": "选择角色",
@@ -1303,7 +1335,23 @@
     "noGlobalMappings": "没有全局按键映射",
     "defaultsLoaded": "已载入 {count} 个默认映射",
     "globalLoaded": "已载入 {count} 个全局映射",
-    "loadFailed": "载入失败"
+    "loadFailed": "载入失败",
+    "disabled": "关闭手柄映射",
+    "mappingDeleted": "映射已删除",
+    "deleteMappingFailed": "删除映射失败",
+    "clearedAll": "已清除所有按键映射，请点击保存按钮确认更改",
+    "allMappingsSaved": "所有映射已保存",
+    "saveMappingsFailed": "保存映射失败",
+    "clear": "清除",
+    "screenshot": "截图",
+    "notSet": "未设置",
+    "deleteMapping": "删除映射",
+    "settingsTitle": "设置按键映射",
+    "pressToSet": "请按下手柄上的按键来设置映射",
+    "currentButton": "当前按钮",
+    "listenStatus": "监听状态",
+    "listening": "正在监听...请按下手柄按键",
+    "ready": "准备就绪"
   },
   "touchMapping": {
     "title": "触摸按钮设置",
@@ -1350,7 +1398,8 @@
     "toastGlobalLoaded": "已载入 {{count}} 个全局按钮（仅内存，需保存才写入数据库）",
     "toastRefreshed": "已刷新按钮配置",
     "functionKeys": "功能键",
-    "orPressKey": "或按下键盘按键"
+    "orPressKey": "或按下键盘按键",
+    "arrowKeys": "方向键"
   },
   "reviews": {
     "dataSource": "数据源",
@@ -1361,7 +1410,9 @@
     "viewMore": "看更多",
     "previous": "上一页",
     "next": "下一页",
-    "type": "类型"
+    "type": "类型",
+    "shortComment": "吐槽",
+    "comment": "评论"
   },
   "task": {
     "title": "任务",
@@ -1414,7 +1465,14 @@
     "checking": "检查中...",
     "checkFailed": "检查更新失败",
     "newVersionFound": "发现新版本",
-    "latestVersion": "已是最新版本"
+    "latestVersion": "已是最新版本",
+    "availableUpdate": "检测到 {{name}} 有可用的更新",
+    "currentVersion": "当前版本",
+    "releaseDate": "发布日期",
+    "changelog": "更新日志",
+    "downloadGithub": "从 GitHub 下载",
+    "downloadGitee": "从 Gitee 下载",
+    "skipVersion": "跳过此版本"
   },
   "filter": {
     "modals": {
@@ -1441,7 +1499,8 @@
     },
     "placeholders": {
       "searchTags": "搜索标签..."
-    }
+    },
+    "toggleIntersectionMode": "切换交集模式或合集模式"
   },
   "import": {
     "modals": {
@@ -1491,7 +1550,8 @@
         "enterId": "输入 ID",
         "search": "查找",
         "importPathOnly": "不匹配元数据，仅导入路径",
-        "noValidGamesDetected": "未检测到有效的游戏"
+        "noValidGamesDetected": "未检测到有效的游戏",
+        "error": "导入失败"
       }
     },
     "labels": {
@@ -1658,7 +1718,9 @@
       "groupCreatedSuccessfully": "分组创建成功",
       "groupUpdatedSuccessfully": "分组更新成功",
       "failedToSaveGroup": "保存分组失败"
-    }
+    },
+    "adultContent": "成人内容",
+    "spoilerWarning": "剧透预警"
   },
   "template": {
     "modals": {
@@ -1688,7 +1750,8 @@
       "failedToRenderTemplate": "渲染模板失败",
       "failedToExportImage": "导出图片失败",
       "failedToOpenTemplatesDir": "打开模板目录失败"
-    }
+    },
+    "preview": "模板预览"
   },
   "tag": {
     "labels": {
@@ -1723,6 +1786,28 @@
     },
     "buttons": {
       "confirmAndRestart": "确认并重启应用"
+    },
+    "names": {
+      "shanghai": "中国标准时间 (UTC+8)",
+      "tokyo": "日本标准时间 (UTC+9)",
+      "seoul": "韩国标准时间 (UTC+9)",
+      "hongkong": "香港时间 (UTC+8)",
+      "taipei": "台北时间 (UTC+8)",
+      "singapore": "新加坡时间 (UTC+8)",
+      "bangkok": "曼谷时间 (UTC+7)",
+      "dubai": "迪拜时间 (UTC+4)",
+      "london": "伦敦时间 (UTC+0)",
+      "paris": "巴黎时间 (UTC+1)",
+      "berlin": "柏林时间 (UTC+1)",
+      "moscow": "莫斯科时间 (UTC+3)",
+      "newyork": "纽约时间 (UTC-5)",
+      "chicago": "芝加哥时间 (UTC-6)",
+      "denver": "丹佛时间 (UTC-7)",
+      "losangeles": "洛杉矶时间 (UTC-8)",
+      "saopaulo": "圣保罗时间 (UTC-3)",
+      "sydney": "悉尼时间 (UTC+10)",
+      "auckland": "奥克兰时间 (UTC+12)",
+      "utc": "世界协调时间 (UTC)"
     }
   },
   "vm": {
@@ -1789,7 +1874,24 @@
     "enterId": "输入ID",
     "search": "搜索",
     "startUpdateSuccess": "开始批量更新元数据",
-    "noGamesImported": "未导入游戏"
+    "noGamesImported": "未导入游戏",
+    "updateFailed": "更新失败",
+    "fetchFailed": "获取失败",
+    "scrapeSource": "搜刮源",
+    "overwriteHint": "是否覆盖",
+    "loadTagsHint": "是否加载标签",
+    "loadStaffHint": "是否加载制作人员",
+    "loadCharsHint": "是否加载角色",
+    "loadGalleryHint": "是否加载画廊",
+    "rematchHint": "否的话只会根据id重新获取数据，是的话会根据名字重新搜索",
+    "unionSearchHint": "会自动根据次要源补充数据，需要该源的ID，暂时只有批评空间和bangumi能同时获取其他源ID",
+    "selectMatchedHint": "选取已匹配指定源的游戏",
+    "selectUpdatedHint": "选取已更新",
+    "selectUnmatchedHint": "选取未匹配指定源的游戏",
+    "selectEmptyHint": "选取空匹配",
+    "selectOnlyMatchedHint": "选取仅匹配指定源的游戏",
+    "onlyMatched": "仅匹配",
+    "openDetail": "打开游戏详情"
   },
   "batchImport": {
     "title": "批量导入游戏",
@@ -1829,7 +1931,13 @@
     "skipMetadata": "跳过元数据",
     "addToCollection": "添加到收藏",
     "searchVideoAndExe": "搜索视频和EXE",
-    "notAddToCollection": "不加入收藏"
+    "notAddToCollection": "不加入收藏",
+    "scanDirFailed": "扫描目录失败",
+    "selectDirFailed": "选择目录失败",
+    "importSuccessCount": "成功导入 {{count}} 个游戏",
+    "fetchFailed": "获取失败",
+    "noGameFolderDetected": "未检测到游戏文件夹",
+    "rateLimitHint": "为避免触发限流，匹配速度可能较慢，请耐心等待"
   },
   "monthlyReleases": {
     "title": "每月发售",
@@ -2040,6 +2148,75 @@
     "confirmOverride": "确认覆盖",
     "taskOverrideSave": "覆盖存档",
     "overrideSaveSuccess": "覆盖存档成功",
-    "overrideSaveFailed": "覆盖存档失败"
+    "overrideSaveFailed": "覆盖存档失败",
+    "saveNotFound": "未找到存档",
+    "execAnimHint": "执行存档动画处理",
+    "execAnim": "执行动画",
+    "saveOverwritten": "存档已覆盖",
+    "saveDownloaded": "存档已下载"
+  },
+  "updateSettings": {
+    "checkFailed": "检查更新失败",
+    "modifyFailed": "修改失败：{{err}}"
+  },
+  "video": {
+    "notExist": "视频不存在",
+    "streamFailed": "获取视频流失败",
+    "collapseList": "收起列表",
+    "expandList": "展开列表",
+    "list": "视频列表",
+    "restore": "还原",
+    "maximize": "最大化",
+    "loading": "加载中...",
+    "prev": "上一个",
+    "next": "下一个",
+    "noVideo": "暂无视频"
+  },
+  "brandGames": {
+    "loadFailed": "加载品牌游戏失败",
+    "notFound": "未找到品牌",
+    "emptyBrand": "该品牌下暂无游戏"
+  },
+  "seriesGames": {
+    "loadFailed": "加载系列游戏失败",
+    "notFound": "未找到系列",
+    "emptySeries": "该系列下暂无游戏"
+  },
+  "search": {
+    "game": "搜索游戏",
+    "placeholder": "搜索..."
+  },
+  "monthly": {
+    "searchDownloadFolder": "搜索下载文件夹",
+    "imported": "已导入"
+  },
+  "imageCard": {
+    "setAsCover": "设为封面",
+    "fullscreenMagpie": "全屏显示，注意该功能会修改Magpie裁剪设置"
+  },
+  "localSearch": {
+    "launchGame": "启动游戏",
+    "openGame": "打开游戏"
+  },
+  "screenshotHotkey": {
+    "desc": "截图快捷键"
+  },
+  "rootDrop": {
+    "dropGameFolderTitle": "拖放游戏文件夹",
+    "dropGameFolderHint": "松开以导入该游戏文件夹",
+    "dropLnkTitle": "拖放快捷方式",
+    "dropLnkHint": "松开以添加该快捷方式指向的游戏"
+  },
+  "time": {
+    "hoursMinutes": "{{hours}}小时{{minutes}}分钟",
+    "hours": "{{hours}}小时",
+    "minutes": "{{minutes}}分钟",
+    "future": "未来",
+    "today": "今天",
+    "yesterday": "昨天",
+    "daysAgo": "{{count}}天前",
+    "weeksAgo": "{{count}}周前",
+    "monthsAgo": "{{count}}个月前",
+    "yearsAgo": "{{count}}年前"
   }
 }

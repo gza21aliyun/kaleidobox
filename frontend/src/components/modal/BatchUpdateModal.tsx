@@ -271,7 +271,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
       setManualSelectIndex(null);    
       // fetchGames().then(() => {});
     }).catch((error) => {
-      toast.error("更新失败:"+error);
+      toast.error(t('batchUpdate.updateFailed') + ":" + error);
       console.error("Failed to update game:", error);
       setIsSearching(false);
       setSearchMsg(t('batchUpdate.searching'));
@@ -296,12 +296,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
         selectManualMatch(game, source);
       }
       else {
-        toast.error("未找到游戏");
+        toast.error(t('batchUpdate.notFound'));
       }
     }
     catch (error) {
       console.error("Failed to fetch by ID:", error);
-      toast.error("获取失败");
+      toast.error(t('batchUpdate.fetchFailed'));
     }
     finally {
       setIsSearching(false);
@@ -357,7 +357,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       <span className="text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap"></span> {/* 标签移到左侧 */}
                       <BetterSelect
                         value={source}
-                        title="搜刮源"
+                        title={t('batchUpdate.scrapeSource')}
                         onChange={(value) => {
                           if (source !== value as enums.SourceType) {
                               setSource(value as enums.SourceType)
@@ -373,7 +373,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否覆盖">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title={t('batchUpdate.overwriteHint')}>
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate"
                       
                       >
@@ -388,7 +388,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否加载标签">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title={t('batchUpdate.loadTagsHint')}>
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.tags')}
                       </label>
@@ -401,7 +401,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否加载制作人员">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title={t('batchUpdate.loadStaffHint')}>
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.staff')}
                       </label>
@@ -413,7 +413,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                         }}
                       />
                     </div>
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否加载角色">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title={t('batchUpdate.loadCharsHint')}>
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.characters')}
                       </label>
@@ -426,7 +426,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="是否加载画廊">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title={t('batchUpdate.loadGalleryHint')}>
 
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.images')}
@@ -440,7 +440,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="否的话只会根据id重新获取数据，是的话会根据名字重新搜索">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title={t('batchUpdate.rematchHint')}>
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.rematch')}
                       </label>
@@ -453,7 +453,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title="会自动根据次要源补充数据，需要该源的ID，暂时只有批评空间和bangumi能同时获取其他源ID">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-brand-700/50 rounded-lg" title={t('batchUpdate.unionSearchHint')}>
                       <label className="text-sm font-medium text-brand-700 dark:text-brand-300 truncate">
                         {t('batchUpdate.unionSearch')}
                       </label>
@@ -493,7 +493,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       setSelectedIds(candidates.filter(c => isMatched(c, source)).map(c => c.id))
                     }}
                   className="flex-1 rounded-lg bg-neutral-50 dark:bg-neutral-900/20 p-4 text-center cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-900/30 transition-colors duration-200"
-                  title="选取已匹配指定源的游戏">
+                  title={t('batchUpdate.selectMatchedHint')}>
                   <div className="text-3xl font-bold text-neutral-600 dark:text-neutral-400">
                     {candidates.length}
                   </div>
@@ -506,7 +506,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       setSelectedIds(updatedIds)
                     }}
                   className="flex-1 rounded-lg bg-success-50 dark:bg-success-900/20 p-4 text-center cursor-pointer hover:bg-success-100 dark:hover:bg-success-900/30 transition-colors duration-200"
-                  title="选取已更新">
+                  title={t('batchUpdate.selectUpdatedHint')}>
                   <div className="text-3xl font-bold text-success-600 dark:text-success-400">
                     {updatedCount}
                   </div>
@@ -520,7 +520,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       setSelectedIds(candidates.filter(c => !isMatched(c, source)).map(c => c.id))
                     }}
                     className="flex-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors duration-200"
-                    title="选取未匹配指定源的游戏">
+                    title={t('batchUpdate.selectUnmatchedHint')}>
                       <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                         {notFoundCount}
                       </div>
@@ -535,7 +535,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       setSelectedIds(candidates.filter(c => isEmptyMatched(c)).map(c => c.id))
                     }}
                     className="flex-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors duration-200"
-                    title="选取空匹配">
+                    title={t('batchUpdate.selectEmptyHint')}>
                       <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                         {emptyFoundCount}
                       </div>
@@ -550,12 +550,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                       setSelectedIds(candidates.filter(c => onlyMatched(c, source)).map(c => c.id))
                     }}
                     className="flex-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 p-4 text-center cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors duration-200"
-                    title="选取仅匹配指定源的游戏">
+                    title={t('batchUpdate.selectOnlyMatchedHint')}>
                       <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                         {onlyMatchedCount}
                       </div>
                       <div className="text-sm text-orange-700 dark:text-orange-300">
-                        仅匹配
+                        {t('batchUpdate.onlyMatched')}
                       </div>
                   </div>
                 )}
@@ -689,7 +689,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                                                 navigate({ to: '/game/$gameId', params: { gameId: candidate.id } });
                                                 resetAndClose();
                                             }}
-                                            title="打开游戏详情"
+                                            title={t('batchUpdate.openDetail')}
                                             className={`inline-flex items-center rounded-full px-2 py-1 text-xs ${color}`}
                                         >
                                             <div className={icon} />

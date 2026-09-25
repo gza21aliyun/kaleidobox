@@ -48,8 +48,8 @@ interface TouchButton {
 
 // 功能键选项
 const ACTION_KEYS = [
-  { actionType: enums.HotkeyActionType.SCREENSHOT, name: 'SCREENSHOT', label: '截图', icon: '📷' },
-  { actionType: enums.HotkeyActionType.ARROW_KEYS, name: 'ARROW_KEYS', label: '方向键', icon: '⬆️⬇️⬅️➡️' },
+  { actionType: enums.HotkeyActionType.SCREENSHOT, name: 'SCREENSHOT', label: '截图', tKey: 'keyMapping.screenshot', icon: '📷' },
+  { actionType: enums.HotkeyActionType.ARROW_KEYS, name: 'ARROW_KEYS', label: '方向键', tKey: 'touchMapping.arrowKeys', icon: '⬆️⬇️⬅️➡️' },
 ];
 
 // 常见虚拟键 - 名称和代码映射
@@ -716,7 +716,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-800 dark:text-gray-200">
-                    {btn.actionType === enums.HotkeyActionType.SCREENSHOT ? '截图' : btn.actionParams}
+                    {btn.actionType === enums.HotkeyActionType.SCREENSHOT ? t('keyMapping.screenshot') : btn.actionParams}
                   </td>
                   <td className="px-4 py-3 text-gray-800 dark:text-gray-200">
                     <input
@@ -804,7 +804,7 @@ export const TouchMappingPanel = forwardRef<TouchMappingPanelRef, TouchMappingPa
                     className="flex items-center justify-center gap-2 p-3 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg transition-colors dark:bg-brand-900/50 dark:border-brand-700 dark:hover:bg-brand-800"
                   >
                     <span className="text-xl">{actionKey.icon}</span>
-                    <span className="text-sm text-brand-700 dark:text-brand-300">{actionKey.label}</span>
+                    <span className="text-sm text-brand-700 dark:text-brand-300">{t(actionKey.tKey)}</span>
                   </button>
                 ))}
               </div>

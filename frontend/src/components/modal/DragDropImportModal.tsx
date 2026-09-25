@@ -925,9 +925,9 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
                             value={manualSource}
                             onChange={value => setManualSource(value as enums.SourceType)}
                             options={[
-                              { value: enums.SourceType.BANGUMI, label: "Bangumi" },
-                              { value: enums.SourceType.VNDB, label: "VNDB" },
-                              { value: enums.SourceType.YMGAL, label: "月幕gal" },
+                              { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
+                              { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
+                              { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
                             ]}
                             className="w-32"
                           />

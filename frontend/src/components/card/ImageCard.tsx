@@ -3,6 +3,7 @@ import { GetImageBackupByUrl, FetchGetchuImages, ScaleImageWithMagpie, CreateOrU
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useAppStore } from "../../store";
+import { useTranslation } from "react-i18next";
 import { u } from "@unocss/preset-wind3/dist/rules-Dd5IWQsx.mjs";
 import toast from "react-hot-toast";
 
@@ -32,6 +33,7 @@ interface ImageBackupProps {
 export function ImageBackupCard({
     imageBackup, className, alt, style, draggable, referrerPolicy, onDragStart, onError, selectMode = false, onSelect, onDelete, isShowTime = false, clickNext, hasNext, hasPrev, currentIndex = 0, onClose,
 }: ImageBackupProps) { 
+    const { t } = useTranslation();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [scale, setScale] = useState(1);
     const { config } = useAppStore();
@@ -187,7 +189,7 @@ export function ImageBackupCard({
                                 onSelect?.(imageBackup);
                             }}
                             className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-brand-400 active:scale-95"
-                            title="选择为封面"
+                            title={t('imageCard.setAsCover')}
                         >
                             <div className="i-mdi-image-plus text-lg" />
                         </button>
@@ -198,7 +200,7 @@ export function ImageBackupCard({
                                     onDelete(imageBackup);
                                 }}
                                 className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/80 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-red-500/80 active:scale-95"
-                                title="删除"
+                                title={t('common.delete')}
                             >
                                 <div className="i-mdi-delete text-lg" />
                             </button>
@@ -236,7 +238,7 @@ export function ImageBackupCard({
                                         e.stopPropagation();
                                         handleFullscreen();
                                     }}
-                                    title="全屏显示，注意该功能会修改Magpie裁剪设置"
+                                    title={t('imageCard.fullscreenMagpie')}
                                 >
                                     ⛶
                                 </button>

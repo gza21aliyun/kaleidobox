@@ -98,7 +98,7 @@ function CharactorPage() {
     return (
       <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <td colSpan={7} className="py-3 px-6 w-full">
-          <div className="text-xs text-brand-600 dark:text-brand-400 mb-2 font-medium">作品图片：</div>
+          <div className="text-xs text-brand-600 dark:text-brand-400 mb-2 font-medium">{t('charactor.images')}</div>
           <div className="flex flex-wrap gap-3 w-full">
             {images.map((imageBackup, idx) => (
               <div key={idx} className="w-54 h-40 flex-shrink-0">
@@ -314,13 +314,13 @@ function CharactorPage() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-brand-600 dark:text-brand-400">身高:</span>
+                  <span className="text-brand-600 dark:text-brand-400">{t('charactor.height')}</span>
                   <span className="text-brand-900 dark:text-white font-mono text-sm">
                     {charactor.height || t('common.none')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-brand-600 dark:text-brand-400">三围:</span>
+                  <span className="text-brand-600 dark:text-brand-400">{t('charactor.measurements')}</span>
                   <span className="text-brand-900 dark:text-white font-mono text-sm">
                     {charactor.measurements || t('common.none')}
                   </span>

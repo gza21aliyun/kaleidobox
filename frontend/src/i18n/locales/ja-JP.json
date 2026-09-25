@@ -74,7 +74,15 @@
       "expand": "フィルターを展開"
     },
     "refresh": "更新",
-    "noGalleryImages": "ギャラリー画像がありません"
+    "noGalleryImages": "ギャラリー画像がありません",
+    "complete": "完了",
+    "saving": "保存中...",
+    "associate": "関連付け",
+    "associateSuccess": "関連付けに成功しました",
+    "createFailed": "作成に失敗しました",
+    "createSuccess": "作成に成功しました",
+    "character": "キャラクター",
+    "search": "検索"
   },
   "topbar": {
     "minimize": "最小化",
@@ -238,6 +246,11 @@
     "charts": {
       "playTimeTrend": "プレイ時間の傾向",
       "frequentlyPlayedTrend": "よくプレイされるゲームの傾向"
+    },
+    "period": {
+      "week": "今週",
+      "month": "今月",
+      "all": "すべて"
     }
   },
   "categories": {
@@ -274,7 +287,10 @@
   "category": {
     "modals": {
       "createCategory": "カテゴリを作成",
-      "editCategory": "カテゴリを編集"
+      "editCategory": "カテゴリを編集",
+      "addToCategory": {
+        "title": "收藏夹に追加"
+      }
     },
     "placeholders": {
       "categoryName": "カテゴリ名を入力してください"
@@ -295,7 +311,8 @@
       "noGamesFound": "一致するゲームが見つかりません",
       "noGamesInCategory": "このコレクションにはまだゲームがありません",
       "noGamesToAdd": "追加できるゲームがありません",
-      "systemCategoryCannotBatchDelete": "システムコレクションは一括削除できません"
+      "systemCategoryCannotBatchDelete": "システムコレクションは一括削除できません",
+      "noCategories": "收藏夹がありません"
     },
     "labels": {
       "system": "システム",
@@ -309,7 +326,8 @@
     },
     "descriptions": {
       "addGameToCategory": "ライブラリからこのコレクションに追加するゲームを選択"
-    }
+    },
+    "clickTimes": "（{{count}}回クリック）"
   },
   "game": {
     "status": {
@@ -347,7 +365,9 @@
       "remoteUpdateFailed": "リモートからの更新に失敗しました",
       "gameLaunchSuccess": "{{name}} の起動に成功しました",
       "gameLaunchFailed": "{{name}} の起動に失敗しました（起動できませんでした）",
-      "gameLaunchFailedCheckLog": "{{name}} の起動に失敗しました。ログを確認してください。"
+      "gameLaunchFailedCheckLog": "{{name}} の起動に失敗しました。ログを確認してください。",
+      "loadFailed": "ゲームの読み込みに失敗しました",
+      "videoUpdated": "動画を更新しました"
     },
     "buttons": {
       "addToCollection": "コレクションに追加",
@@ -403,7 +423,10 @@
     },
     "errors": {
       "gameNotFound": "ゲームが見つかりません"
-    }
+    },
+    "searchVideo": "動画を検索",
+    "playedFor": "{{duration}} プレイ",
+    "playedOn": "最終プレイ：{{date}}"
   },
   "tagList": {
     "title": "タグ一覧",
@@ -525,7 +548,10 @@
     },
     "buttons": {
       "back": "戻る"
-    }
+    },
+    "images": "キャラクター画像",
+    "height": "身長",
+    "measurements": "スリーサイズ"
   },
   "brandList": {
     "title": "ブランド",
@@ -686,7 +712,9 @@
     "newFolderChooser": "新スタイルのファイル・フォルダーセレクター（美しいが WIN11 ではネットワークマップドドライブを選択できません）",
     "displayName": "ディスプレイ",
     "defaultDisplay": "デフォルト",
-    "primaryDisplay": "プライマリ"
+    "primaryDisplay": "プライマリ",
+    "hideOldMatchingBtns": "旧バージョンのマッチングボタンを隠す",
+    "deleteRequiresConfirm": "削除操作には確認が必要"
   },
   "dbBackup": {
     "databaseBackup": "データベースバックアップ",
@@ -765,7 +793,8 @@
       "version": "バージョン",
       "buildMode": "ビルドモード",
       "builtAt": "ビルド時間"
-    }
+    },
+    "vmSettings": "仮想マシン設定"
   },
   "sidebar": {
     "task": "タスク",
@@ -807,7 +836,9 @@
     "getchu": "Getchu",
     "noFilter": "フィルターなし",
     "emptyCover": "カバーなし",
-    "emptyGallery": "ギャラリーなし"
+    "emptyGallery": "ギャラリーなし",
+    "vm": "仮想マシン",
+    "duplicated": "重複"
   },
   "staffRole": {
     "STAFF": "スタッフ",
@@ -1037,7 +1068,13 @@
     "noVmSelected": "最初に仮想マシンを選択してください",
     "openVmPathSuccess": "仮想マシンでパスを開きました",
     "openVmPathError": "仮想マシンでパスを開くのに失敗しました",
-    "openInVm": "仮想マシンで開く"
+    "openInVm": "仮想マシンで開く",
+    "noVm": "仮想マシンを使用しない",
+    "vmId": "仮想マシン",
+    "vmIdHint": "このゲームを実行する仮想マシンを選択してください",
+    "saveDirFoundSuccess": "セーブディレクトリを検出しました",
+    "saveDirSearchFailed": "セーブディレクトリの検索に失敗しました",
+    "videoFile": "動画ファイル"
   },
   "gameGallery": {
     "screenshots": "スクリーンショット",
@@ -1055,7 +1092,8 @@
     "deleteSuccess": "削除しました",
     "deleteFailed": "削除に失敗しました：{{error}}",
     "saveHotkeyFailed": "ショートカットキーの保存に失敗しました：{{error}}",
-    "cannotDeleteCover": "現在の表紙画像は削除できません。先に表紙画像を変更してください"
+    "cannotDeleteCover": "現在の表紙画像は削除できません。先に表紙画像を変更してください",
+    "waitProcessAssign": "割り当て待ち"
   },
   "gameInfo": {
     "staffInfo": "スタッフ",
@@ -1115,7 +1153,16 @@
     "noCategories": "カテゴリタグがありません",
     "relatedGames": "関連ゲーム",
     "characterSummary": "キャラクター紹介",
-    "addRelatedGame": "関連ゲームを追加"
+    "addRelatedGame": "関連ゲームを追加",
+    "characterImage": "キャラクター画像",
+    "deleteConfirm": "このキャラクター設定を削除してもよろしいですか？",
+    "editCharacter": "キャラクター編集",
+    "height": "身長",
+    "measurements": "スリーサイズ",
+    "sort": "並び順",
+    "workImages": "キャラクターのスクリーンショット",
+    "workImagesPlaceholder": "複数のURLはカンマで区切ります",
+    "sameBrandGames": "同ブランドのゲーム"
   },
   "gameLaunch": {
     "processMonitoring": "プロセス監視",
@@ -1225,7 +1272,23 @@
     "noGlobalMappings": "グローバルキーマッピングがありません",
     "defaultsLoaded": "{count}個のデフォルトマッピングを読み込みました",
     "globalLoaded": "{count}個のグローバルマッピングを読み込みました",
-    "loadFailed": "読み込みに失敗しました"
+    "loadFailed": "読み込みに失敗しました",
+    "disabled": "コントローラー割り当てを無効化",
+    "mappingDeleted": "割り当てを削除しました",
+    "deleteMappingFailed": "割り当ての削除に失敗しました",
+    "clearedAll": "すべての割り当てをクリアしました。保存ボタンで確定してください",
+    "allMappingsSaved": "すべての割り当てを保存しました",
+    "saveMappingsFailed": "割り当ての保存に失敗しました",
+    "clear": "クリア",
+    "screenshot": "スクリーンショット",
+    "notSet": "未設定",
+    "deleteMapping": "割り当てを削除",
+    "settingsTitle": "ボタン割り当て設定",
+    "pressToSet": "コントローラーのボタンを押して割り当てを設定してください",
+    "currentButton": "現在のボタン",
+    "listenStatus": "リスニング状態",
+    "listening": "リスニング中...コントローラーのボタンを押してください",
+    "ready": "準備完了"
   },
   "touchMapping": {
     "title": "タッチボタン設定",
@@ -1270,7 +1333,10 @@
     "toastNoGlobalButtons": "グローバルタッチボタンが見つかりません",
     "toastGlobalLoaded": "{{count}} 個のグローバルボタンを読み込みました（メモリのみ、保存をして永続化してください）",
     "functionKeys": "ファンクションキー",
-    "orPressKey": "またはキーを押してください"
+    "orPressKey": "またはキーを押してください",
+    "refresh": "更新",
+    "toastRefreshed": "ボタン設定を更新しました",
+    "arrowKeys": "方向キー"
   },
   "reviews": {
     "dataSource": "データソース",
@@ -1280,7 +1346,10 @@
     "loadDetailFailed": "レビューの詳細の読み込みに失敗しました",
     "viewMore": "もっと見る",
     "previous": "前のページ",
-    "next": "次のページ"
+    "next": "次のページ",
+    "type": "タイプ",
+    "shortComment": "感想",
+    "comment": "レビュー"
   },
   "task": {
     "title": "タスク",
@@ -1357,7 +1426,24 @@
     "enterId": "IDを入力",
     "search": "検索",
     "startUpdateSuccess": "メタデータの一括更新を開始します",
-    "noGamesImported": "ゲームがインポートされていません"
+    "noGamesImported": "ゲームがインポートされていません",
+    "updateFailed": "更新に失敗しました",
+    "fetchFailed": "取得に失敗しました",
+    "scrapeSource": "スクレイプソース",
+    "overwriteHint": "上書きするかどうか",
+    "loadTagsHint": "タグを読み込むかどうか",
+    "loadStaffHint": "スタッフを読み込むかどうか",
+    "loadCharsHint": "キャラクターを読み込むかどうか",
+    "loadGalleryHint": "ギャラリーを読み込むかどうか",
+    "rematchHint": "オフの場合はIDのみで再取得、オンの場合は名前でも再検索",
+    "unionSearchHint": "副次ソースから自動的にデータを補完します（そのソースのIDが必要）。現時点では批評空間とBangumiのみ他ソースのIDを同時に取得できます",
+    "selectMatchedHint": "指定ソースにマッチしたゲームを選択",
+    "selectUpdatedHint": "更新済みを選択",
+    "selectUnmatchedHint": "指定ソースに未マッチのゲームを選択",
+    "selectEmptyHint": "空マッチを選択",
+    "selectOnlyMatchedHint": "指定ソースのみにマッチしたゲームを選択",
+    "onlyMatched": "マッチのみ",
+    "openDetail": "ゲーム詳細を開く"
   },
   "batchImport": {
     "title": "ゲームの一括インポート",
@@ -1397,7 +1483,13 @@
     "skipMetadata": "メタデータをスキップ",
     "addToCollection": "コレクションに追加",
     "searchVideoAndExe": "動画とEXEを検索",
-    "notAddToCollection": "コレクションに追加しない"
+    "notAddToCollection": "コレクションに追加しない",
+    "scanDirFailed": "ディレクトリのスキャンに失敗しました",
+    "selectDirFailed": "ディレクトリの選択に失敗しました",
+    "importSuccessCount": "{{count}} 本のゲームをインポートしました",
+    "fetchFailed": "取得に失敗しました",
+    "noGameFolderDetected": "ゲームフォルダーが検出されませんでした",
+    "rateLimitHint": "レート制限を避けるため、マッチングが遅くなる場合があります。お待ちください"
   },
   "update": {
     "checkOnStartup": "起動時に自動的に更新をチェック",
@@ -1406,7 +1498,14 @@
     "checking": "チェック中...",
     "checkFailed": "更新のチェックに失敗しました",
     "newVersionFound": "新しいバージョンが見つかりました",
-    "latestVersion": "最新バージョンです"
+    "latestVersion": "最新バージョンです",
+    "availableUpdate": "{{name}} のアップデートが利用可能です",
+    "currentVersion": "現在のバージョン",
+    "releaseDate": "リリース日",
+    "changelog": "変更履歴",
+    "downloadGithub": "GitHub からダウンロード",
+    "downloadGitee": "Gitee からダウンロード",
+    "skipVersion": "このバージョンをスキップ"
   },
   "filter": {
     "modals": {
@@ -1433,7 +1532,8 @@
     },
     "placeholders": {
       "searchTags": "タグを検索..."
-    }
+    },
+    "toggleIntersectionMode": "積集合/和集合モードを切り替え"
   },
   "import": {
     "modals": {
@@ -1483,7 +1583,8 @@
         "enterId": "IDを入力",
         "search": "検索",
         "importPathOnly": "メタデータをマッチせず、パスのみインポート",
-        "noValidGamesDetected": "有効なゲームが検出されませんでした"
+        "noValidGamesDetected": "有効なゲームが検出されませんでした",
+        "error": "インポートに失敗しました"
       }
     },
     "labels": {
@@ -1650,7 +1751,9 @@
       "groupCreatedSuccessfully": "グループの作成に成功しました",
       "groupUpdatedSuccessfully": "グループの更新に成功しました",
       "failedToSaveGroup": "グループの保存に失敗しました"
-    }
+    },
+    "adultContent": "成人向けコンテンツ",
+    "spoilerWarning": "ネタバレ注意"
   },
   "template": {
     "modals": {
@@ -1680,7 +1783,8 @@
       "failedToRenderTemplate": "テンプレートのレンダリングに失敗しました",
       "failedToExportImage": "画像のエクスポートに失敗しました",
       "failedToOpenTemplatesDir": "テンプレートディレクトリの開きに失敗しました"
-    }
+    },
+    "preview": "テンプレートのプレビュー"
   },
   "tag": {
     "labels": {
@@ -1715,6 +1819,28 @@
     },
     "buttons": {
       "confirmAndRestart": "確認してアプリを再起動"
+    },
+    "names": {
+      "shanghai": "中国標準時 (UTC+8)",
+      "tokyo": "日本標準時 (UTC+9)",
+      "seoul": "韓国標準時 (UTC+9)",
+      "hongkong": "香港時間 (UTC+8)",
+      "taipei": "台北時間 (UTC+8)",
+      "singapore": "シンガポール時間 (UTC+8)",
+      "bangkok": "バンコク時間 (UTC+7)",
+      "dubai": "ドバイ時間 (UTC+4)",
+      "london": "ロンドン時間 (UTC+0)",
+      "paris": "パリ時間 (UTC+1)",
+      "berlin": "ベルリン時間 (UTC+1)",
+      "moscow": "モスクワ時間 (UTC+3)",
+      "newyork": "ニューヨーク時間 (UTC-5)",
+      "chicago": "シカゴ時間 (UTC-6)",
+      "denver": "デンバー時間 (UTC-7)",
+      "losangeles": "ロサンゼルス時間 (UTC-8)",
+      "saopaulo": "サンパウロ時間 (UTC-3)",
+      "sydney": "シドニー時間 (UTC+10)",
+      "auckland": "オークランド時間 (UTC+12)",
+      "utc": "協定世界時 (UTC)"
     }
   },
   "monthlyReleases": {
@@ -1836,7 +1962,9 @@
       "downloaded": "ダウンロード済み",
       "extracted": "展開済み",
       "installed": "インストール済み",
-      "imported": "インポート済み"
+      "imported": "インポート済み",
+      "downloading": "ダウンロード中",
+      "not_downloading": "ダウンロード中以外"
     },
     "type": {
       "all": "すべて",
@@ -1924,6 +2052,171 @@
     "confirmOverride": "上書きを確認",
     "taskOverrideSave": "セーブ上書き",
     "overrideSaveSuccess": "セーブ上書きに成功しました",
-    "overrideSaveFailed": "セーブ上書きに失敗しました"
+    "overrideSaveFailed": "セーブ上書きに失敗しました",
+    "saveNotFound": "セーブデータが見つかりません",
+    "execAnimHint": "セーブデータのアニメーション処理を実行",
+    "execAnim": "アニメーション実行",
+    "saveOverwritten": "セーブデータを上書きしました",
+    "saveDownloaded": "セーブデータをダウンロードしました"
+  },
+  "characterSelect": {
+    "addNew": "キャラクターを追加",
+    "appearedGames": "出演ゲーム",
+    "creatingNew": "キャラクターを新規作成",
+    "current": "現在",
+    "editing": "キャラクター編集",
+    "gender": "性別",
+    "height": "身長",
+    "imagePath": "メイン画像 URL",
+    "images": "画像 URL",
+    "imagesPlaceholder": "複数の URL はカンマで区切ります",
+    "measurements": "スリーサイズ",
+    "name": "キャラクター名",
+    "nameRequired": "キャラクター名を入力してください",
+    "noAppearedGames": "出演ゲームなし",
+    "noResults": "キャラクターが見つかりません",
+    "otherNames": "別名",
+    "otherNamesAutoManaged": "このフィールドは作品間のすべての別名を自動的に記録し、手動で編集できません",
+    "resultLimitHint": "結果が多すぎます。キーワードを入力して絞り込んでください",
+    "searchPlaceholder": "名前または別名で検索",
+    "selectOrCreateHint": "左側からキャラクターを選択するか、「キャラクターを追加」をクリックしてください",
+    "selectPlaceholder": "キャラクターを選択してください",
+    "sort": "並び順",
+    "summary": "概要",
+    "title": "キャラクターを選択",
+    "workName": "作品内のキャラクター名",
+    "workNamePlaceholder": "この作品でのキャラクター名（未入力ならキャラクター名を使用）",
+    "workNameRequired": "作品内のキャラクター名を入力してください"
+  },
+  "imageField": {
+    "fillAddUrl": "新しいURLを入力",
+    "fillUrl": "URLを入力",
+    "noImages": "画像がありません",
+    "selectAddImage": "新しい画像を選択",
+    "selectImage": "画像を選択",
+    "urlPlaceholder": "画像URLを入力"
+  },
+  "staffSelect": {
+    "addNew": "スタッフを追加",
+    "appearedGames": "出演ゲーム",
+    "creatingNew": "スタッフを新規作成",
+    "current": "現在",
+    "editing": "スタッフ編集",
+    "gender": "性別",
+    "image": "画像 URL",
+    "name": "スタッフ名",
+    "nameRequired": "スタッフ名を入力してください",
+    "noAppearedGames": "出演ゲームなし",
+    "noResults": "スタッフが見つかりません",
+    "otherNames": "別名",
+    "otherNamesAutoManaged": "このフィールドは作品間のすべての別名を自動的に記録し、手動で編集できません",
+    "resultLimitHint": "結果が多すぎます。キーワードを入力して絞り込んでください",
+    "roles": "担当",
+    "rolesPlaceholder": "複数の担当はカンマで区切ります",
+    "searchPlaceholder": "名前または別名で検索",
+    "selectOrCreateHint": "左側からスタッフを選択するか、「スタッフを追加」をクリックしてください",
+    "selectPlaceholder": "スタッフを選択してください",
+    "summary": "概要",
+    "title": "スタッフを選択",
+    "workName": "作品内のCV名",
+    "workNamePlaceholder": "この作品でのCV名（未入力ならスタッフ名を使用）",
+    "workNameRequired": "作品内のCV名を入力してください"
+  },
+  "vm": {
+    "add": "仮想マシンを追加",
+    "addSuccess": "仮想マシンを追加しました",
+    "addTitle": "仮想マシンを追加",
+    "deleteConfirm": "この仮想マシンを削除してもよろしいですか？",
+    "deleteError": "仮想マシンの削除に失敗しました",
+    "deleteSuccess": "仮想マシンを削除しました",
+    "editTitle": "仮想マシンを編集",
+    "host": "ホスト",
+    "hostPassword": "ホストパスワード",
+    "hostPasswordPlaceholder": "ESXホストパスワードを入力",
+    "hostUrl": "ホスト URL",
+    "hostUrlPlaceholder": "ESXホストURLを入力",
+    "hostUser": "ホストユーザー名",
+    "hostUserPlaceholder": "ESXホストユーザー名を入力",
+    "listVms": "仮想マシン一覧",
+    "loadError": "仮想マシンの読み込みに失敗しました",
+    "loading": "読み込み中...",
+    "name": "名前",
+    "namePlaceholder": "仮想マシン名を入力",
+    "password": "パスワード",
+    "passwordPlaceholder": "仮想マシンパスワードを入力",
+    "path": "仮想マシンパス",
+    "pathPlaceholder": "仮想マシンの .vmx ファイルパスを入力",
+    "saveError": "仮想マシンの保存に失敗しました",
+    "title": "仮想マシン管理",
+    "type": "タイプ",
+    "typeEsx": "ESX",
+    "typeWorkstation": "Workstation",
+    "updateSuccess": "仮想マシンを更新しました",
+    "userName": "ユーザー名",
+    "userNamePlaceholder": "仮想マシンユーザー名を入力"
+  },
+  "updateSettings": {
+    "checkFailed": "更新の確認に失敗しました",
+    "modifyFailed": "変更に失敗しました：{{err}}"
+  },
+  "video": {
+    "notExist": "動画が存在しません",
+    "streamFailed": "動画ストリームの取得に失敗しました",
+    "collapseList": "リストを折りたたむ",
+    "expandList": "リストを展開",
+    "list": "動画リスト",
+    "restore": "元に戻す",
+    "maximize": "最大化",
+    "loading": "読み込み中...",
+    "prev": "前へ",
+    "next": "次へ",
+    "noVideo": "動画がありません"
+  },
+  "brandGames": {
+    "loadFailed": "ブランドゲームの読み込みに失敗しました",
+    "notFound": "ブランドが見つかりません",
+    "emptyBrand": "このブランドにはゲームがありません"
+  },
+  "seriesGames": {
+    "loadFailed": "シリーズゲームの読み込みに失敗しました",
+    "notFound": "シリーズが見つかりません",
+    "emptySeries": "このシリーズにはゲームがありません"
+  },
+  "search": {
+    "game": "ゲームを検索",
+    "placeholder": "検索..."
+  },
+  "monthly": {
+    "searchDownloadFolder": "ダウンロードフォルダを検索",
+    "imported": "インポート済み"
+  },
+  "imageCard": {
+    "setAsCover": "表紙に設定",
+    "fullscreenMagpie": "全画面表示（この機能はMagpieのトリミング設定を変更します）"
+  },
+  "localSearch": {
+    "launchGame": "ゲームを起動",
+    "openGame": "ゲームを開く"
+  },
+  "screenshotHotkey": {
+    "desc": "スクリーンショットショートカット"
+  },
+  "rootDrop": {
+    "dropGameFolderTitle": "ゲームフォルダーをドロップ",
+    "dropGameFolderHint": "このゲームフォルダーをインポートするには離してください",
+    "dropLnkTitle": "ショートカットをドロップ",
+    "dropLnkHint": "このショートカットが指すゲームを追加するには離してください"
+  },
+  "time": {
+    "hoursMinutes": "{{hours}}時間{{minutes}}分",
+    "hours": "{{hours}}時間",
+    "minutes": "{{minutes}}分",
+    "future": "未来",
+    "today": "今日",
+    "yesterday": "昨日",
+    "daysAgo": "{{count}}日前",
+    "weeksAgo": "{{count}}週間前",
+    "monthsAgo": "{{count}}か月前",
+    "yearsAgo": "{{count}}年前"
   }
 }

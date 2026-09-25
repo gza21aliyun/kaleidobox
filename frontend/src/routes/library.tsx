@@ -474,8 +474,8 @@ function LibraryPage() {
     { label: t('sourceType.local'), value: enums.SourceType.LOCAL.toString() },
     { label: t('sourceType.emptyCover'), value: "emptyCover" },
     { label: t('sourceType.emptyGallery'), value: "emptyGallery" },
-    { label: "虚拟机", value: "vm" },
-    { label: "重复源", value: "duplicated" },
+    { label: t('sourceType.vm'), value: "vm" },
+    { label: t('sourceType.duplicated'), value: "duplicated" },
     { label: "Html", value: "html" },
   ];
 

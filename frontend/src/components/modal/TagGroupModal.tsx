@@ -212,12 +212,12 @@ export function TagGroupModal({ isOpen, onClose, mode, groupName, allTags, exist
                             {/* 标签特殊标识 */}
                             <div className="ml-auto flex gap-1">
                               {tag.is_h && (
-                                <div className="text-red-500" title="成人内容">
+                                <div className="text-red-500" title={t('tagGroup.adultContent')}>
                                   <div className="i-mdi-alert-circle-outline text-xs"></div>
                                 </div>
                               )}
                               {tag.is_spoiler && (
-                                <div className="text-yellow-500" title="剧透警告">
+                                <div className="text-yellow-500" title={t('tagGroup.spoilerWarning')}>
                                   <div className="i-mdi-eye-off-outline text-xs"></div>
                                 </div>
                               )}

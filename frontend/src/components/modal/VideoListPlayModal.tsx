@@ -53,7 +53,7 @@ export function VideoListPlayModal({ isOpen, videoPaths, onClose, onSelectVideo 
 
   const loadVideo = (index: number) => {
     if (index < 0 || index >= videoPaths.length) {
-      setError('视频不存在');
+      setError(t('video.notExist'));
       return;
     }
 
@@ -76,7 +76,7 @@ export function VideoListPlayModal({ isOpen, videoPaths, onClose, onSelectVideo 
       }
       console.log('loadVideo: videoUrl set successfully');
     } catch (err) {
-      setError('获取视频流失败');
+      setError(t('video.streamFailed'));
       console.error('Failed to load video:', err);
     } finally {
       setIsLoading(false);
@@ -110,7 +110,7 @@ export function VideoListPlayModal({ isOpen, videoPaths, onClose, onSelectVideo 
           <button
             onClick={() => setIsListExpanded(!isListExpanded)}
             className={`absolute top-4 left-0 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-brand-800 text-white hover:bg-brand-700 transition-colors ${isListExpanded ? 'left-72' : 'left-0'}`}
-            aria-label={isListExpanded ? '折叠列表' : '展开列表'}
+            aria-label={isListExpanded ? t('video.collapseList') : t('video.expandList')}
           >
             <span className={`text-lg ${isListExpanded ? 'i-mdi-chevron-left' : 'i-mdi-chevron-right'}`} />
           </button>
@@ -120,7 +120,7 @@ export function VideoListPlayModal({ isOpen, videoPaths, onClose, onSelectVideo 
             <div className="h-full flex flex-col bg-brand-900 rounded-l-lg border-r border-brand-700">
               {/* 列表标题 */}
               <div className="flex items-center p-4 border-b border-brand-700">
-                <h3 className="text-white font-medium">视频列表</h3>
+                <h3 className="text-white font-medium">{t('video.list')}</h3>
               </div>
               
               {/* 视频列表 */}
@@ -148,7 +148,7 @@ export function VideoListPlayModal({ isOpen, videoPaths, onClose, onSelectVideo 
             <button
               onClick={toggleMaximize}
               className="w-12 h-12 flex items-center justify-center rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-colors"
-              aria-label={isMaximized ? '恢复大小' : '放大'}
+              aria-label={isMaximized ? t('video.restore') : t('video.maximize')}
             >
               <span className={`text-2xl text-white ${isMaximized ? 'i-mdi-arrow-collapse-all' : 'i-mdi-arrow-expand-all'}`} />
             </button>
@@ -165,7 +165,7 @@ export function VideoListPlayModal({ isOpen, videoPaths, onClose, onSelectVideo 
             {isLoading ? (
               <div className="w-full h-full flex items-center justify-center text-white">
                 <div className="i-mdi-loading text-4xl animate-spin" />
-                <span className="ml-2">加载视频中...</span>
+                <span className="ml-2">{t('video.loading')}</span>
               </div>
             ) : error ? (
               <div className="w-full h-full flex items-center justify-center text-white">
@@ -193,14 +193,14 @@ export function VideoListPlayModal({ isOpen, videoPaths, onClose, onSelectVideo 
                   <button
                     onClick={handlePrev}
                     className="w-16 h-16 flex items-center justify-center rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-colors pointer-events-auto"
-                    aria-label="上一个视频"
+                    aria-label={t('video.prev')}
                   >
                     <span className="i-mdi-chevron-left text-3xl text-white" />
                   </button>
                   <button
                     onClick={handleNext}
                     className="w-16 h-16 flex items-center justify-center rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-colors pointer-events-auto"
-                    aria-label="下一个视频"
+                    aria-label={t('video.next')}
                   >
                     <span className="i-mdi-chevron-right text-3xl text-white" />
                   </button>
@@ -215,7 +215,7 @@ export function VideoListPlayModal({ isOpen, videoPaths, onClose, onSelectVideo 
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white">
-                没有可用的视频
+                {t('video.noVideo')}
               </div>
             )}
           </div>

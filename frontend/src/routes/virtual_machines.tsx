@@ -184,7 +184,7 @@ function VirtualMachinesPage() {
         </div>
 
         { appFormData && (
-          <CollapsibleSection title="虚拟机设置" icon="i-mdi-server" defaultOpen={false}>
+          <CollapsibleSection title={t('settings.vmSettings')} icon="i-mdi-server" defaultOpen={false}>
             <VMPanel formData={appFormData} onChange={handleAppFormChange} />
           </CollapsibleSection>
         )}

@@ -338,7 +338,7 @@ export function GameIntroPanel({
                 {/* 捅品牌游戏 */}
                 { brandGames.length > 0 && (
                     <div className="mt-4">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">同品牌游戏</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('gameIntro.sameBrandGames')}</h3>
                         <div className="grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] gap-3">
                             {brandGames.filter((g) => g.id != game.id).map((g) => (
                                 <GameCard key={g.id} 

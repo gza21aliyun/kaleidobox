@@ -18,15 +18,15 @@ interface ReviewPanelProps {
 }
 
 const sourceTypeOptions = [
-  { value: enums.SourceType.BANGUMI || "bangumi", label: "Bangumi" },
-  { value: enums.SourceType.DMM || "Dmm", label: "Dmm" },
-  { value: enums.SourceType.EROSCAPE || "批评空间", label: "批评空间" },
-  { value: enums.SourceType.DLSITE || "Dlsite", label: "Dlsite" },
+  { value: enums.SourceType.BANGUMI || "bangumi", tKey: "sourceType.bangumi" },
+  { value: enums.SourceType.DMM || "Dmm", tKey: "sourceType.dmm" },
+  { value: enums.SourceType.EROSCAPE || "批评空间", tKey: "sourceType.eroscape" },
+  { value: enums.SourceType.DLSITE || "Dlsite", tKey: "sourceType.dlsite" },
 ];
 
 const typeOptions = [
-  { value: "0", label: "吐槽" },
-  { value: "1", label: "评论" },
+  { value: "0", tKey: "reviews.shortComment" },
+  { value: "1", tKey: "reviews.comment" },
 ];
 
 export function ReviewPanel({ game }: ReviewPanelProps) {
@@ -69,9 +69,11 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
     return ""
   }
 
-  const filteredSourceTypeOptions = sourceTypeOptions.filter(option => {
-    return hasSource(game.source_list, option.value);
-  })
+  const filteredSourceTypeOptions = sourceTypeOptions
+    .filter(option => {
+      return hasSource(game.source_list, option.value);
+    })
+    .map(option => ({ ...option, label: t(option.tKey) }))
 
   const loadReviews = async () => {
     try {
@@ -331,7 +333,7 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
               <BetterSelect
                 value={reviewType}
                 onChange={(value) => handleReviewTypeChange(value)}
-                options={typeOptions}
+                options={typeOptions.map(o => ({ ...o, label: t(o.tKey) }))}
                 placeholder={t('common.pleaseSelect') || '请选择类型'}
                 className="min-w-[140px]"
               />

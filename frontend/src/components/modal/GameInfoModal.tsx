@@ -122,7 +122,7 @@ export function GameInfoModal({ gameEntity, isTemp, onClose }: GameInfoModalProp
                           <div className="flex-shrink-0 w-32 h-48">
                             <ImageCard
                               url={charactor.charactor_image}
-                              alt={charactor.charactor_name || "角色"}
+                              alt={charactor.charactor_name || t('common.character')}
                               className="w-full h-full object-cover rounded-lg"
                               tempDownload={isTemp ?? true}
                               onError={(e) => {

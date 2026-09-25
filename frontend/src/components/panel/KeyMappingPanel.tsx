@@ -132,7 +132,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
 
   // 设备类型选项（过滤掉键盘）
   const deviceTypes = [
-    { type: null as any, name: "关闭手柄映射", mapping: [] as KeyMapping[], img: "", imgWidth: 0, imgHeight: 0 },
+    { type: null as any, name: t('keyMapping.disabled'), mapping: [] as KeyMapping[], img: "", imgWidth: 0, imgHeight: 0 },
     { type: enums.DeviceType.DUALSENSE, name: "DualSense", mapping: ds4Mappings, img: "/ds4.png", imgWidth: 500, imgHeight: 312 },
     { type: enums.DeviceType.DUALSHOCK4, name: "DualShock 4", mapping: ds4Mappings, img: "/ds4.png", imgWidth: 500, imgHeight: 312 },
     { type: enums.DeviceType.JOYCON, name: "Joy-Con", mapping: joyconMappings, img: "/joycon.jpg", imgWidth: 500, imgHeight: 500 },
@@ -356,10 +356,10 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
     try {
       await DeleteHotkey(hotkeyId);
       setHotkeys(prev => prev.filter(h => h.id !== hotkeyId));
-      toast.success('映射已删除');
+      toast.success(t('keyMapping.mappingDeleted'));
     } catch (error) {
       console.error('Failed to delete mapping:', error);
-      toast.error('删除映射失败');
+      toast.error(t('keyMapping.deleteMappingFailed'));
     }
   };
 
@@ -385,7 +385,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
         prev.filter((h) => h.device_type !== currentDeviceType)
       );
     }
-    toast.success('已清除所有按键映射，请点击保存按钮确认更改');
+    toast.success(t('keyMapping.clearedAll'));
   }, [isTouchDevice, selectedDeviceType]);
 
   // 载入默认配置（覆盖内存中原有的按键列表）
@@ -520,10 +520,10 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
         // 如果全局有且相同，不需要保存
       }
       
-      toast.success('所有映射已保存');
+      toast.success(t('keyMapping.allMappingsSaved'));
     } catch (error) {
       console.error('Failed to save all mappings:', error);
-      toast.error('保存映射失败');
+      toast.error(t('keyMapping.saveMappingsFailed'));
     }
   };
 
@@ -622,7 +622,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                   className={`${buttonClass} bg-red-600 hover:bg-red-700 text-white`}
                 >
                   <span className="i-mdi-delete-sweep mr-2"></span>
-                  清除
+                  {t('keyMapping.clear')}
                 </button>
               </>
             )}
@@ -683,7 +683,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                 className={`${buttonClass} bg-red-600 hover:bg-red-700 text-white`}
               >
                 <span className="i-mdi-delete-sweep mr-2"></span>
-                清除
+                {t('keyMapping.clear')}
               </button>
             </>
           )
@@ -747,7 +747,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                         <button
                           className={`w-12 h-12 rounded-full ${hotkey ? 'bg-green-500' : 'bg-blue-500'} ${hotkey ? 'hover:bg-green-600' : 'hover:bg-blue-600'} transition-colors flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transform`}
                           onClick={() => handleButtonClick(mapping.button)}
-                          title={hotkey ? `${mapping.buttonLabel} → ${hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '截图' : (hotkey.name || '未设置')}` : mapping.buttonLabel}
+                          title={hotkey ? `${mapping.buttonLabel} → ${hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? t('keyMapping.screenshot') : (hotkey.name || t('keyMapping.notSet'))}` : mapping.buttonLabel}
                         >
                           {hotkey ? (hotkey.action_type === enums.HotkeyActionType.SCREENSHOT ? '📷' : (hotkey.name || mapping.mappingLabel)) : mapping.buttonLabel}
                         </button>
@@ -760,7 +760,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                               e.stopPropagation();
                               deleteMapping(hotkey.id);
                             }}
-                            title="删除映射"
+                            title={t('keyMapping.deleteMapping')}
                           >
                             ×
                           </button>
@@ -786,17 +786,17 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-brand-900 dark:text-white mb-2">
-                  设置按键映射
+                  {t('keyMapping.settingsTitle')}
                 </h3>
                 <p className="text-brand-600 dark:text-brand-400 text-sm leading-relaxed">
-                  请按下手柄上的按键来设置映射
+                  {t('keyMapping.pressToSet')}
                 </p>
               </div>
             </div>
             
             <div className="mb-6">
               <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-                当前按钮
+                {t('keyMapping.currentButton')}
               </label>
               <div className="p-3 bg-brand-50 border border-brand-200 rounded-lg text-brand-900 dark:bg-brand-900/50 dark:border-brand-700 dark:text-white">
                 {currentDevice?.mapping.find(m => m.button === currentMappingButton)?.buttonLabel || currentMappingButton}
@@ -805,10 +805,10 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
             
             <div className="mb-6">
               <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 mb-2">
-                监听状态
+                {t('keyMapping.listenStatus')}
               </label>
               <div className="p-4 bg-brand-50 border border-brand-200 rounded-lg text-brand-900 dark:bg-brand-900/50 dark:border-brand-700 dark:text-white text-center">
-                {waitingForKey ? "正在监听...请按下手柄按键" : "准备就绪"}
+                {waitingForKey ? t('keyMapping.listening') : t('keyMapping.ready')}
               </div>
             </div>
             
@@ -817,7 +817,7 @@ export function KeyMappingPanel({ gameId }: Ps4PanelProps) {
                 onClick={cancelMapping}
                 className="px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 rounded-lg dark:text-brand-300 dark:hover:bg-brand-700 transition-colors"
               >
-                取消
+                {t('common.cancel')}
               </button>
             </div>
           </div>

@@ -59,7 +59,7 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
       setVideoUrl(videoUrl);
       console.log('fetchVideoStream: videoUrl set successfully');
     } catch (err) {
-      setError('获取视频流失败');
+      setError(t('video.streamFailed'));
       console.error('Failed to fetch video stream:', err);
     } finally {
       setIsLoading(false);
@@ -76,7 +76,7 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
           <button
             onClick={toggleMaximize}
             className="w-12 h-12 flex items-center justify-center rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-colors"
-            aria-label={isMaximized ? '恢复大小' : '放大'}
+            aria-label={isMaximized ? t('video.restore') : t('video.maximize')}
           >
             <span className={`text-2xl text-white ${isMaximized ? 'i-mdi-arrow-collapse-all' : 'i-mdi-arrow-expand-all'}`} />
           </button>
@@ -93,7 +93,7 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
           {isLoading ? (
             <div className="w-full h-full flex items-center justify-center text-white">
               <div className="i-mdi-loading text-4xl animate-spin" />
-              <span className="ml-2">加载视频中...</span>
+              <span className="ml-2">{t('video.loading')}</span>
             </div>
           ) : error ? (
             <div className="w-full h-full flex items-center justify-center text-white">
@@ -115,7 +115,7 @@ export function VideoPlayModal({ isOpen, gameId, onClose }: VideoPlayModalProps)
             </video>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-white">
-              没有可用的视频
+              {t('video.noVideo')}
             </div>
           )}
         </div>

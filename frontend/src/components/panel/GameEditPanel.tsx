@@ -51,10 +51,10 @@ export function GameEditPanel({
     // if ()
     SearchSave(game).then((newGame) => {
       onGameChange(newGame);
-      toast.success("成功搜索到保存目录！");
+      toast.success(t('gameEdit.saveDirFoundSuccess'));
     }).catch((error) => {
       console.error("Failed to search save directory:", error);
-      toast.error("搜索保存目录失败"+error);
+      toast.error(t('gameEdit.saveDirSearchFailed') + error);
     });
   }
 
@@ -199,7 +199,7 @@ export function GameEditPanel({
               onClick={onSearchSaveDirectory}
               className="glass-btn-neutral px-4 py-2 bg-brand-100 dark:bg-brand-700 text-brand-700 dark:text-brand-300 rounded-md hover:bg-brand-200 dark:hover:bg-brand-600 transition-colors"
             >
-              搜索
+              {t('common.search')}
             </button>
             {game.save_path && (
               <BetterButton
@@ -236,7 +236,7 @@ export function GameEditPanel({
               type="button"
               onClick={async () => {
                 try {
-                  const selection = await SelectFile("视频文件", "*.exe;*.bat;*.cmd;*.lnk");
+                  const selection = await SelectFile(t('gameEdit.videoFile'), "*.exe;*.bat;*.cmd;*.lnk");
                   if (selection) {
                     onGameChange({ ...game, pv_path: selection } as models.Game);
                   }

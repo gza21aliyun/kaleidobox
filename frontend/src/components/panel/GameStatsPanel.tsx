@@ -246,9 +246,9 @@ export function GameStatsPanel({ gameId }: GameStatsPanelProps) {
             {/* Time Dimension Selector */}
             <SlideButton
               options={[
-                { label: "周", value: enums.Period.WEEK },
-                { label: "月", value: enums.Period.MONTH },
-                { label: "全部", value: enums.Period.ALL },
+                { label: t('stats.period.week'), value: enums.Period.WEEK },
+                { label: t('stats.period.month'), value: enums.Period.MONTH },
+                { label: t('stats.period.all'), value: enums.Period.ALL },
               ]}
               value={timeDimension}
               onChange={setTimeDimension}

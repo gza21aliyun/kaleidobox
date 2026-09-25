@@ -6,9 +6,11 @@ import { TopBar } from "../components/bar/TopBar";
 import { DragDropImportModal } from "../components/modal/DragDropImportModal";
 import { BatchUpdateModal } from "../components/modal/BatchUpdateModal";
 import { useAppStore } from "../store";
+import { useTranslation } from "react-i18next";
 import { models } from "../../wailsjs/go/models";
 
 function RootLayout() {
+  const { t } = useTranslation();
   const { config, fetchGames, setDroppedPaths, setShowDragDropModal, droppedPaths, showDragDropModal } = useAppStore();
   const [isDragOver, setIsDragOver] = useState(false);
   // const [showDragDropModal, setShowDragDropModal] = useState(false);
@@ -226,10 +228,10 @@ function RootLayout() {
               <div className="i-mdi-folder-upload text-6xl text-blue-500 animate-bounce" />
               <div className="text-center">
                 <p className="text-xl font-bold text-brand-900 dark:text-white">
-                  释放游戏文件夹或可执行文件
+                  {t('rootDrop.dropGameFolderTitle')}
                 </p>
                 <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
-                  自动扫描文件夹中的 exe 文件
+                  {t('rootDrop.dropGameFolderHint')}
                 </p>
               </div>
             </div>
@@ -241,10 +243,10 @@ function RootLayout() {
               <div className="i-mdi-folder-upload text-6xl text-green-500 animate-bounce" />
               <div className="text-center">
                 <p className="text-xl font-bold text-brand-900 dark:text-white">
-                  释放快捷方式文件夹
+                  {t('rootDrop.dropLnkTitle')}
                 </p>
                 <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
-                  从快捷方式文件夹导入游戏列表
+                  {t('rootDrop.dropLnkHint')}
                 </p>
               </div>
             </div>

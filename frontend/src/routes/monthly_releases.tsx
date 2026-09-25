@@ -675,7 +675,7 @@ function GameItem({ game, brandNames, onBrowse, onSearch, onSearchLocal, onSearc
 
         {/* 已导入标识 */}
         {isImported && (
-          <div className="absolute bottom-2 right-2 flex items-center justify-center w-13 h-13 rounded-full bg-green-500 text-white shadow-lg" title="已导入">
+          <div className="absolute bottom-2 right-2 flex items-center justify-center w-13 h-13 rounded-full bg-green-500 text-white shadow-lg" title={t('monthly.imported')}>
             <div className="i-mdi-check text-3xl" />
           </div>
         )}
@@ -721,7 +721,7 @@ function GameItem({ game, brandNames, onBrowse, onSearch, onSearchLocal, onSearc
                     onSearchDownload(game);
                   }}
                   className="flex items-center justify-center w-full aspect-square rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-colors"
-                  title="搜索下载文件夹"
+                  title={t('monthly.searchDownloadFolder')}
                 >
                   <div className="i-mdi-download text-xl" />
                 </button>

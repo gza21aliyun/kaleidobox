@@ -11,27 +11,27 @@ interface BetterSelectOption {
   label: string;
 }
 
-const COMMON_TIMEZONES: BetterSelectOption[] = [
-  { value: "Asia/Shanghai", label: "中国标准时间 (UTC+8)" },
-  { value: "Asia/Tokyo", label: "日本标准时间 (UTC+9)" },
-  { value: "Asia/Seoul", label: "韩国标准时间 (UTC+9)" },
-  { value: "Asia/Hong_Kong", label: "香港时间 (UTC+8)" },
-  { value: "Asia/Taipei", label: "台北时间 (UTC+8)" },
-  { value: "Asia/Singapore", label: "新加坡时间 (UTC+8)" },
-  { value: "Asia/Bangkok", label: "曼谷时间 (UTC+7)" },
-  { value: "Asia/Dubai", label: "迪拜时间 (UTC+4)" },
-  { value: "Europe/London", label: "伦敦时间 (UTC+0)" },
-  { value: "Europe/Paris", label: "巴黎时间 (UTC+1)" },
-  { value: "Europe/Berlin", label: "柏林时间 (UTC+1)" },
-  { value: "Europe/Moscow", label: "莫斯科时间 (UTC+3)" },
-  { value: "America/New_York", label: "纽约时间 (UTC-5)" },
-  { value: "America/Chicago", label: "芝加哥时间 (UTC-6)" },
-  { value: "America/Denver", label: "丹佛时间 (UTC-7)" },
-  { value: "America/Los_Angeles", label: "洛杉矶时间 (UTC-8)" },
-  { value: "America/Sao_Paulo", label: "圣保罗时间 (UTC-3)" },
-  { value: "Australia/Sydney", label: "悉尼时间 (UTC+10)" },
-  { value: "Pacific/Auckland", label: "奥克兰时间 (UTC+12)" },
-  { value: "UTC", label: "世界协调时间 (UTC)" },
+const COMMON_TIMEZONES: { value: string; tKey: string }[] = [
+  { value: "Asia/Shanghai", tKey: "timezone.names.shanghai" },
+  { value: "Asia/Tokyo", tKey: "timezone.names.tokyo" },
+  { value: "Asia/Seoul", tKey: "timezone.names.seoul" },
+  { value: "Asia/Hong_Kong", tKey: "timezone.names.hongkong" },
+  { value: "Asia/Taipei", tKey: "timezone.names.taipei" },
+  { value: "Asia/Singapore", tKey: "timezone.names.singapore" },
+  { value: "Asia/Bangkok", tKey: "timezone.names.bangkok" },
+  { value: "Asia/Dubai", tKey: "timezone.names.dubai" },
+  { value: "Europe/London", tKey: "timezone.names.london" },
+  { value: "Europe/Paris", tKey: "timezone.names.paris" },
+  { value: "Europe/Berlin", tKey: "timezone.names.berlin" },
+  { value: "Europe/Moscow", tKey: "timezone.names.moscow" },
+  { value: "America/New_York", tKey: "timezone.names.newyork" },
+  { value: "America/Chicago", tKey: "timezone.names.chicago" },
+  { value: "America/Denver", tKey: "timezone.names.denver" },
+  { value: "America/Los_Angeles", tKey: "timezone.names.losangeles" },
+  { value: "America/Sao_Paulo", tKey: "timezone.names.saopaulo" },
+  { value: "Australia/Sydney", tKey: "timezone.names.sydney" },
+  { value: "Pacific/Auckland", tKey: "timezone.names.auckland" },
+  { value: "UTC", tKey: "timezone.names.utc" },
 ];
 
 interface BasicSettingsProps {
@@ -139,7 +139,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          隐藏旧版匹配按钮
+          {t("basic.hideOldMatchingBtns")}
         </label>
         <BetterSwitch
           id="hide_old_matching_btns"
@@ -174,7 +174,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
           name="timezone"
           value={formData.time_zone || "Asia/Shanghai"}
           onChange={value => onChange({ ...formData, time_zone: value } as appconf.AppConfig)}
-          options={COMMON_TIMEZONES}
+          options={COMMON_TIMEZONES.map(o => ({ value: o.value, label: t(o.tKey) }))}
           placeholder={t("common.pleaseSelect")}
         />
       </div>
@@ -223,7 +223,7 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
 
       <div className="flex items-center justify-between p-2">
         <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">
-          删除操作需要确认
+          {t('basic.deleteRequiresConfirm')}
         </label>
         <BetterSwitch
           id="delete_confirm"

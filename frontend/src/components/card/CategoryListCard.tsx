@@ -339,7 +339,7 @@ export function CategoryListCard({
             ) : (
               name
             )}
-            {isTagCategory && displayCount > 0 ? ` (点击${displayCount}次)` : ''}
+            {isTagCategory && displayCount > 0 ? t('category.clickTimes', { count: displayCount }) : ''}
           </h3>
           <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
             {actualGameCount} {t('brandList.labels.games')}
@@ -369,7 +369,7 @@ export function CategoryListCard({
           ) : (
             name
           )}
-          {isTagCategory && displayCount > 0 ? ` (点击${displayCount}次)` : ''}
+          {isTagCategory && displayCount > 0 ? t('category.clickTimes', { count: displayCount }) : ''}
         </h3>
         <p className="text-sm text-brand-500 dark:text-brand-400 mt-1">
           {actualGameCount} {t('brandList.labels.games')}

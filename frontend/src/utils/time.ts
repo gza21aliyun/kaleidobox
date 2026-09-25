@@ -1,3 +1,5 @@
+import i18n from "../i18n/i18n";
+
 /**
  * 将秒数格式化为中文时间字符串 (X小时Y分钟)
  */
@@ -5,18 +7,20 @@ export function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   if (hours > 0) {
-    return minutes > 0 ? `${hours}小时${minutes}分钟` : `${hours}小时`;
+    return minutes > 0
+      ? i18n.t("time.hoursMinutes", { hours, minutes })
+      : i18n.t("time.hours", { hours });
   }
-  return `${minutes}分钟`;
+  return i18n.t("time.minutes", { minutes });
 }
 
 export function formatDurationSimple(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   if (hours > 0) {
-    return `${hours}小时`;
+    return i18n.t("time.hours", { hours });
   }
-  return `${minutes}分钟`;
+  return i18n.t("time.minutes", { minutes });
 }
 
 /**
@@ -125,33 +129,33 @@ export function formatLastDateText(timeString: any): string {
   const diffDays = Math.floor(diffHours / 24);
   
   if (diffSeconds < 0) {
-    return "未来";
+    return i18n.t("time.future");
   }
   
   if (diffDays === 0) {
-    return "今天";
+    return i18n.t("time.today");
   }
   
   if (diffDays === 1) {
-    return "昨天";
+    return i18n.t("time.yesterday");
   }
   
   if (diffDays < 7) {
-    return `${diffDays}天前`;
+    return i18n.t("time.daysAgo", { count: diffDays });
   }
   
   const diffWeeks = Math.floor(diffDays / 7);
   if (diffDays < 30) {
-    return `${diffWeeks}周前`;
+    return i18n.t("time.weeksAgo", { count: diffWeeks });
   }
   
   const diffMonths = Math.floor(diffDays / 30);
   if (diffDays < 365) {
-    return `${diffMonths}个月前`;
+    return i18n.t("time.monthsAgo", { count: diffMonths });
   }
   
   const diffYears = Math.floor(diffDays / 365);
-  return `${diffYears}年前`;
+  return i18n.t("time.yearsAgo", { count: diffYears });
 }
 
 /**

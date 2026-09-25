@@ -139,7 +139,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
         }
         catch (error) {
           console.error("Failed to scan directory:", error);
-          toast.error("扫描目录失败:" + error);
+          toast.error(t('batchImport.scanDirFailed') + ":" + error);
           setStep("select");
         }
         finally {
@@ -149,7 +149,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
     }
     catch (error) {
       console.error("Failed to select directory:", error);
-      toast.error("选择目录失败");
+      toast.error(t('batchImport.selectDirFailed'));
     }
   };
 
@@ -332,14 +332,14 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
           }
 
       if (result.success > 0) {
-        toast.success(`成功导入 ${result.success} 个游戏`);
+        toast.success(t('batchImport.importSuccessCount', { count: result.success }));
         onImportComplete(result.games, false);
         triggerCategoriesRefresh();
       }
     }
     catch (error) {
       console.error("Failed to import:", error);
-      toast.error("导入失败");
+      toast.error(t('batchImport.importFailed'));
       setStep("preview");
     }
     finally {
@@ -419,12 +419,12 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
         selectManualMatch(game, manualSource);
       }
       else {
-        toast.error("未找到游戏");
+        toast.error(t('batchImport.notFound'));
       }
     }
     catch (error) {
       console.error("Failed to fetch by ID:", error);
-      toast.error("获取失败");
+      toast.error(t('batchImport.fetchFailed'));
     }
     finally {
       setIsSearching(false);
@@ -610,7 +610,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
                 {candidates.length === 0
                   ? (
                       <div className="p-8 text-center text-brand-400">
-                        未检测到游戏文件夹
+                        {t('batchImport.noGameFolderDetected')}
                       </div>
                     )
                   : (
@@ -800,7 +800,7 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
                 />
               </div>
               <p className="text-xs text-brand-400 mt-4">
-                为避免触发限流，匹配速度可能较慢，请耐心等待
+                {t('batchImport.rateLimitHint')}
               </p>
             </div>
           )}

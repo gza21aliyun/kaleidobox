@@ -162,7 +162,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
     }
     catch (error) {
       console.error("Failed to save game manually:", error);
-      toast.error("保存游戏失败");
+      toast.error(t('game.toasts.saveGameFailed'));
     }
     finally {
       setIsLoading(false);

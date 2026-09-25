@@ -98,7 +98,7 @@ function BrandGamesPage() {
     }
     catch (error) {
       console.error("Failed to load games for brand:", error);
-      toast.error("加载品牌游戏失败");
+      toast.error(t('brandGames.loadFailed'));
     }
   };
 
@@ -356,7 +356,7 @@ function BrandGamesPage() {
         <FilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="搜索游戏"
+          searchPlaceholder={t('search.game')}
           sortBy={sortBy}
           onSortByChange={val => setSortBy(val as "name" | "created_at" | "release_at" | "company" | "last_played" | "play_time")}
           sortOptions={sortOptions}
@@ -418,14 +418,14 @@ function BrandGamesPage() {
                 : (
                     <div className="flex flex-col items-center justify-center h-64 text-brand-500 dark:text-brand-400">
                       <div className="i-mdi-magnify text-6xl mb-4" />
-                      <p className="text-lg">未找到游戏</p>
+                      <p className="text-lg">{t('brandGames.notFound')}</p>
                     </div>
                   )
             )
           : (
               <div className="flex flex-col items-center justify-center h-64 text-brand-500 dark:text-brand-400">
                 <div className="i-mdi-gamepad-variant-outline text-6xl mb-4" />
-                <p className="text-lg">该品牌下暂无游戏</p>
+                <p className="text-lg">{t('brandGames.emptyBrand')}</p>
               </div>
             )}
       </div>

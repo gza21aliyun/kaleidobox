@@ -151,7 +151,7 @@ function SettingsPage() {
         <BTDownloadSettingsPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="虚拟机设置" icon="i-mdi-server" defaultOpen={false}>
+      <CollapsibleSection title={t('settings.vmSettings')} icon="i-mdi-server" defaultOpen={false}>
         <VMPanel formData={formData} onChange={handleFormChange} />
       </CollapsibleSection>
 

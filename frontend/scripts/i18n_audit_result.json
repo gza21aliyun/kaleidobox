@@ -1,0 +1,2097 @@
+{
+  "summary": {
+    "intersection": 1752,
+    "union": 1752,
+    "used": 1540
+  },
+  "missingEverywhere": [
+    "gameInfo."
+  ],
+  "usedMissingByLang": {
+    "zh-CN": [],
+    "en-US": [],
+    "ja-JP": []
+  },
+  "crossLang": {
+    "zh-CN": [],
+    "en-US": [],
+    "ja-JP": []
+  },
+  "deadKeys": [
+    "basic.dmmSwitch",
+    "basic.eroscapeSwitch",
+    "batchUpdate.emptyMatch",
+    "categories.addCategory",
+    "categories.manageCategories",
+    "categories.noCategories",
+    "characterSelect.imagesPlaceholder",
+    "common.createFailed",
+    "common.details",
+    "common.filter.allStatus",
+    "common.filter.expand",
+    "common.filter.source",
+    "common.info",
+    "common.joystick",
+    "common.no",
+    "common.settings",
+    "common.warning",
+    "common.yes",
+    "deviceType.touch",
+    "downloadedFiles.archive",
+    "downloadedFiles.collapseHelp",
+    "downloadedFiles.expandHelp",
+    "downloadedFiles.extracting",
+    "downloadedFiles.folder",
+    "downloadedFiles.no_need_extract",
+    "downloadedFiles.openInstall",
+    "downloadedFiles.searchGame",
+    "downloadedFiles.showHelp",
+    "downloadedFiles.tempStateHint",
+    "game.buttons.returnToLibrary",
+    "game.details",
+    "game.lastPlayed",
+    "game.playTime",
+    "game.releaseDate",
+    "game.status.completed",
+    "game.status.not_started",
+    "game.status.on_hold",
+    "game.status.playing",
+    "gameEdit.insideVm",
+    "gameEdit.insideVmHint",
+    "gameInfo.ART",
+    "gameInfo.CHARACTOR",
+    "gameInfo.CHARA_DESIGN",
+    "gameInfo.COMPOSER",
+    "gameInfo.CV",
+    "gameInfo.DIRECTOR",
+    "gameInfo.SCENEARIO",
+    "gameInfo.SINGER",
+    "gameInfo.STAFF",
+    "gameInfo.TagCategoryBrand",
+    "gameInfo.TagCategoryCustom",
+    "gameInfo.TagCategoryGenre",
+    "gameInfo.TagCategoryOther",
+    "gameInfo.TagCategoryPlatform",
+    "gameInfo.TagCategoryPlayerNumber",
+    "gameInfo.TagCategoryPublisher",
+    "gameInfo.TagCategorySeries",
+    "gameInfo.category",
+    "gameInfo.deleteTag",
+    "gameInfo.searchGames",
+    "gameInfo.tagInfo",
+    "gameInfo.tagName",
+    "gameIntro.workImagesPlaceholder",
+    "gameStatus.completed",
+    "gameStatus.on_hold",
+    "gameStatus.playing",
+    "hotkey.names.screenshot",
+    "hotkeyAction.CUSTOM",
+    "hotkeyAction.SCREENSHOT",
+    "hotkeyAction.START_GAME",
+    "hotkeyAction.STOP_GAME",
+    "hotkeyAction.TOGGLE_PAUSE",
+    "import.modals.gameImport.playnite.buttonText",
+    "import.modals.gameImport.playnite.fileDescription",
+    "import.modals.gameImport.playnite.fileHint",
+    "import.modals.gameImport.playnite.title",
+    "import.modals.gameImport.potatovn.buttonText",
+    "import.modals.gameImport.potatovn.fileDescription",
+    "import.modals.gameImport.potatovn.fileHint",
+    "import.modals.gameImport.potatovn.title",
+    "joystickButton.A",
+    "joystickButton.B",
+    "joystickButton.BACK",
+    "joystickButton.DPAD_DOWN",
+    "joystickButton.DPAD_LEFT",
+    "joystickButton.DPAD_RIGHT",
+    "joystickButton.DPAD_UP",
+    "joystickButton.GUIDE",
+    "joystickButton.LB",
+    "joystickButton.LS",
+    "joystickButton.LT",
+    "joystickButton.RB",
+    "joystickButton.RS",
+    "joystickButton.RT",
+    "joystickButton.START",
+    "joystickButton.X",
+    "joystickButton.Y",
+    "keyMapping.deviceSelectorLabel",
+    "keyMapping.globalLoaded",
+    "keyMapping.noGlobalMappings",
+    "library.batchImport",
+    "library.batchUpdate",
+    "library.filterByStatus",
+    "library.gamesCount",
+    "library.noGamesFound",
+    "library.sortBy",
+    "library.sortOptions.company",
+    "library.sortOptions.createdAt",
+    "library.sortOptions.lastPlayed",
+    "library.sortOptions.name",
+    "library.sortOptions.playTime",
+    "library.sortOptions.releaseAt",
+    "modifierKey.ALT",
+    "modifierKey.CTRL",
+    "modifierKey.SHIFT",
+    "modifierKey.WIN",
+    "nav.brands",
+    "nav.categoryList",
+    "nav.charactors",
+    "nav.favorites",
+    "nav.monthlyReleases",
+    "nav.series",
+    "nav.stats",
+    "nav.tags",
+    "nav.task",
+    "nav.virtualMachines",
+    "period.all",
+    "period.month",
+    "period.week",
+    "ps4.confirmMapping",
+    "ps4.enterKeyCode",
+    "ps4.pressKeyToMap",
+    "ps4.setButtonMapping",
+    "ps4.startKeyCapture",
+    "ps4.waitingForKeyInput",
+    "reviews.comment",
+    "reviews.shortComment",
+    "settings.madeWithContributors",
+    "settings.versionInfo.buildMode",
+    "settings.versionInfo.builtAt",
+    "settings.versionInfo.version",
+    "sidebar.categories",
+    "sidebar.characters",
+    "sidebar.favorites",
+    "sidebar.github",
+    "sidebar.joystick",
+    "sidebar.stats",
+    "sidebar.tags",
+    "sidebar.task",
+    "sidebar.virtualMachines",
+    "staffRole.ART",
+    "staffRole.CHARACTOR",
+    "staffRole.CHARA_DESIGN",
+    "staffRole.COMPOSER",
+    "staffRole.CV",
+    "staffRole.DIRECTOR",
+    "staffRole.SCENEARIO",
+    "staffRole.SINGER",
+    "staffRole.STAFF",
+    "stats.dailyAverage",
+    "stats.gameCount",
+    "stats.playTimeStats",
+    "stats.totalPlayTime",
+    "taskStatus.CANCELED",
+    "taskStatus.COMPLETED",
+    "taskStatus.ERROR",
+    "taskStatus.INITIAL",
+    "taskStatus.PAUSED",
+    "taskStatus.STARTED",
+    "taskType.CHARACTORS",
+    "taskType.GAMES",
+    "taskType.IMAGES",
+    "taskType.RELATIONS",
+    "taskType.STAFFS",
+    "time.daysAgo",
+    "time.future",
+    "time.hours",
+    "time.hoursMinutes",
+    "time.minutes",
+    "time.monthsAgo",
+    "time.today",
+    "time.weeksAgo",
+    "time.yearsAgo",
+    "time.yesterday",
+    "timezone.names.auckland",
+    "timezone.names.bangkok",
+    "timezone.names.berlin",
+    "timezone.names.chicago",
+    "timezone.names.denver",
+    "timezone.names.dubai",
+    "timezone.names.hongkong",
+    "timezone.names.london",
+    "timezone.names.losangeles",
+    "timezone.names.moscow",
+    "timezone.names.newyork",
+    "timezone.names.paris",
+    "timezone.names.saopaulo",
+    "timezone.names.seoul",
+    "timezone.names.shanghai",
+    "timezone.names.singapore",
+    "timezone.names.sydney",
+    "timezone.names.taipei",
+    "timezone.names.tokyo",
+    "timezone.names.utc",
+    "touchMapping.arrowKeys",
+    "touchMapping.colScope",
+    "touchMapping.deviceSelectorLabel",
+    "touchMapping.deviceSelectorPlaceholder",
+    "touchMapping.listeningStateLabel",
+    "touchMapping.saveAllMappings",
+    "touchMapping.scopeGame",
+    "touchMapping.scopeGlobal",
+    "touchMapping.title"
+  ],
+  "hardcoded": [
+    {
+      "file": "components\\bar\\FilterBar.tsx",
+      "line": 339,
+      "text": "{/* 状态筛选 */}"
+    },
+    {
+      "file": "components\\bar\\FilterBar.tsx",
+      "line": 349,
+      "text": "{/* 分类筛选 */}"
+    },
+    {
+      "file": "components\\bar\\FilterBar.tsx",
+      "line": 359,
+      "text": "{/* 视图模式切换 */}"
+    },
+    {
+      "file": "components\\bar\\FilterBar.tsx",
+      "line": 455,
+      "text": "{/* 批量操作按钮 - 第二行 */}"
+    },
+    {
+      "file": "components\\bar\\FilterBar.tsx",
+      "line": 580,
+      "text": "{/* 源匹配筛选 */}"
+    },
+    {
+      "file": "components\\bar\\FilterBar.tsx",
+      "line": 596,
+      "text": "{/* 开始日期 */}"
+    },
+    {
+      "file": "components\\bar\\FilterBar.tsx",
+      "line": 614,
+      "text": "{/* 结束日期 */}"
+    },
+    {
+      "file": "components\\bar\\TopBar.tsx",
+      "line": 49,
+      "text": "{/* 中央标题 */}"
+    },
+    {
+      "file": "components\\bar\\TopBar.tsx",
+      "line": 63,
+      "text": "{/* 右侧：窗口控制按钮 */}"
+    },
+    {
+      "file": "components\\bar\\TopBar.tsx",
+      "line": 65,
+      "text": "{/* 最小化 */}"
+    },
+    {
+      "file": "components\\bar\\TopBar.tsx",
+      "line": 76,
+      "text": "{/* 最大化/还原 */}"
+    },
+    {
+      "file": "components\\bar\\TopBar.tsx",
+      "line": 94,
+      "text": "{/* 关闭 */}"
+    },
+    {
+      "file": "components\\card\\AiSummaryCard.tsx",
+      "line": 13,
+      "text": "{/* 背景装饰效果 - Subtlety highlights AI nature */}"
+    },
+    {
+      "file": "components\\card\\CustomizedGameCard.tsx",
+      "line": 184,
+      "text": "{/* 已通关奖杯标识 */}"
+    },
+    {
+      "file": "components\\card\\GameCard.tsx",
+      "line": 632,
+      "text": "{/* 已通关奖杯标识 */}"
+    },
+    {
+      "file": "components\\card\\ImageCard.tsx",
+      "line": 326,
+      "text": "tempDownload?: boolean; // 为true时下载到临时文件夹，不保存到数据库"
+    },
+    {
+      "file": "components\\card\\ImageCard.tsx",
+      "line": 350,
+      "text": "const [isVisible, setIsVisible] = useState(!lazyLoad); // 非懒加载时默认可见"
+    },
+    {
+      "file": "components\\card\\ImageCard.tsx",
+      "line": 376,
+      "text": "threshold: 0.01, // 减小阈值，只要有1%进入视口就触发"
+    },
+    {
+      "file": "components\\card\\ImageCard.tsx",
+      "line": 377,
+      "text": "rootMargin: '50px' // 添加预加载区域，提前50px开始加载"
+    },
+    {
+      "file": "components\\field\\SingleImageField.tsx",
+      "line": 83,
+      "text": "{/* 预览 */}"
+    },
+    {
+      "file": "components\\field\\SingleImageField.tsx",
+      "line": 107,
+      "text": "{/* 按钮 + 网址输入 */}"
+    },
+    {
+      "file": "components\\modal\\AddGameModal.tsx",
+      "line": 247,
+      "text": "onClick={() => saveGame(item.Game!)} // 使用非空断言，因为上面已过滤"
+    },
+    {
+      "file": "components\\modal\\BatchImportModal.tsx",
+      "line": 927,
+      "text": "{/* 匹配结果 */}"
+    },
+    {
+      "file": "components\\modal\\BatchImportModal.tsx",
+      "line": 958,
+      "text": "{/* 手动输入ID */}"
+    },
+    {
+      "file": "components\\modal\\BatchImportModal.tsx",
+      "line": 989,
+      "text": "{/* 跳过元数据 */}"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 2,
+      "text": "import { useRef, useState, useEffect } from \"react\"; // 添加useEffect"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 116,
+      "text": "unlistenTaskUpdate(); // 取消事件监听"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 126,
+      "text": "setSelectedIds(games.map(game => game.id)); // 默认选中所有游戏"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 131,
+      "text": "}, [isOpen]); // 当isOpen或games变化时执行"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 349,
+      "text": "<div className=\"min-w-[150px] rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3\"> {/* 调整内边距 */}"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 350,
+      "text": "<div className=\"flex items-center gap-2\"> {/* 水平布局放置标签和选择器 */}"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 352,
+      "text": "{/* 更新选项开关 */}"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 357,
+      "text": "<span className=\"text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap\"></span> {/* 标签移到左侧 */}"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 733,
+      "text": "导入"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 737,
+      "text": "个游戏"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 780,
+      "text": "{/* 匹配结果 */}"
+    },
+    {
+      "file": "components\\modal\\BatchUpdateModal.tsx",
+      "line": 811,
+      "text": "{/* 手动输入ID */}"
+    },
+    {
+      "file": "components\\modal\\CharacterSelectModal.tsx",
+      "line": 245,
+      "text": "{/* 左侧：搜索栏 + 新增按钮 + 搜索结果 */}"
+    },
+    {
+      "file": "components\\modal\\CharacterSelectModal.tsx",
+      "line": 336,
+      "text": "{/* 右侧：编辑栏 */}"
+    },
+    {
+      "file": "components\\modal\\DragDropImportModal.tsx",
+      "line": 888,
+      "text": "{/* 匹配结果 */}"
+    },
+    {
+      "file": "components\\modal\\DragDropImportModal.tsx",
+      "line": 920,
+      "text": "{/* 手动输入ID */}"
+    },
+    {
+      "file": "components\\modal\\DragDropImportModal.tsx",
+      "line": 952,
+      "text": "{/* 跳过元数据 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 125,
+      "text": "{/* 折叠按钮 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 135,
+      "text": "{/* 搜索栏 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 174,
+      "text": "{/* 分类标题栏 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 185,
+      "text": "{/* 全选按钮 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 202,
+      "text": "{/* 折叠按钮 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 215,
+      "text": "{/* 标签列表 - 可折叠 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 422,
+      "text": "{/* 分组标题栏 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 440,
+      "text": "{/* 全选按钮 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 454,
+      "text": "{/* 展开/收起按钮 */}"
+    },
+    {
+      "file": "components\\modal\\FilterChooseTagModal.tsx",
+      "line": 462,
+      "text": "{/* 标签列表 - 可展开 */}"
+    },
+    {
+      "file": "components\\modal\\GameInfoModal.tsx",
+      "line": 195,
+      "text": "{work.role === \"声优\""
+    },
+    {
+      "file": "components\\modal\\ImageCropperModal.tsx",
+      "line": 95,
+      "text": "{/* 宽高比选择 */}"
+    },
+    {
+      "file": "components\\modal\\LocalSearchModal.tsx",
+      "line": 142,
+      "text": "{/* 标题栏 */}"
+    },
+    {
+      "file": "components\\modal\\LocalSearchModal.tsx",
+      "line": 155,
+      "text": "{/* 搜索区域 */}"
+    },
+    {
+      "file": "components\\modal\\LocalSearchModal.tsx",
+      "line": 178,
+      "text": "{/* 搜索按钮组 */}"
+    },
+    {
+      "file": "components\\modal\\LocalSearchModal.tsx",
+      "line": 212,
+      "text": "{/* 游戏列表 */}"
+    },
+    {
+      "file": "components\\modal\\ProcessSelectModal.tsx",
+      "line": 100,
+      "text": "{/* 标题 */}"
+    },
+    {
+      "file": "components\\modal\\ProcessSelectModal.tsx",
+      "line": 115,
+      "text": "{/* 搜索框 */}"
+    },
+    {
+      "file": "components\\modal\\ProcessSelectModal.tsx",
+      "line": 129,
+      "text": "{/* 进程列表 */}"
+    },
+    {
+      "file": "components\\modal\\ProcessSelectModal.tsx",
+      "line": 180,
+      "text": "{/* 刷新按钮 */}"
+    },
+    {
+      "file": "components\\modal\\ProcessSelectModal.tsx",
+      "line": 193,
+      "text": "{/* 按钮 */}"
+    },
+    {
+      "file": "components\\modal\\ScreenshotHotkeyModal.tsx",
+      "line": 229,
+      "text": "{/* 设备类型选择 */}"
+    },
+    {
+      "file": "components\\modal\\ScreenshotHotkeyModal.tsx",
+      "line": 252,
+      "text": "{/* 修饰键选择（仅键盘） */}"
+    },
+    {
+      "file": "components\\modal\\ScreenshotHotkeyModal.tsx",
+      "line": 276,
+      "text": "{/* 按键输入 */}"
+    },
+    {
+      "file": "components\\modal\\ScreenshotHotkeyModal.tsx",
+      "line": 312,
+      "text": "{/* 显示当前组合键 */}"
+    },
+    {
+      "file": "components\\modal\\ScreenshotHotkeyModal.tsx",
+      "line": 320,
+      "text": "{/* 错误信息 */}"
+    },
+    {
+      "file": "components\\modal\\ScreenshotHotkeyModal.tsx",
+      "line": 327,
+      "text": "{/* 操作按钮 */}"
+    },
+    {
+      "file": "components\\modal\\StaffSelectModal.tsx",
+      "line": 236,
+      "text": "{/* 左侧：搜索栏 + 新增按钮 + 搜索结果 */}"
+    },
+    {
+      "file": "components\\modal\\StaffSelectModal.tsx",
+      "line": 327,
+      "text": "{/* 右侧：编辑栏 */}"
+    },
+    {
+      "file": "components\\modal\\TagGroupModal.tsx",
+      "line": 141,
+      "text": "{/* 类别标题栏 */}"
+    },
+    {
+      "file": "components\\modal\\TagGroupModal.tsx",
+      "line": 154,
+      "text": "{/* 全选/取消全选按钮 */}"
+    },
+    {
+      "file": "components\\modal\\TagGroupModal.tsx",
+      "line": 173,
+      "text": "{/* 展开/收起图标 */}"
+    },
+    {
+      "file": "components\\modal\\TagGroupModal.tsx",
+      "line": 183,
+      "text": "{/* 标签列表 */}"
+    },
+    {
+      "file": "components\\modal\\TagGroupModal.tsx",
+      "line": 212,
+      "text": "{/* 标签特殊标识 */}"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 81,
+      "text": "throw new Error(\"无法获取预览内容\");"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 86,
+      "text": "throw new Error(\"无法获取预览内容\");"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 205,
+      "text": "{/* 头部 */}"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 219,
+      "text": "{/* 主体 */}"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 221,
+      "text": "{/* 左侧：模板选择 */}"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 269,
+      "text": "{/* 右侧：预览 */}"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 271,
+      "text": "{/* 模板信息 */}"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 291,
+      "text": "{/* 预览区域 */}"
+    },
+    {
+      "file": "components\\modal\\TemplateExportModal.tsx",
+      "line": 320,
+      "text": "{/* 底部按钮 */}"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 41,
+      "text": "setIsMaximized(false); // 打开弹窗时重置最大化状态"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 42,
+      "text": "setCurrentIndex(0); // 重置到第一个视频"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 49,
+      "text": "setIsMaximized(false); // 关闭弹窗时重置最大化状态"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 107,
+      "text": "{/* 视频列表 */}"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 109,
+      "text": "{/* 折叠按钮 - 始终可见 */}"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 118,
+      "text": "{/* 视频列表内容 */}"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 121,
+      "text": "{/* 列表标题 */}"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 126,
+      "text": "{/* 视频列表 */}"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 145,
+      "text": "{/* 视频播放器 */}"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 191,
+      "text": "{/* 视频切换按钮 */}"
+    },
+    {
+      "file": "components\\modal\\VideoListPlayModal.tsx",
+      "line": 209,
+      "text": "{/* 视频信息 */}"
+    },
+    {
+      "file": "components\\modal\\VideoPlayModal.tsx",
+      "line": 24,
+      "text": "setIsMaximized(false); // 打开弹窗时重置最大化状态"
+    },
+    {
+      "file": "components\\modal\\VideoPlayModal.tsx",
+      "line": 31,
+      "text": "setIsMaximized(false); // 关闭弹窗时重置最大化状态"
+    },
+    {
+      "file": "components\\panel\\BackgroundSettingsPanel.tsx",
+      "line": 100,
+      "text": "{/* 图片裁剪对话框 */}"
+    },
+    {
+      "file": "components\\panel\\BackgroundSettingsPanel.tsx",
+      "line": 125,
+      "text": "{/* 启用开关 */}"
+    },
+    {
+      "file": "components\\panel\\BackgroundSettingsPanel.tsx",
+      "line": 157,
+      "text": "{/* 隐藏游戏封面开关 */}"
+    },
+    {
+      "file": "components\\panel\\BackgroundSettingsPanel.tsx",
+      "line": 175,
+      "text": "{/* 背景图片选择 */}"
+    },
+    {
+      "file": "components\\panel\\BackgroundSettingsPanel.tsx",
+      "line": 206,
+      "text": "{/* 背景图片预览 */}"
+    },
+    {
+      "file": "components\\panel\\BackgroundSettingsPanel.tsx",
+      "line": 238,
+      "text": "{/* 模糊度调节 */}"
+    },
+    {
+      "file": "components\\panel\\BackgroundSettingsPanel.tsx",
+      "line": 265,
+      "text": "{/* 遮罩不透明度调节 */}"
+    },
+    {
+      "file": "components\\panel\\BasicSettingsPanel.tsx",
+      "line": 162,
+      "text": "{ value: \"zh-CN\", label: \"简体中文\" },"
+    },
+    {
+      "file": "components\\panel\\BasicSettingsPanel.tsx",
+      "line": 164,
+      "text": "{ value: \"ja-JP\", label: \"日本語\" },"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 48,
+      "text": "{/* RSS URL 配置 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 66,
+      "text": "{/* qBittorrent 配置 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 73,
+      "text": "{/* 服务器地址 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 88,
+      "text": "{/* 端口 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 103,
+      "text": "{/* 用户名 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 118,
+      "text": "{/* 密码 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 133,
+      "text": "{/* 下载目录 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 153,
+      "text": "{/* 游戏下载和安装文件夹配置 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 160,
+      "text": "{/* 游戏下载文件夹 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 183,
+      "text": "{/* 游戏安装文件夹 */}"
+    },
+    {
+      "file": "components\\panel\\BTDownloadSettingsPanel.tsx",
+      "line": 206,
+      "text": "{/* 7-Zip 路径 */}"
+    },
+    {
+      "file": "components\\panel\\CloudBackupSettingsPanel.tsx",
+      "line": 142,
+      "text": "{/* S3 配置 */}"
+    },
+    {
+      "file": "components\\panel\\CloudBackupSettingsPanel.tsx",
+      "line": 210,
+      "text": "{/* OneDrive 配置 */}"
+    },
+    {
+      "file": "components\\panel\\CloudBackupSettingsPanel.tsx",
+      "line": 231,
+      "text": "{/* Client ID 配置 */}"
+    },
+    {
+      "file": "components\\panel\\CloudBackupSettingsPanel.tsx",
+      "line": 243,
+      "text": "placeholder=\"26fcab6e-41ea-49ff-8ec9-063983cae3ef (默认)\""
+    },
+    {
+      "file": "components\\panel\\CloudBackupSettingsPanel.tsx",
+      "line": 300,
+      "text": "{/* WebDav 配置 */}"
+    },
+    {
+      "file": "components\\panel\\DBBackupPanel.tsx",
+      "line": 106,
+      "text": "if (err.toString().includes(\"本地备份成功\")) {"
+    },
+    {
+      "file": "components\\panel\\DBBackupPanel.tsx",
+      "line": 205,
+      "text": "return; // 用户取消"
+    },
+    {
+      "file": "components\\panel\\DBBackupPanel.tsx",
+      "line": 250,
+      "text": "{/* 备份操作区 */}"
+    },
+    {
+      "file": "components\\panel\\DBBackupPanel.tsx",
+      "line": 288,
+      "text": "{/* 本地备份列表 */}"
+    },
+    {
+      "file": "components\\panel\\DBBackupPanel.tsx",
+      "line": 374,
+      "text": "{/* 云端备份列表 */}"
+    },
+    {
+      "file": "components\\panel\\DBBackupPanel.tsx",
+      "line": 442,
+      "text": "{/* 云备份未配置提示 */}"
+    },
+    {
+      "file": "components\\panel\\FullDataBackupPanel.tsx",
+      "line": 45,
+      "text": "return; // 用户取消"
+    },
+    {
+      "file": "components\\panel\\FullDataBackupPanel.tsx",
+      "line": 69,
+      "text": "return; // 用户取消"
+    },
+    {
+      "file": "components\\panel\\FullDataBackupPanel.tsx",
+      "line": 100,
+      "text": "{/* 全量数据备份说明和操作区 */}"
+    },
+    {
+      "file": "components\\panel\\GameBackupPanel.tsx",
+      "line": 86,
+      "text": "width: \"800px\", // 设置更宽的宽度"
+    },
+    {
+      "file": "components\\panel\\GameBackupPanel.tsx",
+      "line": 253,
+      "text": "{/* 备份操作区 */}"
+    },
+    {
+      "file": "components\\panel\\GameBackupPanel.tsx",
+      "line": 313,
+      "text": "{/* 本地备份历史列表 */}"
+    },
+    {
+      "file": "components\\panel\\GameBackupPanel.tsx",
+      "line": 385,
+      "text": "{/* 云端备份列表 */}"
+    },
+    {
+      "file": "components\\panel\\GameBackupPanel.tsx",
+      "line": 446,
+      "text": "{/* 云备份未配置提示 */}"
+    },
+    {
+      "file": "components\\panel\\GameGalleryPanel.tsx",
+      "line": 141,
+      "text": ".filter(img => img.url.trim() !== \"\") // 过滤空字符串"
+    },
+    {
+      "file": "components\\panel\\GameGalleryPanel.tsx",
+      "line": 156,
+      "text": "{/* 选择封面图开关 */}"
+    },
+    {
+      "file": "components\\panel\\GameGalleryPanel.tsx",
+      "line": 166,
+      "text": "{/* 截图板块 */}"
+    },
+    {
+      "file": "components\\panel\\GameGalleryPanel.tsx",
+      "line": 239,
+      "text": "{/* 画廊板块 */}"
+    },
+    {
+      "file": "components\\panel\\GameGalleryPanel.tsx",
+      "line": 275,
+      "text": "{/* 截图快捷键设置模态框 */}"
+    },
+    {
+      "file": "components\\panel\\GameInfoPanel.tsx",
+      "line": 157,
+      "text": "{/* 在这里插入worksMap展示内容 */}"
+    },
+    {
+      "file": "components\\panel\\GameInfoPanel.tsx",
+      "line": 197,
+      "text": "e.stopPropagation(); // 阻止事件冒泡"
+    },
+    {
+      "file": "components\\panel\\GameInfoPanel.tsx",
+      "line": 250,
+      "text": "{/* 删除标签确认弹窗 */}"
+    },
+    {
+      "file": "components\\panel\\GameInfoPanel.tsx",
+      "line": 284,
+      "text": "{/* 添加标签弹窗 */}"
+    },
+    {
+      "file": "components\\panel\\GameIntroPanel.tsx",
+      "line": 159,
+      "text": "}, [game?.summary || \"\"]); // 当summary变化时重新计算高度"
+    },
+    {
+      "file": "components\\panel\\GameIntroPanel.tsx",
+      "line": 197,
+      "text": "{/* 角色 */}"
+    },
+    {
+      "file": "components\\panel\\GameIntroPanel.tsx",
+      "line": 209,
+      "text": "{/* 角色图片 */}"
+    },
+    {
+      "file": "components\\panel\\GameIntroPanel.tsx",
+      "line": 221,
+      "text": "{/* 角色信息 */}"
+    },
+    {
+      "file": "components\\panel\\GameIntroPanel.tsx",
+      "line": 267,
+      "text": "{/* 角色简介 */}"
+    },
+    {
+      "file": "components\\panel\\GameIntroPanel.tsx",
+      "line": 277,
+      "text": "{/* 角色截图 */}"
+    },
+    {
+      "file": "components\\panel\\GameIntroPanel.tsx",
+      "line": 294,
+      "text": "{/* 关联游戏 */}"
+    },
+    {
+      "file": "components\\panel\\GameIntroPanel.tsx",
+      "line": 338,
+      "text": "{/* 捅品牌游戏 */}"
+    },
+    {
+      "file": "components\\panel\\GameLaunchPanel.tsx",
+      "line": 38,
+      "text": "{/* 进程监控配置 */}"
+    },
+    {
+      "file": "components\\panel\\GameLaunchPanel.tsx",
+      "line": 82,
+      "text": "{/* 启动工具配置 */}"
+    },
+    {
+      "file": "components\\panel\\GameSettingsPanel.tsx",
+      "line": 116,
+      "text": "{/* 自动进程检测 */}"
+    },
+    {
+      "file": "components\\panel\\GameSettingsPanel.tsx",
+      "line": 148,
+      "text": "{/* Locale Emulator 配置 */}"
+    },
+    {
+      "file": "components\\panel\\GameSettingsPanel.tsx",
+      "line": 267,
+      "text": "{/* Magpie 裁剪配置（仅虚拟机启动时使用） */}"
+    },
+    {
+      "file": "components\\panel\\GameStatsPanel.tsx",
+      "line": 116,
+      "text": "labels: stats?.recent_play_history?.map(h => h.date) || [], // 后端已返回本地日期字符串，直接使用"
+    },
+    {
+      "file": "components\\panel\\GameStatsPanel.tsx",
+      "line": 166,
+      "text": "{/* 统计卡片 */}"
+    },
+    {
+      "file": "components\\panel\\GameStatsPanel.tsx",
+      "line": 188,
+      "text": "{/* 视图切换和操作栏 */}"
+    },
+    {
+      "file": "components\\panel\\GuidePanel.tsx",
+      "line": 95,
+      "text": "{/* 攻略标题 */}"
+    },
+    {
+      "file": "components\\panel\\GuidePanel.tsx",
+      "line": 100,
+      "text": "{/* 操作按钮 */}"
+    },
+    {
+      "file": "components\\panel\\GuidePanel.tsx",
+      "line": 122,
+      "text": "{/* 攻略文本 */}"
+    },
+    {
+      "file": "components\\panel\\GuidePanel.tsx",
+      "line": 132,
+      "text": "{/* 攻略内容 */}"
+    },
+    {
+      "file": "components\\panel\\GuidePanel.tsx",
+      "line": 148,
+      "text": "{/* 覆盖存档确认弹窗 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 212,
+      "text": "setSelectedDeviceType(null); // 关闭手柄映射"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 216,
+      "text": "setSelectedDeviceType(null); // 关闭手柄映射"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 546,
+      "text": "{/* 顶部标题栏 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 552,
+      "text": "{/* 设备选择 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 583,
+      "text": "{/* 统一操作按钮栏 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 629,
+      "text": "{/* 编辑模式按钮 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 691,
+      "text": "{/* 保存按钮始终显示 - 包括选择关闭手柄映射时 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 714,
+      "text": "{/* 内容区：触摸按钮或手柄映射 - 只有选择了设备类型时才显示 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 721,
+      "text": "{/* 手柄图片和按钮映射容器 - 动态显示 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 725,
+      "text": "{/* 手柄背景图 - 位于按钮层下方 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 737,
+      "text": "{/* 按钮映射层 - 位于图片上方 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 755,
+      "text": "{/* 删除按钮 */}"
+    },
+    {
+      "file": "components\\panel\\KeyMappingPanel.tsx",
+      "line": 779,
+      "text": "{/* 映射设置弹窗 */}"
+    },
+    {
+      "file": "components\\panel\\ReviewPanel.tsx",
+      "line": 23,
+      "text": "{ value: enums.SourceType.EROSCAPE || \"批评空间\", tKey: \"sourceType.eroscape\" },"
+    },
+    {
+      "file": "components\\panel\\ReviewPanel.tsx",
+      "line": 364,
+      "text": "{`前往${selectedSourceType}评论`}"
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 41,
+      "text": "unlistenTaskUpdate(); // 取消事件监听"
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 57,
+      "text": "task.status === \"完成\" ? \"bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-400\" :"
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 58,
+      "text": "task.status === \"错误\" ? \"bg-error-100 text-error-800 dark:bg-error-900/30 dark:text-error-400\" :"
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 59,
+      "text": "task.status === \"取消\" ? \"bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-400\" :"
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 60,
+      "text": "task.status === \"暂停\" ? \"bg-info-100 text-info-800 dark:bg-info-900/30 dark:text-info-400\" :"
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 76,
+      "text": "{/* 进度条 */}"
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 93,
+      "text": "{/* 控制按钮 */}"
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 95,
+      "text": "{(task.status === \"已开始\" ) && ("
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 105,
+      "text": "{(task.status === \"暂停\" ) && ("
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 115,
+      "text": "{(task.status !== \"完成\" && task.status !== \"错误\" && task.status !== \"取消\") && ("
+    },
+    {
+      "file": "components\\panel\\TaskPanel.tsx",
+      "line": 124,
+      "text": "{(task.status === \"完成\" ) && ("
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 45,
+      "text": "actionType: enums.HotkeyActionType; // 功能键类型，默认 CUSTOM"
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 46,
+      "text": "modifiers: string;    // 修饰键组合，如 \"ctrl+shift\""
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 51,
+      "text": "{ actionType: enums.HotkeyActionType.SCREENSHOT, name: 'SCREENSHOT', label: '截图', tKey: 'keyMapping.screenshot', icon: '"
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 52,
+      "text": "{ actionType: enums.HotkeyActionType.ARROW_KEYS, name: 'ARROW_KEYS', label: '方向键', tKey: 'touchMapping.arrowKeys', icon:"
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 621,
+      "text": "id: crypto.randomUUID(), // 强制使用新的 UUID，避免主键冲突"
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 668,
+      "text": "{/* 按钮列表（按钮UI已移至 KeyMappingPanel） */}"
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 766,
+      "text": "{/* 提示 */}"
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 776,
+      "text": "{/* 新增按钮弹窗 - 参考 KeyMappingPanel 风格 */}"
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 794,
+      "text": "{/* 功能键选项 */}"
+    },
+    {
+      "file": "components\\panel\\TouchMappingPanel.tsx",
+      "line": 813,
+      "text": "{/* 分隔线 */}"
+    },
+    {
+      "file": "components\\panel\\UpdateSettingsPanel.tsx",
+      "line": 70,
+      "text": "{/* 启动时自动检查更新 */}"
+    },
+    {
+      "file": "components\\panel\\UpdateSettingsPanel.tsx",
+      "line": 87,
+      "text": "{/* 手动检查更新按钮 */}"
+    },
+    {
+      "file": "components\\panel\\UpdateSettingsPanel.tsx",
+      "line": 101,
+      "text": "{/* 错误信息 */}"
+    },
+    {
+      "file": "components\\panel\\UpdateSettingsPanel.tsx",
+      "line": 114,
+      "text": "{/* 发现新版本提示（对话框关闭但有更新时显示） */}"
+    },
+    {
+      "file": "components\\panel\\UpdateSettingsPanel.tsx",
+      "line": 135,
+      "text": "{/* 已是最新版本提示 */}"
+    },
+    {
+      "file": "components\\panel\\UpdateSettingsPanel.tsx",
+      "line": 149,
+      "text": "{/* 更新对话框 */}"
+    },
+    {
+      "file": "components\\ui\\I18nTestComponent.tsx",
+      "line": 8,
+      "text": "<h3 className=\"text-lg font-semibold mb-4\">多语言测试</h3>"
+    },
+    {
+      "file": "components\\ui\\I18nTestComponent.tsx",
+      "line": 13,
+      "text": "当前语言:"
+    },
+    {
+      "file": "components\\ui\\I18nTestComponent.tsx",
+      "line": 22,
+      "text": "测试翻译:"
+    },
+    {
+      "file": "components\\ui\\I18nTestComponent.tsx",
+      "line": 34,
+      "text": "语言切换:"
+    },
+    {
+      "file": "components\\ui\\I18nTestComponent.tsx",
+      "line": 45,
+      "text": "中文"
+    },
+    {
+      "file": "components\\ui\\I18nTestComponent.tsx",
+      "line": 65,
+      "text": "日本語"
+    },
+    {
+      "file": "components\\ui\\LanguageSwitcher.tsx",
+      "line": 11,
+      "text": "{ code: 'zh-CN', name: '中文' },"
+    },
+    {
+      "file": "components\\ui\\LanguageSwitcher.tsx",
+      "line": 13,
+      "text": "{ code: 'ja-JP', name: '日本語' }"
+    },
+    {
+      "file": "components\\ui\\UpdateDialog.tsx",
+      "line": 59,
+      "text": "{/* 背景遮罩 */}"
+    },
+    {
+      "file": "components\\ui\\UpdateDialog.tsx",
+      "line": 62,
+      "text": "{/* 对话框 */}"
+    },
+    {
+      "file": "components\\utils\\Utility.ts",
+      "line": 7,
+      "text": "TagCategoryBrand        : \"品牌\","
+    },
+    {
+      "file": "components\\utils\\Utility.ts",
+      "line": 8,
+      "text": "TagCategoryGenre        : \"游戏类型\","
+    },
+    {
+      "file": "components\\utils\\Utility.ts",
+      "line": 9,
+      "text": "TagCategoryPlatform     : \"平台\","
+    },
+    {
+      "file": "components\\utils\\Utility.ts",
+      "line": 10,
+      "text": "TagCategoryPublisher    : \"发行\","
+    },
+    {
+      "file": "components\\utils\\Utility.ts",
+      "line": 11,
+      "text": "TagCategoryPlayerNumber : \"玩家人数\","
+    },
+    {
+      "file": "components\\utils\\Utility.ts",
+      "line": 12,
+      "text": "TagCategoryOther        : \"其他\","
+    },
+    {
+      "file": "components\\utils\\Utility.ts",
+      "line": 13,
+      "text": "TagCategoryCustom       : \"自定义\","
+    },
+    {
+      "file": "components\\utils\\Utility.ts",
+      "line": 14,
+      "text": "TagCategorySeries       : \"系列\","
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 4,
+      "text": "{ label: \"全部状态\", value: \"\", tKey: \"common.filter.allStatus\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 5,
+      "text": "{ label: \"未开始\", value: enums.GameStatus.NOT_STARTED, tKey: \"library.gameStatus.not_started\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 6,
+      "text": "{ label: \"游玩中\", value: enums.GameStatus.PLAYING, tKey: \"library.gameStatus.playing\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 7,
+      "text": "{ label: \"已通关\", value: enums.GameStatus.COMPLETED, tKey: \"library.gameStatus.completed\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 8,
+      "text": "{ label: \"搁置\", value: enums.GameStatus.ON_HOLD, tKey: \"library.gameStatus.on_hold\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 12,
+      "text": "{ label: \"名称\", value: \"name\", tKey: \"library.sortOptions.name\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 13,
+      "text": "{ label: \"添加时间\", value: \"created_at\", tKey: \"library.sortOptions.createdAt\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 14,
+      "text": "{ label: \"发售日期\", value: \"release_at\", tKey: \"library.sortOptions.releaseAt\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 15,
+      "text": "{ label: \"开发商\", value: \"company\", tKey: \"library.sortOptions.company\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 16,
+      "text": "{ label: \"最后游玩\", value: \"last_played\", tKey: \"library.sortOptions.lastPlayed\" },"
+    },
+    {
+      "file": "consts\\options.ts",
+      "line": 17,
+      "text": "{ label: \"游戏时间\", value: \"play_time\", tKey: \"library.sortOptions.playTime\" },"
+    },
+    {
+      "file": "routes\\charactor.tsx",
+      "line": 20,
+      "text": "characterIds?: string[]; // 可选参数"
+    },
+    {
+      "file": "routes\\charactor.tsx",
+      "line": 26,
+      "text": "const search = useSearch({ strict: false }) as CharacterSearchParams; // 获取查询参数"
+    },
+    {
+      "file": "routes\\charactor.tsx",
+      "line": 261,
+      "text": "{/* 头部信息 */}"
+    },
+    {
+      "file": "routes\\charactor.tsx",
+      "line": 282,
+      "text": "{/* 基本信息卡片 */}"
+    },
+    {
+      "file": "routes\\charactor.tsx",
+      "line": 285,
+      "text": "{/* 角色图片 */}"
+    },
+    {
+      "file": "routes\\charactor.tsx",
+      "line": 333,
+      "text": "{/* 简介部分 */}"
+    },
+    {
+      "file": "routes\\charactor.tsx",
+      "line": 345,
+      "text": "{/* 参与游戏 */}"
+    },
+    {
+      "file": "routes\\charactor_list.tsx",
+      "line": 124,
+      "text": "{/* 角色图片 */}"
+    },
+    {
+      "file": "routes\\charactor_list.tsx",
+      "line": 140,
+      "text": "{/* 角色信息 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 149,
+      "text": "if (task.working_on.includes(\"解压\")) {"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 151,
+      "text": "} else if (task.working_on.includes(\"安装\")) {"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 153,
+      "text": "} else if (task.working_on.includes(\"删除\")) {"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 159,
+      "text": "toast.success(`${currentExecutingName} 正在 ${currentExecutingTask}`)"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 178,
+      "text": "toast.success(`${currentExecutingName} 完成 ${currentExecutingTask}`)"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 960,
+      "text": "{/* 执行中动画 - 覆盖整个页面内容 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 986,
+      "text": "{/* 页面标题 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1013,
+      "text": "{/* 提示信息 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1291,
+      "text": "{/* 第二行：类型、大小、下载状态 + 按钮栏 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1296,
+      "text": "{/* <span>{!item.is_extracted ? \"\" : \"镜像数目:\" + item.iso_items.length}</span> */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1307,
+      "text": "{/* 按钮栏 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1309,
+      "text": "{/* 解压按钮 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1356,
+      "text": "{/* 安装按钮 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1388,
+      "text": "{/* 导入按钮 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1455,
+      "text": "{/* 打开游戏按钮 - 只有导入后显示 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1465,
+      "text": "{/* 运行游戏按钮 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1489,
+      "text": "{/* 打开下载按钮 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1500,
+      "text": "{/* 删除安装按钮 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1533,
+      "text": "{/* 搜索按钮 - 已导入的单元隐藏 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1543,
+      "text": "{/* 装载按钮 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1553,
+      "text": "{/* 删除按钮 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1570,
+      "text": "刷新"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1575,
+      "text": "{/* inner_items 在第三行 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1700,
+      "text": "{/* 游戏搜索弹窗 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1738,
+      "text": "{/* 批量导入弹窗 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1786,
+      "text": "{/* 运行游戏选择弹窗 */}"
+    },
+    {
+      "file": "routes\\downloaded_files.tsx",
+      "line": 1819,
+      "text": "{/* 覆盖存档确认弹窗 */}"
+    },
+    {
+      "file": "routes\\favorites.tsx",
+      "line": 169,
+      "text": "setBatchMode(true); // 自动启用批量选择模式"
+    },
+    {
+      "file": "routes\\favorites.tsx",
+      "line": 645,
+      "text": "{/* 选择模式下的确认和取消按钮 */}"
+    },
+    {
+      "file": "routes\\favorites.tsx",
+      "line": 694,
+      "text": "{/* 非选择模式下的批量操作 */}"
+    },
+    {
+      "file": "routes\\favorites.tsx",
+      "line": 697,
+      "text": "{/* 批量更新状态 */}"
+    },
+    {
+      "file": "routes\\favorites.tsx",
+      "line": 723,
+      "text": "{/* 批量添加标签 */}"
+    },
+    {
+      "file": "routes\\favorites.tsx",
+      "line": 736,
+      "text": "{/* 批量添加到收藏 */}"
+    },
+    {
+      "file": "routes\\favorites.tsx",
+      "line": 761,
+      "text": "{/* 批量删除 */}"
+    },
+    {
+      "file": "routes\\favorites.tsx",
+      "line": 774,
+      "text": "{/* 从当前分类移除 */}"
+    },
+    {
+      "file": "routes\\game.tsx",
+      "line": 24,
+      "text": "import { GameGalleryPanel } from \"../components/panel/GameGalleryPanel\"; // 新增导入"
+    },
+    {
+      "file": "routes\\game.tsx",
+      "line": 40,
+      "text": "filteredGameIdsStr?: string[]; // 可选参数"
+    },
+    {
+      "file": "routes\\game.tsx",
+      "line": 48,
+      "text": "const search = useSearch({ strict: false }) as GameSearchParams; // 获取查询参数"
+    },
+    {
+      "file": "routes\\game.tsx",
+      "line": 90,
+      "text": "const minSwipeDistance = 50; // 最小滑动距离（参数"
+    },
+    {
+      "file": "routes\\game.tsx",
+      "line": 115,
+      "text": "unlistenTaskUpdate(); // 取消事件监听"
+    },
+    {
+      "file": "routes\\game.tsx",
+      "line": 683,
+      "text": "{/* 操作和状态标签组 */}"
+    },
+    {
+      "file": "routes\\game.tsx",
+      "line": 715,
+      "text": "{/* 分隔线 */}"
+    },
+    {
+      "file": "routes\\index.tsx",
+      "line": 104,
+      "text": "{/* 仅在未启用自定义背景或未选择隐藏游戏封面时显示 */}"
+    },
+    {
+      "file": "routes\\index.tsx",
+      "line": 114,
+      "text": "{/* 整体柔和遮罩 - 浅色模式用浅色，深色模式用深色 */}"
+    },
+    {
+      "file": "routes\\index.tsx",
+      "line": 116,
+      "text": "{/* 从左到右的渐变遮罩 */}"
+    },
+    {
+      "file": "routes\\index.tsx",
+      "line": 118,
+      "text": "{/* 底部渐变遮罩 */}"
+    },
+    {
+      "file": "routes\\index.tsx",
+      "line": 120,
+      "text": "{/* 顶部轻微渐变 */}"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 49,
+      "text": "shouldReload: false, // 关键：禁止自动重新加载"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 313,
+      "text": "estimateSize: () => 100, // 初始估计值，后续会通过 measureElement 校正"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 314,
+      "text": "overscan: 3, // 预加载的项目数量"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 341,
+      "text": "setBatchMode(true); // 自动启用批量选择模式"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 654,
+      "text": "{/* 选择模式下的确认和取消按钮 */}"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 703,
+      "text": "{/* 非选择模式下的批量操作 */}"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 706,
+      "text": "{/* 批量更新状态 */}"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 732,
+      "text": "{/* 批量添加标签 */}"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 745,
+      "text": "{/* 批量添加到收藏 */}"
+    },
+    {
+      "file": "routes\\library.tsx",
+      "line": 770,
+      "text": "{/* 批量删除 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 364,
+      "text": "{/* 标题栏 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 374,
+      "text": "{/* 搜索按钮 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 387,
+      "text": "{/* 年月选择器 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 389,
+      "text": "{/* 上月按钮 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 398,
+      "text": "{/* 年份选择 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 408,
+      "text": "{/* 月份选择 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 418,
+      "text": "{/* 下月按钮 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 437,
+      "text": "{/* 刷新按钮 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 449,
+      "text": "{/* 加载状态 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 459,
+      "text": "{/* 无数据 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 469,
+      "text": "{/* 游戏列表 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 472,
+      "text": "{/* 日期标题 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 483,
+      "text": "{/* 游戏网格 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 501,
+      "text": "{/* 搜索弹窗 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 518,
+      "text": "{/* 本地搜索弹窗 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 527,
+      "text": "{/* 搜索下载文件夹弹窗 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 601,
+      "text": "{/* 详情弹窗 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 668,
+      "text": "{/* 封面图 - 懒加载 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 676,
+      "text": "{/* 已导入标识 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 683,
+      "text": "{/* 悬停按钮覆盖层 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 756,
+      "text": "{/* 信息区 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 880,
+      "text": "{/* 标题栏 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 893,
+      "text": "{/* 搜索区域 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 916,
+      "text": "{/* 搜索按钮组 */}"
+    },
+    {
+      "file": "routes\\monthly_releases.tsx",
+      "line": 950,
+      "text": "{/* 搜索结果列表 */}"
+    },
+    {
+      "file": "routes\\staff.tsx",
+      "line": 159,
+      "text": "{/* 头部信息 */}"
+    },
+    {
+      "file": "routes\\staff.tsx",
+      "line": 180,
+      "text": "{/* 基本信息卡片 */}"
+    },
+    {
+      "file": "routes\\staff.tsx",
+      "line": 243,
+      "text": "{/* 简介部分 */}"
+    },
+    {
+      "file": "routes\\staff.tsx",
+      "line": 255,
+      "text": "{/* 参与游戏 */}"
+    },
+    {
+      "file": "routes\\staff.tsx",
+      "line": 341,
+      "text": "e.stopPropagation(); // 阻止事件冒泡"
+    },
+    {
+      "file": "routes\\stats.tsx",
+      "line": 164,
+      "text": "labels: stats.timeline.map(p => p.label), // 后端已返回本地日期字符串，直接使用"
+    },
+    {
+      "file": "routes\\stats.tsx",
+      "line": 178,
+      "text": "labels: stats.timeline.map(p => p.label), // 后端已返回本地日期字符串，直接使用"
+    },
+    {
+      "file": "routes\\stats.tsx",
+      "line": 263,
+      "text": "{/* 自定义日期范围按钮 */}"
+    },
+    {
+      "file": "routes\\stats.tsx",
+      "line": 281,
+      "text": "{/* 自定义日期范围选择器 */}"
+    },
+    {
+      "file": "routes\\stats.tsx",
+      "line": 317,
+      "text": "{/* AI Summary Card - 显示在页面顶部 */}"
+    },
+    {
+      "file": "routes\\stats.tsx",
+      "line": 473,
+      "text": "{/* 模板导出弹窗 */}"
+    },
+    {
+      "file": "routes\\tag_list.tsx",
+      "line": 276,
+      "text": "{/* 搜索框 */}"
+    },
+    {
+      "file": "routes\\tag_list.tsx",
+      "line": 308,
+      "text": "{/* 标签板块 (4/5 宽度) */}"
+    },
+    {
+      "file": "routes\\tag_list.tsx",
+      "line": 348,
+      "text": "{/* 标签分组板块 (1/5 宽度) */}"
+    },
+    {
+      "file": "routes\\tag_list.tsx",
+      "line": 392,
+      "text": "{/* 分组弹窗 */}"
+    },
+    {
+      "file": "routes\\task.tsx",
+      "line": 126,
+      "text": "task.status === \"完成\" ? \"bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-400\" :"
+    },
+    {
+      "file": "routes\\task.tsx",
+      "line": 127,
+      "text": "task.status === \"错误\" ? \"bg-error-100 text-error-800 dark:bg-error-900/30 dark:text-error-400\" :"
+    },
+    {
+      "file": "routes\\task.tsx",
+      "line": 128,
+      "text": "task.status === \"取消\" ? \"bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-400\" :"
+    },
+    {
+      "file": "routes\\task.tsx",
+      "line": 129,
+      "text": "task.status === \"暂停\" ? \"bg-info-100 text-info-800 dark:bg-info-900/30 dark:text-info-400\" :"
+    },
+    {
+      "file": "routes\\task.tsx",
+      "line": 167,
+      "text": "{(task.status === \"已开始\") && ("
+    },
+    {
+      "file": "routes\\task.tsx",
+      "line": 177,
+      "text": "{(task.status === \"暂停\") && ("
+    },
+    {
+      "file": "routes\\task.tsx",
+      "line": 187,
+      "text": "{(task.status !== \"完成\" && task.status !== \"错误\" && task.status !== \"取消\") && ("
+    },
+    {
+      "file": "routes\\task.tsx",
+      "line": 196,
+      "text": "{(task.status === \"完成\") && ("
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 61,
+      "text": "return; // 首次不走 timer，也不要返回 cleanup 清下一次的 timer"
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 66,
+      "text": "(taskInStore.status === \"完成\" || taskInStore.status === \"错误\" || taskInStore.status === \"取消\");"
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 80,
+      "text": "if (throttleTimerRef.current) return; // 已有 timer 等待，排队"
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 215,
+      "text": "{/* 头部 */}"
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 229,
+      "text": "task.status === \"完成\" ? \"bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-400\" :"
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 230,
+      "text": "task.status === \"错误\" ? \"bg-error-100 text-error-800 dark:bg-error-900/30 dark:text-error-400\" :"
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 245,
+      "text": "{/* 搜索框 */}"
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 259,
+      "text": "{/* 内容区 */}"
+    },
+    {
+      "file": "routes\\task_result_page.tsx",
+      "line": 395,
+      "text": "{/* 本地搜索弹窗 */}"
+    },
+    {
+      "file": "routes\\__root.tsx",
+      "line": 185,
+      "text": "{/* 背景图层 */}"
+    },
+    {
+      "file": "routes\\__root.tsx",
+      "line": 193,
+      "text": "transform: \"scale(1.1)\", // 防止模糊边缘出现空白"
+    },
+    {
+      "file": "routes\\__root.tsx",
+      "line": 198,
+      "text": "{/* 主内容容器 */}"
+    },
+    {
+      "file": "routes\\__root.tsx",
+      "line": 200,
+      "text": "{/* 顶部栏 */}"
+    },
+    {
+      "file": "routes\\__root.tsx",
+      "line": 203,
+      "text": "{/* 内容区域 */}"
+    },
+    {
+      "file": "routes\\__root.tsx",
+      "line": 220,
+      "text": "{/* 拖拽遮罩层 */}"
+    },
+    {
+      "file": "routes\\__root.tsx",
+      "line": 257,
+      "text": "{/* 拖拽导入弹窗 */}"
+    },
+    {
+      "file": "store.ts",
+      "line": 213,
+      "text": "return undefined; // 这个方法不需要，直接用 selector 访问"
+    },
+    {
+      "file": "utils\\time.ts",
+      "line": 236,
+      "text": "const tzOffset = -date.getTimezoneOffset(); // 注意：getTimezoneOffset 返回的是 UTC - 本地，所以要取反"
+    }
+  ],
+  "dynamicRefs": [
+    {
+      "file": "C:\\temp\\projects\\kaleidobox\\frontend\\src\\components\\panel\\GameGalleryPanel.tsx",
+      "key": "deviceType.${deviceType}"
+    },
+    {
+      "file": "C:\\temp\\projects\\kaleidobox\\frontend\\src\\components\\panel\\GameGalleryPanel.tsx",
+      "key": "modifierKey.${m.trim().toUpperCase()}"
+    }
+  ]
+}

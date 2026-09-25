@@ -311,7 +311,7 @@ export default function DownloadedFiles() {
           if (games.length > 0) {
             const rs = await DownloadSaves(games, showOverrideSave);
             if (rs.length === 0) {
-              toast.error("找不到存档")
+              toast.error(t('downloadedFiles.saveNotFound'))
             }
           }
           
@@ -1096,14 +1096,14 @@ export default function DownloadedFiles() {
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm" title="选择后执行时显示霸占界面的转圈动画，否的话只会显示信息方便操作，但由于执行中单元状态频繁变化，建议只有完全清楚当前状态的时候选否">
+            <label className="flex items-center gap-2 text-sm" title={t('downloadedFiles.execAnimHint')}>
               <input
                 type="checkbox"
                 checked={!showToast}
                 onChange={(e) => setShowToast(!e.target.checked)}
                 className="rounded border-brand-300 text-brand-600 focus:ring-neutral-500"
               />
-              执行中动画
+              {t('downloadedFiles.execAnim')}
             </label>
             <label className="flex items-center gap-2 text-sm" title={t("downloadedFiles.directIsoInstallHint")}>
               <input
@@ -1295,7 +1295,7 @@ export default function DownloadedFiles() {
                         <span>{item.size < 100000 ? '' : formatSize(item.size)}</span>
                         {/* <span>{!item.is_extracted ? "" : "镜像数目:" + item.iso_items.length}</span> */}
                         <span>{parseTime(item.time).toLocaleDateString()}</span>
-                        <span>{item.save_status === 2 ? "存档已覆盖" : item.save_status === 1 ? "存档已下载" : ""}</span>
+                        <span>{item.save_status === 2 ? t('downloadedFiles.saveOverwritten') : item.save_status === 1 ? t('downloadedFiles.saveDownloaded') : ""}</span>
                         {item.status == 0 && (
                           <span className="text-orange-500 flex items-center gap-1">
                             <div className="i-mdi-download animate-pulse" />
@@ -1593,7 +1593,7 @@ export default function DownloadedFiles() {
                         {(item.exe_paths || []).map((exe_path, idx) => (
                           <button 
                             key={idx} className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-700 rounded"
-                            title={"执行" + exe_path}
+                            title={t('downloadedFiles.execute') + " " + exe_path}
                             onClick={() => DirectRunExe(exe_path)}
                             disabled={item.status == 3}
                           >
@@ -1796,7 +1796,7 @@ export default function DownloadedFiles() {
                   key={idx}
                   onClick={() => handleSelectExecutable(exe)}
                   className="w-full px-4 py-2 text-left bg-brand-100 dark:bg-brand-700 hover:bg-brand-200 dark:hover:bg-brand-600 rounded"
-                  title={`执行${exe}`}                >
+                  title={t('downloadedFiles.execute') + exe}                >
                   {exe.split("\\").pop()}
                 </button>
               ))}

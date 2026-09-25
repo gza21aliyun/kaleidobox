@@ -71,7 +71,7 @@ interface FilterBarProps {
 export function FilterBar({
   searchQuery,
   onSearchChange,
-  searchPlaceholder = "搜索...",
+  searchPlaceholder,
   sortBy,
   onSortByChange,
   sortOptions,
@@ -294,7 +294,7 @@ export function FilterBar({
                       placeholder:text-brand-400 dark:placeholder:text-brand-400
                       focus:ring-neutral-500 focus:border-neutral-500
                       dark:focus:ring-neutral-500 dark:focus:border-neutral-500"
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder ?? t('search.placeholder')}
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
           />
@@ -540,7 +540,7 @@ export function FilterBar({
                     {tagsFilter && onTagsFilterChange && onTagsIntersectionModeChange && (
                       <button
                         onClick={() => onTagsIntersectionModeChange(!tagsIntersectionMode)}
-                        title="切换交集模式或合集模式"
+                        title={t('filter.toggleIntersectionMode')}
                         className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
                           tagsIntersectionMode
                             ? 'bg-brand-100 dark:bg-brand-800'

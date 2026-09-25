@@ -380,7 +380,8 @@
       "playVideo": "動画を再生",
       "getchu": "Getchu",
       "dlsite": "DlSite",
-      "info": "情報モーダル"
+      "info": "情報モーダル",
+      "vndb": "VNDB"
     },
     "labels": {
       "source": "データソース",

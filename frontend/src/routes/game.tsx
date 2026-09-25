@@ -586,6 +586,7 @@ function GameDetailPage() {
   const eroscapeId = getSourceId(game.source_list, enums.SourceType.EROSCAPE);
   const getchuId = getSourceId(game.source_list, enums.SourceType.GETCHU);
   const dlsiteId = getSourceId(game.source_list, enums.SourceType.DLSITE);
+  const vndbId = getSourceId(game.source_list, enums.SourceType.VNDB);
 
   const getEroscapeUrl = () => {
     if (config?.eroscape_use_mirror || false) {
@@ -605,7 +606,7 @@ function GameDetailPage() {
   }
 
   const getVndbUrl = () => {
-    return `https://vndb.org/${game.source_id}`
+    return `https://vndb.org/${vndbId}`
   }
 
   
@@ -824,12 +825,12 @@ function GameDetailPage() {
                 {t('game.buttons.dlsite')}
               </button>
             )}
-            {game.source_id && game.source_type === "vndb" && (
+            {vndbId && (
               <button
                 onClick={() => OpenBrowser(getVndbUrl())}
                 className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
               >
-                VNDb
+                {t('game.buttons.vndb')}
               </button>
             )}
           </div>

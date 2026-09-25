@@ -380,7 +380,8 @@
       "playVideo": "播放视频",
       "getchu": "Getchu",
       "dlsite": "DlSite",
-      "info": "详情弹窗"
+      "info": "详情弹窗",
+      "vndb": "VNDB"
     },
     "labels": {
       "source": "数据来源",

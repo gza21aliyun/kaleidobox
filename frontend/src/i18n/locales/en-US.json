@@ -380,7 +380,8 @@
       "playVideo": "Play video",
       "getchu": "Getchu",
       "dlsite": "DlSite",
-      "info": "Info Modal"
+      "info": "Info Modal",
+      "vndb": "VNDB"
     },
     "labels": {
       "source": "Data source",

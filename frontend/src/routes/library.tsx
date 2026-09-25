@@ -24,6 +24,7 @@ import { useAppStore } from "../store";
 import { Route as rootRoute } from "./__root";
 import { arrayFind, arrayMapString, joinString } from "../components/utils/Utility";
 import { formatLocalDate } from "../utils/time";
+import { hasSource } from "../utils/sourceList";
 import { useTranslation } from 'react-i18next';
 
 import { enums, vo } from "../../wailsjs/go/models";
@@ -228,22 +229,7 @@ function LibraryPage() {
         if (sourceValue === sourceFilter) {
           return true;
         }
-        if (sourceFilter === enums.SourceType.DMM.toString() && game.dmm_id && game.dmm_id !== "") {
-          return true;
-        }
-        if (sourceFilter === enums.SourceType.EROSCAPE.toString() && game.eroscape_id && game.eroscape_id !== "") {
-          return true;
-        }
-        if (sourceFilter === enums.SourceType.DLSITE.toString() && game.dlsite_id && game.dlsite_id !== "") {
-          return true;
-        }
-        if (sourceFilter === enums.SourceType.GETCHU.toString() && game.getchu_id && game.getchu_id !== "") {
-          return true;
-        }
-        if (sourceFilter === enums.SourceType.BANGUMI.toString() && game.bangumi_id && game.bangumi_id !== "") {
-          return true;
-        }
-        if (sourceFilter === enums.SourceType.YMGAL.toString() && game.ymgal_id && game.ymgal_id !== "") {
+        if (hasSource(game.source_list, sourceFilter)) {
           return true;
         }
         if (sourceFilter === "emptyCover" && (!game.cover_url || game.cover_url === "")) {

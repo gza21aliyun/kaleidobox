@@ -24,6 +24,9 @@ export namespace appconf {
 	    cloud_backup_retention?: number;
 	    onedrive_client_id?: string;
 	    onedrive_refresh_token?: string;
+	    webdav_server?: string;
+	    webdav_username?: string;
+	    webdav_password?: string;
 	    last_db_backup_time?: string;
 	    pending_db_restore?: string;
 	    last_full_backup_time?: string;
@@ -50,8 +53,42 @@ export namespace appconf {
 	    background_is_light: boolean;
 	    locale_emulator_path?: string;
 	    magpie_path?: string;
+	    magpie_hotkey?: string;
+	    magpie_config_path?: string;
+	    magpie_enabled: boolean;
+	    magpie_cropping_enabled: boolean;
+	    magpie_cropping_left: number;
+	    magpie_cropping_top: number;
+	    magpie_cropping_right: number;
+	    magpie_cropping_bottom: number;
+	    ffmpeg_path?: string;
 	    auto_detect_game_process: boolean;
+	    detect_time: number;
 	    time_zone?: string;
+	    eroscape_use_mirror: boolean;
+	    new_folder_chooser: boolean;
+	    joystick_type?: string;
+	    search_cn: boolean;
+	    auto_download_images: boolean;
+	    log_all: boolean;
+	    vmrun_path?: string;
+	    vm_name?: string;
+	    vm_user_name?: string;
+	    vm_pass?: string;
+	    vm_path?: string;
+	    display_name?: string;
+	    sidebar_visible_items?: string;
+	    rss_url?: string;
+	    qb_server?: string;
+	    qb_port: number;
+	    qb_user?: string;
+	    qb_password?: string;
+	    qb_download_folder?: string;
+	    game_download_folder?: string;
+	    game_install_folder?: string;
+	    seven_zip_path?: string;
+	    hide_old_matching_btns: boolean;
+	    delete_confirm: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppConfig(source);
@@ -82,6 +119,9 @@ export namespace appconf {
 	        this.cloud_backup_retention = source["cloud_backup_retention"];
 	        this.onedrive_client_id = source["onedrive_client_id"];
 	        this.onedrive_refresh_token = source["onedrive_refresh_token"];
+	        this.webdav_server = source["webdav_server"];
+	        this.webdav_username = source["webdav_username"];
+	        this.webdav_password = source["webdav_password"];
 	        this.last_db_backup_time = source["last_db_backup_time"];
 	        this.pending_db_restore = source["pending_db_restore"];
 	        this.last_full_backup_time = source["last_full_backup_time"];
@@ -108,8 +148,42 @@ export namespace appconf {
 	        this.background_is_light = source["background_is_light"];
 	        this.locale_emulator_path = source["locale_emulator_path"];
 	        this.magpie_path = source["magpie_path"];
+	        this.magpie_hotkey = source["magpie_hotkey"];
+	        this.magpie_config_path = source["magpie_config_path"];
+	        this.magpie_enabled = source["magpie_enabled"];
+	        this.magpie_cropping_enabled = source["magpie_cropping_enabled"];
+	        this.magpie_cropping_left = source["magpie_cropping_left"];
+	        this.magpie_cropping_top = source["magpie_cropping_top"];
+	        this.magpie_cropping_right = source["magpie_cropping_right"];
+	        this.magpie_cropping_bottom = source["magpie_cropping_bottom"];
+	        this.ffmpeg_path = source["ffmpeg_path"];
 	        this.auto_detect_game_process = source["auto_detect_game_process"];
+	        this.detect_time = source["detect_time"];
 	        this.time_zone = source["time_zone"];
+	        this.eroscape_use_mirror = source["eroscape_use_mirror"];
+	        this.new_folder_chooser = source["new_folder_chooser"];
+	        this.joystick_type = source["joystick_type"];
+	        this.search_cn = source["search_cn"];
+	        this.auto_download_images = source["auto_download_images"];
+	        this.log_all = source["log_all"];
+	        this.vmrun_path = source["vmrun_path"];
+	        this.vm_name = source["vm_name"];
+	        this.vm_user_name = source["vm_user_name"];
+	        this.vm_pass = source["vm_pass"];
+	        this.vm_path = source["vm_path"];
+	        this.display_name = source["display_name"];
+	        this.sidebar_visible_items = source["sidebar_visible_items"];
+	        this.rss_url = source["rss_url"];
+	        this.qb_server = source["qb_server"];
+	        this.qb_port = source["qb_port"];
+	        this.qb_user = source["qb_user"];
+	        this.qb_password = source["qb_password"];
+	        this.qb_download_folder = source["qb_download_folder"];
+	        this.game_download_folder = source["game_download_folder"];
+	        this.game_install_folder = source["game_install_folder"];
+	        this.seven_zip_path = source["seven_zip_path"];
+	        this.hide_old_matching_btns = source["hide_old_matching_btns"];
+	        this.delete_confirm = source["delete_confirm"];
 	    }
 	}
 
@@ -117,6 +191,28 @@ export namespace appconf {
 
 export namespace enums {
 	
+	export enum DeviceType {
+	    KEYBOARD = "keyboard",
+	    DUALSENSE = "dualsense",
+	    DUALSHOCK4 = "dualshock4",
+	    JOYCON = "joyconPair",
+	    XINPUT = "xbox360",
+	    TOUCH = "touch",
+	}
+	export enum ModifierKey {
+	    CTRL = "ctrl",
+	    SHIFT = "shift",
+	    ALT = "alt",
+	    WIN = "win",
+	}
+	export enum HotkeyActionType {
+	    START_GAME = "start_game",
+	    STOP_GAME = "stop_game",
+	    TOGGLE_PAUSE = "toggle_pause",
+	    SCREENSHOT = "screenshot",
+	    ARROW_KEYS = "arrow_keys",
+	    CUSTOM = "custom",
+	}
 	export enum Period {
 	    DAY = "day",
 	    WEEK = "week",
@@ -134,11 +230,50 @@ export namespace enums {
 	    COMPLETED = "completed",
 	    ON_HOLD = "on_hold",
 	}
+	export enum TaskStatus {
+	    INITIAL = "初始",
+	    STARTED = "已开始",
+	    PAUSED = "暂停",
+	    COMPLETED = "完成",
+	    ERROR = "错误",
+	    CANCELED = "取消",
+	}
+	export enum TaskType {
+	    GAMES = "游戏搜刮更新",
+	    CHARACTORS = "角色",
+	    STAFFS = "工作人员",
+	    IMAGES = "图片",
+	    RELATIONS = "关系",
+	    VIDEO_PATHS = "视频路径搜索",
+	    REFRESH_GAMES = "刷新游戏",
+	    DOWNLOAD_FILES = "下载文件处理",
+	    CHECK_GAME_VALIDITY = "检查游戏有效性",
+	    CHECK_DIRECTORY_IMPORT_STATE = "检测目录导入状态",
+	}
+	export enum StaffRole {
+	    STAFF = "工作人员",
+	    CV = "声优",
+	    SCENEARIO = "剧本",
+	    DIRECTOR = "监督",
+	    COMPOSER = "音乐",
+	    CHARA_DESIGN = "人设",
+	    CHARACTOR = "角色",
+	    SINGER = "歌手",
+	    ART = "画师",
+	}
+	export enum GuideSource {
+	    SEIYA = "seiya",
+	    FOOL = "fool",
+	}
 	export enum SourceType {
 	    LOCAL = "local",
 	    BANGUMI = "bangumi",
 	    VNDB = "vndb",
 	    YMGAL = "ymgal",
+	    DMM = "dmm",
+	    EROSCAPE = "批评空间",
+	    DLSITE = "dlsite",
+	    GETCHU = "getchu",
 	}
 
 }
@@ -156,6 +291,9 @@ export namespace models {
 	    game_ids: string;
 	    summary: string;
 	    gender: number;
+	    measurements: string;
+	    height: string;
+	    sort: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Charactor(source);
@@ -173,6 +311,67 @@ export namespace models {
 	        this.game_ids = source["game_ids"];
 	        this.summary = source["summary"];
 	        this.gender = source["gender"];
+	        this.measurements = source["measurements"];
+	        this.height = source["height"];
+	        this.sort = source["sort"];
+	    }
+	}
+	export class ConnectedDevice {
+	    id: string;
+	    device_type: enums.DeviceType;
+	    device_name: string;
+	    device_id: string;
+	    is_active: boolean;
+	    connected_at: time.Time;
+	    last_seen_at: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new ConnectedDevice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.device_type = source["device_type"];
+	        this.device_name = source["device_name"];
+	        this.device_id = source["device_id"];
+	        this.is_active = source["is_active"];
+	        this.connected_at = this.convertValues(source["connected_at"], time.Time);
+	        this.last_seen_at = this.convertValues(source["last_seen_at"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class DeviceTypeInfo {
+	    type: enums.DeviceType;
+	    name: string;
+	    description: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeviceTypeInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.type = source["type"];
+	        this.name = source["name"];
+	        this.description = source["description"];
 	    }
 	}
 	export class Game {
@@ -191,18 +390,16 @@ export namespace models {
 	    created_at: time.Time;
 	    updated_at: time.Time;
 	    tags: string;
-	    meta_tags: string;
+	    arguments: string;
 	    images: string;
-	    bangumi_id: string;
-	    dmm_id: string;
-	    eroscape_id: string;
-	    ymgal_id: string;
-	    charactors: string;
-	    staffs: string;
+	    source_list: string;
+	    search_name: string;
 	    release_at: time.Time;
 	    related_games: string;
 	    use_locale_emulator: boolean;
 	    use_magpie: boolean;
+	    pv_path: string;
+	    vm_id: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Game(source);
@@ -225,18 +422,16 @@ export namespace models {
 	        this.created_at = this.convertValues(source["created_at"], time.Time);
 	        this.updated_at = this.convertValues(source["updated_at"], time.Time);
 	        this.tags = source["tags"];
-	        this.meta_tags = source["meta_tags"];
+	        this.arguments = source["arguments"];
 	        this.images = source["images"];
-	        this.bangumi_id = source["bangumi_id"];
-	        this.dmm_id = source["dmm_id"];
-	        this.eroscape_id = source["eroscape_id"];
-	        this.ymgal_id = source["ymgal_id"];
-	        this.charactors = source["charactors"];
-	        this.staffs = source["staffs"];
+	        this.source_list = source["source_list"];
+	        this.search_name = source["search_name"];
 	        this.release_at = this.convertValues(source["release_at"], time.Time);
 	        this.related_games = source["related_games"];
 	        this.use_locale_emulator = source["use_locale_emulator"];
 	        this.use_magpie = source["use_magpie"];
+	        this.pv_path = source["pv_path"];
+	        this.vm_id = source["vm_id"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -295,38 +490,20 @@ export namespace models {
 		    return a;
 		}
 	}
-	export class ImageBackup {
-	    url: string;
-	    local_path: string;
+	export class GameEntity {
+	    game: Game;
+	    worksMap: Record<string, Array<Work>>;
+	    tags: Record<string, Array<Tag>>;
 	
 	    static createFrom(source: any = {}) {
-	        return new ImageBackup(source);
+	        return new GameEntity(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.url = source["url"];
-	        this.local_path = source["local_path"];
-	    }
-	}
-	export class PlaySession {
-	    id: string;
-	    game_id: string;
-	    start_time: time.Time;
-	    end_time: time.Time;
-	    duration: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new PlaySession(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.game_id = source["game_id"];
-	        this.start_time = this.convertValues(source["start_time"], time.Time);
-	        this.end_time = this.convertValues(source["end_time"], time.Time);
-	        this.duration = source["duration"];
+	        this.game = this.convertValues(source["game"], Game);
+	        this.worksMap = this.convertValues(source["worksMap"], Array<Work>, true);
+	        this.tags = this.convertValues(source["tags"], Array<Tag>, true);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -347,6 +524,289 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class Review {
+	    id: string;
+	    title: string;
+	    reviewer: string;
+	    content: string;
+	    link: string;
+	    points: string;
+	    total_points: string;
+	    date: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new Review(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.reviewer = source["reviewer"];
+	        this.content = source["content"];
+	        this.link = source["link"];
+	        this.points = source["points"];
+	        this.total_points = source["total_points"];
+	        this.date = this.convertValues(source["date"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class GameReview {
+	    id: string;
+	    points: string;
+	    total_points: string;
+	    source_type: enums.SourceType;
+	    reviews: Review[];
+	    has_next: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new GameReview(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.points = source["points"];
+	        this.total_points = source["total_points"];
+	        this.source_type = source["source_type"];
+	        this.reviews = this.convertValues(source["reviews"], Review);
+	        this.has_next = source["has_next"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class GuideContent {
+	    Name: string;
+	    Link: string;
+	    Content: string;
+	    Text: string;
+	    SaveLink: string;
+	    Source: enums.GuideSource;
+	
+	    static createFrom(source: any = {}) {
+	        return new GuideContent(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.Link = source["Link"];
+	        this.Content = source["Content"];
+	        this.Text = source["Text"];
+	        this.SaveLink = source["SaveLink"];
+	        this.Source = source["Source"];
+	    }
+	}
+	export class Hotkey {
+	    id: string;
+	    game_id: string;
+	    name: string;
+	    device_type: enums.DeviceType;
+	    key_code: string;
+	    modifiers: string;
+	    action_type: enums.HotkeyActionType;
+	    action_params: string;
+	    is_enabled: boolean;
+	    created_at: time.Time;
+	    updated_at: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new Hotkey(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.game_id = source["game_id"];
+	        this.name = source["name"];
+	        this.device_type = source["device_type"];
+	        this.key_code = source["key_code"];
+	        this.modifiers = source["modifiers"];
+	        this.action_type = source["action_type"];
+	        this.action_params = source["action_params"];
+	        this.is_enabled = source["is_enabled"];
+	        this.created_at = this.convertValues(source["created_at"], time.Time);
+	        this.updated_at = this.convertValues(source["updated_at"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ImageBackup {
+	    url: string;
+	    local_path: string;
+	    subject_id: string;
+	    subject_type: number;
+	    image_type: number;
+	    game_id: string;
+	    created_at: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImageBackup(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.url = source["url"];
+	        this.local_path = source["local_path"];
+	        this.subject_id = source["subject_id"];
+	        this.subject_type = source["subject_type"];
+	        this.image_type = source["image_type"];
+	        this.game_id = source["game_id"];
+	        this.created_at = this.convertValues(source["created_at"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MonitorInfo {
+	    index: number;
+	    device_name: string;
+	    left: number;
+	    top: number;
+	    right: number;
+	    bottom: number;
+	    is_primary: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new MonitorInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.index = source["index"];
+	        this.device_name = source["device_name"];
+	        this.left = source["left"];
+	        this.top = source["top"];
+	        this.right = source["right"];
+	        this.bottom = source["bottom"];
+	        this.is_primary = source["is_primary"];
+	    }
+	}
+	export class PlaySession {
+	    id: string;
+	    game_id: string;
+	    start_time: time.Time;
+	    end_time: time.Time;
+	    duration: number;
+	    pid: number;
+	    process_name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlaySession(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.game_id = source["game_id"];
+	        this.start_time = this.convertValues(source["start_time"], time.Time);
+	        this.end_time = this.convertValues(source["end_time"], time.Time);
+	        this.duration = source["duration"];
+	        this.pid = source["pid"];
+	        this.process_name = source["process_name"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ResultGames {
+	    title: string;
+	    description: string;
+	    status: number;
+	    game_ids: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ResultGames(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.description = source["description"];
+	        this.status = source["status"];
+	        this.game_ids = source["game_ids"];
+	    }
+	}
+	
 	export class Staff {
 	    id: string;
 	    name: string;
@@ -357,6 +817,7 @@ export namespace models {
 	    game_ids: string;
 	    summary: string;
 	    gender: number;
+	    image: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Staff(source);
@@ -373,6 +834,7 @@ export namespace models {
 	        this.game_ids = source["game_ids"];
 	        this.summary = source["summary"];
 	        this.gender = source["gender"];
+	        this.image = source["image"];
 	    }
 	}
 	export class Tag {
@@ -382,6 +844,7 @@ export namespace models {
 	    is_h: boolean;
 	    is_spoiler: boolean;
 	    block_modify: boolean;
+	    use_count: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Tag(source);
@@ -395,6 +858,7 @@ export namespace models {
 	        this.is_h = source["is_h"];
 	        this.is_spoiler = source["is_spoiler"];
 	        this.block_modify = source["block_modify"];
+	        this.use_count = source["use_count"];
 	    }
 	}
 	export class Task {
@@ -406,6 +870,7 @@ export namespace models {
 	    total: number;
 	    working_on: string;
 	    description: string;
+	    title: string;
 	    warning: string;
 	    deley: number;
 	    json_data: string;
@@ -413,6 +878,7 @@ export namespace models {
 	    item_id: string;
 	    item_status: enums.TaskStatus;
 	    item_data: any;
+	    result_games: ResultGames[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Task(source);
@@ -428,6 +894,7 @@ export namespace models {
 	        this.total = source["total"];
 	        this.working_on = source["working_on"];
 	        this.description = source["description"];
+	        this.title = source["title"];
 	        this.warning = source["warning"];
 	        this.deley = source["deley"];
 	        this.json_data = source["json_data"];
@@ -435,7 +902,26 @@ export namespace models {
 	        this.item_id = source["item_id"];
 	        this.item_status = source["item_status"];
 	        this.item_data = source["item_data"];
+	        this.result_games = this.convertValues(source["result_games"], ResultGames);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class TaskNotice {
 	    id: string;
@@ -444,12 +930,14 @@ export namespace models {
 	    type: enums.TaskType;
 	    completed: number;
 	    total: number;
+	    title: string;
 	    working_on: string;
 	    description: string;
 	    warning: string;
 	    item_id: string;
 	    item_status: enums.TaskStatus;
 	    item_data: any;
+	    result_games: ResultGames[];
 	
 	    static createFrom(source: any = {}) {
 	        return new TaskNotice(source);
@@ -463,13 +951,33 @@ export namespace models {
 	        this.type = source["type"];
 	        this.completed = source["completed"];
 	        this.total = source["total"];
+	        this.title = source["title"];
 	        this.working_on = source["working_on"];
 	        this.description = source["description"];
 	        this.warning = source["warning"];
 	        this.item_id = source["item_id"];
 	        this.item_status = source["item_status"];
 	        this.item_data = source["item_data"];
+	        this.result_games = this.convertValues(source["result_games"], ResultGames);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class User {
 	    id: string;
@@ -505,6 +1013,34 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class Vms {
+	    vm_id?: string;
+	    vm_name?: string;
+	    vm_user_name?: string;
+	    vm_pass?: string;
+	    vm_path?: string;
+	    vm_type?: string;
+	    host_url?: string;
+	    host_user?: string;
+	    host_pass?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Vms(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.vm_id = source["vm_id"];
+	        this.vm_name = source["vm_name"];
+	        this.vm_user_name = source["vm_user_name"];
+	        this.vm_pass = source["vm_pass"];
+	        this.vm_path = source["vm_path"];
+	        this.vm_type = source["vm_type"];
+	        this.host_url = source["host_url"];
+	        this.host_user = source["host_user"];
+	        this.host_pass = source["host_pass"];
+	    }
+	}
 	export class Work {
 	    id: string;
 	    game_id: string;
@@ -519,6 +1055,12 @@ export namespace models {
 	    source_charactor_id: string;
 	    source_game_id: string;
 	    images: string;
+	    game_name: string;
+	    game_cover: string;
+	    measurements: string;
+	    height: string;
+	    charactor_image: string;
+	    sort: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Work(source);
@@ -539,6 +1081,61 @@ export namespace models {
 	        this.source_charactor_id = source["source_charactor_id"];
 	        this.source_game_id = source["source_game_id"];
 	        this.images = source["images"];
+	        this.game_name = source["game_name"];
+	        this.game_cover = source["game_cover"];
+	        this.measurements = source["measurements"];
+	        this.height = source["height"];
+	        this.charactor_image = source["charactor_image"];
+	        this.sort = source["sort"];
+	    }
+	}
+	export class WorkGame {
+	    work: Work;
+	    game: Game;
+	
+	    static createFrom(source: any = {}) {
+	        return new WorkGame(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.work = this.convertValues(source["work"], Work);
+	        this.game = this.convertValues(source["game"], Game);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
+export namespace object {
+	
+	export class VirtualMachine {
+	    InventoryPath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new VirtualMachine(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.InventoryPath = source["InventoryPath"];
 	    }
 	}
 
@@ -556,6 +1153,50 @@ export namespace service {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	
+	    }
+	}
+	export class BtDownloadResult {
+	    success: boolean;
+	    message: string;
+	    task_id: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BtDownloadResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.message = source["message"];
+	        this.task_id = source["task_id"];
+	    }
+	}
+	export class BtSearchResult {
+	    title: string;
+	    link: string;
+	    torrent_url: string;
+	    size: string;
+	    seeders: number;
+	    leechers: number;
+	    trusted: boolean;
+	    date: string;
+	    page_link: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BtSearchResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.link = source["link"];
+	        this.torrent_url = source["torrent_url"];
+	        this.size = source["size"];
+	        this.seeders = source["seeders"];
+	        this.leechers = source["leechers"];
+	        this.trusted = source["trusted"];
+	        this.date = source["date"];
+	        this.page_link = source["page_link"];
 	    }
 	}
 	export class CharactorService {
@@ -582,11 +1223,156 @@ export namespace service {
 	
 	    }
 	}
+	export class DownloadedFile {
+	    id: string;
+	    name: string;
+	    path: string;
+	    folder_name: string;
+	    folder_path: string;
+	    base_name?: string;
+	    extracted_game_path?: string;
+	    extracted_paths?: string[];
+	    type: number;
+	    size: number;
+	    imported_id?: string;
+	    installed_path?: string;
+	    time: time.Time;
+	    iso_items: string[];
+	    inner_items: string[];
+	    has_numeric_name: boolean;
+	    game_name: string;
+	    status: number;
+	    is_changed: boolean;
+	    crack_path?: string;
+	    save_status: number;
+	    exe_paths: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new DownloadedFile(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.path = source["path"];
+	        this.folder_name = source["folder_name"];
+	        this.folder_path = source["folder_path"];
+	        this.base_name = source["base_name"];
+	        this.extracted_game_path = source["extracted_game_path"];
+	        this.extracted_paths = source["extracted_paths"];
+	        this.type = source["type"];
+	        this.size = source["size"];
+	        this.imported_id = source["imported_id"];
+	        this.installed_path = source["installed_path"];
+	        this.time = this.convertValues(source["time"], time.Time);
+	        this.iso_items = source["iso_items"];
+	        this.inner_items = source["inner_items"];
+	        this.has_numeric_name = source["has_numeric_name"];
+	        this.game_name = source["game_name"];
+	        this.status = source["status"];
+	        this.is_changed = source["is_changed"];
+	        this.crack_path = source["crack_path"];
+	        this.save_status = source["save_status"];
+	        this.exe_paths = source["exe_paths"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class DeleteExtractedFolderResult {
+	    has_archive: boolean;
+	    archive_item?: DownloadedFile;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeleteExtractedFolderResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.has_archive = source["has_archive"];
+	        this.archive_item = this.convertValues(source["archive_item"], DownloadedFile);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class EnumTranslations {
+	    value: string;
+	    key: string;
+	    translations: Record<string, string>;
+	
+	    static createFrom(source: any = {}) {
+	        return new EnumTranslations(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = source["value"];
+	        this.key = source["key"];
+	        this.translations = source["translations"];
+	    }
+	}
 	export class GameService {
 	
 	
 	    static createFrom(source: any = {}) {
 	        return new GameService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class HotkeyService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new HotkeyService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class ImageService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new ImageService(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -600,7 +1386,9 @@ export namespace service {
 	    failed: number;
 	    failed_names: string[];
 	    skipped_names: string[];
+	    skipped_games: models.Game[];
 	    sessions_imported: number;
+	    games: models.Game[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ImportResult(source);
@@ -613,12 +1401,33 @@ export namespace service {
 	        this.failed = source["failed"];
 	        this.failed_names = source["failed_names"];
 	        this.skipped_names = source["skipped_names"];
+	        this.skipped_games = this.convertValues(source["skipped_games"], models.Game);
 	        this.sessions_imported = source["sessions_imported"];
+	        this.games = this.convertValues(source["games"], models.Game);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class LaunchOptions {
 	    UseLocaleEmulator?: boolean;
 	    UseMagpie?: boolean;
+	    DetectSavePath?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new LaunchOptions(source);
@@ -628,6 +1437,7 @@ export namespace service {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.UseLocaleEmulator = source["UseLocaleEmulator"];
 	        this.UseMagpie = source["UseMagpie"];
+	        this.DetectSavePath = source["DetectSavePath"];
 	    }
 	}
 	export class PreviewGame {
@@ -682,6 +1492,136 @@ export namespace service {
 	
 	    }
 	}
+	export class StaffService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new StaffService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class StartService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new StartService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class StatsService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new StatsService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class TagService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new TagService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class TaskService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new TaskService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class TouchButtonInfo {
+	    Index: number;
+	    Name: string;
+	    VirtualKey: number;
+	    X: number;
+	    Y: number;
+	    ActionType: string;
+	    Modifiers: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TouchButtonInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Index = source["Index"];
+	        this.Name = source["Name"];
+	        this.VirtualKey = source["VirtualKey"];
+	        this.X = source["X"];
+	        this.Y = source["Y"];
+	        this.ActionType = source["ActionType"];
+	        this.Modifiers = source["Modifiers"];
+	    }
+	}
+	export class TouchButtonPosition {
+	    Index: number;
+	    X: number;
+	    Y: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new TouchButtonPosition(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Index = source["Index"];
+	        this.X = source["X"];
+	        this.Y = source["Y"];
+	    }
+	}
+	export class TouchMappingService {
+	    ImageService?: ImageService;
+	
+	    static createFrom(source: any = {}) {
+	        return new TouchMappingService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ImageService = this.convertValues(source["ImageService"], ImageService);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class UpdateCheckResult {
 	    has_update: boolean;
 	    current_ver: string;
@@ -704,11 +1644,40 @@ export namespace service {
 	        this.downloads = source["downloads"];
 	    }
 	}
+	export class VMService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new VMService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
 	export class WorkService {
 	
 	
 	    static createFrom(source: any = {}) {
 	        return new WorkService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+
+}
+
+export namespace session {
+	
+	export class Manager {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new Manager(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -736,6 +1705,23 @@ export namespace sql {
 
 }
 
+export namespace sync {
+	
+	export class RWMutex {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new RWMutex(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+
+}
+
 export namespace time {
 	
 	export class Time {
@@ -753,8 +1739,285 @@ export namespace time {
 
 }
 
+export namespace types {
+	
+	export class AboutInfo {
+	    name: string;
+	    fullName: string;
+	    vendor: string;
+	    version: string;
+	    patchLevel?: string;
+	    build: string;
+	    localeVersion?: string;
+	    localeBuild?: string;
+	    osType: string;
+	    productLineId: string;
+	    apiType: string;
+	    apiVersion: string;
+	    instanceUuid?: string;
+	    licenseProductName?: string;
+	    licenseProductVersion?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AboutInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.fullName = source["fullName"];
+	        this.vendor = source["vendor"];
+	        this.version = source["version"];
+	        this.patchLevel = source["patchLevel"];
+	        this.build = source["build"];
+	        this.localeVersion = source["localeVersion"];
+	        this.localeBuild = source["localeBuild"];
+	        this.osType = source["osType"];
+	        this.productLineId = source["productLineId"];
+	        this.apiType = source["apiType"];
+	        this.apiVersion = source["apiVersion"];
+	        this.instanceUuid = source["instanceUuid"];
+	        this.licenseProductName = source["licenseProductName"];
+	        this.licenseProductVersion = source["licenseProductVersion"];
+	    }
+	}
+	export class ManagedObjectReference {
+	    type: string;
+	    value: string;
+	    serverGuid?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ManagedObjectReference(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.type = source["type"];
+	        this.value = source["value"];
+	        this.serverGuid = source["serverGuid"];
+	    }
+	}
+	export class ServiceContent {
+	    rootFolder: ManagedObjectReference;
+	    propertyCollector: ManagedObjectReference;
+	    viewManager?: ManagedObjectReference;
+	    about: AboutInfo;
+	    setting?: ManagedObjectReference;
+	    userDirectory?: ManagedObjectReference;
+	    sessionManager?: ManagedObjectReference;
+	    authorizationManager?: ManagedObjectReference;
+	    serviceManager?: ManagedObjectReference;
+	    perfManager?: ManagedObjectReference;
+	    scheduledTaskManager?: ManagedObjectReference;
+	    alarmManager?: ManagedObjectReference;
+	    eventManager?: ManagedObjectReference;
+	    taskManager?: ManagedObjectReference;
+	    extensionManager?: ManagedObjectReference;
+	    customizationSpecManager?: ManagedObjectReference;
+	    guestCustomizationManager?: ManagedObjectReference;
+	    customFieldsManager?: ManagedObjectReference;
+	    accountManager?: ManagedObjectReference;
+	    diagnosticManager?: ManagedObjectReference;
+	    licenseManager?: ManagedObjectReference;
+	    searchIndex?: ManagedObjectReference;
+	    fileManager?: ManagedObjectReference;
+	    datastoreNamespaceManager?: ManagedObjectReference;
+	    virtualDiskManager?: ManagedObjectReference;
+	    virtualizationManager?: ManagedObjectReference;
+	    snmpSystem?: ManagedObjectReference;
+	    vmProvisioningChecker?: ManagedObjectReference;
+	    vmCompatibilityChecker?: ManagedObjectReference;
+	    ovfManager?: ManagedObjectReference;
+	    ipPoolManager?: ManagedObjectReference;
+	    dvSwitchManager?: ManagedObjectReference;
+	    hostProfileManager?: ManagedObjectReference;
+	    clusterProfileManager?: ManagedObjectReference;
+	    complianceManager?: ManagedObjectReference;
+	    localizationManager?: ManagedObjectReference;
+	    storageResourceManager?: ManagedObjectReference;
+	    guestOperationsManager?: ManagedObjectReference;
+	    overheadMemoryManager?: ManagedObjectReference;
+	    certificateManager?: ManagedObjectReference;
+	    ioFilterManager?: ManagedObjectReference;
+	    vStorageObjectManager?: ManagedObjectReference;
+	    hostSpecManager?: ManagedObjectReference;
+	    cryptoManager?: ManagedObjectReference;
+	    healthUpdateManager?: ManagedObjectReference;
+	    failoverClusterConfigurator?: ManagedObjectReference;
+	    failoverClusterManager?: ManagedObjectReference;
+	    tenantManager?: ManagedObjectReference;
+	    siteInfoManager?: ManagedObjectReference;
+	    storageQueryManager?: ManagedObjectReference;
+	
+	    static createFrom(source: any = {}) {
+	        return new ServiceContent(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.rootFolder = this.convertValues(source["rootFolder"], ManagedObjectReference);
+	        this.propertyCollector = this.convertValues(source["propertyCollector"], ManagedObjectReference);
+	        this.viewManager = this.convertValues(source["viewManager"], ManagedObjectReference);
+	        this.about = this.convertValues(source["about"], AboutInfo);
+	        this.setting = this.convertValues(source["setting"], ManagedObjectReference);
+	        this.userDirectory = this.convertValues(source["userDirectory"], ManagedObjectReference);
+	        this.sessionManager = this.convertValues(source["sessionManager"], ManagedObjectReference);
+	        this.authorizationManager = this.convertValues(source["authorizationManager"], ManagedObjectReference);
+	        this.serviceManager = this.convertValues(source["serviceManager"], ManagedObjectReference);
+	        this.perfManager = this.convertValues(source["perfManager"], ManagedObjectReference);
+	        this.scheduledTaskManager = this.convertValues(source["scheduledTaskManager"], ManagedObjectReference);
+	        this.alarmManager = this.convertValues(source["alarmManager"], ManagedObjectReference);
+	        this.eventManager = this.convertValues(source["eventManager"], ManagedObjectReference);
+	        this.taskManager = this.convertValues(source["taskManager"], ManagedObjectReference);
+	        this.extensionManager = this.convertValues(source["extensionManager"], ManagedObjectReference);
+	        this.customizationSpecManager = this.convertValues(source["customizationSpecManager"], ManagedObjectReference);
+	        this.guestCustomizationManager = this.convertValues(source["guestCustomizationManager"], ManagedObjectReference);
+	        this.customFieldsManager = this.convertValues(source["customFieldsManager"], ManagedObjectReference);
+	        this.accountManager = this.convertValues(source["accountManager"], ManagedObjectReference);
+	        this.diagnosticManager = this.convertValues(source["diagnosticManager"], ManagedObjectReference);
+	        this.licenseManager = this.convertValues(source["licenseManager"], ManagedObjectReference);
+	        this.searchIndex = this.convertValues(source["searchIndex"], ManagedObjectReference);
+	        this.fileManager = this.convertValues(source["fileManager"], ManagedObjectReference);
+	        this.datastoreNamespaceManager = this.convertValues(source["datastoreNamespaceManager"], ManagedObjectReference);
+	        this.virtualDiskManager = this.convertValues(source["virtualDiskManager"], ManagedObjectReference);
+	        this.virtualizationManager = this.convertValues(source["virtualizationManager"], ManagedObjectReference);
+	        this.snmpSystem = this.convertValues(source["snmpSystem"], ManagedObjectReference);
+	        this.vmProvisioningChecker = this.convertValues(source["vmProvisioningChecker"], ManagedObjectReference);
+	        this.vmCompatibilityChecker = this.convertValues(source["vmCompatibilityChecker"], ManagedObjectReference);
+	        this.ovfManager = this.convertValues(source["ovfManager"], ManagedObjectReference);
+	        this.ipPoolManager = this.convertValues(source["ipPoolManager"], ManagedObjectReference);
+	        this.dvSwitchManager = this.convertValues(source["dvSwitchManager"], ManagedObjectReference);
+	        this.hostProfileManager = this.convertValues(source["hostProfileManager"], ManagedObjectReference);
+	        this.clusterProfileManager = this.convertValues(source["clusterProfileManager"], ManagedObjectReference);
+	        this.complianceManager = this.convertValues(source["complianceManager"], ManagedObjectReference);
+	        this.localizationManager = this.convertValues(source["localizationManager"], ManagedObjectReference);
+	        this.storageResourceManager = this.convertValues(source["storageResourceManager"], ManagedObjectReference);
+	        this.guestOperationsManager = this.convertValues(source["guestOperationsManager"], ManagedObjectReference);
+	        this.overheadMemoryManager = this.convertValues(source["overheadMemoryManager"], ManagedObjectReference);
+	        this.certificateManager = this.convertValues(source["certificateManager"], ManagedObjectReference);
+	        this.ioFilterManager = this.convertValues(source["ioFilterManager"], ManagedObjectReference);
+	        this.vStorageObjectManager = this.convertValues(source["vStorageObjectManager"], ManagedObjectReference);
+	        this.hostSpecManager = this.convertValues(source["hostSpecManager"], ManagedObjectReference);
+	        this.cryptoManager = this.convertValues(source["cryptoManager"], ManagedObjectReference);
+	        this.healthUpdateManager = this.convertValues(source["healthUpdateManager"], ManagedObjectReference);
+	        this.failoverClusterConfigurator = this.convertValues(source["failoverClusterConfigurator"], ManagedObjectReference);
+	        this.failoverClusterManager = this.convertValues(source["failoverClusterManager"], ManagedObjectReference);
+	        this.tenantManager = this.convertValues(source["tenantManager"], ManagedObjectReference);
+	        this.siteInfoManager = this.convertValues(source["siteInfoManager"], ManagedObjectReference);
+	        this.storageQueryManager = this.convertValues(source["storageQueryManager"], ManagedObjectReference);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace utils {
 	
+	export class MonthlyReleaseGame {
+	    name: string;
+	    getchu_id: string;
+	    cover_url: string;
+	    release_at: string;
+	    company: string;
+	    detail_url: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MonthlyReleaseGame(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.getchu_id = source["getchu_id"];
+	        this.cover_url = source["cover_url"];
+	        this.release_at = source["release_at"];
+	        this.company = source["company"];
+	        this.detail_url = source["detail_url"];
+	    }
+	}
+	export class MonthlyReleaseGroup {
+	    release_date: string;
+	    games: MonthlyReleaseGame[];
+	
+	    static createFrom(source: any = {}) {
+	        return new MonthlyReleaseGroup(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.release_date = source["release_date"];
+	        this.games = this.convertValues(source["games"], MonthlyReleaseGame);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MonthlyReleaseResult {
+	    year: number;
+	    month: number;
+	    groups: MonthlyReleaseGroup[];
+	
+	    static createFrom(source: any = {}) {
+	        return new MonthlyReleaseResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.year = source["year"];
+	        this.month = source["month"];
+	        this.groups = this.convertValues(source["groups"], MonthlyReleaseGroup);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class ProcessInfo {
 	    name: string;
 	    pid: number;
@@ -768,6 +2031,77 @@ export namespace utils {
 	        this.name = source["name"];
 	        this.pid = source["pid"];
 	    }
+	}
+	export class SaveResult {
+	    game_name: string;
+	    archive_name: string;
+	    save_path: string;
+	    source_path: string;
+	    game_id: string;
+	    game_path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SaveResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.game_name = source["game_name"];
+	        this.archive_name = source["archive_name"];
+	        this.save_path = source["save_path"];
+	        this.source_path = source["source_path"];
+	        this.game_id = source["game_id"];
+	        this.game_path = source["game_path"];
+	    }
+	}
+
+}
+
+export namespace vim25 {
+	
+	export class Client {
+	    Transport: any;
+	    Jar: any;
+	    Timeout: number;
+	    namespace: string;
+	    version: string;
+	    userAgent: string;
+	    ServiceContent: types.ServiceContent;
+	    RoundTripper: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Client(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Transport = source["Transport"];
+	        this.Jar = source["Jar"];
+	        this.Timeout = source["Timeout"];
+	        this.namespace = source["namespace"];
+	        this.version = source["version"];
+	        this.userAgent = source["userAgent"];
+	        this.ServiceContent = this.convertValues(source["ServiceContent"], types.ServiceContent);
+	        this.RoundTripper = source["RoundTripper"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }
@@ -810,6 +2144,7 @@ export namespace vo {
 	    matched_game?: models.Game;
 	    match_source?: enums.SourceType;
 	    match_status: string;
+	    arguments: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new BatchImportCandidate(source);
@@ -826,6 +2161,7 @@ export namespace vo {
 	        this.matched_game = this.convertValues(source["matched_game"], models.Game);
 	        this.match_source = source["match_source"];
 	        this.match_status = source["match_status"];
+	        this.arguments = source["arguments"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1030,6 +2366,7 @@ export namespace vo {
 	    total_play_time: number;
 	    today_play_time: number;
 	    recent_play_history: DailyPlayTime[];
+	    game_id: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GameDetailStats(source);
@@ -1044,6 +2381,7 @@ export namespace vo {
 	        this.total_play_time = source["total_play_time"];
 	        this.today_play_time = source["today_play_time"];
 	        this.recent_play_history = this.convertValues(source["recent_play_history"], DailyPlayTime);
+	        this.game_id = source["game_id"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1064,6 +2402,39 @@ export namespace vo {
 		    return a;
 		}
 	}
+	export class DataUpdate {
+	    Type: string;
+	    GameStats: GameDetailStats;
+	
+	    static createFrom(source: any = {}) {
+	        return new DataUpdate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Type = source["Type"];
+	        this.GameStats = this.convertValues(source["GameStats"], GameDetailStats);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class GameMetadataFromWebVO {
 	    Source: enums.SourceType;
 	    Game: models.Game;
@@ -1260,7 +2631,10 @@ export namespace vo {
 	    should_fetch_charactors: boolean;
 	    is_overwrite: boolean;
 	    should_fetch_images: boolean;
+	    should_fetch_tags: boolean;
 	    db_game_id: string;
+	    should_match_again: boolean;
+	    should_union_fetch: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new MetadataRequest(source);
@@ -1274,7 +2648,10 @@ export namespace vo {
 	        this.should_fetch_charactors = source["should_fetch_charactors"];
 	        this.is_overwrite = source["is_overwrite"];
 	        this.should_fetch_images = source["should_fetch_images"];
+	        this.should_fetch_tags = source["should_fetch_tags"];
 	        this.db_game_id = source["db_game_id"];
+	        this.should_match_again = source["should_match_again"];
+	        this.should_union_fetch = source["should_union_fetch"];
 	    }
 	}
 	export class PeriodStats {

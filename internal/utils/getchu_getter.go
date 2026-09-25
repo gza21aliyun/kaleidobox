@@ -119,7 +119,7 @@ func (b GetchuInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction)
 			game.Name = gameFound.Title
 			game.SourceID = id
 			game.SourceType = enums.Getchu
-			game.GetchuId = id
+			game.SetSourceID(enums.Getchu, id)
 			game.CoverURL = fmt.Sprintf(getchuCoverUrl, id, id)
 
 			fmt.Println("meta 61 getchu cover:", game.CoverURL)
@@ -169,7 +169,7 @@ func (b GetchuInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 		return gameEntity, fmt.Errorf("getchu ID is required to fetch metadata by ID")
 	}
 	fmt.Println("开始获取getchu游戏信息 37 " + request.ID)
-	game.GetchuId = request.ID
+	game.SetSourceID(enums.Getchu, request.ID)
 	getchuUrl := fmt.Sprintf("https://www.getchu.com/item/%s/", request.ID)
 	fmt.Println("FetchByNameImpl: " + getchuUrl)
 	c := CreateCollector("*getchu.com")

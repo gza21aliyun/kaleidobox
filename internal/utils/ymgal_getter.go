@@ -554,10 +554,10 @@ func (y YmgalInfoGetter) convertToModel(g *ymgalGame) (models.Game, error) {
 		Summary:    g.Introduction,
 		SourceType: enums.Ymgal,
 		SourceID:   strconv.FormatInt(g.Gid, 10),
-		YmgalId:    strconv.FormatInt(g.Gid, 10),
 		ReleaseAt:  releaseAt,
 		// CachedAt:   time.Now(),
 		CachedAt: time.Now(),
 	}
+	game.SetSourceID(enums.Ymgal, strconv.FormatInt(g.Gid, 10))
 	return game, nil
 }

@@ -6,6 +6,7 @@ import { enums, vo } from "../../../wailsjs/go/models";
 import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from "../../../wailsjs/runtime";
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
+import { getSourceId, hasSource } from "../../utils/sourceList";
 
 import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq, FetchMetadataByNameQuick } from "../../../wailsjs/go/service/GameService";
 import {
@@ -135,27 +136,14 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
     
 
 
+  const EXTERNAL_SOURCES = [enums.SourceType.BANGUMI, enums.SourceType.DMM, enums.SourceType.EROSCAPE, enums.SourceType.YMGAL, enums.SourceType.DLSITE, enums.SourceType.GETCHU];
+
   const isMatched = (c: models.Game, source: enums.SourceType) => {
         // if (updatedIds.includes(c.id)) return true;
         if (c.source_type === source && c.source_id && c.source_id.length > 0) {
             return true;
         }
-        if (source === enums.SourceType.BANGUMI && c.bangumi_id && c.bangumi_id.length > 0) {
-            return true;
-        }
-        if (source === enums.SourceType.DMM && c.dmm_id && c.dmm_id.length > 0) {
-            return true;
-        }
-        if (source === enums.SourceType.EROSCAPE && c.eroscape_id && c.eroscape_id.length > 0) {
-            return true;
-        }
-        if (source === enums.SourceType.YMGAL && c.ymgal_id && c.ymgal_id.length > 0) {
-            return true;
-        }
-        if (source === enums.SourceType.DLSITE && c.dlsite_id && c.dlsite_id.length > 0) {
-            return true;
-        }
-        if (source === enums.SourceType.GETCHU && c.getchu_id && c.getchu_id.length > 0) {
+        if (hasSource(c.source_list, source)) {
             return true;
         }
         return false;
@@ -166,35 +154,12 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
         if (c.source_type !== source || !c.source_id || c.source_id.length === 0) {
             return false;
         }
-        if (source === enums.SourceType.VNDB && (c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || c.eroscape_id && c.eroscape_id.length > 0 || 
-          c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
-            return false;
+        // VNDB：只要存在任一外部来源就不算“仅匹配”
+        if (source === enums.SourceType.VNDB) {
+            return !EXTERNAL_SOURCES.some(s => hasSource(c.source_list, s));
         }
-        if (source === enums.SourceType.BANGUMI && (!c.bangumi_id || c.bangumi_id.length === 0 || c.dmm_id && c.dmm_id.length > 0 || c.eroscape_id && c.eroscape_id.length > 0 || 
-          c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
-            return false;
-        }
-        if (source === enums.SourceType.DMM && (!c.dmm_id || c.dmm_id.length === 0 || c.eroscape_id && c.eroscape_id.length > 0 || c.bangumi_id && c.bangumi_id.length > 0 || 
-          c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
-            return false;
-        }
-        if (source === enums.SourceType.EROSCAPE && (!c.eroscape_id || c.eroscape_id.length === 0 || c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || 
-          c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
-            return false;
-        }
-        if (source === enums.SourceType.YMGAL && (!c.ymgal_id || c.ymgal_id.length === 0 || c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || 
-          c.eroscape_id && c.eroscape_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
-            return false;
-        }
-        if (source === enums.SourceType.DLSITE && (!c.dlsite_id || c.dlsite_id.length === 0 || c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || 
-          c.eroscape_id && c.eroscape_id.length > 0 || c.ymgal_id && c.ymgal_id.length > 0 || c.getchu_id && c.getchu_id.length > 0)) {
-            return false;
-        }
-        if (source === enums.SourceType.GETCHU && (!c.getchu_id || c.getchu_id.length === 0 || c.bangumi_id && c.bangumi_id.length > 0 || c.dmm_id && c.dmm_id.length > 0 || 
-          c.eroscape_id && c.eroscape_id.length > 0 || c.ymgal_id && c.ymgal_id.length > 0 || c.dlsite_id && c.dlsite_id.length > 0)) {
-            return false;
-        }
-        return true;
+        // 其它来源：主源已是该来源，且不存在其它外部来源
+        return !EXTERNAL_SOURCES.some(s => s !== source && hasSource(c.source_list, s));
     }
 
   const isEmptyMatched = (c: models.Game) => {
@@ -202,25 +167,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
         if (c.source_type === null) {
             return true;
         }
-        if (c.bangumi_id && c.bangumi_id.length > 0) {
-            return false;
-        }
-        if (c.dmm_id && c.dmm_id.length > 0) {
-            return false;
-        }
-        if (c.eroscape_id && c.eroscape_id.length > 0) {
-            return false;
-        }
-        if (c.ymgal_id && c.ymgal_id.length > 0) {
-            return false;
-        }
-        if (c.dlsite_id && c.dlsite_id.length > 0) {
-            return false;
-        }
-        if (c.getchu_id && c.getchu_id.length > 0) {
-            return false;
-         }
-        return true;
+        return !EXTERNAL_SOURCES.some(s => hasSource(c.source_list, s));
     }
 
   const cancelUpdate = () => { 
@@ -690,24 +637,21 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                                     if (candidate.source_id != "") { 
                                       text += candidate.source_type + ":" + candidate.source_id;
                                     }
-                                    
-                                    if (candidate.source_type !== enums.SourceType.DMM && candidate.dmm_id && candidate.dmm_id !== "") {
-                                        text += "," + t('sourceType.dmm') + ":" + candidate.dmm_id;
-                                    }
-                                    if (candidate.source_type !== enums.SourceType.BANGUMI && candidate.bangumi_id && candidate.bangumi_id !== "") {
-                                        text += "," + t('sourceType.bangumi') + ":" + candidate.bangumi_id;
-                                    }
-                                    if (candidate.source_type !== enums.SourceType.EROSCAPE && candidate.eroscape_id && candidate.eroscape_id !== "") {
-                                        text += "," + t('sourceType.eroscape') + ":" + candidate.eroscape_id;
-                                    }
-                                    if (candidate.source_type !== enums.SourceType.YMGAL && candidate.ymgal_id && candidate.ymgal_id !== "") {
-                                        text += "," + t('sourceType.ymgal') + ":" + candidate.ymgal_id;
-                                    }
-                                    if (candidate.source_type !== enums.SourceType.DLSITE && candidate.dlsite_id && candidate.dlsite_id !== "") {
-                                        text += "," + t('sourceType.dlsite') + ":" + candidate.dlsite_id;
-                                    }
-                                    if (candidate.source_type !== enums.SourceType.GETCHU && candidate.getchu_id && candidate.getchu_id !== "") {
-                                        text += "," + t('sourceType.getchu') + ":" + candidate.getchu_id;
+                                    const otherSources: Array<[enums.SourceType, string]> = [
+                                      [enums.SourceType.DMM, 'sourceType.dmm'],
+                                      [enums.SourceType.BANGUMI, 'sourceType.bangumi'],
+                                      [enums.SourceType.EROSCAPE, 'sourceType.eroscape'],
+                                      [enums.SourceType.YMGAL, 'sourceType.ymgal'],
+                                      [enums.SourceType.DLSITE, 'sourceType.dlsite'],
+                                      [enums.SourceType.GETCHU, 'sourceType.getchu'],
+                                    ];
+                                    for (const [st, key] of otherSources) {
+                                      if (candidate.source_type !== st) {
+                                        const sid = getSourceId(candidate.source_list, st);
+                                        if (sid && sid !== "") {
+                                          text += "," + t(key) + ":" + sid;
+                                        }
+                                      }
                                     }
 
                                     return text;

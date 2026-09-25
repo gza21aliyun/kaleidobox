@@ -3,6 +3,7 @@ package models
 import (
 	"lunabox/internal/enums"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -24,19 +25,66 @@ type Game struct {
 	Tags              string           `json:"tags"`
 	Arguments         string           `json:"arguments"`
 	Images            string           `json:"images"`
-	BangumiId         string           `json:"bangumi_id"`
-	DmmId             string           `json:"dmm_id"`
-	EroscapeId        string           `json:"eroscape_id"`
-	YmgalId           string           `json:"ymgal_id"`
+	SourceList        string           `json:"source_list"` // 格式"getchu:222;dmm:333"，同源只允许一个；具体源名见 enums.SourceType.Key()
 	SearchName        string           `json:"search_name"`
-	DlsiteId          string           `json:"dlsite_id"`
 	ReleaseAt         time.Time        `json:"release_at"`
 	RelatedGames      string           `json:"related_games"`       //格式"local:123;bangumi:333" local代表Game.Id,其他都是sourceType
 	UseLocaleEmulator bool             `json:"use_locale_emulator"` // 是否使用 Locale Emulator 转区启动
 	UseMagpie         bool             `json:"use_magpie"`          // 是否使用 Magpie 超分辨率缩放
-	GetchuId          string           `json:"getchu_id"`
 	PvPath            string           `json:"pv_path"`
 	VmId              string           `json:"vm_id"`
+}
+
+// GetSourceID 从 SourceList 中获取指定来源的 ID，不存在返回 ""
+func (g *Game) GetSourceID(s enums.SourceType) string {
+	key := s.Key()
+	for _, part := range strings.Split(g.SourceList, ";") {
+		if part == "" {
+			continue
+		}
+		kv := strings.SplitN(part, ":", 2)
+		if len(kv) == 2 && kv[0] == key {
+			return kv[1]
+		}
+	}
+	return ""
+}
+
+// SetSourceID 设置指定来源的 ID（同源只允许一个，会覆盖旧值；id 为空则移除该来源）
+func (g *Game) SetSourceID(s enums.SourceType, id string) {
+	key := s.Key()
+	parts := []string{}
+	for _, part := range strings.Split(g.SourceList, ";") {
+		if part == "" {
+			continue
+		}
+		kv := strings.SplitN(part, ":", 2)
+		if len(kv) == 2 && kv[0] == key {
+			continue
+		}
+		parts = append(parts, part)
+	}
+	if id != "" {
+		parts = append(parts, key+":"+id)
+	}
+	g.SourceList = strings.Join(parts, ";")
+}
+
+// MergeSourceList 将 other 中存在而自身缺失的来源补充进来（不覆盖自身已有来源）
+func (g *Game) MergeSourceList(other string) {
+	for _, part := range strings.Split(other, ";") {
+		if part == "" {
+			continue
+		}
+		kv := strings.SplitN(part, ":", 2)
+		if len(kv) != 2 || kv[1] == "" {
+			continue
+		}
+		st := enums.SourceTypeFromKey(kv[0])
+		if g.GetSourceID(st) == "" {
+			g.SetSourceID(st, kv[1])
+		}
+	}
 }
 
 type GameEntity struct {

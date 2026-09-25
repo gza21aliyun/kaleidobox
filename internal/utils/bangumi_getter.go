@@ -401,8 +401,8 @@ func (b BangumiInfoGetter) GetDataFromResp(gameEntity models.GameEntity, bangumi
 	game.SourceType = enums.Bangumi
 	game.ReleaseAt, err = time.Parse("2006-01-02", bangumiResp.Date)
 	game.CachedAt = time.Now()
-	game.BangumiId = strconv.Itoa(bangumiResp.ID)
-	game.SourceID = game.BangumiId
+	game.SetSourceID(enums.Bangumi, strconv.Itoa(bangumiResp.ID))
+	game.SourceID = strconv.Itoa(bangumiResp.ID)
 	game.SourceType = enums.Bangumi
 	gameEntity.Tags = tagsMap
 
@@ -579,15 +579,15 @@ func (b BangumiInfoGetter) extractCompanyFromInfobox(infobox []bangumiInfoboxIte
 						if k, _ := objMap["k"]; k == "ErogameScape" {
 							link := objMap["v"].(string)
 							bgm := NewEroscapeInfoGetter(false)
-							game.EroscapeId = bgm.GetIdFromLink(link)
+							game.SetSourceID(enums.Eroscape, bgm.GetIdFromLink(link))
 						} else if k, _ := objMap["k"]; k == "Getchu" {
 							link := objMap["v"].(string)
 							getchu := NewGetchuInfoGetter()
-							game.GetchuId = getchu.GetIdFromLink(link)
+							game.SetSourceID(enums.Getchu, getchu.GetIdFromLink(link))
 						} else if k, _ := objMap["k"]; k == "DLsite" {
 							link := objMap["v"].(string)
 							dlsite := NewDlsiteInfoGetter()
-							game.DlsiteId = dlsite.GetIdFromLink(link)
+							game.SetSourceID(enums.Dlsite, dlsite.GetIdFromLink(link))
 						}
 					}
 				}

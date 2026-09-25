@@ -252,7 +252,7 @@ func (b EroscapeInfoGetter) FetchMetadataByNameFunc(name string, isAl int, fn Id
 			game.Name = gameFound.Title
 			game.SourceID = gameFound.GameId
 			game.SourceType = enums.Eroscape
-			game.EroscapeId = gameFound.GameId
+			game.SetSourceID(enums.Eroscape, gameFound.GameId)
 			game.CoverURL = gameFound.Cover
 			fmt.Println("meta 61 eroscape cover:", gameFound.Cover)
 		}
@@ -505,7 +505,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 	var game models.Game = request.GetGame()
 	game.SourceType = enums.Eroscape
 	game.SourceID = request.ID
-	game.EroscapeId = request.ID
+	game.SetSourceID(enums.Eroscape, request.ID)
 	var gameEntity models.GameEntity = models.GameEntity{}
 	gameEntity.Game = game
 	var gamePart = "game.php?game="
@@ -563,9 +563,9 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 						pathParts := strings.Split(strings.Trim(lurlParsed.Path, "/"), "/")
 						for i, part := range pathParts {
 							if part == "detail" && i+1 < len(pathParts) {
-								game.DmmId = pathParts[i+1]
-								if len(game.DmmId) < 5 {
-									game.DmmId = ""
+								game.SetSourceID(enums.Dmm, pathParts[i+1])
+								if len(game.GetSourceID(enums.Dmm)) < 5 {
+									game.SetSourceID(enums.Dmm, "")
 								}
 								break
 							}
@@ -573,7 +573,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 					}
 				}
 			}
-			fmt.Printf("dmm id:%s\n", game.DmmId)
+			fmt.Printf("dmm id:%s\n", game.GetSourceID(enums.Dmm))
 		}
 
 		dlsite := e.DOM.Find("div#bottom_inter_links_main li:contains('DLsite') > a").AttrOr("href", "")
@@ -581,7 +581,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			linkParts := strings.Split(dlsite, "/")
 			if len(linkParts) > 1 {
 				id := strings.ReplaceAll(linkParts[len(linkParts)-1], ".html", "")
-				game.DlsiteId = id
+				game.SetSourceID(enums.Dlsite, id)
 			}
 		}
 
@@ -590,7 +590,7 @@ func (b EroscapeInfoGetter) FetchMetadataById(
 			linkParts := strings.Split(getchu, "/?id=")
 			if len(linkParts) > 1 {
 				id := linkParts[1]
-				game.GetchuId = id
+				game.SetSourceID(enums.Getchu, id)
 			}
 		}
 

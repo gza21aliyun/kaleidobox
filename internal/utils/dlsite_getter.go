@@ -600,7 +600,7 @@ func (b DlsiteInfoGetter) FetchByNameImpl(searchName string, fn IdFunction) (mod
 		fmt.Println("05 id: " + id)
 		game.SourceID = id
 		game.SourceType = enums.Dlsite
-		game.DlsiteId = game.SourceID
+		game.SetSourceID(enums.Dlsite, game.SourceID)
 		game.CoverURL = gameFound.CoverUrl
 	}
 
@@ -723,13 +723,13 @@ func (b DlsiteInfoGetter) FetchMetadataById2(request vo.MetadataRequest) (models
 		SourceID:   dlsiteData.Workno,
 		SourceType: enums.Dlsite,
 		Name:       dlsiteData.WorkName,
-		DlsiteId:   dlsiteData.Workno,
 		ReleaseAt:  date,
 		CoverURL:   dlsiteData.ImageMain.URL,
 		Company:    dlsiteData.MakerName,
 		Summary:    dlsiteData.IntroS,
 		Images:     JoinString(dlsiteData.ImageSamples, ",", func(img DlsiteImageSample) string { return img.URL }),
 	}
+	game.SetSourceID(enums.Dlsite, dlsiteData.Workno)
 	// game.Summary =
 	tagList := []models.Tag{}
 	for _, tag := range dlsiteData.Genres {
@@ -896,7 +896,7 @@ func (b DlsiteInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.
 		return gameEntity, fmt.Errorf("dlsite ID is required to fetch metadata by ID")
 	}
 	fmt.Println("开始获dlsite游戏信息 37 " + request.ID)
-	game.DlsiteId = request.ID
+	game.SetSourceID(enums.Dlsite, request.ID)
 	dlsiteUrl := ""
 	if strings.Contains(request.ID, "RJ") {
 		dlsiteUrl = fmt.Sprintf(workUrl, "maniax", request.ID)
@@ -1427,7 +1427,7 @@ func (b DlsiteInfoGetter) FetchByNameImpl3(searchName string, fn IdFunction) (mo
 		game.Name = gameFound.Title
 		game.SourceID = gameFound.Id
 		game.SourceType = enums.Dlsite
-		game.DlsiteId = game.SourceID
+		game.SetSourceID(enums.Dlsite, game.SourceID)
 		game.CoverURL = gameFound.CoverUrl
 
 		fmt.Println("meta 61 dlsite cover:", gameFound.CoverUrl)

@@ -8,6 +8,7 @@ import { OpenFolder } from "../../../wailsjs/go/service/BackupService";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { getFolderPath } from "../utils/Utility";
+import { setSourceId } from "../../utils/sourceList";
 import { useAppStore } from "../../store";
 import { BatchUpdateModal } from "../../components/modal/BatchUpdateModal";
 import { GetAllVMs, OpenGamePathInsideVm } from "../../../wailsjs/go/service/VMService";
@@ -58,27 +59,12 @@ export function GameEditPanel({
   }
 
   const onSourceChange = (sourceType: string, sourceId: string) => {
-    var dmmId = game.dmm_id;
-    var eroscapeId = game.eroscape_id;
-    var bangumiId = game.bangumi_id;
-    var dlsiteId = game.dlsite_id;
-    var ymgalId = game.ymgal_id;
-    var getchuId = game.getchu_id;
-    if (sourceType === enums.SourceType.DMM) {
-      dmmId = sourceId;
-    } else if (sourceType === enums.SourceType.EROSCAPE) {
-      eroscapeId = sourceId;
-    } else if (sourceType === enums.SourceType.BANGUMI) {
-      bangumiId = sourceId;
-    } else if (sourceType === enums.SourceType.DLSITE) {
-      dlsiteId = sourceId;
-    } else if (sourceType === enums.SourceType.YMGAL) {
-      ymgalId = sourceId;
-    } else if (sourceType === enums.SourceType.GETCHU) {
-      getchuId = sourceId;
+    var sourceList = game.source_list || "";
+    // 非 local 时，把当前主源写入 source_list（同源唯一，id 为空则移除）
+    if (sourceType && sourceType !== enums.SourceType.LOCAL) {
+      sourceList = setSourceId(sourceList, sourceType, sourceId);
     }
-    
-    onGameChange({ ...game, source_type: sourceType, source_id: sourceId, dmm_id: dmmId, eroscape_id: eroscapeId, bangumi_id: bangumiId, dlsite_id: dlsiteId, ymgal_id: ymgalId, getchu_id: getchuId } as models.Game);
+    onGameChange({ ...game, source_type: sourceType, source_id: sourceId, source_list: sourceList } as models.Game);
   }
 
   const vmOptions = [

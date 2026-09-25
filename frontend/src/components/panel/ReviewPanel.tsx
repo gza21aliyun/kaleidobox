@@ -4,6 +4,7 @@ import { LoadReviewsForGame, LoadDetailReview } from '../../../wailsjs/go/servic
 import { OpenBrowser } from '../../../wailsjs/go/service/ImportService';
 import { toast } from 'react-hot-toast';
 import { formatLocalDate } from '../../utils/time';
+import { getSourceId, hasSource } from '../../utils/sourceList';
 import { useAppStore } from '../../store';
 import i18next from '../../i18n/i18n';
 import { BetterButton } from '../ui/BetterButton';
@@ -34,16 +35,16 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   const [reviewType, setReviewType] = useState("0");
 
   const getSource = () => {
-    if (game.bangumi_id !== "") {
+    if (hasSource(game.source_list, enums.SourceType.BANGUMI)) {
       return enums.SourceType.BANGUMI;
     }
-    if (game.dmm_id !== "") {
+    if (hasSource(game.source_list, enums.SourceType.DMM)) {
       return enums.SourceType.DMM;
     }
-    if (game.dlsite_id !== "") {
+    if (hasSource(game.source_list, enums.SourceType.DLSITE)) {
       return enums.SourceType.DLSITE;
     }
-    if (game.eroscape_id !== "") {
+    if (hasSource(game.source_list, enums.SourceType.EROSCAPE)) {
       return enums.SourceType.EROSCAPE;
     }
     return null;
@@ -62,31 +63,14 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   console.log("review 00", game)
 
   const getGameId = () => {
-    if (selectedSourceType == enums.SourceType.EROSCAPE) {
-      return game.eroscape_id;
-    } else if (selectedSourceType == enums.SourceType.YMGAL) {
-      return game.ymgal_id;
-    } else if (selectedSourceType == enums.SourceType.DMM) {
-      return game.dmm_id;
-    } else if (selectedSourceType == enums.SourceType.DLSITE) {
-      return game.dlsite_id;
-    } else if (selectedSourceType == enums.SourceType.BANGUMI) {
-      return game.bangumi_id;
+    if (selectedSourceType) {
+      return getSourceId(game.source_list, selectedSourceType);
     }
     return ""
   }
 
   const filteredSourceTypeOptions = sourceTypeOptions.filter(option => {
-    if (game.eroscape_id !== "" && option.value === enums.SourceType.EROSCAPE) {
-      return true;
-    } else if (game.dlsite_id !== "" && option.value === enums.SourceType.DLSITE) {
-      return true;
-    } else if (game.bangumi_id !== "" && option.value === enums.SourceType.BANGUMI) {
-      return true;
-    } else if (game.dmm_id !== "" && option.value === enums.SourceType.DMM) {
-      return true;
-    }
-    return false;
+    return hasSource(game.source_list, option.value);
   })
 
   const loadReviews = async () => {

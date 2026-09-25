@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"lunabox/internal/applog"
+	"lunabox/internal/enums"
+	"strings"
 )
 
 // Migration 表示一个数据库迁移
@@ -12,6 +14,10 @@ type Migration struct {
 	Version     int
 	Description string
 	Up          func(tx *sql.Tx) error // 改为接收事务
+	// UpDB 接收 *sql.DB，自行以自动提交方式逐条执行。
+	// 用于 DuckDB 中不能把 DDL(ALTER) 与 DML(UPDATE) 混在同一事务里的迁移。
+	// 若设置则优先于 Up。
+	UpDB func(db *sql.DB) error
 }
 
 // migration131 添加 Locale Emulator 和 Magpie 支持列
@@ -250,6 +256,123 @@ func migration144(tx *sql.Tx) error {
 	return nil
 }
 
+// migration145 将 bangumi_id/dmm_id/eroscape_id/ymgal_id/dlsite_id/getchu_id 等
+// 单列来源字段合并到 games.source_list（格式 "dmm:xxx;getchu:yyy"，同源只允许一个），
+// 并把当前主源 source_type:source_id 一并写入 source_list；source_type/source_id 保留。
+// 完成数据回填后删除旧的单列 id 字段。
+func migration145(db *sql.DB) error {
+	// 1. 添加 source_list 列
+	if _, err := db.Exec(`
+		ALTER TABLE games 
+		ADD COLUMN IF NOT EXISTS source_list TEXT DEFAULT ''
+	`); err != nil {
+		return fmt.Errorf("failed to add source_list column: %w", err)
+	}
+
+	oldCols := []string{"bangumi_id", "dmm_id", "eroscape_id", "ymgal_id", "dlsite_id", "getchu_id"}
+	colKey := map[string]string{
+		"bangumi_id":  enums.Bangumi.Key(),
+		"dmm_id":      enums.Dmm.Key(),
+		"eroscape_id": enums.Eroscape.Key(),
+		"ymgal_id":    enums.Ymgal.Key(),
+		"dlsite_id":   enums.Dlsite.Key(),
+		"getchu_id":   enums.Getchu.Key(),
+	}
+
+	// 2. 检查旧的 id 列是否存在（全新库由 SchemaQueries 创建，已不含这些列）
+	colSet := map[string]bool{}
+	crows, err := db.Query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'games'`)
+	if err != nil {
+		return fmt.Errorf("failed to inspect games columns: %w", err)
+	}
+	for crows.Next() {
+		var c string
+		if err := crows.Scan(&c); err == nil {
+			colSet[c] = true
+		}
+	}
+	crows.Close()
+
+	var present []string
+	for _, c := range oldCols {
+		if colSet[c] {
+			present = append(present, c)
+		}
+	}
+
+	// 3. 回填 source_list
+	if len(present) > 0 {
+		q := "SELECT id, COALESCE(source_type, ''), COALESCE(source_id, '')"
+		for _, c := range present {
+			q += ", COALESCE(" + c + ", '')"
+		}
+		q += " FROM games"
+		rows, err := db.Query(q)
+		if err != nil {
+			return fmt.Errorf("failed to query games for source_list migration: %w", err)
+		}
+		type grow struct {
+			id, st, sid string
+			ids         []string
+		}
+		var data []grow
+		for rows.Next() {
+			var r grow
+			r.ids = make([]string, len(present))
+			scanArgs := []interface{}{&r.id, &r.st, &r.sid}
+			for i := range r.ids {
+				scanArgs = append(scanArgs, &r.ids[i])
+			}
+			if err := rows.Scan(scanArgs...); err != nil {
+				rows.Close()
+				return fmt.Errorf("failed to scan games row: %w", err)
+			}
+			data = append(data, r)
+		}
+		rows.Close()
+
+		for _, r := range data {
+			entries := map[string]string{}
+			order := []string{}
+			add := func(key, id string) {
+				if id == "" {
+					return
+				}
+				if _, ok := entries[key]; !ok {
+					order = append(order, key)
+				}
+				entries[key] = id
+			}
+			// 先加入旧 id 列
+			for i, c := range present {
+				add(colKey[c], r.ids[i])
+			}
+			// 再加入当前主源，使其同样进入 source_list（source_type 非 local 时）
+			if st := enums.SourceType(r.st); st != enums.Local {
+				add(st.Key(), r.sid)
+			}
+			parts := make([]string, 0, len(order))
+			for _, k := range order {
+				parts = append(parts, k+":"+entries[k])
+			}
+			if _, err := db.Exec(`UPDATE games SET source_list = ? WHERE id = ?`, strings.Join(parts, ";"), r.id); err != nil {
+				return fmt.Errorf("failed to update source_list for game %s: %w", r.id, err)
+			}
+		}
+	}
+
+	// 4. 删除旧的 id 列（仅删除存在的列）
+	for _, c := range oldCols {
+		if colSet[c] {
+			if _, err := db.Exec(fmt.Sprintf(`ALTER TABLE games DROP COLUMN %s`, c)); err != nil {
+				return fmt.Errorf("failed to drop column %s: %w", c, err)
+			}
+		}
+	}
+
+	return nil
+}
+
 // 所有迁移按版本号顺序排列
 var migrations = []Migration{
 	{
@@ -286,6 +409,11 @@ var migrations = []Migration{
 		Version:     144,
 		Description: "Set modifiers column in hotkeys table to NOT NULL with default empty string",
 		Up:          migration144,
+	},
+	{
+		Version:     145,
+		Description: "Merge single-column source ids (bangumi_id/dmm_id/eroscape_id/ymgal_id/dlsite_id/getchu_id) into games.source_list and drop them",
+		UpDB:        migration145,
 	},
 
 	// {
@@ -357,6 +485,31 @@ func Run(ctx context.Context, db *sql.DB) error {
 		}
 
 		applog.LogInfof(ctx, "Running migration %d: %s", migration.Version, migration.Description)
+
+		// 自管理事务的迁移（DuckDB 中 DDL+DML 不能混在同一事务）：逐条自动提交，再单独记录版本
+		if migration.UpDB != nil {
+			if err := migration.UpDB(db); err != nil {
+				applog.LogErrorf(ctx, "Migration %d failed: %v", migration.Version, err)
+				return fmt.Errorf("migration %d failed: %w", migration.Version, err)
+			}
+			rtx, err := db.Begin()
+			if err != nil {
+				return fmt.Errorf("failed to begin tx to record migration %d: %w", migration.Version, err)
+			}
+			if _, err := rtx.Exec(
+				"INSERT INTO schema_migrations (version, description) VALUES (?, ?)",
+				migration.Version,
+				migration.Description,
+			); err != nil {
+				rtx.Rollback()
+				return fmt.Errorf("failed to record migration %d: %w", migration.Version, err)
+			}
+			if err := rtx.Commit(); err != nil {
+				return fmt.Errorf("failed to commit migration %d: %w", migration.Version, err)
+			}
+			applog.LogInfof(ctx, "Migration %d completed successfully", migration.Version)
+			continue
+		}
 
 		// 开启事务 - 确保迁移和版本记录原子执行
 		tx, err := db.Begin()

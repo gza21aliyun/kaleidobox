@@ -308,17 +308,12 @@ func (s *CategoryService) GetGamesByCategory(categoryID string) ([]models.Game, 
 			COALESCE(g.tags, '') as tags,
 			COALESCE(g.arguments, '') as arguments,
 			COALESCE(g.images, '') as images,
-			COALESCE(g.bangumi_id, '') as bangumi_id,
-			COALESCE(g.dmm_id, '') as dmm_id,
-			COALESCE(g.eroscape_id, '') as eroscape_id,
-			COALESCE(g.ymgal_id, '') as ymgal_id,
+			COALESCE(g.source_list, '') as source_list,
 			COALESCE(g.search_name, '') as search_name,
-			COALESCE(g.dlsite_id, '') as dlsite_id,
 			COALESCE(g.release_at, '') as release_at,
 			COALESCE(g.related_games, '') as related_games,
 			COALESCE(g.use_locale_emulator, FALSE) as use_locale_emulator,
 			COALESCE(g.use_magpie, FALSE) as use_magpie,
-			COALESCE(g.getchu_id, '') as getchu_id,
 			COALESCE(g.pv_path, '') as pv_path,
 			COALESCE(g.vm_id, '') as vm_id
 		FROM games g
@@ -338,7 +333,7 @@ func (s *CategoryService) GetGamesByCategory(categoryID string) ([]models.Game, 
 		var g models.Game
 		var sourceType string
 		var status string
-		if err := rows.Scan(&g.ID, &g.Name, &g.CoverURL, &g.Company, &g.Summary, &g.Path, &g.SavePath, &g.ProcessName, &status, &sourceType, &g.CachedAt, &g.SourceID, &g.CreatedAt, &g.UpdatedAt, &g.Tags, &g.Arguments, &g.Images, &g.BangumiId, &g.DmmId, &g.EroscapeId, &g.YmgalId, &g.SearchName, &g.DlsiteId, &g.ReleaseAt, &g.RelatedGames, &g.UseLocaleEmulator, &g.UseMagpie, &g.GetchuId, &g.PvPath, &g.VmId); err != nil {
+		if err := rows.Scan(&g.ID, &g.Name, &g.CoverURL, &g.Company, &g.Summary, &g.Path, &g.SavePath, &g.ProcessName, &status, &sourceType, &g.CachedAt, &g.SourceID, &g.CreatedAt, &g.UpdatedAt, &g.Tags, &g.Arguments, &g.Images, &g.SourceList, &g.SearchName, &g.ReleaseAt, &g.RelatedGames, &g.UseLocaleEmulator, &g.UseMagpie, &g.PvPath, &g.VmId); err != nil {
 			applog.LogErrorf(s.ctx, "GetGamesByCategory: failed to scan row for category %s: %v", categoryID, err)
 			return nil, err
 		}

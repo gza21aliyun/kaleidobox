@@ -29,6 +29,24 @@ var AllSourceTypes = []struct {
 	{Getchu, "GETCHU"},
 }
 
+// Key 返回用于 source_list 编码的稳定 ascii 标识。
+// 大多数来源的枚举 value 本身即 ascii，可直接复用；
+// 只有 Eroscape 的 value 是中文"批评空间"，这里统一映射为 "eroscape"。
+func (s SourceType) Key() string {
+	if s == Eroscape {
+		return "eroscape"
+	}
+	return string(s)
+}
+
+// SourceTypeFromKey 将 source_list 中的 ascii 标识还原为 SourceType
+func SourceTypeFromKey(key string) SourceType {
+	if key == "eroscape" {
+		return Eroscape
+	}
+	return SourceType(key)
+}
+
 func (s SourceType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(s))
 }

@@ -9,7 +9,7 @@ import { SearchBT, DownloadToQBittorrent } from "../../wailsjs/go/service/BTDown
 import { ListDownloadedFiles } from "../../wailsjs/go/service/DownloadedFilesService";
 import { GetGamesByTag } from "../../wailsjs/go/service/GameService";
 import { IsBrandTag } from "../../wailsjs/go/service/TagService";
-import { utils, models, service } from "../../wailsjs/go/models";
+import { utils, models, service, enums } from "../../wailsjs/go/models";
 import { Route as rootRoute } from "./__root";
 import { useNavigate } from "@tanstack/react-router";
 import { BetterSelect } from "../components/ui/BetterSelect";
@@ -17,6 +17,7 @@ import { useAppStore } from "../store";
 import { GameInfoModal } from "../components/modal/GameInfoModal";
 import { ImageCard } from "../components/card/ImageCard";
 import { LocalSearchModal } from "../components/modal/LocalSearchModal";
+import { getSourceId } from "../utils/sourceList";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -633,7 +634,7 @@ function GameItem({ game, brandNames, onBrowse, onSearch, onSearchLocal, onSearc
   }, [])
 
   // 检查游戏是否已导入（通过 getchu_id 匹配）
-  const importedGame = game.getchu_id ? games.find(g => g.getchu_id === game.getchu_id) : null;
+  const importedGame = game.getchu_id ? games.find(g => getSourceId(g.source_list, enums.SourceType.GETCHU) === game.getchu_id) : null;
   const isImported = !!importedGame;
 
   // 点击品牌，跳转到该品牌的游戏列表

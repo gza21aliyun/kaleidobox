@@ -172,9 +172,9 @@ func (s *GameService) AddGame(game models.Game) error {
 	query := `INSERT INTO games (
 		id, name, cover_url, company, summary, path, 
 		source_type, cached_at, source_id, created_at, updated_at,
-		tags, arguments, images, bangumi_id, dmm_id, eroscape_id, ymgal_id, search_name, dlsite_id, release_at, related_games, 
-		use_locale_emulator, use_magpie, process_name, getchu_id, pv_path, vm_id
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		tags, arguments, images, source_list, search_name, release_at, related_games, 
+		use_locale_emulator, use_magpie, process_name, pv_path, vm_id
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := s.db.ExecContext(s.ctx, query,
 		game.ID,
@@ -191,19 +191,14 @@ func (s *GameService) AddGame(game models.Game) error {
 		game.Tags,
 		game.Arguments,
 		"", //game.Images,
-		game.BangumiId,
-		game.DmmId,
-		game.EroscapeId,
-		game.YmgalId,
+		game.SourceList,
 		game.SearchName,
-		game.DlsiteId,
 		game.ReleaseAt,
 		game.RelatedGames,
 
 		game.UseLocaleEmulator,
 		game.UseMagpie,
 		game.ProcessName,
-		game.GetchuId,
 		game.PvPath,
 		game.VmId,
 	)
@@ -405,18 +400,13 @@ func (s *GameService) GetGamesByPage(page int, pageSize int) ([]models.Game, err
 		COALESCE(tags, '') as tags,
 		COALESCE(arguments, '') as arguments,
 		COALESCE(images, '') as images,
-		COALESCE(bangumi_id, '') as bangumi_id,
-		COALESCE(dmm_id, '') as dmm_id,
-		COALESCE(eroscape_id, '') as eroscape_id,
-		COALESCE(ymgal_id, '') as ymgal_id,
+		COALESCE(source_list, '') as source_list,
 		COALESCE(search_name, '') as search_name,
-		COALESCE(dlsite_id, '') as dlsite_id,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie,
 		COALESCE(process_name, '') as process_name,
-		COALESCE(getchu_id, '') as getchu_id,
 		COALESCE(pv_path, '') as pv_path,
 		COALESCE(vm_id, '') as vm_id
 	FROM games 
@@ -522,18 +512,13 @@ func (s *GameService) GetGamesByQueryText(query string, txt string) ([]models.Ga
 			&game.Tags,
 			&game.Arguments,
 			&game.Images,
-			&game.BangumiId,
-			&game.DmmId,
-			&game.EroscapeId,
-			&game.YmgalId,
+			&game.SourceList,
 			&game.SearchName,
-			&game.DlsiteId,
 			&game.ReleaseAt,
 			&game.RelatedGames,
 			&game.UseLocaleEmulator,
 			&game.UseMagpie,
 			&game.ProcessName,
-			&game.GetchuId,
 			&game.PvPath,
 			&game.VmId,
 		)
@@ -572,18 +557,13 @@ func (s *GameService) GetGames() ([]models.Game, error) {
 		COALESCE(tags, '') as tags,
 		COALESCE(arguments, '') as arguments,
 		COALESCE(images, '') as images,
-		COALESCE(bangumi_id, '') as bangumi_id,
-		COALESCE(dmm_id, '') as dmm_id,
-		COALESCE(eroscape_id, '') as eroscape_id,
-		COALESCE(ymgal_id, '') as ymgal_id,
+		COALESCE(source_list, '') as source_list,
 		COALESCE(search_name, '') as search_name,
-		COALESCE(dlsite_id, '') as dlsite_id,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie,
 		COALESCE(process_name, '') as process_name,
-		COALESCE(getchu_id, '') as getchu_id,
 		COALESCE(pv_path, '') as pv_path,
 		COALESCE(vm_id, '') as vm_id
 	FROM games 
@@ -610,18 +590,10 @@ func (s *GameService) GetGamesByRelatedGames(gameIdsStr string) ([]models.Game, 
 		query := ""
 		if source == "local" {
 			query = fmt.Sprintf("%s WHERE id = '%s'", s.GetQueryBase(), id)
-		} else if source == string(enums.Dmm) {
-			query = fmt.Sprintf("%s WHERE dmm_id = '%s'", s.GetQueryBase(), id)
-		} else if source == string(enums.Dlsite) {
-			query = fmt.Sprintf("%s WHERE dlsite_id = '%s'", s.GetQueryBase(), id)
-		} else if source == string(enums.Ymgal) {
-			query = fmt.Sprintf("%s WHERE ymgal_id = '%s'", s.GetQueryBase(), id)
-		} else if source == string(enums.Eroscape) {
-			query = fmt.Sprintf("%s WHERE eroscape_id = '%s'", s.GetQueryBase(), id)
-		} else if source == string(enums.Bangumi) {
-			query = fmt.Sprintf("%s WHERE bangumi_id = '%s'", s.GetQueryBase(), id)
-		} else if source == string(enums.Getchu) {
-			query = fmt.Sprintf("%s WHERE getchu_id = '%s'", s.GetQueryBase(), id)
+		} else {
+			// 其余来源在 source_list 中按 "key:id" 精确匹配（用 ; 包裹以定位边界）
+			key := enums.SourceType(source).Key()
+			query = fmt.Sprintf("%s WHERE (';' || COALESCE(source_list, '') || ';') LIKE '%%%s:%s;%%'", s.GetQueryBase(), key, id)
 		}
 		rs, _ = s.GetGamesByQuery(query)
 		games = append(games, rs...)
@@ -701,18 +673,13 @@ func (s *GameService) GetQueryBase() string {
 		COALESCE(tags, '') as tags,
 		COALESCE(arguments, '') as arguments,
 		COALESCE(images, '') as images,
-		COALESCE(bangumi_id, '') as bangumi_id,
-		COALESCE(dmm_id, '') as dmm_id,
-		COALESCE(eroscape_id, '') as eroscape_id,
-		COALESCE(ymgal_id, '') as ymgal_id,
+		COALESCE(source_list, '') as source_list,
 		COALESCE(search_name, '') as search_name,
-		COALESCE(dlsite_id, '') as dlsite_id,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie,
 		COALESCE(process_name, '') as process_name,
-		COALESCE(getchu_id, '') as getchu_id,
 		COALESCE(pv_path, '') as pv_path,
 		COALESCE(vm_id, '') as vm_id,
 	FROM games`
@@ -757,18 +724,13 @@ func (s *GameService) GetGamesByIdsStr(idsStr string) ([]models.Game, error) {
 			&game.Tags,
 			&game.Arguments,
 			&game.Images,
-			&game.BangumiId,
-			&game.DmmId,
-			&game.EroscapeId,
-			&game.YmgalId,
+			&game.SourceList,
 			&game.SearchName,
-			&game.DlsiteId,
 			&game.ReleaseAt,
 			&game.RelatedGames,
 			&game.UseLocaleEmulator,
 			&game.UseMagpie,
 			&game.ProcessName,
-			&game.GetchuId,
 			&game.PvPath,
 			&game.VmId,
 		)
@@ -820,17 +782,12 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		COALESCE(tags, '') as tags, 
 		COALESCE(arguments, '') as arguments, 
 		COALESCE(images, '') as images,
-		COALESCE(bangumi_id, '') as bangumi_id,
-		COALESCE(dmm_id, '') as dmm_id,
-		COALESCE(eroscape_id, '') as eroscape_id,
-		COALESCE(ymgal_id, '') as ymgal_id,
+		COALESCE(source_list, '') as source_list,
 		COALESCE(search_name, '') as search_name,
-		COALESCE(dlsite_id, '') as dlsite_id,
 		COALESCE(release_at, '') as release_at,
 		COALESCE(related_games, '') as related_games,
 		COALESCE(use_locale_emulator, FALSE) as use_locale_emulator,
 		COALESCE(use_magpie, FALSE) as use_magpie,
-		COALESCE(getchu_id, '') as getchu_id,
 		COALESCE(pv_path, '') as pv_path,
 		COALESCE(vm_id, '') as vm_id
 	FROM games 
@@ -858,17 +815,12 @@ func (s *GameService) GetGameByID(id string) (models.Game, error) {
 		&game.Tags,
 		&game.Arguments,
 		&game.Images,
-		&game.BangumiId,
-		&game.DmmId,
-		&game.EroscapeId,
-		&game.YmgalId,
+		&game.SourceList,
 		&game.SearchName,
-		&game.DlsiteId,
 		&game.ReleaseAt,
 		&game.RelatedGames,
 		&game.UseLocaleEmulator,
 		&game.UseMagpie,
-		&game.GetchuId,
 		&game.PvPath,
 		&game.VmId,
 	)
@@ -902,18 +854,13 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		source_id = ?,
 		tags = ?,
 		images = ?,
-		bangumi_id = ?,
-		dmm_id = ?,
-		eroscape_id = ?,
-		ymgal_id = ?,
+		source_list = ?,
 		search_name = ?,
-		dlsite_id = ?,
 		release_at = ?,
 		related_games = ?,
 		arguments = ?,
 		use_locale_emulator = ?,
 		use_magpie = ?,
-		getchu_id = ?,
 		pv_path = ?,
 		vm_id = ?
 	WHERE id = ?`
@@ -932,18 +879,13 @@ func (s *GameService) UpdateGame(game models.Game) error {
 		game.SourceID,
 		game.Tags,
 		"", //game.Images,
-		game.BangumiId,
-		game.DmmId,
-		game.EroscapeId,
-		game.YmgalId,
+		game.SourceList,
 		game.SearchName,
-		game.DlsiteId,
 		game.ReleaseAt,
 		game.RelatedGames,
 		game.Arguments,
 		game.UseLocaleEmulator,
 		game.UseMagpie,
-		game.GetchuId,
 		game.PvPath,
 		game.VmId,
 		game.ID,

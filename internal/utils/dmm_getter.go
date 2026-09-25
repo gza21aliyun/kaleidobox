@@ -187,7 +187,7 @@ func (b DmmInfoGetter) FetchByNameImpl(name string, isAl bool, fn IdFunction) (m
 			game.Name = gameFound.Title
 			game.SourceID = id
 			game.SourceType = enums.Dmm
-			game.DmmId = id
+			game.SetSourceID(enums.Dmm, id)
 			game.CoverURL = gameFound.CoverUrl
 		}
 		// for _, gameFound := range potentialGames {
@@ -250,7 +250,7 @@ func (b DmmInfoGetter) FetchMetadataById(request vo.MetadataRequest) (models.Gam
 		return gameEntity, fmt.Errorf("DMM ID is required to fetch metadata by ID")
 	}
 	fmt.Println("开始获取DMM游戏信息 37 " + request.ID)
-	game.DmmId = request.ID
+	game.SetSourceID(enums.Dmm, request.ID)
 	dmmUrl := fmt.Sprintf("https://dlsoft.dmm.co.jp/detail/%s/", request.ID)
 	c := CreateCollector("*dmm.co.jp")
 

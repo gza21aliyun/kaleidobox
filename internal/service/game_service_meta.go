@@ -24,24 +24,8 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game, req
 		req.IsOverwrite, req.ShouldFetchImages)
 	updatedGame.ID = ngame.ID
 	updatedGame.Path = ngame.Path
-	if updatedGame.BangumiId == "" {
-		updatedGame.BangumiId = ngame.BangumiId
-	}
-	if updatedGame.DmmId == "" {
-		updatedGame.DmmId = ngame.DmmId
-	}
-	if updatedGame.EroscapeId == "" {
-		updatedGame.EroscapeId = ngame.EroscapeId
-	}
-	if updatedGame.YmgalId == "" {
-		updatedGame.YmgalId = ngame.YmgalId
-	}
-	if updatedGame.DlsiteId == "" {
-		updatedGame.DlsiteId = ngame.DlsiteId
-	}
-	if updatedGame.GetchuId == "" {
-		updatedGame.GetchuId = ngame.GetchuId
-	}
+	// 合并旧游戏中已有、而本次抓取缺失的来源（同源不覆盖）
+	updatedGame.MergeSourceList(ngame.SourceList)
 	if updatedGame.PvPath == "" {
 		updatedGame.PvPath = ngame.PvPath
 	}
@@ -87,9 +71,6 @@ func (s *GameService) FillGame(ngame *models.Game, updatedGame *models.Game, req
 	updatedGame.SearchName = ngame.SearchName
 	updatedGame.UseLocaleEmulator = ngame.UseLocaleEmulator
 	updatedGame.VmId = ngame.VmId
-	if updatedGame.DmmId == "" {
-		updatedGame.DmmId = ngame.DmmId
-	}
 }
 
 // 创建游戏更新任务函数
@@ -139,24 +120,10 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 			if taskData.Req.Source == ngame.SourceType && strings.TrimSpace(ngame.SourceID) != "" {
 				id = ngame.SourceID
 				log.Printf("TaskFunc 01 id found 11 for game %s, id: %s", ngame.Name, id)
-			} else if taskData.Req.Source == enums.Eroscape && strings.TrimSpace(ngame.EroscapeId) != "" {
-				id = ngame.EroscapeId
-				log.Printf("TaskFunc 02 id found 12 for game %s, id: %s", ngame.Name, id)
-			} else if taskData.Req.Source == enums.Ymgal && strings.TrimSpace(ngame.YmgalId) != "" {
-				id = ngame.YmgalId
-				// log.Printf("TaskFunc 03 id found 13 for game %s, id: %s", ngame.Name, id)
-			} else if taskData.Req.Source == enums.Dmm && strings.TrimSpace(ngame.DmmId) != "" {
-				id = ngame.DmmId
-				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
-			} else if taskData.Req.Source == enums.Bangumi && strings.TrimSpace(ngame.BangumiId) != "" {
-				id = ngame.BangumiId
-				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
-			} else if taskData.Req.Source == enums.Dlsite && strings.TrimSpace(ngame.DlsiteId) != "" {
-				id = ngame.DlsiteId
-				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
-			} else if taskData.Req.Source == enums.Getchu && strings.TrimSpace(ngame.DlsiteId) != "" {
-				id = ngame.GetchuId
-				// log.Printf("TaskFunc 04 id found 14 for game %s, id: %s", ngame.Name, id)
+			} else if sid := ngame.GetSourceID(taskData.Req.Source); strings.TrimSpace(sid) != "" {
+				// 从 source_list 中按请求来源查找 id
+				id = sid
+				log.Printf("TaskFunc 02 id found from source_list for game %s, id: %s", ngame.Name, id)
 			}
 
 			taskData.Req.ID = id
@@ -222,7 +189,7 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 					id = updatedGame.SourceID
 					req := taskData.Req
 					req.ID = id
-					fmt.Printf("id 23:%s, sourceId=%s, sourceType1=%s, source2=%s, bangumiId:%s\n", id, updatedGame.SourceID, string(updatedGame.SourceType), string(taskData.Req.Source), updatedGame.BangumiId)
+					fmt.Printf("id 23:%s, sourceId=%s, sourceType1=%s, source2=%s, bangumiId:%s\n", id, updatedGame.SourceID, string(updatedGame.SourceType), string(taskData.Req.Source), updatedGame.GetSourceID(enums.Bangumi))
 					updatedGame, err = s.FetchMetadata(req)
 				}
 			}
@@ -624,8 +591,8 @@ func (s *GameService) UnionFetch(gameEntity *models.GameEntity, req vo.MetadataR
 		return
 	}
 	fetched := false
-	if req.Source != enums.Dmm && gameEntity.Game.DmmId != "" {
-		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: gameEntity.Game.DmmId, Source: enums.Dmm,
+	if dmmId := gameEntity.Game.GetSourceID(enums.Dmm); req.Source != enums.Dmm && dmmId != "" {
+		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: dmmId, Source: enums.Dmm,
 			IsOverwrite: false}
 		dmmGetter := utils.NewDmmInfoGetter()
 		dmmGameEntity, _ := dmmGetter.FetchMetadataById(newReq)
@@ -637,8 +604,8 @@ func (s *GameService) UnionFetch(gameEntity *models.GameEntity, req vo.MetadataR
 		gameEntity.Game = game
 		fetched = true
 	}
-	if req.Source != enums.Getchu && gameEntity.Game.GetchuId != "" && !fetched {
-		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: gameEntity.Game.GetchuId, Source: enums.Getchu,
+	if getchuId := gameEntity.Game.GetSourceID(enums.Getchu); req.Source != enums.Getchu && getchuId != "" && !fetched {
+		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: getchuId, Source: enums.Getchu,
 			IsOverwrite: false}
 		getchuGetter := utils.NewGetchuInfoGetter()
 		getchuGameEntity, _ := getchuGetter.FetchMetadataById(newReq)
@@ -650,8 +617,8 @@ func (s *GameService) UnionFetch(gameEntity *models.GameEntity, req vo.MetadataR
 		gameEntity.Game = game
 		fetched = true
 	}
-	if req.Source != enums.Dlsite && gameEntity.Game.DlsiteId != "" && !fetched {
-		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: gameEntity.Game.DlsiteId, Source: enums.Dlsite,
+	if dlsiteId := gameEntity.Game.GetSourceID(enums.Dlsite); req.Source != enums.Dlsite && dlsiteId != "" && !fetched {
+		newReq := vo.MetadataRequest{DbGameId: gameEntity.Game.ID, ID: dlsiteId, Source: enums.Dlsite,
 			IsOverwrite: false}
 		dlsiteGetter := utils.NewDlsiteInfoGetter()
 		dlsiteGameEntity, _ := dlsiteGetter.FetchMetadataById2(newReq)

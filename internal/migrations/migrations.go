@@ -362,10 +362,49 @@ func migration145(db *sql.DB) error {
 	}
 
 	// 4. 删除旧的 id 列（仅删除存在的列）
-	for _, c := range oldCols {
-		if colSet[c] {
-			if _, err := db.Exec(fmt.Sprintf(`ALTER TABLE games DROP COLUMN %s`, c)); err != nil {
-				return fmt.Errorf("failed to drop column %s: %w", c, err)
+	//    DuckDB 中索引是依赖 games 表的独立 catalog 条目，会阻止 ALTER TABLE DROP COLUMN
+	//    （报 "Cannot alter entry games because there are entries that depend on it"）。
+	//    因此先记录并临时删除二级索引（主键索引不在此列，也不阻塞），删列后按原定义重建。
+	if len(present) > 0 {
+		type idxDef struct {
+			name string
+			sql  string
+		}
+		var restore []idxDef
+		irows, err := db.Query(`SELECT index_name, sql FROM duckdb_indexes() WHERE lower(table_name) = 'games' AND NOT is_primary`)
+		if err != nil {
+			return fmt.Errorf("failed to inspect games indexes: %w", err)
+		}
+		for irows.Next() {
+			var name string
+			var def sql.NullString
+			if err := irows.Scan(&name, &def); err != nil {
+				irows.Close()
+				return fmt.Errorf("failed to scan games index: %w", err)
+			}
+			if def.Valid && strings.TrimSpace(def.String) != "" {
+				restore = append(restore, idxDef{name: name, sql: def.String})
+			}
+		}
+		irows.Close()
+
+		for _, ix := range restore {
+			if _, err := db.Exec(fmt.Sprintf(`DROP INDEX IF EXISTS "%s"`, ix.name)); err != nil {
+				return fmt.Errorf("failed to drop index %s: %w", ix.name, err)
+			}
+		}
+
+		for _, c := range oldCols {
+			if colSet[c] {
+				if _, err := db.Exec(fmt.Sprintf(`ALTER TABLE games DROP COLUMN %s`, c)); err != nil {
+					return fmt.Errorf("failed to drop column %s: %w", c, err)
+				}
+			}
+		}
+
+		for _, ix := range restore {
+			if _, err := db.Exec(ix.sql); err != nil {
+				return fmt.Errorf("failed to recreate index %s: %w", ix.name, err)
 			}
 		}
 	}

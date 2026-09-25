@@ -33,6 +33,11 @@ func TestMigration145SourceList(t *testing.T) {
 		t.Fatalf("create legacy games: %v", err)
 	}
 
+	// 模拟真实库：InitSchema 会在 games 上创建二级索引，它们在 DuckDB 中依赖表并阻止 DROP COLUMN。
+	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)`); err != nil {
+		t.Fatalf("create idx_games_name: %v", err)
+	}
+
 	type row struct {
 		id, st, sid     string
 		bangumi, dmm    string
@@ -108,6 +113,15 @@ func TestMigration145SourceList(t *testing.T) {
 	}
 	if !cols["source_list"] {
 		t.Errorf("source_list column should exist after migration")
+	}
+
+	// 4b. 校验二级索引在迁移后被恢复
+	var idxCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM duckdb_indexes() WHERE lower(table_name) = 'games' AND lower(index_name) = 'idx_games_name'`).Scan(&idxCount); err != nil {
+		t.Fatalf("inspect idx_games_name: %v", err)
+	}
+	if idxCount == 0 {
+		t.Errorf("index idx_games_name should have been restored after migration")
 	}
 
 	// 5. 幂等：再次运行不应报错，且 source_list 不变（旧列已不存在，回填被跳过）

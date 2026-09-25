@@ -9,6 +9,7 @@ import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { getFolderPath } from "../utils/Utility";
 import { setSourceId } from "../../utils/sourceList";
+import { ALL_SOURCES } from "../../utils/sourceTypes";
 import { useAppStore } from "../../store";
 import { BatchUpdateModal } from "../../components/modal/BatchUpdateModal";
 import { GetAllVMs, OpenGamePathInsideVm } from "../../../wailsjs/go/service/VMService";
@@ -307,14 +308,7 @@ export function GameEditPanel({
               onChange={value => onSourceChange(value, game.source_id || "")}
               options={[
                 { value: "", label: t('gameEdit.none') },
-                { value: enums.SourceType.LOCAL, label: t('sourceType.local') },
-                { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
-                { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
-                { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
-                { value: enums.SourceType.DMM, label: t('sourceType.dmm') },
-                { value: enums.SourceType.EROSCAPE, label: t('sourceType.eroscape') },
-                { value: enums.SourceType.DLSITE, label: t('sourceType.dlsite') },
-                { value: enums.SourceType.GETCHU, label: t('sourceType.getchu') },
+                ...ALL_SOURCES.map(o => ({ value: o.value, label: t(o.labelKey) })),
               ]}
             />
           </div>

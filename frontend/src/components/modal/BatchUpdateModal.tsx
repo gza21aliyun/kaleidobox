@@ -7,6 +7,7 @@ import { EventsOff, EventsOn, EventsOnce, EventsOffAll, EventsOnMultiple } from 
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
 import { getSourceId, hasSource } from "../../utils/sourceList";
+import { EXTERNAL_SOURCES, EXTERNAL_SOURCE_VALUES, METADATA_SOURCES } from "../../utils/sourceTypes";
 
 import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq, FetchMetadataByNameQuick } from "../../../wailsjs/go/service/GameService";
 import {
@@ -136,8 +137,6 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
     
 
 
-  const EXTERNAL_SOURCES = [enums.SourceType.BANGUMI, enums.SourceType.DMM, enums.SourceType.EROSCAPE, enums.SourceType.YMGAL, enums.SourceType.DLSITE, enums.SourceType.GETCHU];
-
   const isMatched = (c: models.Game, source: enums.SourceType) => {
         // if (updatedIds.includes(c.id)) return true;
         if (c.source_type === source && c.source_id && c.source_id.length > 0) {
@@ -156,10 +155,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
         }
         // VNDB：只要存在任一外部来源就不算“仅匹配”
         if (source === enums.SourceType.VNDB) {
-            return !EXTERNAL_SOURCES.some(s => hasSource(c.source_list, s));
+            return !EXTERNAL_SOURCE_VALUES.some(s => hasSource(c.source_list, s));
         }
         // 其它来源：主源已是该来源，且不存在其它外部来源
-        return !EXTERNAL_SOURCES.some(s => s !== source && hasSource(c.source_list, s));
+        return !EXTERNAL_SOURCE_VALUES.some(s => s !== source && hasSource(c.source_list, s));
     }
 
   const isEmptyMatched = (c: models.Game) => {
@@ -167,7 +166,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
         if (c.source_type === null) {
             return true;
         }
-        return !EXTERNAL_SOURCES.some(s => hasSource(c.source_list, s));
+        return !EXTERNAL_SOURCE_VALUES.some(s => hasSource(c.source_list, s));
     }
 
   const cancelUpdate = () => { 
@@ -194,15 +193,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
     return req;
   };
 
-  const metaOptions = [
-    { value: enums.SourceType.BANGUMI, label: t('sourceType.bangumi') },
-    { value: enums.SourceType.VNDB, label: t('sourceType.vndb') },
-    { value: enums.SourceType.YMGAL, label: t('sourceType.ymgal') },
-    { value: enums.SourceType.DMM, label: t('sourceType.dmm') },
-    { value: enums.SourceType.EROSCAPE, label: t('sourceType.eroscape') },
-    { value: enums.SourceType.DLSITE, label: t('sourceType.dlsite') },
-    { value: enums.SourceType.GETCHU, label: t('sourceType.getchu') },
-  ];
+  const metaOptions = METADATA_SOURCES.map(o => ({ value: o.value, label: t(o.labelKey) }));
 
 
   const handleUpdate = () => {
@@ -637,15 +628,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                                     if (candidate.source_id != "") { 
                                       text += candidate.source_type + ":" + candidate.source_id;
                                     }
-                                    const otherSources: Array<[enums.SourceType, string]> = [
-                                      [enums.SourceType.DMM, 'sourceType.dmm'],
-                                      [enums.SourceType.BANGUMI, 'sourceType.bangumi'],
-                                      [enums.SourceType.EROSCAPE, 'sourceType.eroscape'],
-                                      [enums.SourceType.YMGAL, 'sourceType.ymgal'],
-                                      [enums.SourceType.DLSITE, 'sourceType.dlsite'],
-                                      [enums.SourceType.GETCHU, 'sourceType.getchu'],
-                                    ];
-                                    for (const [st, key] of otherSources) {
+                                    for (const { value: st, labelKey: key } of EXTERNAL_SOURCES) {
                                       if (candidate.source_type !== st) {
                                         const sid = getSourceId(candidate.source_list, st);
                                         if (sid && sid !== "") {

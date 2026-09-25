@@ -42,8 +42,8 @@ type UpdateService struct {
 
 // 默认更新检查 URL 列表（按优先级排序）
 var defaultUpdateURLs = []string{
-	"https://lunabox.pages.dev/version.json",   // 主地址
-	"https://4update.netlify.app/version.json", // Netlify 备份（用户可修改）
+	"https://gza21aliyun.github.io/kaleidobox/version.json",                                        // 主地址：GitHub Pages
+	"https://raw.githubusercontent.com/gza21aliyun/kaleidobox/kaleidobox/sync/version.json",       // 备份：Raw GitHub
 }
 
 func NewUpdateService() *UpdateService {

@@ -72,7 +72,7 @@ export function UpdateDialog({ updateInfo, onClose, onSkip }: UpdateDialogProps)
               发现新版本
             </h2>
             <p className="text-sm text-brand-600 dark:text-brand-400">
-              LunaBox 有可用的更新
+              KaleidoBox 有可用的更新
             </p>
           </div>
           <button

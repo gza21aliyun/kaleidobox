@@ -179,13 +179,13 @@ function App() {
           },
         }}
       />
-      {/* {showUpdateDialog && updateInfo && (
+      {showUpdateDialog && updateInfo && (
         <UpdateDialog
           updateInfo={updateInfo}
           onClose={() => setShowUpdateDialog(false)}
           onSkip={handleSkipVersion}
         />
-      )} */}
+      )}
       <TimezoneSelectModal
         isOpen={showTimezoneModal}
         onConfirm={handleTimezoneConfirm}

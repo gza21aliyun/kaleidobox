@@ -24,6 +24,7 @@ export namespace appconf {
 	    cloud_backup_retention?: number;
 	    onedrive_client_id?: string;
 	    onedrive_refresh_token?: string;
+	    hikarinagi_refresh_token?: string;
 	    webdav_server?: string;
 	    webdav_username?: string;
 	    webdav_password?: string;
@@ -119,6 +120,7 @@ export namespace appconf {
 	        this.cloud_backup_retention = source["cloud_backup_retention"];
 	        this.onedrive_client_id = source["onedrive_client_id"];
 	        this.onedrive_refresh_token = source["onedrive_refresh_token"];
+	        this.hikarinagi_refresh_token = source["hikarinagi_refresh_token"];
 	        this.webdav_server = source["webdav_server"];
 	        this.webdav_username = source["webdav_username"];
 	        this.webdav_password = source["webdav_password"];
@@ -191,44 +193,11 @@ export namespace appconf {
 
 export namespace enums {
 	
-	export enum DeviceType {
-	    KEYBOARD = "keyboard",
-	    DUALSENSE = "dualsense",
-	    DUALSHOCK4 = "dualshock4",
-	    JOYCON = "joyconPair",
-	    XINPUT = "xbox360",
-	    TOUCH = "touch",
-	}
-	export enum ModifierKey {
-	    CTRL = "ctrl",
-	    SHIFT = "shift",
-	    ALT = "alt",
-	    WIN = "win",
-	}
-	export enum HotkeyActionType {
-	    START_GAME = "start_game",
-	    STOP_GAME = "stop_game",
-	    TOGGLE_PAUSE = "toggle_pause",
-	    SCREENSHOT = "screenshot",
-	    ARROW_KEYS = "arrow_keys",
-	    CUSTOM = "custom",
-	}
 	export enum Period {
 	    DAY = "day",
 	    WEEK = "week",
 	    MONTH = "month",
 	    ALL = "all",
-	}
-	export enum PromptType {
-	    DEFAULT_SYSTEM = "你是一个幽默风趣的游戏评论员，擅长用轻松的语气点评玩家的游戏习惯。\n请用轻松幽默的方式点评这位玩家的游戏习惯，可以适当调侃但不要太过分。",
-	    MEOW_ZAKO = "你是一个雌小鬼猫娘，根据用户的游戏统计数据对用户进行锐评，语气可爱活泼，不要给用户留脸面偶（=w=）适当加入猫咪的拟声词（如“喵”）和雌小鬼的口癖（如“杂鱼~杂鱼~”），要是能再用上颜文字主人就更高兴了喵。\n\n",
-	    STRICT_TUTOR = "你是用户的严厉导师，根据用户的游戏统计数据对用户进行锐评，语气严肃认真，不允许任何调侃和幽默。\n\n",
-	}
-	export enum GameStatus {
-	    NOT_STARTED = "not_started",
-	    PLAYING = "playing",
-	    COMPLETED = "completed",
-	    ON_HOLD = "on_hold",
 	}
 	export enum TaskStatus {
 	    INITIAL = "初始",
@@ -261,9 +230,27 @@ export namespace enums {
 	    SINGER = "歌手",
 	    ART = "画师",
 	}
-	export enum GuideSource {
-	    SEIYA = "seiya",
-	    FOOL = "fool",
+	export enum DeviceType {
+	    KEYBOARD = "keyboard",
+	    DUALSENSE = "dualsense",
+	    DUALSHOCK4 = "dualshock4",
+	    JOYCON = "joyconPair",
+	    XINPUT = "xbox360",
+	    TOUCH = "touch",
+	}
+	export enum ModifierKey {
+	    CTRL = "ctrl",
+	    SHIFT = "shift",
+	    ALT = "alt",
+	    WIN = "win",
+	}
+	export enum HotkeyActionType {
+	    START_GAME = "start_game",
+	    STOP_GAME = "stop_game",
+	    TOGGLE_PAUSE = "toggle_pause",
+	    SCREENSHOT = "screenshot",
+	    ARROW_KEYS = "arrow_keys",
+	    CUSTOM = "custom",
 	}
 	export enum SourceType {
 	    LOCAL = "local",
@@ -274,6 +261,22 @@ export namespace enums {
 	    EROSCAPE = "批评空间",
 	    DLSITE = "dlsite",
 	    GETCHU = "getchu",
+	    HIKARINAGI = "hikarinagi",
+	}
+	export enum PromptType {
+	    DEFAULT_SYSTEM = "你是一个幽默风趣的游戏评论员，擅长用轻松的语气点评玩家的游戏习惯。\n请用轻松幽默的方式点评这位玩家的游戏习惯，可以适当调侃但不要太过分。",
+	    MEOW_ZAKO = "你是一个雌小鬼猫娘，根据用户的游戏统计数据对用户进行锐评，语气可爱活泼，不要给用户留脸面偶（=w=）适当加入猫咪的拟声词（如“喵”）和雌小鬼的口癖（如“杂鱼~杂鱼~”），要是能再用上颜文字主人就更高兴了喵。\n\n",
+	    STRICT_TUTOR = "你是用户的严厉导师，根据用户的游戏统计数据对用户进行锐评，语气严肃认真，不允许任何调侃和幽默。\n\n",
+	}
+	export enum GameStatus {
+	    NOT_STARTED = "not_started",
+	    PLAYING = "playing",
+	    COMPLETED = "completed",
+	    ON_HOLD = "on_hold",
+	}
+	export enum GuideSource {
+	    SEIYA = "seiya",
+	    FOOL = "fool",
 	}
 
 }

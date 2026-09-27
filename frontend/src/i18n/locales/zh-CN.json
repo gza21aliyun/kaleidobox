@@ -381,7 +381,8 @@
       "getchu": "Getchu",
       "dlsite": "DlSite",
       "info": "详情弹窗",
-      "vndb": "VNDB"
+      "vndb": "VNDB",
+      "hikarinagi": "Hikarinagi"
     },
     "labels": {
       "source": "数据来源",
@@ -696,6 +697,13 @@
   "basic": {
     "bangumiAccessToken": "Bangumi Access Token",
     "vndbAccessToken": "VNDB Access Token",
+    "hikarinagiAuth": "Hikarinagi 授权",
+    "hikarinagiAuthBtn": "去授权",
+    "hikarinagiAuthorizing": "等待授权中…",
+    "hikarinagiAuthed": "已完成授权（刷新令牌会自动轮换保存）",
+    "hikarinagiAuthHint": "未授权。点击后将跳转浏览器完成 Hikarinagi 授权",
+    "hikarinagiAuthSuccess": "Hikarinagi 授权成功",
+    "hikarinagiAuthFailed": "Hikarinagi 授权失败: {{error}}",
     "bangumiTokenHint": "如果您想使用Bangumi数据源，请一定填写",
     "dmmSwitch": "DMM开关",
     "eroscapeSwitch": "批评空间开关",
@@ -835,6 +843,7 @@
     "eroscape": "批评空间",
     "dlsite": "Dlsite",
     "getchu": "Getchu",
+    "hikarinagi": "Hikarinagi",
     "noFilter": "不过滤匹配",
     "emptyCover": "无封面",
     "emptyGallery": "无画廊",

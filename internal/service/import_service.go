@@ -867,6 +867,7 @@ func (s *ImportService) FetchMetadataForCandidate(searchName string) (vo.BatchIm
 		{utils.NewDlsiteInfoGetter(), enums.Dlsite, ""},
 		{utils.NewYmgalInfoGetter(s.config.SearchCn), enums.Ymgal, ""},
 		{utils.NewGetchuInfoGetter(), enums.Getchu, ""},
+		{utils.NewHikarinagiInfoGetter(s.config.SearchCn), enums.Hikarinagi, ""},
 		{utils.NewVNDBInfoGetter(), enums.VNDB, s.config.VNDBAccessToken},
 	}
 

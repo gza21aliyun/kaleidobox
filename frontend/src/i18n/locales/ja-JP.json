@@ -381,7 +381,8 @@
       "getchu": "Getchu",
       "dlsite": "DlSite",
       "info": "情報モーダル",
-      "vndb": "VNDB"
+      "vndb": "VNDB",
+      "hikarinagi": "Hikarinagi"
     },
     "labels": {
       "source": "データソース",
@@ -696,6 +697,13 @@
   "basic": {
     "bangumiAccessToken": "Bangumi アクセストークン",
     "vndbAccessToken": "VNDB アクセストークン",
+    "hikarinagiAuth": "Hikarinagi 連携",
+    "hikarinagiAuthBtn": "認証する",
+    "hikarinagiAuthorizing": "認証待ち…",
+    "hikarinagiAuthed": "認証済み（リフレッシュトークンは自動的に更新・保存されます）",
+    "hikarinagiAuthHint": "未認証。クリックするとブラウザで認証を行います",
+    "hikarinagiAuthSuccess": "Hikarinagi の認証に成功しました",
+    "hikarinagiAuthFailed": "Hikarinagi の認証に失敗しました: {{error}}",
     "bangumiTokenHint": "Bangumi データソースを使用する場合は必ず入力してください",
     "dmmSwitch": "DMMスイッチ",
     "eroscapeSwitch": "批評空間スイッチ",
@@ -835,6 +843,7 @@
     "eroscape": "批評空間",
     "dlsite": "Dlsite",
     "getchu": "Getchu",
+    "hikarinagi": "Hikarinagi",
     "noFilter": "フィルターなし",
     "emptyCover": "カバーなし",
     "emptyGallery": "ギャラリーなし",

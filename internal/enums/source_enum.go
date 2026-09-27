@@ -5,14 +5,15 @@ import "encoding/json"
 type SourceType string
 
 const (
-	Local    SourceType = "local"
-	Bangumi  SourceType = "bangumi"
-	VNDB     SourceType = "vndb"
-	Ymgal    SourceType = "ymgal"
-	Dmm      SourceType = "dmm"
-	Eroscape SourceType = "批评空间"
-	Dlsite   SourceType = "dlsite"
-	Getchu   SourceType = "getchu"
+	Local      SourceType = "local"
+	Bangumi    SourceType = "bangumi"
+	VNDB       SourceType = "vndb"
+	Ymgal      SourceType = "ymgal"
+	Dmm        SourceType = "dmm"
+	Eroscape   SourceType = "批评空间"
+	Dlsite     SourceType = "dlsite"
+	Getchu     SourceType = "getchu"
+	Hikarinagi SourceType = "hikarinagi"
 )
 
 var AllSourceTypes = []struct {
@@ -27,6 +28,7 @@ var AllSourceTypes = []struct {
 	{Eroscape, "EROSCAPE"},
 	{Dlsite, "DLSITE"},
 	{Getchu, "GETCHU"},
+	{Hikarinagi, "HIKARINAGI"},
 }
 
 // Key 返回用于 source_list 编码的稳定 ascii 标识。

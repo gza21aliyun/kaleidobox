@@ -7,6 +7,7 @@ import (
 	"lunabox/internal/appconf"
 	"lunabox/internal/applog"
 	"lunabox/internal/utils"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -26,6 +27,52 @@ func (s *ConfigService) Init(ctx context.Context, db *sql.DB, config *appconf.Ap
 	s.ctx = ctx
 	s.db = db
 	s.config = config
+
+	// Hikarinagi 刷新令牌缓存与轮换持久化回调
+	utils.SetHikarinagiRefreshToken(config.HikarinagiRefreshToken)
+	utils.SetHikarinagiTokenSaver(func(newToken string) error {
+		s.config.HikarinagiRefreshToken = newToken
+		return appconf.SaveConfig(s.config)
+	})
+}
+
+// StartHikarinagiAuth 启动 Hikarinagi 授权流程（公共客户端，授权码 + PKCE，本地回调服务器）
+// 返回刷新令牌。刷新令牌每次刷新均会轮换，由 utils 内的 saver 回调覆盖保存
+func (s *ConfigService) StartHikarinagiAuth() (string, error) {
+	verifier, _, err := utils.GeneratePKCE()
+	if err != nil {
+		applog.LogErrorf(s.ctx, "StartHikarinagiAuth: failed to generate PKCE: %v", err)
+		return "", err
+	}
+	authURL, err := utils.GetHikarinagiAuthURL(verifier)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "StartHikarinagiAuth: failed to build auth URL: %v", err)
+		return "", err
+	}
+
+	runtime.BrowserOpenURL(s.ctx, authURL)
+
+	code, err := utils.StartHikarinagiAuthServer(s.ctx, 5*time.Minute, verifier)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "StartHikarinagiAuth: failed to get auth code: %v", err)
+		return "", err
+	}
+
+	tokenResp, err := utils.ExchangeHikarinagiCode(s.ctx, code, verifier)
+	if err != nil {
+		applog.LogErrorf(s.ctx, "StartHikarinagiAuth: failed to exchange code for token: %v", err)
+		return "", err
+	}
+
+	// 保存刷新令牌到配置与内存缓存
+	s.config.HikarinagiRefreshToken = tokenResp.RefreshToken
+	if err := appconf.SaveConfig(s.config); err != nil {
+		applog.LogErrorf(s.ctx, "StartHikarinagiAuth: failed to save config: %v", err)
+		return "", err
+	}
+	utils.SetHikarinagiRefreshToken(tokenResp.RefreshToken)
+
+	return tokenResp.RefreshToken, nil
 }
 
 func (s *ConfigService) GetAppConfig() (appconf.AppConfig, error) {
@@ -142,6 +189,9 @@ func (s *ConfigService) UpdateAppConfig(newConfig appconf.AppConfig) error {
 	// OneDrive OAuth
 	s.config.OneDriveClientID = newConfig.OneDriveClientID
 	s.config.OneDriveRefreshToken = newConfig.OneDriveRefreshToken
+	// Hikarinagi OAuth（同步内存缓存）
+	s.config.HikarinagiRefreshToken = newConfig.HikarinagiRefreshToken
+	utils.SetHikarinagiRefreshToken(newConfig.HikarinagiRefreshToken)
 	// 备份相关配置
 	s.config.AutoBackupDB = newConfig.AutoBackupDB
 	s.config.AutoBackupGameSave = newConfig.AutoBackupGameSave

@@ -587,6 +587,7 @@ function GameDetailPage() {
   const getchuId = getSourceId(game.source_list, enums.SourceType.GETCHU);
   const dlsiteId = getSourceId(game.source_list, enums.SourceType.DLSITE);
   const vndbId = getSourceId(game.source_list, enums.SourceType.VNDB);
+  const hikarinagiId = getSourceId(game.source_list, enums.SourceType.HIKARINAGI);
 
   const getEroscapeUrl = () => {
     if (config?.eroscape_use_mirror || false) {
@@ -831,6 +832,14 @@ function GameDetailPage() {
                 className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
               >
                 {t('game.buttons.vndb')}
+              </button>
+            )}
+            {hikarinagiId && (
+              <button
+                onClick={() => OpenBrowser(`https://www.hikarinagi.org/galgames/${hikarinagiId}`)}
+                className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors"
+              >
+                {t('game.buttons.hikarinagi')}
               </button>
             )}
           </div>

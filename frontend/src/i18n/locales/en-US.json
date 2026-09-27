@@ -381,7 +381,8 @@
       "getchu": "Getchu",
       "dlsite": "DlSite",
       "info": "Info Modal",
-      "vndb": "VNDB"
+      "vndb": "VNDB",
+      "hikarinagi": "Hikarinagi"
     },
     "labels": {
       "source": "Data source",
@@ -696,6 +697,13 @@
   "basic": {
     "bangumiAccessToken": "Bangumi Access Token",
     "vndbAccessToken": "VNDB Access Token",
+    "hikarinagiAuth": "Hikarinagi Authorization",
+    "hikarinagiAuthBtn": "Authorize",
+    "hikarinagiAuthorizing": "Waiting for authorization…",
+    "hikarinagiAuthed": "Authorized (refresh token rotates and saves automatically)",
+    "hikarinagiAuthHint": "Not authorized. Click to authorize in your browser",
+    "hikarinagiAuthSuccess": "Hikarinagi authorization succeeded",
+    "hikarinagiAuthFailed": "Hikarinagi authorization failed: {{error}}",
     "bangumiTokenHint": "Please fill in if you want to use Bangumi data source",
     "dmmSwitch": "DMM Switch",
     "eroscapeSwitch": "ErogameScape Switch",
@@ -835,6 +843,7 @@
     "eroscape": "ErogameScape",
     "dlsite": "Dlsite",
     "getchu": "Getchu",
+    "hikarinagi": "Hikarinagi",
     "noFilter": "No source filter",
     "emptyCover": "No cover",
     "emptyGallery": "No gallery",

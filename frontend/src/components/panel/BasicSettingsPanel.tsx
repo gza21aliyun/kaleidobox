@@ -2,7 +2,9 @@ import type { appconf, models } from "../../../wailsjs/go/models";
 import { BetterSelect } from "../ui/BetterSelect";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { useTranslation } from 'react-i18next';
+import toast from "react-hot-toast";
 import { SelectFile } from "../../../wailsjs/go/service/GameService";
+import { StartHikarinagiAuth } from "../../../wailsjs/go/service/ConfigService";
 import { GetAvailableDisplays } from "../../../wailsjs/go/service/StartService";
 import { useEffect, useState } from "react";
 
@@ -42,10 +44,26 @@ interface BasicSettingsProps {
 export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
   const { t, i18n } = useTranslation();
   const [displays, setDisplays] = useState<models.MonitorInfo[]>([]);
+  const [authorizingHikarinagi, setAuthorizingHikarinagi] = useState(false);
 
   useEffect(() => {
     GetAvailableDisplays().then(setDisplays).catch(console.error);
   }, []);
+
+  const handleHikarinagiAuth = async () => {
+    setAuthorizingHikarinagi(true);
+    try {
+      const refreshToken = await StartHikarinagiAuth();
+      onChange({ ...formData, hikarinagi_refresh_token: refreshToken } as appconf.AppConfig);
+      toast.success(t("basic.hikarinagiAuthSuccess"));
+    }
+    catch (err: any) {
+      toast.error(t("basic.hikarinagiAuthFailed", { error: err }));
+    }
+    finally {
+      setAuthorizingHikarinagi(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -91,6 +109,24 @@ export function BasicSettingsPanel({ formData, onChange }: BasicSettingsProps) {
           onChange={handleChange}
           className="glass-input w-full px-3 py-2 border border-brand-300 dark:border-brand-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-500 dark:bg-brand-700 dark:text-white"
         />
+      </div>
+
+      <div className="flex items-center justify-between p-2">
+        <div className="flex flex-col">
+          <label className="block text-sm font-medium text-brand-700 dark:text-brand-300 cursor-pointer">
+            {t("basic.hikarinagiAuth")}
+          </label>
+          <p className="text-xs text-brand-500 dark:text-brand-400 mt-1">
+            {formData.hikarinagi_refresh_token ? t("basic.hikarinagiAuthed") : t("basic.hikarinagiAuthHint")}
+          </p>
+        </div>
+        <button
+          onClick={handleHikarinagiAuth}
+          disabled={authorizingHikarinagi}
+          className="px-3 py-1.5 bg-sky-600 text-white rounded-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {authorizingHikarinagi ? t("basic.hikarinagiAuthorizing") : t("basic.hikarinagiAuthBtn")}
+        </button>
       </div>
 
       <div className="flex items-center justify-between p-2">

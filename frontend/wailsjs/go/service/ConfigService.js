@@ -14,6 +14,10 @@ export function SafeQuit() {
   return window['go']['service']['ConfigService']['SafeQuit']();
 }
 
+export function StartHikarinagiAuth() {
+  return window['go']['service']['ConfigService']['StartHikarinagiAuth']();
+}
+
 export function SaveCroppedBackgroundImage(arg1, arg2, arg3, arg4, arg5) {
   return window['go']['service']['ConfigService']['SaveCroppedBackgroundImage'](arg1, arg2, arg3, arg4, arg5);
 }

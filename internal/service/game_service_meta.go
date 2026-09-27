@@ -177,6 +177,9 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 				} else if taskData.Req.Source == enums.Getchu {
 					getchuGetter := utils.NewGetchuInfoGetter()
 					updatedGame, err = getchuGetter.FetchMetadataByName2(ngame.SearchName)
+				} else if taskData.Req.Source == enums.Hikarinagi {
+					hikarinagiGetter := utils.NewHikarinagiInfoGetter(s.config.SearchCn)
+					updatedGame, err = hikarinagiGetter.FetchMetadataByName(ngame.SearchName, "")
 
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 
@@ -325,7 +328,7 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 	var mu sync.Mutex
 
 	// 这里暂不处理任何错误，直接尝试从多个来源并发获取数据，空就是网络问题或未找到，不管它
-	wg.Add(7)
+	wg.Add(8)
 
 	go func() {
 		defer wg.Done()
@@ -404,6 +407,17 @@ func (s *GameService) FetchMetadataByName(name string) ([]vo.GameMetadataFromWeb
 		}
 	}()
 
+	go func() {
+		defer wg.Done()
+		hikarinagiGetter := utils.NewHikarinagiInfoGetter(s.config.SearchCn)
+		hikarinagi, _ := hikarinagiGetter.FetchMetadataByName(name, "")
+		if hikarinagi != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Hikarinagi, Game: hikarinagi})
+			mu.Unlock()
+		}
+	}()
+
 	wg.Wait()
 
 	return games, nil
@@ -415,7 +429,7 @@ func (s *GameService) FetchMetadataByNameQuick(name string) ([]vo.GameMetadataFr
 	var mu sync.Mutex
 
 	// 这里暂不处理任何错误，直接尝试从多个来源并发获取数据，空就是网络问题或未找到，不管它
-	wg.Add(7)
+	wg.Add(8)
 
 	go func() {
 		defer wg.Done()
@@ -494,6 +508,17 @@ func (s *GameService) FetchMetadataByNameQuick(name string) ([]vo.GameMetadataFr
 		}
 	}()
 
+	go func() {
+		defer wg.Done()
+		hikarinagiGetter := utils.NewHikarinagiInfoGetter(s.config.SearchCn)
+		hikarinagi, _ := hikarinagiGetter.FetchMetadataByName(name, "")
+		if hikarinagi != (models.Game{}) {
+			mu.Lock()
+			games = append(games, vo.GameMetadataFromWebVO{Source: enums.Hikarinagi, Game: hikarinagi})
+			mu.Unlock()
+		}
+	}()
+
 	wg.Wait()
 
 	return games, nil
@@ -559,6 +584,11 @@ func (s *GameService) FetchMetadataNotSave(req vo.MetadataRequest) (models.GameE
 		getchuGetter := utils.NewGetchuInfoGetter()
 		// game.GetchuId = req.ID
 		gameEntity, e = getchuGetter.FetchMetadataById(req)
+
+	case enums.Hikarinagi:
+		fmt.Println("Fetching metadata from Hikarinagi")
+		hikarinagiGetter := utils.NewHikarinagiInfoGetter(s.config.SearchCn)
+		gameEntity, e = hikarinagiGetter.FetchEntity(req, "")
 	}
 	s.UnionFetch(&gameEntity, req)
 	return gameEntity, e

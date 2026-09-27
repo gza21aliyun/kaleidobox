@@ -37,6 +37,8 @@ type AppConfig struct {
 	// OneDrive OAuth 配置
 	OneDriveClientID     string `json:"onedrive_client_id,omitempty"`     // OneDrive Client ID
 	OneDriveRefreshToken string `json:"onedrive_refresh_token,omitempty"` // OneDrive Refresh Token（OAuth 授权后获得）
+	// Hikarinagi OAuth 配置（公共客户端，授权码 + PKCE 流程）
+	HikarinagiRefreshToken string `json:"hikarinagi_refresh_token,omitempty"` // Hikarinagi Refresh Token（每次刷新轮换，须覆盖保存）
 	// WebDav 配置
 	WebDavServer   string `json:"webdav_server,omitempty"`   // WebDav 服务器地址
 	WebDavUsername string `json:"webdav_username,omitempty"` // WebDav 用户名

@@ -152,12 +152,16 @@ type HikarinagiStaffEntry struct {
 
 // 搜索结果条目
 type HikarinagiSearchHit struct {
-	ID        int64            `json:"id"`
-	Title     string           `json:"title"`
-	Subtitle  *string          `json:"subtitle"`
-	Type      string           `json:"type"`
-	Developer *string          `json:"developer"`
-	Cover     *HikarinagiCover `json:"cover"`
+	ID          int64            `json:"id"`
+	Title       string           `json:"title"`
+	OriginTitle string           `json:"origin_title"`
+	TransTitle  *string          `json:"trans_title"`
+	OriginIntro *string          `json:"origin_intro"`
+	TransIntro  *string          `json:"trans_intro"`
+	Subtitle    *string          `json:"subtitle"`
+	Type        string           `json:"type"`
+	Developer   *string          `json:"developer"`
+	Cover       *HikarinagiCover `json:"cover"`
 }
 
 type hikarinagiEnvelope struct {
@@ -527,7 +531,8 @@ func (g HikarinagiInfoGetter) FetchMetadataByName(name string, token string) (mo
 			continue
 		}
 		game := models.Game{
-			Name:       hit.Title,
+			Name:       g.pickTitle(hit.OriginTitle, hit.TransTitle),
+			Summary:    g.pickIntro(hit.OriginIntro, hit.TransIntro),
 			SourceType: enums.Hikarinagi,
 			SourceID:   strconv.FormatInt(hit.ID, 10),
 			CachedAt:   time.Now(),

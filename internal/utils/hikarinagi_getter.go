@@ -11,6 +11,7 @@ import (
 	"lunabox/internal/vo"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -107,26 +108,36 @@ type HikarinagiTag struct {
 
 // OpenGalgameDto Galgame 详情
 type HikarinagiGalgame struct {
-	ID             int64             `json:"id"`
-	OriginTitle    string            `json:"origin_title"`
-	TransTitle     *string           `json:"trans_title"`
-	EnTitle        *string           `json:"en_title"`
-	Aliases        []string          `json:"aliases"`
-	Developer      *string           `json:"developer"`
-	OriginIntro    *string           `json:"origin_intro"`
-	TransIntro     *string           `json:"trans_intro"`
-	EnIntro        *string           `json:"en_intro"`
-	AdvType        *string           `json:"adv_type"`
-	DevStatus      *string           `json:"dev_status"`
-	ReleaseDate    *string           `json:"release_date"`
-	ReleaseDateTbd bool              `json:"release_date_tbd"`
-	NSFW           bool              `json:"nsfw"`
-	Homepage       *string           `json:"homepage"`
-	Covers         []HikarinagiCover `json:"covers"`
-	Images         []HikarinagiMedia `json:"images"`
-	Tags           []HikarinagiTag   `json:"tags"`
-	Platforms      []string          `json:"platforms"`
-	OriginLang     *string           `json:"origin_lang"`
+	ID             int64                    `json:"id"`
+	OriginTitle    string                   `json:"origin_title"`
+	TransTitle     *string                  `json:"trans_title"`
+	EnTitle        *string                  `json:"en_title"`
+	Aliases        []string                 `json:"aliases"`
+	Developer      *string                  `json:"developer"`
+	OriginIntro    *string                  `json:"origin_intro"`
+	TransIntro     *string                  `json:"trans_intro"`
+	EnIntro        *string                  `json:"en_intro"`
+	AdvType        *string                  `json:"adv_type"`
+	DevStatus      *string                  `json:"dev_status"`
+	ReleaseDate    *string                  `json:"release_date"`
+	ReleaseDateTbd bool                     `json:"release_date_tbd"`
+	NSFW           bool                     `json:"nsfw"`
+	Homepage       *string                  `json:"homepage"`
+	Covers         []HikarinagiCover        `json:"covers"`
+	Images         []HikarinagiMedia        `json:"images"`
+	Tags           []HikarinagiTag          `json:"tags"`
+	Platforms      []string                 `json:"platforms"`
+	OriginLang     *string                  `json:"origin_lang"`
+	VndbID         *int64                   `json:"vndb_id"`
+	BangumiGameID  *int64                   `json:"bangumi_game_id"`
+	ExternalLinks  []HikarinagiExternalLink `json:"external_links"`
+}
+
+// 外部链接条目（官网、商店页等），name 为站点标识（website/getchu/dmm/dlsite/steam 等）
+type HikarinagiExternalLink struct {
+	Label string `json:"label"`
+	Name  string `json:"name"`
+	URL   string `json:"url"`
 }
 
 // OpenEntityRefDto 人物/角色引用
@@ -367,8 +378,56 @@ func (g HikarinagiInfoGetter) convertToModel(gameDto *HikarinagiGalgame) (models
 	game.Images = strings.Join(images, ",")
 
 	game.SetSourceID(enums.Hikarinagi, strconv.FormatInt(gameDto.ID, 10))
+	g.applyExternalSourceIDs(&game, gameDto)
 	return game, nil
 }
+
+// applyExternalSourceIDs 从外部链接与关联字段提取本应用支持的其他源的 ID 写入 SourceList；
+// 该源已有 ID 时不覆盖直接跳过（与合并层 MergeSourceList 的不覆盖语义一致）。
+func (g HikarinagiInfoGetter) applyExternalSourceIDs(game *models.Game, gameDto *HikarinagiGalgame) {
+	// 关联站点 ID（vndb_id / bangumi_game_id）
+	if gameDto.VndbID != nil && *gameDto.VndbID > 0 && game.GetSourceID(enums.VNDB) == "" {
+		game.SetSourceID(enums.VNDB, "v"+strconv.FormatInt(*gameDto.VndbID, 10))
+	}
+	if gameDto.BangumiGameID != nil && *gameDto.BangumiGameID > 0 && game.GetSourceID(enums.Bangumi) == "" {
+		game.SetSourceID(enums.Bangumi, strconv.FormatInt(*gameDto.BangumiGameID, 10))
+	}
+	// external_links 按 URL 提取
+	for _, link := range gameDto.ExternalLinks {
+		var st enums.SourceType
+		var id string
+		switch link.Name {
+		case "getchu":
+			st = enums.Getchu
+			if m := getchuIDRe.FindStringSubmatch(link.URL); m != nil {
+				id = m[1]
+			}
+		case "dmm":
+			// 仅取 dlsoft 数字商店页（应用 DMM 抓取支持的形式），实体版 mono 页不取
+			st = enums.Dmm
+			if m := dmmCIDRe.FindStringSubmatch(link.URL); m != nil {
+				id = m[1]
+			}
+		case "dlsite":
+			st = enums.Dlsite
+			if m := dlsiteWorknoRe.FindStringSubmatch(link.URL); m != nil {
+				id = m[1]
+			}
+		default:
+			continue
+		}
+		if id == "" || game.GetSourceID(st) != "" {
+			continue
+		}
+		game.SetSourceID(st, id)
+	}
+}
+
+var (
+	getchuIDRe     = regexp.MustCompile(`soft\.phtml\?id=(\d+)`)
+	dmmCIDRe       = regexp.MustCompile(`dlsoft\.dmm\.co\.jp/detail/([a-z0-9_-]+)/`)
+	dlsiteWorknoRe = regexp.MustCompile(`product_id/([A-Z]{2}\d+)`)
+)
 
 func (g HikarinagiInfoGetter) buildTags(gameDto *HikarinagiGalgame, game models.Game) map[string][]models.Tag {
 	tagMap := make(map[string][]models.Tag)

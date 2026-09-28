@@ -10,8 +10,8 @@ export function BatchAddPlaySessions(arg1) {
   return window['go']['service']['SessionService']['BatchAddPlaySessions'](arg1);
 }
 
-export function CleanupUnfinishedSessions() {
-  return window['go']['service']['SessionService']['CleanupUnfinishedSessions']();
+export function CleanupUnfinishedSessions(arg1) {
+  return window['go']['service']['SessionService']['CleanupUnfinishedSessions'](arg1);
 }
 
 export function CreatePendingSession(arg1, arg2) {
@@ -32,4 +32,8 @@ export function Init(arg1, arg2, arg3) {
 
 export function UpdatePlaySession(arg1) {
   return window['go']['service']['SessionService']['UpdatePlaySession'](arg1);
+}
+
+export function UpdateProcess(arg1, arg2, arg3) {
+  return window['go']['service']['SessionService']['UpdateProcess'](arg1, arg2, arg3);
 }

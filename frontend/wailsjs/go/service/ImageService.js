@@ -26,16 +26,48 @@ export function DeleteImageBackup(arg1) {
   return window['go']['service']['ImageService']['DeleteImageBackup'](arg1);
 }
 
-export function GetImageBackupByLocalPath(arg1) {
-  return window['go']['service']['ImageService']['GetImageBackupByLocalPath'](arg1);
+export function DeleteImageBackupsBySubject(arg1, arg2) {
+  return window['go']['service']['ImageService']['DeleteImageBackupsBySubject'](arg1, arg2);
 }
 
-export function GetImageBackupByUrl(arg1) {
-  return window['go']['service']['ImageService']['GetImageBackupByUrl'](arg1);
+export function DownloadImage(arg1, arg2) {
+  return window['go']['service']['ImageService']['DownloadImage'](arg1, arg2);
 }
 
-export function GetImageBackupsByUrls(arg1) {
-  return window['go']['service']['ImageService']['GetImageBackupsByUrls'](arg1);
+export function DownloadImageBackups(arg1) {
+  return window['go']['service']['ImageService']['DownloadImageBackups'](arg1);
+}
+
+export function DownloadImages() {
+  return window['go']['service']['ImageService']['DownloadImages']();
+}
+
+export function FetchEmptyGalleryGames() {
+  return window['go']['service']['ImageService']['FetchEmptyGalleryGames']();
+}
+
+export function FetchGetchuImages(arg1) {
+  return window['go']['service']['ImageService']['FetchGetchuImages'](arg1);
+}
+
+export function FetchImage(arg1, arg2, arg3) {
+  return window['go']['service']['ImageService']['FetchImage'](arg1, arg2, arg3);
+}
+
+export function FetchImageBackups(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['service']['ImageService']['FetchImageBackups'](arg1, arg2, arg3, arg4, arg5);
+}
+
+export function FetchImages(arg1, arg2, arg3, arg4) {
+  return window['go']['service']['ImageService']['FetchImages'](arg1, arg2, arg3, arg4);
+}
+
+export function FetchSubjectImages(arg1, arg2) {
+  return window['go']['service']['ImageService']['FetchSubjectImages'](arg1, arg2);
+}
+
+export function GetImageBackupByUrl(arg1, arg2) {
+  return window['go']['service']['ImageService']['GetImageBackupByUrl'](arg1, arg2);
 }
 
 export function Init(arg1, arg2, arg3) {
@@ -44,6 +76,22 @@ export function Init(arg1, arg2, arg3) {
 
 export function ListImageBackups() {
   return window['go']['service']['ImageService']['ListImageBackups']();
+}
+
+export function PickLocalImage(arg1, arg2, arg3, arg4) {
+  return window['go']['service']['ImageService']['PickLocalImage'](arg1, arg2, arg3, arg4);
+}
+
+export function SaveGameImages(arg1, arg2) {
+  return window['go']['service']['ImageService']['SaveGameImages'](arg1, arg2);
+}
+
+export function ScaleImageWithMagpie(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['service']['ImageService']['ScaleImageWithMagpie'](arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+export function TakeScreenshotOfFocusedWindow(arg1) {
+  return window['go']['service']['ImageService']['TakeScreenshotOfFocusedWindow'](arg1);
 }
 
 export function UpdateImageBackup(arg1) {

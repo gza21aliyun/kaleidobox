@@ -34,8 +34,24 @@ export function DownloadCloudDBBackup(arg1) {
   return window['go']['service']['BackupService']['DownloadCloudDBBackup'](arg1);
 }
 
+export function DownloadFileInDownload(arg1) {
+  return window['go']['service']['BackupService']['DownloadFileInDownload'](arg1);
+}
+
+export function DownloadSave(arg1, arg2) {
+  return window['go']['service']['BackupService']['DownloadSave'](arg1, arg2);
+}
+
+export function DownloadSaveInDownload(arg1, arg2) {
+  return window['go']['service']['BackupService']['DownloadSaveInDownload'](arg1, arg2);
+}
+
 export function ExchangeOneDriveCode(arg1) {
   return window['go']['service']['BackupService']['ExchangeOneDriveCode'](arg1);
+}
+
+export function FetchGameGuide(arg1) {
+  return window['go']['service']['BackupService']['FetchGameGuide'](arg1);
 }
 
 export function GetBackupDir() {
@@ -82,6 +98,10 @@ export function OpenBackupFolder(arg1) {
   return window['go']['service']['BackupService']['OpenBackupFolder'](arg1);
 }
 
+export function OpenFolder(arg1) {
+  return window['go']['service']['BackupService']['OpenFolder'](arg1);
+}
+
 export function RestoreBackup(arg1) {
   return window['go']['service']['BackupService']['RestoreBackup'](arg1);
 }
@@ -110,6 +130,10 @@ export function SelectBackupSavePath() {
   return window['go']['service']['BackupService']['SelectBackupSavePath']();
 }
 
+export function SelectDBBackupRestorePath() {
+  return window['go']['service']['BackupService']['SelectDBBackupRestorePath']();
+}
+
 export function SetupCloudBackup(arg1) {
   return window['go']['service']['BackupService']['SetupCloudBackup'](arg1);
 }
@@ -124,6 +148,10 @@ export function TestOneDriveConnection(arg1) {
 
 export function TestS3Connection(arg1) {
   return window['go']['service']['BackupService']['TestS3Connection'](arg1);
+}
+
+export function TestWebDavConnection(arg1) {
+  return window['go']['service']['BackupService']['TestWebDavConnection'](arg1);
 }
 
 export function UploadDBBackupToCloud(arg1) {

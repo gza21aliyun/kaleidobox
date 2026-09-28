@@ -6,8 +6,8 @@ export function CountStaffs() {
   return window['go']['service']['StaffService']['CountStaffs']();
 }
 
-export function CreateOrUpdateStaff(arg1, arg2, arg3, arg4, arg5) {
-  return window['go']['service']['StaffService']['CreateOrUpdateStaff'](arg1, arg2, arg3, arg4, arg5);
+export function CreateOrUpdateStaff(arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
+  return window['go']['service']['StaffService']['CreateOrUpdateStaff'](arg1, arg2, arg3, arg4, arg5, arg6, arg7);
 }
 
 export function CreateStaff(arg1) {
@@ -42,12 +42,20 @@ export function GetStaffsByGameId(arg1) {
   return window['go']['service']['StaffService']['GetStaffsByGameId'](arg1);
 }
 
+export function GetStaffsByRole(arg1) {
+  return window['go']['service']['StaffService']['GetStaffsByRole'](arg1);
+}
+
 export function Init(arg1, arg2, arg3) {
   return window['go']['service']['StaffService']['Init'](arg1, arg2, arg3);
 }
 
 export function ListStaffs() {
   return window['go']['service']['StaffService']['ListStaffs']();
+}
+
+export function SearchStaffs(arg1, arg2) {
+  return window['go']['service']['StaffService']['SearchStaffs'](arg1, arg2);
 }
 
 export function UpdateStaff(arg1) {

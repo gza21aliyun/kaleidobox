@@ -5,17 +5,29 @@ import {context} from '../models';
 import {sql} from '../models';
 import {appconf} from '../models';
 
+export function AccumulateTag(arg1:string):Promise<void>;
+
 export function CountTags():Promise<number>;
 
-export function CreateOrUpdateTag(arg1:string,arg2:string):Promise<void>;
+export function CreateOrUpdateTag(arg1:models.Tag):Promise<void>;
 
-export function CreateOrUpdateTagMapArray(arg1:Record<string, Array<string>>):Promise<void>;
+export function CreateOrUpdateTagMapArray(arg1:Record<string, Array<models.Tag>>):Promise<void>;
 
 export function CreateTag(arg1:models.Tag):Promise<void>;
 
 export function DeleteTag(arg1:string):Promise<void>;
 
+export function DeleteTagGroup(arg1:string):Promise<void>;
+
+export function GetBrands():Promise<Array<models.Tag>>;
+
+export function GetGenres():Promise<Array<models.Tag>>;
+
+export function GetSeries():Promise<Array<models.Tag>>;
+
 export function GetTagByName(arg1:string):Promise<models.Tag>;
+
+export function GetTagListByGroup(arg1:string):Promise<Array<string>>;
 
 export function GetTagListByString(arg1:string):Promise<Array<models.Tag>>;
 
@@ -25,6 +37,16 @@ export function GetTagsMapByString(arg1:string):Promise<Record<string, Array<mod
 
 export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig):Promise<void>;
 
+export function IsBrandTag(arg1:string):Promise<boolean>;
+
+export function ListGroups():Promise<Array<string>>;
+
 export function ListTags():Promise<Array<models.Tag>>;
 
+export function ManageTags(arg1:Array<string>):Promise<void>;
+
 export function UpdateTag(arg1:models.Tag):Promise<void>;
+
+export function UpdateTagGroup(arg1:string,arg2:string):Promise<void>;
+
+export function UpdateTagsGroup(arg1:Array<string>,arg2:string):Promise<void>;

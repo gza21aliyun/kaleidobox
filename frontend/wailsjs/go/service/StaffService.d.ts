@@ -8,7 +8,7 @@ import {appconf} from '../models';
 
 export function CountStaffs():Promise<number>;
 
-export function CreateOrUpdateStaff(arg1:string,arg2:string,arg3:string,arg4:enums.SourceType,arg5:string):Promise<models.Staff>;
+export function CreateOrUpdateStaff(arg1:string,arg2:string,arg3:string,arg4:enums.SourceType,arg5:string,arg6:enums.StaffRole,arg7:string):Promise<models.Staff>;
 
 export function CreateStaff(arg1:models.Staff):Promise<void>;
 
@@ -26,8 +26,12 @@ export function GetStaffBySource(arg1:enums.SourceType,arg2:string):Promise<mode
 
 export function GetStaffsByGameId(arg1:string):Promise<Array<models.Staff>>;
 
+export function GetStaffsByRole(arg1:enums.StaffRole):Promise<Array<models.Staff>>;
+
 export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig):Promise<void>;
 
 export function ListStaffs():Promise<Array<models.Staff>>;
+
+export function SearchStaffs(arg1:string,arg2:number):Promise<Array<models.Staff>>;
 
 export function UpdateStaff(arg1:models.Staff):Promise<void>;

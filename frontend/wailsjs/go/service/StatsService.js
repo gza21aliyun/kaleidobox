@@ -10,12 +10,28 @@ export function FetchImageAsBase64(arg1) {
   return window['go']['service']['StatsService']['FetchImageAsBase64'](arg1);
 }
 
+export function GetCurrentSession(arg1) {
+  return window['go']['service']['StatsService']['GetCurrentSession'](arg1);
+}
+
+export function GetGameEndDate(arg1) {
+  return window['go']['service']['StatsService']['GetGameEndDate'](arg1);
+}
+
 export function GetGameStats(arg1) {
   return window['go']['service']['StatsService']['GetGameStats'](arg1);
 }
 
+export function GetGameStatsList() {
+  return window['go']['service']['StatsService']['GetGameStatsList']();
+}
+
 export function GetGlobalPeriodStats(arg1) {
   return window['go']['service']['StatsService']['GetGlobalPeriodStats'](arg1);
+}
+
+export function GetSingleGameStats(arg1) {
+  return window['go']['service']['StatsService']['GetSingleGameStats'](arg1);
 }
 
 export function Init(arg1, arg2, arg3) {

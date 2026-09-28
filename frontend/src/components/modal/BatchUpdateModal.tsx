@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from "@tanstack/react-router";
 import { getSourceId, hasSource, setSourceId } from "../../utils/sourceList";
 import { EXTERNAL_SOURCE_VALUES, METADATA_SOURCES } from "../../utils/sourceTypes";
+import { handleHikarinagiAuthError } from "../../utils/hikarinagiAuth";
 
 import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq, FetchMetadataByNameQuick } from "../../../wailsjs/go/service/GameService";
 import {
@@ -59,7 +60,7 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
   // 源列表编辑弹窗状态
   const [showSourceEdit, setShowSourceEdit] = useState(false);
   const [sourceEditIndex, setSourceEditIndex] = useState<number | null>(null);
-  // const [manualSource, setManualSource] = useState<enums.SourceType>(enums.SourceType.BANGUMI);
+  // const manualSource = setManualSource = useState<enums.SourceType>(enums.SourceType.BANGUMI);
   const taskId = useRef("");
   const [shouldOverwrite, setIsOverWrite]  = useState(true);
   const [shouldLoadStaffs, setShouldLoadStaffs] = useState(true);
@@ -104,7 +105,10 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
 
             }
             if (task.item_status === enums.TaskStatus.ERROR && task.item_id !== "") {
-                setFailedIds([...failedIds, task.item_id])
+                setFailedIds([...failedIds, task.item_id]);
+                // 后台任务的错误通过 warning 文本传递，识别 Hikarinagi 未授权并引导授权
+                // （工具内部全局去重，弹过一次后不再弹）
+                handleHikarinagiAuthError(task.warning, t, () => handleUpdate());
             }
             if (task.item_id == "") {
                 setItemIdMatching("")
@@ -275,7 +279,9 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
       setManualSelectIndex(null);    
       // fetchGames().then(() => {});
     }).catch((error) => {
-      toast.error(t('batchUpdate.updateFailed') + ":" + error);
+      if (!handleHikarinagiAuthError(error, t, () => selectManualMatch(game, source))) {
+        toast.error(t('batchUpdate.updateFailed') + ":" + error);
+      }
       console.error("Failed to update game:", error);
       setIsSearching(false);
       setSearchMsg(t('batchUpdate.searching'));
@@ -305,7 +311,9 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
     }
     catch (error) {
       console.error("Failed to fetch by ID:", error);
-      toast.error(t('batchUpdate.fetchFailed'));
+      if (!handleHikarinagiAuthError(error, t, () => handleSearchById())) {
+        toast.error(t('batchUpdate.fetchFailed'));
+      }
     }
     finally {
       setIsSearching(false);

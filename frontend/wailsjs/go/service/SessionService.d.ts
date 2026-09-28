@@ -10,7 +10,7 @@ export function AddPlaySession(arg1:string,arg2:time.Time,arg3:number):Promise<m
 
 export function BatchAddPlaySessions(arg1:Array<models.PlaySession>):Promise<void>;
 
-export function CleanupUnfinishedSessions():Promise<void>;
+export function CleanupUnfinishedSessions(arg1:boolean):Promise<Array<models.PlaySession>>;
 
 export function CreatePendingSession(arg1:string,arg2:time.Time):Promise<string>;
 
@@ -21,3 +21,5 @@ export function GetPlaySessions(arg1:string):Promise<Array<models.PlaySession>>;
 export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig):Promise<void>;
 
 export function UpdatePlaySession(arg1:models.PlaySession):Promise<void>;
+
+export function UpdateProcess(arg1:string,arg2:string,arg3:number):Promise<void>;

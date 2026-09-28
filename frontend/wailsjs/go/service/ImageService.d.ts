@@ -17,14 +17,38 @@ export function CreateOrUpdateImageUrl(arg1:string):Promise<void>;
 
 export function DeleteImageBackup(arg1:string):Promise<void>;
 
-export function GetImageBackupByLocalPath(arg1:string):Promise<models.ImageBackup>;
+export function DeleteImageBackupsBySubject(arg1:string,arg2:number):Promise<void>;
 
-export function GetImageBackupByUrl(arg1:string):Promise<models.ImageBackup>;
+export function DownloadImage(arg1:string,arg2:string):Promise<void>;
 
-export function GetImageBackupsByUrls(arg1:Array<string>):Promise<Array<models.ImageBackup>>;
+export function DownloadImageBackups(arg1:Array<models.ImageBackup>):Promise<Array<models.ImageBackup>>;
+
+export function DownloadImages():Promise<void>;
+
+export function FetchEmptyGalleryGames():Promise<Array<string>>;
+
+export function FetchGetchuImages(arg1:Array<string>):Promise<Array<string>>;
+
+export function FetchImage(arg1:string,arg2:number,arg3:number):Promise<models.ImageBackup>;
+
+export function FetchImageBackups(arg1:string,arg2:string,arg3:number,arg4:number,arg5:boolean):Promise<Array<models.ImageBackup>>;
+
+export function FetchImages(arg1:string,arg2:number,arg3:number,arg4:boolean):Promise<Array<models.ImageBackup>>;
+
+export function FetchSubjectImages(arg1:string,arg2:number):Promise<Array<models.ImageBackup>>;
+
+export function GetImageBackupByUrl(arg1:string,arg2:boolean):Promise<models.ImageBackup>;
 
 export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig):Promise<void>;
 
 export function ListImageBackups():Promise<Array<models.ImageBackup>>;
+
+export function PickLocalImage(arg1:string,arg2:number,arg3:number,arg4:string):Promise<string>;
+
+export function SaveGameImages(arg1:models.GameEntity,arg2:boolean):Promise<void>;
+
+export function ScaleImageWithMagpie(arg1:number,arg2:number,arg3:number,arg4:number,arg5:number,arg6:number):Promise<void>;
+
+export function TakeScreenshotOfFocusedWindow(arg1:string):Promise<void>;
 
 export function UpdateImageBackup(arg1:models.ImageBackup):Promise<void>;

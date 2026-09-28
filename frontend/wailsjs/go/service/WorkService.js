@@ -18,8 +18,24 @@ export function CreateWork(arg1) {
   return window['go']['service']['WorkService']['CreateWork'](arg1);
 }
 
+export function DeleteWork(arg1) {
+  return window['go']['service']['WorkService']['DeleteWork'](arg1);
+}
+
+export function DeleteWorksForGame(arg1) {
+  return window['go']['service']['WorkService']['DeleteWorksForGame'](arg1);
+}
+
+export function DeleteWorksForGames(arg1) {
+  return window['go']['service']['WorkService']['DeleteWorksForGames'](arg1);
+}
+
 export function GetWorkByCharactor(arg1, arg2) {
   return window['go']['service']['WorkService']['GetWorkByCharactor'](arg1, arg2);
+}
+
+export function GetWorkByCv(arg1, arg2, arg3) {
+  return window['go']['service']['WorkService']['GetWorkByCv'](arg1, arg2, arg3);
 }
 
 export function GetWorkByQueryIds(arg1, arg2, arg3) {
@@ -30,8 +46,32 @@ export function GetWorkByStaff(arg1, arg2) {
   return window['go']['service']['WorkService']['GetWorkByStaff'](arg1, arg2);
 }
 
+export function GetWorkByStaffId(arg1) {
+  return window['go']['service']['WorkService']['GetWorkByStaffId'](arg1);
+}
+
+export function GetWorkGamesByCharactorId(arg1) {
+  return window['go']['service']['WorkService']['GetWorkGamesByCharactorId'](arg1);
+}
+
+export function GetWorkGamesById(arg1) {
+  return window['go']['service']['WorkService']['GetWorkGamesById'](arg1);
+}
+
 export function GetWorksByGameId(arg1) {
   return window['go']['service']['WorkService']['GetWorksByGameId'](arg1);
+}
+
+export function GetWorksByQueryId(arg1, arg2) {
+  return window['go']['service']['WorkService']['GetWorksByQueryId'](arg1, arg2);
+}
+
+export function GetWorksByStaffId(arg1) {
+  return window['go']['service']['WorkService']['GetWorksByStaffId'](arg1);
+}
+
+export function GetWorksByStaffIdAndRole(arg1, arg2) {
+  return window['go']['service']['WorkService']['GetWorksByStaffIdAndRole'](arg1, arg2);
 }
 
 export function GetWorksMapByGameId(arg1) {
@@ -46,8 +86,8 @@ export function ListWorks() {
   return window['go']['service']['WorkService']['ListWorks']();
 }
 
-export function SetStaffCharactorService(arg1, arg2) {
-  return window['go']['service']['WorkService']['SetStaffCharactorService'](arg1, arg2);
+export function SetServices(arg1, arg2, arg3) {
+  return window['go']['service']['WorkService']['SetServices'](arg1, arg2, arg3);
 }
 
 export function UpdateWork(arg1) {

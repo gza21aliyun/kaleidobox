@@ -5,8 +5,13 @@ import {service} from '../models';
 import {context} from '../models';
 import {sql} from '../models';
 import {appconf} from '../models';
+import {models} from '../models';
 
 export function BatchImportGames(arg1:Array<vo.BatchImportCandidate>):Promise<service.ImportResult>;
+
+export function BatchImportGamesFolderLnk(arg1:string):Promise<Array<vo.BatchImportCandidate>>;
+
+export function BatchImportGamesSearch(arg1:Array<vo.BatchImportCandidate>,arg2:boolean):Promise<service.ImportResult>;
 
 export function FetchMetadataForCandidate(arg1:string):Promise<vo.BatchImportCandidate>;
 
@@ -14,19 +19,37 @@ export function ImportFromPlaynite(arg1:string,arg2:boolean):Promise<service.Imp
 
 export function ImportFromPotatoVN(arg1:string,arg2:boolean):Promise<service.ImportResult>;
 
-export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig,arg4:service.GameService):Promise<void>;
+export function ImportGamesLnk(arg1:string):Promise<vo.BatchImportCandidate>;
+
+export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig,arg4:service.GameService,arg5:service.TaskService):Promise<void>;
+
+export function OpenBrowser(arg1:string):Promise<void>;
 
 export function PreviewImport(arg1:string):Promise<Array<service.PreviewGame>>;
 
 export function PreviewPlayniteImport(arg1:string):Promise<Array<service.PreviewGame>>;
 
+export function ProcessDroppedLnkPaths(arg1:Array<string>):Promise<Array<vo.BatchImportCandidate>>;
+
 export function ProcessDroppedPaths(arg1:Array<string>):Promise<Array<vo.BatchImportCandidate>>;
 
 export function ScanLibraryDirectory(arg1:string):Promise<Array<vo.BatchImportCandidate>>;
 
+export function SearchVideoExePaths(arg1:Array<models.Game>):Promise<void>;
+
+export function SearchVideoPathsManual(arg1:models.Game):Promise<Array<string>>;
+
 export function SelectJSONFile():Promise<string>;
 
-export function SelectLibraryDirectory():Promise<string>;
+export function SelectLibraryDirector4(arg1:string):Promise<string>;
+
+export function SelectLibraryDirector5(arg1:string):Promise<string>;
+
+export function SelectLibraryDirectory(arg1:boolean):Promise<string>;
+
+export function SelectLibraryDirectory2(arg1:boolean):Promise<string>;
+
+export function SelectLibraryDirectory3(arg1:string):Promise<string>;
 
 export function SelectZipFile():Promise<string>;
 

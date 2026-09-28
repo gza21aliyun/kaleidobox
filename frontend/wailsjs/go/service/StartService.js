@@ -10,12 +10,40 @@ export function CleanupPendingSessions() {
   return window['go']['service']['StartService']['CleanupPendingSessions']();
 }
 
+export function CleanupSessionsOnStart() {
+  return window['go']['service']['StartService']['CleanupSessionsOnStart']();
+}
+
+export function DetectProcessSavePath(arg1) {
+  return window['go']['service']['StartService']['DetectProcessSavePath'](arg1);
+}
+
+export function DirectRunExe(arg1) {
+  return window['go']['service']['StartService']['DirectRunExe'](arg1);
+}
+
+export function GetAvailableDisplays() {
+  return window['go']['service']['StartService']['GetAvailableDisplays']();
+}
+
+export function GetDisplayByName(arg1) {
+  return window['go']['service']['StartService']['GetDisplayByName'](arg1);
+}
+
 export function Init(arg1, arg2, arg3) {
   return window['go']['service']['StartService']['Init'](arg1, arg2, arg3);
 }
 
 export function NotifyProcessSelected(arg1, arg2) {
   return window['go']['service']['StartService']['NotifyProcessSelected'](arg1, arg2);
+}
+
+export function RecordGameSession(arg1) {
+  return window['go']['service']['StartService']['RecordGameSession'](arg1);
+}
+
+export function SearchSavePath(arg1, arg2) {
+  return window['go']['service']['StartService']['SearchSavePath'](arg1, arg2);
 }
 
 export function SetBackupService(arg1) {
@@ -26,8 +54,20 @@ export function SetGameService(arg1) {
   return window['go']['service']['StartService']['SetGameService'](arg1);
 }
 
+export function SetHotkeyService(arg1) {
+  return window['go']['service']['StartService']['SetHotkeyService'](arg1);
+}
+
 export function SetSessionService(arg1) {
   return window['go']['service']['StartService']['SetSessionService'](arg1);
+}
+
+export function SetStasService(arg1) {
+  return window['go']['service']['StartService']['SetStasService'](arg1);
+}
+
+export function SetVMService(arg1) {
+  return window['go']['service']['StartService']['SetVMService'](arg1);
 }
 
 export function StartGameWithOptions(arg1, arg2) {
@@ -36,4 +76,8 @@ export function StartGameWithOptions(arg1, arg2) {
 
 export function StartGameWithTracking(arg1) {
   return window['go']['service']['StartService']['StartGameWithTracking'](arg1);
+}
+
+export function StartHttpServerThenOpenPageByBrowser(arg1) {
+  return window['go']['service']['StartService']['StartHttpServerThenOpenPageByBrowser'](arg1);
 }

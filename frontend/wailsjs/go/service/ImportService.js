@@ -6,6 +6,14 @@ export function BatchImportGames(arg1) {
   return window['go']['service']['ImportService']['BatchImportGames'](arg1);
 }
 
+export function BatchImportGamesFolderLnk(arg1) {
+  return window['go']['service']['ImportService']['BatchImportGamesFolderLnk'](arg1);
+}
+
+export function BatchImportGamesSearch(arg1, arg2) {
+  return window['go']['service']['ImportService']['BatchImportGamesSearch'](arg1, arg2);
+}
+
 export function FetchMetadataForCandidate(arg1) {
   return window['go']['service']['ImportService']['FetchMetadataForCandidate'](arg1);
 }
@@ -18,8 +26,16 @@ export function ImportFromPotatoVN(arg1, arg2) {
   return window['go']['service']['ImportService']['ImportFromPotatoVN'](arg1, arg2);
 }
 
-export function Init(arg1, arg2, arg3, arg4) {
-  return window['go']['service']['ImportService']['Init'](arg1, arg2, arg3, arg4);
+export function ImportGamesLnk(arg1) {
+  return window['go']['service']['ImportService']['ImportGamesLnk'](arg1);
+}
+
+export function Init(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['service']['ImportService']['Init'](arg1, arg2, arg3, arg4, arg5);
+}
+
+export function OpenBrowser(arg1) {
+  return window['go']['service']['ImportService']['OpenBrowser'](arg1);
 }
 
 export function PreviewImport(arg1) {
@@ -30,6 +46,10 @@ export function PreviewPlayniteImport(arg1) {
   return window['go']['service']['ImportService']['PreviewPlayniteImport'](arg1);
 }
 
+export function ProcessDroppedLnkPaths(arg1) {
+  return window['go']['service']['ImportService']['ProcessDroppedLnkPaths'](arg1);
+}
+
 export function ProcessDroppedPaths(arg1) {
   return window['go']['service']['ImportService']['ProcessDroppedPaths'](arg1);
 }
@@ -38,12 +58,36 @@ export function ScanLibraryDirectory(arg1) {
   return window['go']['service']['ImportService']['ScanLibraryDirectory'](arg1);
 }
 
+export function SearchVideoExePaths(arg1) {
+  return window['go']['service']['ImportService']['SearchVideoExePaths'](arg1);
+}
+
+export function SearchVideoPathsManual(arg1) {
+  return window['go']['service']['ImportService']['SearchVideoPathsManual'](arg1);
+}
+
 export function SelectJSONFile() {
   return window['go']['service']['ImportService']['SelectJSONFile']();
 }
 
-export function SelectLibraryDirectory() {
-  return window['go']['service']['ImportService']['SelectLibraryDirectory']();
+export function SelectLibraryDirector4(arg1) {
+  return window['go']['service']['ImportService']['SelectLibraryDirector4'](arg1);
+}
+
+export function SelectLibraryDirector5(arg1) {
+  return window['go']['service']['ImportService']['SelectLibraryDirector5'](arg1);
+}
+
+export function SelectLibraryDirectory(arg1) {
+  return window['go']['service']['ImportService']['SelectLibraryDirectory'](arg1);
+}
+
+export function SelectLibraryDirectory2(arg1) {
+  return window['go']['service']['ImportService']['SelectLibraryDirectory2'](arg1);
+}
+
+export function SelectLibraryDirectory3(arg1) {
+  return window['go']['service']['ImportService']['SelectLibraryDirectory3'](arg1);
 }
 
 export function SelectZipFile() {

@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"lunabox/internal/enums"
@@ -17,6 +18,10 @@ import (
 
 	"github.com/labstack/gommon/log"
 )
+
+// ErrHikarinagiNotAuthorized 未授权错误（HIKARINAGI_NOT_AUTHORIZED 为稳定标记，
+// 前端据此识别并弹出"去授权"引导，请勿改动标记文本）
+var ErrHikarinagiNotAuthorized = errors.New("HIKARINAGI_NOT_AUTHORIZED: Hikarinagi 未授权，请先在设置中完成 Hikarinagi 授权")
 
 // HikarinagiInfoGetter 获取 Hikarinagi（hikarinagi.org）Galgame 信息
 // 开放平台文档: https://www.hikarinagi.org/developers/guide
@@ -179,7 +184,7 @@ func (g HikarinagiInfoGetter) getAccessToken() (string, error) {
 	}
 
 	if hikarinagiTokenState.refreshToken == "" {
-		return "", fmt.Errorf("hikarinagi 未授权，请先在设置中完成 Hikarinagi 授权")
+		return "", ErrHikarinagiNotAuthorized
 	}
 
 	tokenResp, err := RefreshHikarinagiToken(context.Background(), hikarinagiTokenState.refreshToken)
@@ -538,4 +543,252 @@ func (g HikarinagiInfoGetter) FetchMetadataByName(name string, token string) (mo
 	}
 
 	return models.Game{}, fmt.Errorf("hikarinagi search returned no galgame for %q", name)
+}
+
+// ---------- 评论抓取 ----------
+// Hikarinagi 开放 API（/v3）未提供公开短评端点，短评数据取自条目评分页
+// https://www.hikarinagi.org/galgames/{id}/rates 的 SSR 页面内嵌 __NUXT_DATA__（devalue 扁平数组格式）。
+// 站点改版可能破坏解析。
+
+const hikarinagiSiteBaseURL = "https://www.hikarinagi.org"
+
+type hikarinagiRater struct {
+	Id       int64  `json:"id"`
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+}
+
+type hikarinagiRate struct {
+	Id          string                  `json:"id"`
+	Rate        int                     `json:"rate"`
+	Status      string                  `json:"status"`
+	IsSpoiler   bool                    `json:"is_spoiler"`
+	RateContent *string                 `json:"rate_content"`
+	LikeCount   int                     `json:"like_count"`
+	CreatedAt   string                  `json:"created_at"`
+	Rater       hikarinagiRater         `json:"rater"`
+	LongReview  *map[string]interface{} `json:"long_review"`
+}
+
+type hikarinagiRatesMeta struct {
+	Page       int `json:"page"`
+	PageSize   int `json:"page_size"`
+	TotalItems int `json:"total_items"`
+	ItemCount  int `json:"item_count"`
+	TotalPages int `json:"total_pages"`
+}
+
+// nuxtResolve 解引用 devalue 扁平数组：对象属性值是数组下标，取 data[idx] 即实际值
+func nuxtResolve(data []interface{}, v interface{}) interface{} {
+	if idx, ok := v.(float64); ok {
+		i := int(idx)
+		if i >= 0 && i < len(data) {
+			return data[i]
+		}
+	}
+	return v
+}
+
+// nuxtAsString 解引用并断言为字符串
+func nuxtAsString(data []interface{}, v interface{}) string {
+	if s, ok := nuxtResolve(data, v).(string); ok {
+		return s
+	}
+	return ""
+}
+
+// nuxtAsFloat 解引用并断言为数字
+func nuxtAsFloat(data []interface{}, v interface{}) (float64, bool) {
+	if f, ok := nuxtResolve(data, v).(float64); ok {
+		return f, true
+	}
+	return 0, false
+}
+
+// parseHikarinagiNuxtData 从 SSR 页面 HTML 中提取并解析 __NUXT_DATA__
+func parseHikarinagiNuxtData(html string) ([]interface{}, error) {
+	marker := `id="__NUXT_DATA__"`
+	start := strings.Index(html, marker)
+	if start < 0 {
+		return nil, fmt.Errorf("hikarinagi 页面未找到 __NUXT_DATA__")
+	}
+	jsonStart := strings.Index(html[start:], ">")
+	if jsonStart < 0 {
+		return nil, fmt.Errorf("hikarinagi __NUXT_DATA__ 标签解析失败")
+	}
+	jsonStart += start + 1
+	jsonEnd := strings.Index(html[jsonStart:], "</script>")
+	if jsonEnd < 0 {
+		return nil, fmt.Errorf("hikarinagi __NUXT_DATA__ 未正常闭合")
+	}
+	var data []interface{}
+	if err := json.Unmarshal([]byte(html[jsonStart:jsonStart+jsonEnd]), &data); err != nil {
+		return nil, fmt.Errorf("hikarinagi __NUXT_DATA__ 解析失败: %w", err)
+	}
+	return data, nil
+}
+
+// extractHikarinagiRates 从 devalue 扁平数组中提取评分对象列表与分页 meta
+func extractHikarinagiRates(data []interface{}) ([]hikarinagiRate, hikarinagiRatesMeta) {
+	rates := make([]hikarinagiRate, 0)
+	meta := hikarinagiRatesMeta{}
+	for _, item := range data {
+		obj, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		// 评分对象：同时具备 rate/rater/created_at/rate_content 字段
+		if _, hasRate := obj["rate"]; hasRate {
+			if _, hasRater := obj["rater"]; hasRater {
+				if _, hasAt := obj["created_at"]; hasAt {
+					rate := hikarinagiRate{}
+					if id, ok := nuxtAsFloat(data, obj["id"]); ok {
+						rate.Id = strconv.FormatInt(int64(id), 10)
+					}
+					if r, ok := nuxtAsFloat(data, obj["rate"]); ok {
+						rate.Rate = int(r)
+					}
+					if s, ok := nuxtResolve(data, obj["status"]).(string); ok {
+						rate.Status = s
+					}
+					if b, ok := nuxtResolve(data, obj["is_spoiler"]).(bool); ok {
+						rate.IsSpoiler = b
+					}
+					if s, ok := nuxtResolve(data, obj["rate_content"]).(string); ok {
+						rate.RateContent = &s
+					}
+					if l, ok := nuxtAsFloat(data, obj["like_count"]); ok {
+						rate.LikeCount = int(l)
+					}
+					if s, ok := nuxtResolve(data, obj["created_at"]).(string); ok {
+						rate.CreatedAt = s
+					}
+					if rater, ok := nuxtResolve(data, obj["rater"]).(map[string]interface{}); ok {
+						rate.Rater = hikarinagiRater{
+							Id:       int64(raterId(rater)),
+							Name:     nuxtAsString(data, rater["name"]),
+							Nickname: nuxtAsString(data, rater["nickname"]),
+						}
+					}
+					if lr, ok := nuxtResolve(data, obj["long_review"]).(map[string]interface{}); ok {
+						rate.LongReview = &lr
+					}
+					rates = append(rates, rate)
+				}
+			}
+			continue
+		}
+		// 分页 meta：具备 page/total_items/total_pages 字段
+		if _, hasTotal := obj["total_items"]; hasTotal {
+			if _, hasPages := obj["total_pages"]; hasPages {
+				if p, ok := nuxtAsFloat(data, obj["page"]); ok {
+					meta.Page = int(p)
+				}
+				if p, ok := nuxtAsFloat(data, obj["page_size"]); ok {
+					meta.PageSize = int(p)
+				}
+				if p, ok := nuxtAsFloat(data, obj["total_items"]); ok {
+					meta.TotalItems = int(p)
+				}
+				if p, ok := nuxtAsFloat(data, obj["item_count"]); ok {
+					meta.ItemCount = int(p)
+				}
+				if p, ok := nuxtAsFloat(data, obj["total_pages"]); ok {
+					meta.TotalPages = int(p)
+				}
+			}
+		}
+	}
+	return rates, meta
+}
+
+func raterId(rater map[string]interface{}) float64 {
+	if f, ok := rater["id"].(float64); ok {
+		return f
+	}
+	return 0
+}
+
+// FetchGameReviews 抓取 Hikarinagi 短评
+// reviewType "0" 返回带短评内容的评分；"1" 返回附带长评的评分
+// 注意：SSR 页面不支持翻页参数，仅能取到第一页（20 条）
+func (g HikarinagiInfoGetter) FetchGameReviews(id string, page int, reviewType string) (models.GameReview, error) {
+	review := models.GameReview{
+		SourceType:  enums.Hikarinagi,
+		Id:          id,
+		TotalPoints: "10",
+	}
+
+	pageURL := fmt.Sprintf("%s/galgames/%s/rates", hikarinagiSiteBaseURL, id)
+	req, err := http.NewRequest("GET", pageURL, nil)
+	if err != nil {
+		return review, err
+	}
+	req.Header.Set("User-Agent", "Saramanda9988/LunaBox/1.4.0 (desktop) (https://github.com/Saramanda9988/LunaBox)")
+	req.Header.Set("Accept", "text/html")
+
+	resp, err := g.client.Do(req)
+	if err != nil {
+		return review, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Warnf("Error closing response body: %v", err)
+		}
+	}(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return review, fmt.Errorf("hikarinagi rates page returned status: %d, body: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return review, err
+	}
+
+	data, err := parseHikarinagiNuxtData(string(bodyBytes))
+	if err != nil {
+		return review, err
+	}
+
+	rates, meta := extractHikarinagiRates(data)
+	// SSR 不支持翻页参数：请求页大于返回页时视为无数据，避免重复展示第一页
+	if page > 1 && meta.Page < page {
+		return review, nil
+	}
+
+	for _, rate := range rates {
+		content := ""
+		if rate.RateContent != nil {
+			content = *rate.RateContent
+		}
+		if reviewType == "0" && content == "" {
+			continue
+		}
+		if reviewType == "1" && rate.LongReview == nil {
+			continue
+		}
+		reviewer := rate.Rater.Nickname
+		if reviewer == "" {
+			reviewer = rate.Rater.Name
+		}
+		date := time.Time{}
+		if rate.CreatedAt != "" {
+			if t, err := time.Parse(time.RFC3339, rate.CreatedAt); err == nil {
+				date = t
+			}
+		}
+		review.Reviews = append(review.Reviews, models.Review{
+			Id:          rate.Id,
+			Content:     content,
+			Reviewer:    reviewer,
+			Date:        date,
+			TotalPoints: "10",
+			Points:      strconv.Itoa(rate.Rate),
+		})
+	}
+	review.HasNext = meta.Page < meta.TotalPages
+	return review, nil
 }

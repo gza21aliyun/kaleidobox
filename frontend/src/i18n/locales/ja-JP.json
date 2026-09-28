@@ -698,6 +698,7 @@
     "bangumiAccessToken": "Bangumi アクセストークン",
     "vndbAccessToken": "VNDB アクセストークン",
     "hikarinagiAuth": "Hikarinagi 連携",
+    "hikarinagiAuthRequired": "Hikarinagi は未認証です。このソースからデータを取得するには認証が必要です",
     "hikarinagiAuthBtn": "認証する",
     "hikarinagiAuthorizing": "認証待ち…",
     "hikarinagiAuthed": "認証済み（リフレッシュトークンは自動的に更新・保存されます）",

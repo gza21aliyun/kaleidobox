@@ -6,8 +6,32 @@ export function AddGame(arg1) {
   return window['go']['service']['GameService']['AddGame'](arg1);
 }
 
+export function AddRelatedGames(arg1, arg2) {
+  return window['go']['service']['GameService']['AddRelatedGames'](arg1, arg2);
+}
+
+export function AddTagForGame(arg1, arg2) {
+  return window['go']['service']['GameService']['AddTagForGame'](arg1, arg2);
+}
+
+export function AddTagsForGames(arg1, arg2) {
+  return window['go']['service']['GameService']['AddTagsForGames'](arg1, arg2);
+}
+
 export function BatchUpdateStatus(arg1, arg2) {
   return window['go']['service']['GameService']['BatchUpdateStatus'](arg1, arg2);
+}
+
+export function CheckDirectoryImportState(arg1, arg2) {
+  return window['go']['service']['GameService']['CheckDirectoryImportState'](arg1, arg2);
+}
+
+export function CheckGamesValidity(arg1) {
+  return window['go']['service']['GameService']['CheckGamesValidity'](arg1);
+}
+
+export function DeleteFolder(arg1) {
+  return window['go']['service']['GameService']['DeleteFolder'](arg1);
 }
 
 export function DeleteGame(arg1) {
@@ -18,6 +42,18 @@ export function DeleteGames(arg1) {
   return window['go']['service']['GameService']['DeleteGames'](arg1);
 }
 
+export function DeleteRelatedGame(arg1, arg2) {
+  return window['go']['service']['GameService']['DeleteRelatedGame'](arg1, arg2);
+}
+
+export function DeleteTagForGame(arg1, arg2) {
+  return window['go']['service']['GameService']['DeleteTagForGame'](arg1, arg2);
+}
+
+export function ExecueteGamesUpdate(arg1, arg2) {
+  return window['go']['service']['GameService']['ExecueteGamesUpdate'](arg1, arg2);
+}
+
 export function FetchMetadata(arg1) {
   return window['go']['service']['GameService']['FetchMetadata'](arg1);
 }
@@ -26,28 +62,112 @@ export function FetchMetadataByName(arg1) {
   return window['go']['service']['GameService']['FetchMetadataByName'](arg1);
 }
 
-export function FillGame(arg1, arg2) {
-  return window['go']['service']['GameService']['FillGame'](arg1, arg2);
+export function FetchMetadataByNameQuick(arg1) {
+  return window['go']['service']['GameService']['FetchMetadataByNameQuick'](arg1);
+}
+
+export function FetchMetadataNotSave(arg1) {
+  return window['go']['service']['GameService']['FetchMetadataNotSave'](arg1);
+}
+
+export function FillGame(arg1, arg2, arg3) {
+  return window['go']['service']['GameService']['FillGame'](arg1, arg2, arg3);
 }
 
 export function GetGameByID(arg1) {
   return window['go']['service']['GameService']['GetGameByID'](arg1);
 }
 
+export function GetGameEntityByID(arg1) {
+  return window['go']['service']['GameService']['GetGameEntityByID'](arg1);
+}
+
 export function GetGames() {
   return window['go']['service']['GameService']['GetGames']();
+}
+
+export function GetGamesByBrand(arg1) {
+  return window['go']['service']['GameService']['GetGamesByBrand'](arg1);
+}
+
+export function GetGamesByIdsStr(arg1) {
+  return window['go']['service']['GameService']['GetGamesByIdsStr'](arg1);
+}
+
+export function GetGamesByPage(arg1, arg2) {
+  return window['go']['service']['GameService']['GetGamesByPage'](arg1, arg2);
+}
+
+export function GetGamesByQuery(arg1) {
+  return window['go']['service']['GameService']['GetGamesByQuery'](arg1);
+}
+
+export function GetGamesByQueryText(arg1, arg2) {
+  return window['go']['service']['GameService']['GetGamesByQueryText'](arg1, arg2);
+}
+
+export function GetGamesByRelatedGames(arg1) {
+  return window['go']['service']['GameService']['GetGamesByRelatedGames'](arg1);
+}
+
+export function GetGamesByTag(arg1) {
+  return window['go']['service']['GameService']['GetGamesByTag'](arg1);
+}
+
+export function GetGamesSendFront(arg1) {
+  return window['go']['service']['GameService']['GetGamesSendFront'](arg1);
+}
+
+export function GetQueryBase() {
+  return window['go']['service']['GameService']['GetQueryBase']();
 }
 
 export function GetRunningProcesses() {
   return window['go']['service']['GameService']['GetRunningProcesses']();
 }
 
+export function GetSimpleGamesByPage(arg1, arg2) {
+  return window['go']['service']['GameService']['GetSimpleGamesByPage'](arg1, arg2);
+}
+
+export function GetVideoStream(arg1) {
+  return window['go']['service']['GameService']['GetVideoStream'](arg1);
+}
+
+export function GetWorkGamesByCharactorId(arg1) {
+  return window['go']['service']['GameService']['GetWorkGamesByCharactorId'](arg1);
+}
+
+export function GetWorkGamesByStaffId(arg1) {
+  return window['go']['service']['GameService']['GetWorkGamesByStaffId'](arg1);
+}
+
 export function Init(arg1, arg2, arg3) {
   return window['go']['service']['GameService']['Init'](arg1, arg2, arg3);
 }
 
+export function LoadDetailReview(arg1, arg2, arg3) {
+  return window['go']['service']['GameService']['LoadDetailReview'](arg1, arg2, arg3);
+}
+
+export function LoadReviewsForGame(arg1, arg2, arg3, arg4) {
+  return window['go']['service']['GameService']['LoadReviewsForGame'](arg1, arg2, arg3, arg4);
+}
+
+export function ManageTagsForGames() {
+  return window['go']['service']['GameService']['ManageTagsForGames']();
+}
+
 export function OpenLocalPath(arg1) {
   return window['go']['service']['GameService']['OpenLocalPath'](arg1);
+}
+
+export function SearchGameSaves(arg1) {
+  return window['go']['service']['GameService']['SearchGameSaves'](arg1);
+}
+
+export function SearchSave(arg1) {
+  return window['go']['service']['GameService']['SearchSave'](arg1);
 }
 
 export function SelectCoverImage(arg1) {
@@ -56,6 +176,18 @@ export function SelectCoverImage(arg1) {
 
 export function SelectCoverImageWithTempID() {
   return window['go']['service']['GameService']['SelectCoverImageWithTempID']();
+}
+
+export function SelectFile(arg1, arg2) {
+  return window['go']['service']['GameService']['SelectFile'](arg1, arg2);
+}
+
+export function SelectFile1(arg1, arg2) {
+  return window['go']['service']['GameService']['SelectFile1'](arg1, arg2);
+}
+
+export function SelectFile2(arg1, arg2) {
+  return window['go']['service']['GameService']['SelectFile2'](arg1, arg2);
 }
 
 export function SelectGameExecutable() {
@@ -70,8 +202,20 @@ export function SelectSaveFile() {
   return window['go']['service']['GameService']['SelectSaveFile']();
 }
 
+export function SetServices(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['service']['GameService']['SetServices'](arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+export function UnionFetch(arg1, arg2) {
+  return window['go']['service']['GameService']['UnionFetch'](arg1, arg2);
+}
+
 export function UpdateGame(arg1) {
   return window['go']['service']['GameService']['UpdateGame'](arg1);
+}
+
+export function UpdateGameByReq(arg1, arg2) {
+  return window['go']['service']['GameService']['UpdateGameByReq'](arg1, arg2);
 }
 
 export function UpdateGameFromRemote(arg1) {
@@ -80,4 +224,8 @@ export function UpdateGameFromRemote(arg1) {
 
 export function UpdateGameProcessName(arg1, arg2) {
   return window['go']['service']['GameService']['UpdateGameProcessName'](arg1, arg2);
+}
+
+export function UpdateGamesBackground(arg1, arg2, arg3) {
+  return window['go']['service']['GameService']['UpdateGamesBackground'](arg1, arg2, arg3);
 }

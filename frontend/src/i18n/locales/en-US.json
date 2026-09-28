@@ -698,6 +698,7 @@
     "bangumiAccessToken": "Bangumi Access Token",
     "vndbAccessToken": "VNDB Access Token",
     "hikarinagiAuth": "Hikarinagi Authorization",
+    "hikarinagiAuthRequired": "Hikarinagi is not authorized. Authorization is required to fetch data from this source",
     "hikarinagiAuthBtn": "Authorize",
     "hikarinagiAuthorizing": "Waiting for authorization…",
     "hikarinagiAuthed": "Authorized (refresh token rotates and saves automatically)",

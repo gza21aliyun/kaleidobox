@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { useAppStore } from "../../store"
+import { handleHikarinagiAuthError } from "../../utils/hikarinagiAuth";
 import { enums, vo } from "../../../wailsjs/go/models";
 import { AddGamesToCategories, GetCategories } from "../../../wailsjs/go/service/CategoryService";
 
@@ -424,7 +425,9 @@ export function BatchImportModal({ isOpen, onClose, onImportComplete, preloadedC
     }
     catch (error) {
       console.error("Failed to fetch by ID:", error);
-      toast.error(t('batchImport.fetchFailed'));
+      if (!handleHikarinagiAuthError(error, t, () => handleSearchById())) {
+        toast.error(t('batchImport.fetchFailed'));
+      }
     }
     finally {
       setIsSearching(false);

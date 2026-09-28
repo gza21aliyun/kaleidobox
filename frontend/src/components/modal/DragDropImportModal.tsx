@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { enums, vo } from "../../../wailsjs/go/models";
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from "../../store";
+import { handleHikarinagiAuthError } from "../../utils/hikarinagiAuth";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { AddGamesToCategories, GetCategories } from "../../../wailsjs/go/service/CategoryService";
 
@@ -425,7 +426,9 @@ export function DragDropImportModal({ isOpen, droppedPaths, isLnk, onClose, onIm
     }
     catch (error) {
       console.error("Failed to fetch by ID:", error);
-      toast.error(t('import.toasts.fetchFailed'));
+      if (!handleHikarinagiAuthError(error, t, () => handleSearchById())) {
+        toast.error(t('import.toasts.fetchFailed'));
+      }
     }
     finally {
       setIsSearching(false);

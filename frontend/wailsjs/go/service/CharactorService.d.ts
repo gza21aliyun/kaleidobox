@@ -10,13 +10,17 @@ export function CountCharactors():Promise<number>;
 
 export function CreateCharactor(arg1:models.Charactor):Promise<void>;
 
-export function CreateOrUpdateCharactor(arg1:string,arg2:string,arg3:string,arg4:enums.SourceType,arg5:string,arg6:string,arg7:string):Promise<models.Charactor>;
+export function CreateOrUpdateCharactor(arg1:string,arg2:string,arg3:string,arg4:enums.SourceType,arg5:string,arg6:string,arg7:string,arg8:string,arg9:string,arg10:number,arg11:string):Promise<models.Charactor>;
 
 export function DeleteCharactor(arg1:string):Promise<void>;
+
+export function GetCharactorByBothName(arg1:string,arg2:string):Promise<models.Charactor>;
 
 export function GetCharactorByGameIdAndName(arg1:string,arg2:string):Promise<models.Charactor>;
 
 export function GetCharactorById(arg1:string):Promise<models.Charactor>;
+
+export function GetCharactorByName(arg1:string):Promise<models.Charactor>;
 
 export function GetCharactorByQueryId(arg1:string,arg2:string,arg3:string):Promise<models.Charactor>;
 
@@ -25,5 +29,7 @@ export function GetCharactorBySource(arg1:enums.SourceType,arg2:string):Promise<
 export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig):Promise<void>;
 
 export function ListCharactors():Promise<Array<models.Charactor>>;
+
+export function SearchCharactors(arg1:string,arg2:number):Promise<Array<models.Charactor>>;
 
 export function UpdateCharactor(arg1:models.Charactor):Promise<void>;

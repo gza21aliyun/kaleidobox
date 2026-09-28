@@ -3,6 +3,7 @@ import { models, enums } from '../../../wailsjs/go/models';
 import { LoadReviewsForGame, LoadDetailReview } from '../../../wailsjs/go/service/GameService';
 import { OpenBrowser } from '../../../wailsjs/go/service/ImportService';
 import { toast } from 'react-hot-toast';
+import { handleHikarinagiAuthError } from '../../utils/hikarinagiAuth';
 import { formatLocalDate } from '../../utils/time';
 import { getSourceId, hasSource } from '../../utils/sourceList';
 import { useAppStore } from '../../store';
@@ -19,6 +20,7 @@ interface ReviewPanelProps {
 
 const sourceTypeOptions = [
   { value: enums.SourceType.BANGUMI || "bangumi", tKey: "sourceType.bangumi" },
+  { value: enums.SourceType.HIKARINAGI || "hikarinagi", tKey: "sourceType.hikarinagi" },
   { value: enums.SourceType.DMM || "Dmm", tKey: "sourceType.dmm" },
   { value: enums.SourceType.EROSCAPE || "批评空间", tKey: "sourceType.eroscape" },
   { value: enums.SourceType.DLSITE || "Dlsite", tKey: "sourceType.dlsite" },
@@ -37,6 +39,9 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   const getSource = () => {
     if (hasSource(game.source_list, enums.SourceType.BANGUMI)) {
       return enums.SourceType.BANGUMI;
+    }
+    if (hasSource(game.source_list, enums.SourceType.HIKARINAGI)) {
+      return enums.SourceType.HIKARINAGI;
     }
     if (hasSource(game.source_list, enums.SourceType.DMM)) {
       return enums.SourceType.DMM;
@@ -112,7 +117,9 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
       }
     } catch (error) {
       console.error('Failed to load reviews:', error);
-      toast.error(t('reviews.loadFailed') || '加载评论失败');
+      if (!handleHikarinagiAuthError(error, t, () => loadReviews())) {
+        toast.error(t('reviews.loadFailed') || '加载评论失败');
+      }
       setGameReview(null);
     } finally {
       setLoading(false);
@@ -127,8 +134,9 @@ export function ReviewPanel({ game }: ReviewPanelProps) {
   }, [game]);
 
   useEffect(() => {
-    if (selectedSourceType == enums.SourceType.EROSCAPE || selectedSourceType == enums.SourceType.DLSITE || 
-      selectedSourceType == enums.SourceType.DMM || selectedSourceType == enums.SourceType.BANGUMI) {
+    if (selectedSourceType == enums.SourceType.EROSCAPE || selectedSourceType == enums.SourceType.DLSITE ||
+      selectedSourceType == enums.SourceType.DMM || selectedSourceType == enums.SourceType.BANGUMI ||
+      selectedSourceType == enums.SourceType.HIKARINAGI) {
       loadReviews();
     } 
     // else if (selectedSourceType == enums.SourceType.BANGUMI) {

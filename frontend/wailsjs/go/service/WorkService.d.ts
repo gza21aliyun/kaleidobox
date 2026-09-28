@@ -15,13 +15,33 @@ export function CreateOrUpdateWorkStaffCharactor(arg1:models.Work):Promise<void>
 
 export function CreateWork(arg1:models.Work):Promise<void>;
 
+export function DeleteWork(arg1:models.Work):Promise<void>;
+
+export function DeleteWorksForGame(arg1:string):Promise<void>;
+
+export function DeleteWorksForGames(arg1:Array<string>):Promise<void>;
+
 export function GetWorkByCharactor(arg1:string,arg2:string):Promise<models.Work>;
+
+export function GetWorkByCv(arg1:string,arg2:string,arg3:string):Promise<models.Work>;
 
 export function GetWorkByQueryIds(arg1:string,arg2:string,arg3:string):Promise<models.Work>;
 
 export function GetWorkByStaff(arg1:string,arg2:string):Promise<models.Work>;
 
+export function GetWorkByStaffId(arg1:string):Promise<models.Work>;
+
+export function GetWorkGamesByCharactorId(arg1:string):Promise<Array<models.Work>>;
+
+export function GetWorkGamesById(arg1:string):Promise<models.Work>;
+
 export function GetWorksByGameId(arg1:string):Promise<Array<models.Work>>;
+
+export function GetWorksByQueryId(arg1:string,arg2:Array<any>):Promise<Array<models.Work>>;
+
+export function GetWorksByStaffId(arg1:string):Promise<Array<models.Work>>;
+
+export function GetWorksByStaffIdAndRole(arg1:string,arg2:enums.StaffRole):Promise<Array<models.Work>>;
 
 export function GetWorksMapByGameId(arg1:string):Promise<Record<enums.StaffRole, Array<models.Work>>>;
 
@@ -29,6 +49,6 @@ export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig):Pr
 
 export function ListWorks():Promise<Array<models.Work>>;
 
-export function SetStaffCharactorService(arg1:service.StaffService,arg2:service.CharactorService):Promise<void>;
+export function SetServices(arg1:service.StaffService,arg2:service.CharactorService,arg3:service.ImageService):Promise<void>;
 
 export function UpdateWork(arg1:models.Work):Promise<void>;

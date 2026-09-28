@@ -10,12 +10,16 @@ export function CreateCharactor(arg1) {
   return window['go']['service']['CharactorService']['CreateCharactor'](arg1);
 }
 
-export function CreateOrUpdateCharactor(arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
-  return window['go']['service']['CharactorService']['CreateOrUpdateCharactor'](arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+export function CreateOrUpdateCharactor(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
+  return window['go']['service']['CharactorService']['CreateOrUpdateCharactor'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
 }
 
 export function DeleteCharactor(arg1) {
   return window['go']['service']['CharactorService']['DeleteCharactor'](arg1);
+}
+
+export function GetCharactorByBothName(arg1, arg2) {
+  return window['go']['service']['CharactorService']['GetCharactorByBothName'](arg1, arg2);
 }
 
 export function GetCharactorByGameIdAndName(arg1, arg2) {
@@ -24,6 +28,10 @@ export function GetCharactorByGameIdAndName(arg1, arg2) {
 
 export function GetCharactorById(arg1) {
   return window['go']['service']['CharactorService']['GetCharactorById'](arg1);
+}
+
+export function GetCharactorByName(arg1) {
+  return window['go']['service']['CharactorService']['GetCharactorByName'](arg1);
 }
 
 export function GetCharactorByQueryId(arg1, arg2, arg3) {
@@ -40,6 +48,10 @@ export function Init(arg1, arg2, arg3) {
 
 export function ListCharactors() {
   return window['go']['service']['CharactorService']['ListCharactors']();
+}
+
+export function SearchCharactors(arg1, arg2) {
+  return window['go']['service']['CharactorService']['SearchCharactors'](arg1, arg2);
 }
 
 export function UpdateCharactor(arg1) {

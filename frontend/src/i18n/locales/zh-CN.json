@@ -698,6 +698,7 @@
     "bangumiAccessToken": "Bangumi Access Token",
     "vndbAccessToken": "VNDB Access Token",
     "hikarinagiAuth": "Hikarinagi 授权",
+    "hikarinagiAuthRequired": "Hikarinagi 尚未授权，需要授权后才能获取该源数据",
     "hikarinagiAuthBtn": "去授权",
     "hikarinagiAuthorizing": "等待授权中…",
     "hikarinagiAuthed": "已完成授权（刷新令牌会自动轮换保存）",

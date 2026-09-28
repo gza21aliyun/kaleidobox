@@ -6,56 +6,119 @@ import {utils} from '../models';
 import {context} from '../models';
 import {sql} from '../models';
 import {appconf} from '../models';
+import {enums} from '../models';
 import {service} from '../models';
 
 export function AddGame(arg1:models.Game):Promise<void>;
 
+export function AddRelatedGames(arg1:Array<string>,arg2:models.Game):Promise<models.Game>;
+
+export function AddTagForGame(arg1:models.Game,arg2:Array<string>):Promise<models.Game>;
+
+export function AddTagsForGames(arg1:Array<models.Game>,arg2:Array<string>):Promise<Array<models.Game>>;
+
 export function BatchUpdateStatus(arg1:Array<string>,arg2:string):Promise<void>;
+
+export function CheckDirectoryImportState(arg1:string,arg2:number):Promise<void>;
+
+export function CheckGamesValidity(arg1:Array<models.Game>):Promise<void>;
+
+export function DeleteFolder(arg1:string):Promise<void>;
 
 export function DeleteGame(arg1:string):Promise<void>;
 
-<<<<<<< HEAD
-export function ExecueteGamesUpdate(arg1:Array<models.Game>,arg2:vo.MetadataRequest):Promise<void>;
-=======
 export function DeleteGames(arg1:Array<string>):Promise<void>;
->>>>>>> 8542104ea2f85700f3c4b3b472e536f228534d7c
+
+export function DeleteRelatedGame(arg1:models.Game,arg2:models.Game):Promise<models.Game>;
+
+export function DeleteTagForGame(arg1:models.Game,arg2:string):Promise<models.Game>;
+
+export function ExecueteGamesUpdate(arg1:Array<models.Game>,arg2:vo.MetadataRequest):Promise<void>;
 
 export function FetchMetadata(arg1:vo.MetadataRequest):Promise<models.Game>;
 
 export function FetchMetadataByName(arg1:string):Promise<Array<vo.GameMetadataFromWebVO>>;
 
-export function FillGame(arg1:models.Game,arg2:models.Game):Promise<void>;
+export function FetchMetadataByNameQuick(arg1:string):Promise<Array<vo.GameMetadataFromWebVO>>;
+
+export function FetchMetadataNotSave(arg1:vo.MetadataRequest):Promise<models.GameEntity>;
+
+export function FillGame(arg1:models.Game,arg2:models.Game,arg3:vo.MetadataRequest):Promise<void>;
 
 export function GetGameByID(arg1:string):Promise<models.Game>;
 
+export function GetGameEntityByID(arg1:string):Promise<models.GameEntity>;
+
 export function GetGames():Promise<Array<models.Game>>;
+
+export function GetGamesByBrand(arg1:string):Promise<Array<models.Game>>;
+
+export function GetGamesByIdsStr(arg1:string):Promise<Array<models.Game>>;
+
+export function GetGamesByPage(arg1:number,arg2:number):Promise<Array<models.Game>>;
+
+export function GetGamesByQuery(arg1:string):Promise<Array<models.Game>>;
+
+export function GetGamesByQueryText(arg1:string,arg2:string):Promise<Array<models.Game>>;
+
+export function GetGamesByRelatedGames(arg1:string):Promise<Array<models.Game>>;
+
+export function GetGamesByTag(arg1:string):Promise<Array<models.Game>>;
+
+export function GetGamesSendFront(arg1:number):Promise<void>;
+
+export function GetQueryBase():Promise<string>;
 
 export function GetRunningProcesses():Promise<Array<utils.ProcessInfo>>;
 
+export function GetSimpleGamesByPage(arg1:number,arg2:number):Promise<Array<models.Game>>;
+
+export function GetVideoStream(arg1:string):Promise<string>;
+
+export function GetWorkGamesByCharactorId(arg1:string):Promise<Array<models.WorkGame>>;
+
+export function GetWorkGamesByStaffId(arg1:string):Promise<Array<models.WorkGame>>;
+
 export function Init(arg1:context.Context,arg2:sql.DB,arg3:appconf.AppConfig):Promise<void>;
 
+export function LoadDetailReview(arg1:models.Review,arg2:string,arg3:enums.SourceType):Promise<models.Review>;
+
+export function LoadReviewsForGame(arg1:string,arg2:enums.SourceType,arg3:number,arg4:string):Promise<models.GameReview>;
+
+export function ManageTagsForGames():Promise<void>;
+
 export function OpenLocalPath(arg1:string):Promise<void>;
+
+export function SearchGameSaves(arg1:Array<models.Game>):Promise<void>;
+
+export function SearchSave(arg1:models.Game):Promise<models.Game>;
 
 export function SelectCoverImage(arg1:string):Promise<string>;
 
 export function SelectCoverImageWithTempID():Promise<string>;
 
+export function SelectFile(arg1:string,arg2:string):Promise<string>;
+
+export function SelectFile1(arg1:string,arg2:string):Promise<string>;
+
+export function SelectFile2(arg1:string,arg2:string):Promise<string>;
+
 export function SelectGameExecutable():Promise<string>;
 
 export function SelectSaveDirectory():Promise<string>;
 
-<<<<<<< HEAD
-export function SetServices(arg1:service.TaskService,arg2:service.CharactorService,arg3:service.StaffService,arg4:service.WorkService):Promise<void>;
-=======
 export function SelectSaveFile():Promise<string>;
->>>>>>> 8542104ea2f85700f3c4b3b472e536f228534d7c
+
+export function SetServices(arg1:service.TaskService,arg2:service.CharactorService,arg3:service.StaffService,arg4:service.WorkService,arg5:service.TagService,arg6:service.ImageService):Promise<void>;
+
+export function UnionFetch(arg1:models.GameEntity,arg2:vo.MetadataRequest):Promise<void>;
 
 export function UpdateGame(arg1:models.Game):Promise<void>;
 
+export function UpdateGameByReq(arg1:vo.MetadataRequest,arg2:models.Game):Promise<models.Game>;
+
 export function UpdateGameFromRemote(arg1:string):Promise<void>;
 
-<<<<<<< HEAD
-export function UpdateGamesBackground(arg1:Array<models.Game>,arg2:vo.MetadataRequest,arg3:string):Promise<void>;
-=======
 export function UpdateGameProcessName(arg1:string,arg2:string):Promise<void>;
->>>>>>> 8542104ea2f85700f3c4b3b472e536f228534d7c
+
+export function UpdateGamesBackground(arg1:Array<models.Game>,arg2:vo.MetadataRequest,arg3:string):Promise<void>;

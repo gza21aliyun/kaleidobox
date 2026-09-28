@@ -1,8 +1,8 @@
 {
   "summary": {
-    "intersection": 1752,
-    "union": 1752,
-    "used": 1540
+    "intersection": 1754,
+    "union": 1754,
+    "used": 1542
   },
   "missingEverywhere": [
     "gameInfo."
@@ -365,57 +365,57 @@
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 116,
+      "line": 120,
       "text": "unlistenTaskUpdate(); // 取消事件监听"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 126,
+      "line": 130,
       "text": "setSelectedIds(games.map(game => game.id)); // 默认选中所有游戏"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 131,
+      "line": 135,
       "text": "}, [isOpen]); // 当isOpen或games变化时执行"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 349,
+      "line": 353,
       "text": "<div className=\"min-w-[150px] rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3\"> {/* 调整内边距 */}"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 350,
+      "line": 354,
       "text": "<div className=\"flex items-center gap-2\"> {/* 水平布局放置标签和选择器 */}"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 352,
+      "line": 356,
       "text": "{/* 更新选项开关 */}"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 357,
+      "line": 361,
       "text": "<span className=\"text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap\"></span> {/* 标签移到左侧 */}"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 733,
+      "line": 735,
       "text": "导入"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 737,
+      "line": 739,
       "text": "个游戏"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 780,
+      "line": 782,
       "text": "{/* 匹配结果 */}"
     },
     {
       "file": "components\\modal\\BatchUpdateModal.tsx",
-      "line": 811,
+      "line": 813,
       "text": "{/* 手动输入ID */}"
     },
     {
@@ -1670,12 +1670,12 @@
     },
     {
       "file": "routes\\game.tsx",
-      "line": 683,
+      "line": 684,
       "text": "{/* 操作和状态标签组 */}"
     },
     {
       "file": "routes\\game.tsx",
-      "line": 715,
+      "line": 716,
       "text": "{/* 分隔线 */}"
     },
     {

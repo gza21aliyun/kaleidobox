@@ -1166,6 +1166,9 @@ func (s *GameService) LoadReviewsForGame(id string, sourceType enums.SourceType,
 	} else if sourceType == enums.Bangumi {
 		bgmReviewer := utils.NewBangumiInfoGetter(s.config.SearchCn)
 		return bgmReviewer.FetchGameReviews(id, s.config.BangumiAccessToken, page, reviewType)
+	} else if sourceType == enums.Hikarinagi {
+		hkReviewer := utils.NewHikarinagiInfoGetter(s.config.SearchCn)
+		return hkReviewer.FetchGameReviews(id, page, reviewType)
 	}
 	return models.GameReview{}, nil
 }

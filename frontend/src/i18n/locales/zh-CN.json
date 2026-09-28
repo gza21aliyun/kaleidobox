@@ -382,7 +382,8 @@
       "dlsite": "DlSite",
       "info": "详情弹窗",
       "vndb": "VNDB",
-      "hikarinagi": "Hikarinagi"
+      "hikarinagi": "Hikarinagi",
+      "kungal": "Kungal"
     },
     "labels": {
       "source": "数据来源",
@@ -845,6 +846,7 @@
     "dlsite": "Dlsite",
     "getchu": "Getchu",
     "hikarinagi": "Hikarinagi",
+    "kungal": "Kungal",
     "noFilter": "不过滤匹配",
     "emptyCover": "无封面",
     "emptyGallery": "无画廊",

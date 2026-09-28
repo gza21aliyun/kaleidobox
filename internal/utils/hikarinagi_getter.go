@@ -669,27 +669,9 @@ func nuxtAsFloat(data []interface{}, v interface{}) (float64, bool) {
 	return 0, false
 }
 
-// parseHikarinagiNuxtData 从 SSR 页面 HTML 中提取并解析 __NUXT_DATA__
+// parseHikarinagiNuxtData 从 SSR 页面 HTML 中提取并解析 __NUXT_DATA__（复用通用解析）
 func parseHikarinagiNuxtData(html string) ([]interface{}, error) {
-	marker := `id="__NUXT_DATA__"`
-	start := strings.Index(html, marker)
-	if start < 0 {
-		return nil, fmt.Errorf("hikarinagi 页面未找到 __NUXT_DATA__")
-	}
-	jsonStart := strings.Index(html[start:], ">")
-	if jsonStart < 0 {
-		return nil, fmt.Errorf("hikarinagi __NUXT_DATA__ 标签解析失败")
-	}
-	jsonStart += start + 1
-	jsonEnd := strings.Index(html[jsonStart:], "</script>")
-	if jsonEnd < 0 {
-		return nil, fmt.Errorf("hikarinagi __NUXT_DATA__ 未正常闭合")
-	}
-	var data []interface{}
-	if err := json.Unmarshal([]byte(html[jsonStart:jsonStart+jsonEnd]), &data); err != nil {
-		return nil, fmt.Errorf("hikarinagi __NUXT_DATA__ 解析失败: %w", err)
-	}
-	return data, nil
+	return parseNuxtData(html)
 }
 
 // extractHikarinagiRates 从 devalue 扁平数组中提取评分对象列表与分页 meta

@@ -207,6 +207,7 @@ export namespace enums {
 	    DLSITE = "dlsite",
 	    GETCHU = "getchu",
 	    HIKARINAGI = "hikarinagi",
+	    KUNGAL = "kungal",
 	}
 	export enum GameStatus {
 	    NOT_STARTED = "not_started",

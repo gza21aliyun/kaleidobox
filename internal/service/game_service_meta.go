@@ -184,6 +184,9 @@ func (s *GameService) createGameUpdateTaskFunction() TaskFunction {
 					// log.Printf("TaskFunc 25 fetch for game %s", ngame.Name)
 
 					// updatedGame = dmm
+				} else if taskData.Req.Source == enums.Kungal {
+					kungalGetter := utils.NewKungalInfoGetter(s.config.SearchCn)
+					updatedGame, err = kungalGetter.FetchMetadataByName(ngame.SearchName, "")
 				} else {
 					// log.Printf("TaskFunc 26 fetch for game %s", ngame.Name)
 					return errors.New("未知的来源 ")
@@ -589,6 +592,11 @@ func (s *GameService) FetchMetadataNotSave(req vo.MetadataRequest) (models.GameE
 		fmt.Println("Fetching metadata from Hikarinagi")
 		hikarinagiGetter := utils.NewHikarinagiInfoGetter(s.config.SearchCn)
 		gameEntity, e = hikarinagiGetter.FetchEntity(req, "")
+
+	case enums.Kungal:
+		fmt.Println("Fetching metadata from Kungal")
+		kungalGetter := utils.NewKungalInfoGetter(s.config.SearchCn)
+		gameEntity, e = kungalGetter.FetchEntity(req, "")
 	}
 	s.UnionFetch(&gameEntity, req)
 	return gameEntity, e

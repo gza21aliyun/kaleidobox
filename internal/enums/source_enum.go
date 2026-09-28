@@ -14,6 +14,7 @@ const (
 	Dlsite     SourceType = "dlsite"
 	Getchu     SourceType = "getchu"
 	Hikarinagi SourceType = "hikarinagi"
+	Kungal     SourceType = "kungal"
 )
 
 var AllSourceTypes = []struct {
@@ -29,6 +30,7 @@ var AllSourceTypes = []struct {
 	{Dlsite, "DLSITE"},
 	{Getchu, "GETCHU"},
 	{Hikarinagi, "HIKARINAGI"},
+	{Kungal, "KUNGAL"},
 }
 
 // Key 返回用于 source_list 编码的稳定 ascii 标识。

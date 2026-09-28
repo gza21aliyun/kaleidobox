@@ -382,7 +382,8 @@
       "dlsite": "DlSite",
       "info": "Info Modal",
       "vndb": "VNDB",
-      "hikarinagi": "Hikarinagi"
+      "hikarinagi": "Hikarinagi",
+      "kungal": "Kungal"
     },
     "labels": {
       "source": "Data source",
@@ -845,6 +846,7 @@
     "dlsite": "Dlsite",
     "getchu": "Getchu",
     "hikarinagi": "Hikarinagi",
+    "kungal": "Kungal",
     "noFilter": "No source filter",
     "emptyCover": "No cover",
     "emptyGallery": "No gallery",

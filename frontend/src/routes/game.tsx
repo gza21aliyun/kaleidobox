@@ -588,6 +588,7 @@ function GameDetailPage() {
   const dlsiteId = getSourceId(game.source_list, enums.SourceType.DLSITE);
   const vndbId = getSourceId(game.source_list, enums.SourceType.VNDB);
   const hikarinagiId = getSourceId(game.source_list, enums.SourceType.HIKARINAGI);
+  const kungalId = getSourceId(game.source_list, enums.SourceType.KUNGAL);
 
   const getEroscapeUrl = () => {
     if (config?.eroscape_use_mirror || false) {
@@ -840,6 +841,14 @@ function GameDetailPage() {
                 className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors"
               >
                 {t('game.buttons.hikarinagi')}
+              </button>
+            )}
+            {kungalId && (
+              <button
+                onClick={() => OpenBrowser(`https://www.kungal.com/galgame/${kungalId}`)}
+                className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
+              >
+                {t('game.buttons.kungal')}
               </button>
             )}
           </div>

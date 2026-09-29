@@ -13,7 +13,7 @@ import { BetterButton } from "../ui/BetterButton";
 import { BetterSwitch } from "../ui/BetterSwitch";
 import { toast } from "react-hot-toast";
 import { arrayContains } from "../utils/Utility";
-import { EventsOn, EventsOff } from "../../../wailsjs/runtime/runtime";
+import { EventsOn } from "../../../wailsjs/runtime/runtime";
 // import { 
 //   DeviceType, 
 //   HotkeyActionType, 
@@ -49,6 +49,8 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
     loadScreenshots();
 
     // 订阅截图保存事件
+    // 注意：必须用 EventsOn 返回的取消函数只注销自身，
+    // 不能用 EventsOff（会移除该事件的全部监听器，包括 store.ts 里的全局订阅）
     const unsubscribe = EventsOn("screenshot:saved", (savedGameId: string) => {
       if (savedGameId === game.id) {
         // 如果是当前游戏的截图，刷新
@@ -57,7 +59,7 @@ export function GameGalleryPanel({ game, onGameChange }: GameGalleryPanelProps) 
     });
 
     return () => {
-      EventsOff("screenshot:saved");
+      unsubscribe();
     };
   }, [game.id]);
 

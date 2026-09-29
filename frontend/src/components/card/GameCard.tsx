@@ -253,7 +253,9 @@ export function GameCard({
       loadGalleryImages();
       setScreenshotRefreshGameId("");
     }
-  }, [screenshotRefreshGameId]);
+    // 依赖 visible：截图发生时卡片可能尚未进入可视区，
+    // 滚动出现后需要补刷新
+  }, [screenshotRefreshGameId, visible, viewMode, game.id]);
 
   const loadGalleryImages = async () => {
     if (!game.id) return;

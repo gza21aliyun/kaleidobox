@@ -669,6 +669,8 @@
     "autoUploadDbToCloudDescription": "Automatically upload to cloud storage after creating database backup (requires cloud backup to be enabled first)",
     "autoUploadSaveToCloud": "Auto upload game save backup to cloud",
     "autoUploadSaveToCloudDescription": "Automatically upload to cloud storage after game exit and save backup (requires cloud backup to be enabled first)",
+    "autoRestoreCloudSave": "Auto-sync cloud saves before launch",
+    "autoRestoreCloudSaveDescription": "Automatically restore cloud saves when they are newer than local ones on game launch (requires cloud backup to be enabled first)",
     "localBackupRetention": "Local game backup retention count",
     "localBackupRetentionDescription": "Maximum number of backups to keep locally per game",
     "localDbBackupRetention": "Local database backup retention count",

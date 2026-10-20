@@ -669,6 +669,8 @@
     "autoUploadDbToCloudDescription": "データベースのバックアップを作成した後、自動的にクラウドストレージにアップロードします（クラウドバックアップを有効にする必要があります）",
     "autoUploadSaveToCloud": "ゲームセーブのバックアップを自動的にクラウドにアップロード",
     "autoUploadSaveToCloudDescription": "ゲームが終了してセーブデータがバックアップされた後、自動的にクラウドストレージにアップロードします（クラウドバックアップを有効にする必要があります）",
+    "autoRestoreCloudSave": "起動前にクラウドセーブを自動同期",
+    "autoRestoreCloudSaveDescription": "ゲーム起動時、クラウドのセーブデータがローカルより新しい場合は自動的に復元します（クラウドバックアップを有効にする必要があります）",
     "localBackupRetention": "ローカルゲームバックアップの保持数",
     "localBackupRetentionDescription": "各ゲームのローカルで保持される最大バックアップ数",
     "localDbBackupRetention": "ローカルデータベースバックアップの保持数",

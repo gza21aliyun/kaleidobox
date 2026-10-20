@@ -332,6 +332,17 @@ func (s *StartService) startGame(gameID string, options LaunchOptions) (bool, er
 		applog.LogErrorf(s.ctx, "failed to get game path: %v", err)
 		return false, fmt.Errorf("failed to get game path: %w", err)
 	}
+
+	// 启动前云端存档同步：云端存档较新时自动恢复（仅本地存档路径的游戏）
+	if s.config.AutoRestoreCloudSave && s.config.CloudBackupEnabled && savePath != "" && s.backupService != nil {
+		restored, err := s.backupService.RestoreLatestCloudGameBackupIfNewer(gameID)
+		if err != nil {
+			applog.LogWarningf(s.ctx, "启动前云端存档同步失败: %v", err)
+		} else if restored {
+			applog.InfoLogSaveAppLog("已从云端恢复较新的存档: game %s", gameID)
+		}
+	}
+
 	ext := filepath.Ext(path)
 	lowerExt := strings.ToLower(ext)
 

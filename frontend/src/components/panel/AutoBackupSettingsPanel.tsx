@@ -77,6 +77,23 @@ export function AutoBackupSettingsPanel({ formData, onChange }: AutoBackupSettin
         />
       </div>
 
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <label htmlFor="auto_restore_cloud_save" className={`text-sm font-medium cursor-pointer ${formData.cloud_backup_enabled ? "text-brand-700 dark:text-brand-300" : "text-brand-400 dark:text-brand-500"}`}>
+            {t("autoBackup.autoRestoreCloudSave")}
+          </label>
+          <p className="text-xs text-brand-500 dark:text-brand-400 mt-1">
+            {t("autoBackup.autoRestoreCloudSaveDescription")}
+          </p>
+        </div>
+        <BetterSwitch
+          id="auto_restore_cloud_save"
+          checked={formData.auto_restore_cloud_save || false}
+          onCheckedChange={checked => onChange({ ...formData, auto_restore_cloud_save: checked } as appconf.AppConfig)}
+          disabled={!formData.cloud_backup_enabled}
+        />
+      </div>
+
       <div className="pt-4 border-t border-brand-300 dark:border-brand-700 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label className="block text-sm font-medium text-brand-700 dark:text-brand-300">{t("autoBackup.localBackupRetention")}</label>

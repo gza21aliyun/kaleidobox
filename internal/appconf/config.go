@@ -54,6 +54,7 @@ type AppConfig struct {
 	AutoUploadToCloud     bool `json:"auto_upload_to_cloud,omitempty"` // 已弃用，保留用于配置迁移
 	AutoUploadDBToCloud   bool `json:"auto_upload_db_to_cloud"`        // 自动上传数据库备份到云端
 	AutoUploadSaveToCloud bool `json:"auto_upload_game_save_to_cloud"` // 自动上传游戏存档备份到云端
+	AutoRestoreCloudSave  bool `json:"auto_restore_cloud_save"`        // 启动游戏前自动同步（恢复）较新的云端存档
 	// 备份保留策略
 	LocalBackupRetention   int `json:"local_backup_retention"`    // 本地游戏备份保留数量
 	LocalDBBackupRetention int `json:"local_db_backup_retention"` // 本地数据库备份保留数量

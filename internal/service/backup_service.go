@@ -1,6 +1,7 @@
 package service
 
 import (
+	"archive/zip"
 	"context"
 	"database/sql"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -26,6 +28,8 @@ type BackupService struct {
 	ctx    context.Context
 	db     *sql.DB
 	config *appconf.AppConfig
+	// gameSaveSyncMu 云端存档同步互斥锁（防止上传与启动前恢复并发执行）
+	gameSaveSyncMu sync.Mutex
 }
 
 func NewBackupService() *BackupService {
@@ -462,8 +466,13 @@ func (s *BackupService) UploadGameBackupToCloud(gameID string, backupPath string
 		return fmt.Errorf("备份文件不存在: %s", backupPath)
 	}
 
-	timestamp := time.Now().Format("2006-01-02T15-04-05")
-	cloudPath := provider.GetCloudPath(s.config.BackupUserID, fmt.Sprintf("saves/%s/%s.zip", gameID, timestamp))
+	// 读取 zip 内源存档的最大修改时间，编码进文件名用于跨设备比较存档新旧
+	sourceModifiedAt, err := latestZipEntryModTime(backupPath)
+	if err != nil {
+		return fmt.Errorf("读取备份源存档修改时间失败: %w", err)
+	}
+	cloudFileName := cloudGameBackupFileName(time.Now(), sourceModifiedAt)
+	cloudPath := provider.GetCloudPath(s.config.BackupUserID, fmt.Sprintf("saves/%s/%s", gameID, cloudFileName))
 
 	// 确保文件夹存在 (OneDrive 需要)
 	folderPath := provider.GetCloudPath(s.config.BackupUserID, fmt.Sprintf("saves/%s", gameID))
@@ -476,6 +485,11 @@ func (s *BackupService) UploadGameBackupToCloud(gameID string, backupPath string
 	// 更新 latest
 	latestPath := provider.GetCloudPath(s.config.BackupUserID, fmt.Sprintf("saves/%s/latest.zip", gameID))
 	provider.UploadFile(s.ctx, latestPath, backupPath)
+
+	// 记录本机已同步的云端备份，防止启动前同步时又把自己刚上传的备份恢复回来
+	if err := s.writeLastSyncedCloudGameBackup(gameID, cloudPath); err != nil {
+		applog.LogWarningf(s.ctx, "UploadGameBackupToCloud: failed to record synced backup: %v", err)
+	}
 
 	s.cleanupOldCloudBackups(gameID)
 	return nil
@@ -595,7 +609,142 @@ func (s *BackupService) RestoreFromCloud(cloudKey string, gameID string) error {
 		}
 	}
 
+	// 将本地下载的备份文件 mtime 对齐为云端源存档时间，保持备份历史时间语义一致
+	if backupTime, ok := cloudGameBackupSourceTimeFromName(filepath.Base(cloudKey)); ok {
+		_ = os.Chtimes(localPath, backupTime, backupTime)
+	}
+
+	// 记录已同步的云端备份，防止启动前同步再次恢复同一份
+	if err := s.writeLastSyncedCloudGameBackup(gameID, cloudKey); err != nil {
+		applog.LogWarningf(s.ctx, "RestoreFromCloud: failed to record synced backup: %v", err)
+	}
+	s.cleanupOldLocalBackups(gameID)
 	return nil
+}
+
+// ========== 云端存档同步（启动前自动恢复较新的云端存档） ==========
+
+const syncedCloudGameBackupMarker = ".last_synced_cloud_backup"
+
+// writeLastSyncedCloudGameBackup 记录本机最近一次上传/恢复的云端备份 key
+func (s *BackupService) writeLastSyncedCloudGameBackup(gameID, cloudKey string) error {
+	backupDir, err := s.GetBackupDir()
+	if err != nil {
+		return err
+	}
+	gameBackupDir := filepath.Join(backupDir, gameID)
+	if err := os.MkdirAll(gameBackupDir, 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(gameBackupDir, syncedCloudGameBackupMarker), []byte(cloudKey), 0644)
+}
+
+// lastSyncedCloudGameBackup 读取本机最近一次同步的云端备份 key，无则返回空
+func (s *BackupService) lastSyncedCloudGameBackup(gameID string) string {
+	backupDir, err := s.GetBackupDir()
+	if err != nil {
+		return ""
+	}
+	data, err := os.ReadFile(filepath.Join(backupDir, gameID, syncedCloudGameBackupMarker))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
+
+// shouldRestoreCloudGameBackup 判断是否应从云端恢复：云端存在、不是本机刚同步的那份、且源时间比本地基准新
+func shouldRestoreCloudGameBackup(latest vo.CloudBackupItem, cloudSourceTime, latestLocalTime time.Time, lastSyncedKey string) bool {
+	if latest.Key == "" || latest.Key == lastSyncedKey {
+		return false
+	}
+	if latestLocalTime.IsZero() {
+		return true
+	}
+	return cloudSourceTime.After(latestLocalTime)
+}
+
+// latestPathModTime 遍历目录取最大文件修改时间（本地存档最新进度）
+func latestPathModTime(path string) (time.Time, error) {
+	var latest time.Time
+	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
+		if info.ModTime().After(latest) {
+			latest = info.ModTime()
+		}
+		return nil
+	})
+	return latest, err
+}
+
+// latestGameLaunchTime 最近一次游戏启动时间（防止刚退出还没备份就被云端覆盖）
+func (s *BackupService) latestGameLaunchTime(gameID string) (time.Time, error) {
+	var lastLaunchTime sql.NullTime
+	err := s.db.QueryRowContext(s.ctx, "SELECT MAX(start_time) FROM play_sessions WHERE game_id = ?", gameID).Scan(&lastLaunchTime)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if !lastLaunchTime.Valid {
+		return time.Time{}, nil
+	}
+	return lastLaunchTime.Time, nil
+}
+
+// RestoreLatestCloudGameBackupIfNewer 启动游戏前同步：若云端最新存档的源修改时间比本地
+// （存档目录/本地备份历史/最近启动时间三者取最大）新，则自动恢复云端存档。
+// 返回是否执行了恢复。
+//
+//wails:ignore
+func (s *BackupService) RestoreLatestCloudGameBackupIfNewer(gameID string) (bool, error) {
+	s.gameSaveSyncMu.Lock()
+	defer s.gameSaveSyncMu.Unlock()
+
+	cloudBackups, err := s.GetCloudGameBackups(gameID)
+	if err != nil {
+		return false, err
+	}
+	if len(cloudBackups) == 0 {
+		return false, nil
+	}
+
+	localBackups, err := s.GetGameBackups(gameID)
+	if err != nil {
+		return false, err
+	}
+	var savePath string
+	if err := s.db.QueryRowContext(s.ctx, "SELECT COALESCE(save_path, '') FROM games WHERE id = ?", gameID).Scan(&savePath); err != nil {
+		return false, fmt.Errorf("读取游戏存档路径失败: %w", err)
+	}
+	if savePath == "" {
+		return false, nil
+	}
+	latestLocalTime, err := latestPathModTime(savePath)
+	if err != nil {
+		return false, fmt.Errorf("读取本地存档修改时间失败: %w", err)
+	}
+	if len(localBackups) > 0 && localBackups[0].CreatedAt.After(latestLocalTime) {
+		latestLocalTime = localBackups[0].CreatedAt
+	}
+	lastLaunchTime, err := s.latestGameLaunchTime(gameID)
+	if err != nil {
+		return false, fmt.Errorf("读取最近游戏启动时间失败: %w", err)
+	}
+	if lastLaunchTime.After(latestLocalTime) {
+		latestLocalTime = lastLaunchTime
+	}
+	latest, sourceModifiedAt := newestCloudGameBackupBySourceTime(cloudBackups)
+	if !shouldRestoreCloudGameBackup(latest, sourceModifiedAt, latestLocalTime, s.lastSyncedCloudGameBackup(gameID)) {
+		return false, nil
+	}
+
+	if err := s.RestoreFromCloud(latest.Key, gameID); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // cleanupOldCloudBackups 清理旧的云端备份
@@ -1035,6 +1184,10 @@ func (s *BackupService) parseCloudBackupItems(keys []string, prefix string) []vo
 		displayName := name
 		name = strings.TrimPrefix(name, prefix)
 		name = strings.TrimSuffix(name, ".zip")
+		// 双时间戳文件名（{备份时刻}__source_{源存档时刻}）取备份时刻排序展示
+		if idx := strings.Index(name, cloudGameBackupSourceSep); idx > 0 {
+			name = name[:idx]
+		}
 		t, _ := time.Parse("2006-01-02T15-04-05", name)
 
 		items = append(items, vo.CloudBackupItem{
@@ -1150,6 +1303,94 @@ func ExecuteFullDataRestore(config *appconf.AppConfig) (bool, error) {
 	*config = *restoredConfig
 
 	return true, nil
+}
+
+// ========== 云端存档文件名双时间戳工具 ==========
+//
+// 云端存档文件名格式：{备份时刻}__source_{源存档修改时刻}.zip
+// 源存档修改时刻取 zip 内所有条目的最大 mtime，用于跨设备比较存档新旧。
+// 旧格式（无 __source_ 段）自动回退为备份时刻，兼容存量备份。
+
+const cloudGameBackupSourceSep = "__source_"
+
+// cloudGameBackupFileName 生成带双时间戳的云端存档文件名
+func cloudGameBackupFileName(backupTime, sourceModifiedAt time.Time) string {
+	return fmt.Sprintf("%s%s%s.zip",
+		backupTime.UTC().Format("2006-01-02T15-04-05"),
+		cloudGameBackupSourceSep,
+		sourceModifiedAt.UTC().Format("2006-01-02T15-04-05"))
+}
+
+var cloudGameBackupNameRegex = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})(?:__source_(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}))?\.zip$`)
+
+// parseCloudGameBackupTimes 从云端存档文件名解析备份时刻与源存档时刻（均为 UTC）。
+// 旧格式文件名没有 __source_ 段时，源时间回退为备份时刻。
+func parseCloudGameBackupTimes(name string) (backupTime, sourceModifiedAt time.Time, ok bool) {
+	m := cloudGameBackupNameRegex.FindStringSubmatch(name)
+	if m == nil {
+		return time.Time{}, time.Time{}, false
+	}
+	backupTime, err := time.ParseInLocation("2006-01-02T15-04-05", m[1], time.UTC)
+	if err != nil {
+		return time.Time{}, time.Time{}, false
+	}
+	sourceStr := m[2]
+	if sourceStr == "" {
+		sourceStr = m[1]
+	}
+	sourceModifiedAt, err = time.ParseInLocation("2006-01-02T15-04-05", sourceStr, time.UTC)
+	if err != nil {
+		return time.Time{}, time.Time{}, false
+	}
+	return backupTime, sourceModifiedAt, true
+}
+
+// cloudGameBackupSourceTimeFromName 从云端存档文件名解析源存档时刻
+func cloudGameBackupSourceTimeFromName(name string) (time.Time, bool) {
+	_, sourceTime, ok := parseCloudGameBackupTimes(name)
+	return sourceTime, ok
+}
+
+// newestCloudGameBackupBySourceTime 按源存档时刻取最新备份；同刻再比备份时刻
+func newestCloudGameBackupBySourceTime(items []vo.CloudBackupItem) (latest vo.CloudBackupItem, sourceModifiedAt time.Time) {
+	for _, item := range items {
+		name := item.Name
+		if name == "" {
+			name = filepath.Base(item.Key)
+		}
+		backupTime, sourceTime, ok := parseCloudGameBackupTimes(name)
+		if !ok {
+			continue
+		}
+		if latest.Key == "" || sourceTime.After(sourceModifiedAt) ||
+			(sourceTime.Equal(sourceModifiedAt) && backupTime.After(latest.CreatedAt)) {
+			latest = item
+			sourceModifiedAt = sourceTime
+		}
+	}
+	return latest, sourceModifiedAt
+}
+
+// latestZipEntryModTime 读取 zip 内所有条目的最大修改时间（即源存档的最后修改时刻）
+func latestZipEntryModTime(zipPath string) (time.Time, error) {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer r.Close()
+
+	var latest time.Time
+	for _, f := range r.File {
+		mt := f.Modified
+		if mt.IsZero() {
+			// 兼容未写入扩展字段时间的 zip：回退用 DOS 时间
+			mt = f.ModTime()
+		}
+		if mt.After(latest) {
+			latest = mt
+		}
+	}
+	return latest, nil
 }
 
 // ========== 数据库恢复（启动时调用）==========

@@ -669,6 +669,8 @@
     "autoUploadDbToCloudDescription": "在创建数据库备份后自动上传到云存储（需要先启用云备份）",
     "autoUploadSaveToCloud": "自动上传游戏存档备份到云端",
     "autoUploadSaveToCloudDescription": "在游戏退出并备份存档后自动上传到云存储（需要先启用云备份）",
+    "autoRestoreCloudSave": "启动前自动同步云端存档",
+    "autoRestoreCloudSaveDescription": "启动游戏时若云端存档比本地新，自动恢复云端存档（需要先启用云备份）",
     "localBackupRetention": "本地游戏备份保留数量",
     "localBackupRetentionDescription": "每个游戏在本地保留的最大备份数量",
     "localDbBackupRetention": "本地数据库备份保留数量",

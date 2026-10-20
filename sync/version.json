@@ -1,6 +1,6 @@
 {
   "version": "1.4.0",
-  "release_date": "2026-09-28",
+  "release_date": "2026-10-20",
   "changelog": [
     "新增",
     "- 新增 Hikarinagi 元数据源：支持元数据搜刮、评论查看，应用内 OAuth 授权，未授权时弹窗引导",

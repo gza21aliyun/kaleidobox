@@ -10,7 +10,7 @@ import { getSourceId, hasSource, setSourceId } from "../../utils/sourceList";
 import { EXTERNAL_SOURCE_VALUES, METADATA_SOURCES } from "../../utils/sourceTypes";
 import { handleHikarinagiAuthError } from "../../utils/hikarinagiAuth";
 
-import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq, FetchMetadataByNameQuick } from "../../../wailsjs/go/service/GameService";
+import { FetchMetadata, FetchMetadataByName, UpdateGamesBackground, FetchMetadataNotSave, UpdateGameByReq, FetchMetadataByNameQuick, UpdateGame } from "../../../wailsjs/go/service/GameService";
 import {
   CancelTask
 } from "../../../wailsjs/go/service/TaskService";
@@ -60,6 +60,11 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
   // 源列表编辑弹窗状态
   const [showSourceEdit, setShowSourceEdit] = useState(false);
   const [sourceEditIndex, setSourceEditIndex] = useState<number | null>(null);
+  // 源 ID 编辑二级弹窗状态：输入 ID → 搜刮预览 → 确认入库
+  const [sourceIdTarget, setSourceIdTarget] = useState<enums.SourceType | null>(null);
+  const [sourceIdInput, setSourceIdInput] = useState("");
+  const [sourceIdPreview, setSourceIdPreview] = useState<models.Game | null>(null);
+  const [isFetchingPreview, setIsFetchingPreview] = useState(false);
   // const manualSource = setManualSource = useState<enums.SourceType>(enums.SourceType.BANGUMI);
   const taskId = useRef("");
   const [shouldOverwrite, setIsOverWrite]  = useState(true);
@@ -226,14 +231,88 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
     setCandidates(updated);
   };
 
-  // 编辑指定候选游戏的某个来源 ID（写回统一的 source_list）
-  const updateSourceId = (index: number, sourceType: enums.SourceType, id: string) => {
+  // 打开源 ID 编辑二级弹窗（预填当前 ID）
+  const openSourceIdEdit = (sourceType: enums.SourceType) => {
+    if (sourceEditIndex === null) return;
+    setSourceIdTarget(sourceType);
+    setSourceIdInput(getSourceId(candidates[sourceEditIndex].source_list, sourceType));
+    setSourceIdPreview(null);
+  };
+
+  const closeSourceIdEdit = () => {
+    setSourceIdTarget(null);
+    setSourceIdInput("");
+    setSourceIdPreview(null);
+  };
+
+  // 搜刮预览：简单搜刮（不入库）获取 models.Game 供用户确认
+  const handleFetchSourcePreview = async () => {
+    if (!sourceIdTarget || !sourceIdInput.trim()) return;
+    setIsFetchingPreview(true);
+    setSourceIdPreview(null);
+    try {
+      const request = new vo.MetadataRequest({
+        source: sourceIdTarget,
+        id: sourceIdInput.trim(),
+      });
+      const gameEntity = await FetchMetadataNotSave(request);
+      if (gameEntity.game && gameEntity.game.name) {
+        setSourceIdPreview(gameEntity.game);
+      }
+      else {
+        toast.error(t('batchUpdate.notFound'));
+      }
+    }
+    catch (error) {
+      console.error("Failed to fetch source preview:", error);
+      if (!handleHikarinagiAuthError(error, t, () => handleFetchSourcePreview())) {
+        toast.error(t('batchUpdate.fetchFailed'));
+      }
+    }
+    finally {
+      setIsFetchingPreview(false);
+    }
+  };
+
+  // 确认：写回该源 ID 到 source_list 并入库
+  const confirmSourceIdEdit = async () => {
+    if (sourceEditIndex === null || !sourceIdTarget || !sourceIdPreview) return;
+    const index = sourceEditIndex;
     const updated = [...candidates];
     updated[index] = {
       ...updated[index],
-      source_list: setSourceId(updated[index].source_list, sourceType, id),
+      source_list: setSourceId(updated[index].source_list, sourceIdTarget, sourceIdInput.trim()),
     } as models.Game;
     setCandidates(updated);
+    try {
+      await UpdateGame(updated[index]);
+      updateGameInGames(updated[index]);
+    }
+    catch (error) {
+      console.error("Failed to save source id:", error);
+      toast.error(t('batchUpdate.updateFailed') + ":" + error);
+    }
+    closeSourceIdEdit();
+  };
+
+  // 清空指定源的 ID 并入库
+  const clearSourceId = async (sourceType: enums.SourceType) => {
+    if (sourceEditIndex === null) return;
+    const index = sourceEditIndex;
+    const updated = [...candidates];
+    updated[index] = {
+      ...updated[index],
+      source_list: setSourceId(updated[index].source_list, sourceType, ""),
+    } as models.Game;
+    setCandidates(updated);
+    try {
+      await UpdateGame(updated[index]);
+      updateGameInGames(updated[index]);
+    }
+    catch (error) {
+      console.error("Failed to clear source id:", error);
+      toast.error(t('batchUpdate.updateFailed') + ":" + error);
+    }
   };
 
   const openManualSelect = async (index: number, id: string) => {
@@ -872,20 +951,33 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
               </div>
 
               <div className="flex-1 space-y-3 overflow-y-auto p-4">
-                {METADATA_SOURCES.map((o) => (
-                  <div key={o.value} className="flex items-center gap-3">
-                    <span className="w-24 shrink-0 text-sm font-medium text-brand-700 dark:text-brand-300">
-                      {t(o.labelKey)}
-                    </span>
-                    <input
-                      type="text"
-                      value={getSourceId(candidate.source_list, o.value)}
-                      onChange={(e) => updateSourceId(sourceEditIndex, o.value, e.target.value)}
-                      placeholder={t('gameEdit.sourceIdPlaceholder')}
-                      className="flex-1 rounded border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm text-brand-900 focus:border-neutral-500 focus:outline-none dark:border-brand-600 dark:bg-brand-700 dark:text-white"
-                    />
-                  </div>
-                ))}
+                {METADATA_SOURCES.map((o) => {
+                  const sid = getSourceId(candidate.source_list, o.value);
+                  return (
+                    <div key={o.value} className="flex items-center gap-3">
+                      <span className="w-24 shrink-0 text-sm font-medium text-brand-700 dark:text-brand-300">
+                        {t(o.labelKey)}
+                      </span>
+                      <span className={`flex-1 truncate text-sm ${sid ? "text-brand-900 dark:text-white" : "text-brand-400"}`}>
+                        {sid || t('common.none')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openSourceIdEdit(o.value)}
+                        title={t('common.edit')}
+                        className="i-mdi-pencil shrink-0 text-lg text-neutral-500 hover:text-neutral-700 dark:text-brand-300 dark:hover:text-white"
+                      />
+                      {sid && (
+                        <button
+                          type="button"
+                          onClick={() => clearSourceId(o.value)}
+                          title={t('common.delete')}
+                          className="i-mdi-delete shrink-0 text-lg text-neutral-500 hover:text-red-600 dark:text-brand-300 dark:hover:text-red-400"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex justify-end border-t border-brand-200 p-4 dark:border-brand-700">
@@ -894,6 +986,94 @@ export function BatchUpdateModal({ isOpen, onClose, onUpdateComplete, games, sou
                   className="rounded-lg px-5 py-2 text-sm font-medium text-white bg-neutral-600 hover:bg-neutral-700"
                 >
                   {t('common.close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 源 ID 编辑二级弹窗：输入 ID → 搜刮预览 → 确认入库 */}
+      {showSourceEdit && sourceIdTarget && (() => {
+        const labelKey = METADATA_SOURCES.find(o => o.value === sourceIdTarget)?.labelKey ?? "";
+        return (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-brand-800">
+              <div className="flex items-center justify-between border-b border-brand-200 p-4 dark:border-brand-700">
+                <h3 className="truncate text-lg font-bold text-brand-900 dark:text-white">
+                  {t('batchUpdate.sourceIdEdit', { source: t(labelKey) })}
+                </h3>
+                <button
+                  onClick={closeSourceIdEdit}
+                  className="i-mdi-close text-xl text-brand-500 hover:text-brand-700"
+                />
+              </div>
+
+              <div className="space-y-4 p-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={sourceIdInput}
+                    onChange={e => { setSourceIdInput(e.target.value); setSourceIdPreview(null); }}
+                    placeholder={t('batchUpdate.enterId')}
+                    className="flex-1 rounded border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm text-brand-900 focus:border-neutral-500 focus:outline-none dark:border-brand-600 dark:bg-brand-700 dark:text-white"
+                  />
+                  <button
+                    onClick={handleFetchSourcePreview}
+                    disabled={!sourceIdInput.trim() || isFetchingPreview}
+                    className="rounded bg-neutral-500 px-4 py-1.5 text-sm text-white hover:bg-neutral-600 disabled:opacity-50"
+                  >
+                    {t('batchUpdate.scrape')}
+                  </button>
+                </div>
+
+                {isFetchingPreview && (
+                  <div className="py-6 text-center">
+                    <div className="i-mdi-loading animate-spin text-3xl mx-auto mb-2 text-neutral-500" />
+                    <p className="text-brand-400">{t('batchUpdate.searching')}</p>
+                  </div>
+                )}
+
+                {!isFetchingPreview && sourceIdPreview && (
+                  <div className="flex items-center gap-3 rounded-lg border border-brand-200 p-3 dark:border-brand-700">
+                    <div className="h-20 w-16 shrink-0 overflow-hidden rounded-md bg-brand-200 dark:bg-brand-700">
+                      {sourceIdPreview.cover_url
+                        ? (
+                            <ImageCard url={sourceIdPreview.cover_url} alt={sourceIdPreview.name} className="h-full w-full object-cover object-center" referrerPolicy="no-referrer" tempDownload={true} />
+                          )
+                        : (
+                            <div className="flex h-full items-center justify-center text-brand-400">
+                              <div className="i-mdi-image-off text-2xl" />
+                            </div>
+                          )}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="truncate text-sm font-bold text-brand-900 dark:text-white" title={sourceIdPreview.name}>
+                        {sourceIdPreview.name}
+                      </h4>
+                      <p className="text-xs text-brand-400">
+                        {sourceIdPreview.source_type}
+                        :
+                        {sourceIdPreview.source_id}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-brand-200 p-4 dark:border-brand-700">
+                <button
+                  onClick={closeSourceIdEdit}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 dark:text-brand-300 dark:hover:bg-brand-700"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={confirmSourceIdEdit}
+                  disabled={!sourceIdPreview}
+                  className="rounded-lg bg-success-600 px-5 py-2 text-sm font-medium text-white hover:bg-success-700 disabled:opacity-50"
+                >
+                  {t('common.confirm')}
                 </button>
               </div>
             </div>

@@ -1905,7 +1905,9 @@
     "selectOnlyMatchedHint": "Select games matched only to the specified source",
     "onlyMatched": "Only matched",
     "openDetail": "Open game details",
-    "editSources": "Edit Game Sources"
+    "editSources": "Edit Game Sources",
+    "sourceIdEdit": "Edit {{source}} ID",
+    "scrape": "Scrape"
   },
   "batchImport": {
     "title": "Batch import games",

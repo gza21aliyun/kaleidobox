@@ -1905,7 +1905,9 @@
     "selectOnlyMatchedHint": "选取仅匹配指定源的游戏",
     "onlyMatched": "仅匹配",
     "openDetail": "打开游戏详情",
-    "editSources": "编辑游戏来源"
+    "editSources": "编辑游戏来源",
+    "sourceIdEdit": "编辑{{source}} ID",
+    "scrape": "搜刮"
   },
   "batchImport": {
     "title": "批量导入游戏",

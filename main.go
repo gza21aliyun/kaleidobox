@@ -49,6 +49,10 @@ var db *sql.DB
 
 var config *appconf.AppConfig
 
+// 启动阶段的日志句柄与日志路径，供致命错误提示复用
+var appLogger logger.Logger
+var startupLogPath string
+
 var appState = newLifecycleState()
 var ipcHTTPServer *http.Server
 
@@ -162,14 +166,15 @@ func main() {
 
 	logDir, _ := utils.GetSubDir("logs")
 	logFilePath := filepath.Join(logDir, "app.log")
-	appLogger := logger.NewFileLogger(logFilePath)
+	appLogger = logger.NewFileLogger(logFilePath)
+	startupLogPath = logFilePath
 	// 设置 applog 包的日志文件路径
 	applog.SetLogFilePath(logFilePath)
 
 	var loadErr error
 	config, loadErr = appconf.LoadConfig()
 	if loadErr != nil {
-		appLogger.Fatal(loadErr.Error())
+		fatalStartup("KaleidoBox 启动失败", "读取配置文件失败：\n"+loadErr.Error())
 	}
 
 	gameService := service.NewGameService()
@@ -217,13 +222,15 @@ func main() {
 	}
 
 	bootstrapErr := wails.Run(&options.App{
-		Title:     "KaleidoBox",
-		Logger:    appLogger,
-		LogLevel:  logger.INFO,
-		Width:     initWidth,
-		Height:    initHeight,
-		MinWidth:  970,
-		MinHeight: 563,
+		Title:    "KaleidoBox",
+		Logger:   appLogger,
+		LogLevel: logger.INFO,
+		// 单实例保护：重复启动时激活已运行的窗口，避免第二个进程抢数据库与端口
+		SingleInstanceLock: buildSingleInstanceLock(),
+		Width:              initWidth,
+		Height:             initHeight,
+		MinWidth:           970,
+		MinHeight:          563,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 			Middleware: func(next http.Handler) http.Handler {
@@ -430,12 +437,13 @@ func main() {
 
 			execPath, err := utils.GetDataDir()
 			if err != nil {
-				appLogger.Fatal(err.Error())
+				fatalStartup("KaleidoBox 启动失败", "获取数据目录失败：\n"+err.Error())
 			}
 			dbPath := filepath.Join(execPath, "kaleidobox.db")
-			db, err = sql.Open("duckdb", dbPath)
+			db, err = openDatabaseWithRecovery(dbPath)
 			if err != nil {
-				appLogger.Fatal(err.Error())
+				fatalStartup("KaleidoBox 启动失败", "无法打开数据库文件：\n"+dbPath+"\n\n"+err.Error()+
+					"\n\n若确认没有其他 KaleidoBox 进程在运行，请重启电脑后再试。")
 			}
 
 			// 设置时区为本地时区，确保 TIMESTAMPTZ 的聚合操作使用正确的日界线
@@ -456,13 +464,13 @@ func main() {
 			}
 
 			if err := migrations.InitSchema(db); err != nil {
-				appLogger.Fatal(err.Error())
+				fatalStartup("KaleidoBox 启动失败", "初始化数据库结构失败：\n"+err.Error())
 			}
 
 			// 运行数据库迁移（安全、只执行一次）
 			appLogger.Info("Checking for pending database migrations...")
 			if err := migrations.Run(ctx, db); err != nil {
-				appLogger.Fatal("Database migration failed: " + err.Error())
+				fatalStartup("KaleidoBox 启动失败", "数据库迁移失败：\n"+err.Error())
 			}
 			appLogger.Info("Database migrations completed")
 
@@ -635,7 +643,7 @@ func main() {
 	})
 
 	if bootstrapErr != nil {
-		appLogger.Fatal(bootstrapErr.Error())
+		fatalStartup("KaleidoBox 启动失败", "界面初始化失败：\n"+bootstrapErr.Error())
 	}
 }
 

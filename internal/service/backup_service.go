@@ -273,6 +273,38 @@ func (s *BackupService) GetGameBackups(gameID string) ([]models.GameBackup, erro
 	return backups, nil
 }
 
+// remapUserProfileSavePath 将指向其他机器用户目录的存档路径映射到当前用户目录。
+// 例：C:\Users\Alice\Documents\Game → C:\Users\<当前用户>\Documents\Game。
+// 路径在本机已存在、或不属于用户目录时原样返回。
+func remapUserProfileSavePath(savePath string) string {
+	if savePath == "" {
+		return savePath
+	}
+	if _, err := os.Stat(savePath); err == nil {
+		return savePath
+	}
+
+	volume := filepath.VolumeName(savePath)
+	rest := strings.TrimPrefix(savePath, volume)
+	rest = strings.TrimPrefix(rest, string(filepath.Separator))
+	parts := strings.Split(rest, string(filepath.Separator))
+	if len(parts) < 3 || !strings.EqualFold(parts[0], "Users") {
+		return savePath
+	}
+	// 公共目录不属于具体用户，不做映射
+	switch strings.ToLower(parts[1]) {
+	case "public", "default", "default user", "all users":
+		return savePath
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return savePath
+	}
+
+	return filepath.Join(append([]string{home}, parts[2:]...)...)
+}
+
 // CreateBackup 创建游戏存档备份
 func (s *BackupService) CreateBackup(gameID string) (*models.GameBackup, error) {
 	var savePath string
@@ -372,6 +404,7 @@ func (s *BackupService) RestoreBackup(backupPath string) error {
 	if err != nil || savePath == "" {
 		return fmt.Errorf("存档路径未设置")
 	}
+	savePath = remapUserProfileSavePath(savePath)
 
 	// 先备份当前存档（恢复前备份）
 	if _, err := os.Stat(savePath); err == nil {
@@ -550,6 +583,7 @@ func (s *BackupService) RestoreFromCloud(cloudKey string, gameID string) error {
 	if err != nil || savePath == "" {
 		return fmt.Errorf("存档路径未设置")
 	}
+	savePath = remapUserProfileSavePath(savePath)
 
 	// 先备份当前存档
 	if _, err := os.Stat(savePath); err == nil {
@@ -722,6 +756,7 @@ func (s *BackupService) RestoreLatestCloudGameBackupIfNewer(gameID string) (bool
 	if savePath == "" {
 		return false, nil
 	}
+	savePath = remapUserProfileSavePath(savePath)
 	latestLocalTime, err := latestPathModTime(savePath)
 	if err != nil {
 		return false, fmt.Errorf("读取本地存档修改时间失败: %w", err)
